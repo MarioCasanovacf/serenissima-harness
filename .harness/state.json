@@ -115,14 +115,14 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 5,
-        "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T07:22:06Z"
-      },
-      "substrate-worker-2": {
         "tasks_done": 6,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T07:29:40Z"
+        "last_outcome_at": "2026-07-04T07:54:28Z"
+      },
+      "substrate-worker-2": {
+        "tasks_done": 8,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T07:56:49Z"
       },
       "evolution-analyst": {
         "tasks_done": 2,

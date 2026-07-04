@@ -16,5 +16,11 @@
     "projects/mdtoc/mdtoc/",
     "projects/mdtoc/README.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T07:56:07Z",
+      "agent": "harness-verifier",
+      "note": "Claimed by harness-verifier for epic final join replay. Beginning independent replay (not trusting hand-off logs)."
+    }
+  ]
 }

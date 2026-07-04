@@ -1,0 +1,8 @@
+{
+  "id": "T-092",
+  "title": "SCRATCH: USAGE.md worked example - dependent join task (T-030)",
+  "description": "Disposable worked-example probe for USAGE.md (T-030): demonstrates a real depends_on edge and the cascade-gate refusal. Not real work; safe to ignore or terminate.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

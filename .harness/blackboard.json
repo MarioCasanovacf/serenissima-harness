@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T07:40:53Z",
+  "updated_at": "2026-07-04T07:56:49Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -622,7 +622,7 @@
     "T-028": {
       "epic": "mdtoc",
       "title": "mdtoc CLI: argparse generate/check + package + integration test + README",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -634,15 +634,30 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-028.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/mdtoc/mdtoc/cli.py",
+        "projects/mdtoc/mdtoc/__main__.py",
+        "projects/mdtoc/mdtoc/__init__.py",
+        "projects/mdtoc/tests/test_cli.py",
+        "projects/mdtoc/tests/test_integration.py",
+        "projects/mdtoc/tests/fixtures/sample.md",
+        "projects/mdtoc/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "REPLAY: (1) python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v  -> expect 'Ran 62 tests ... OK' (18 new: test_cli.py TestGenerateInPlace/TestGenerateStdoutMode/TestMaxDepthTruncation/TestCheck/TestArgparseHelp + test_integration.py TestEndToEndIdempotencyAndFidelity, plus 44 pre-existing parser/inserter/slugger tests untouched). (2) cd projects/mdtoc && python3 -m mdtoc --help / generate --help / check --help -> exit 0, clean argparse usage mentioning generate/check/--max-depth/--in-place/FILE. (3) cp projects/mdtoc/tests/fixtures/sample.md /tmp/sample.md && cd projects/mdtoc && python3 -m mdtoc check /tmp/sample.md -> exit 1 'TOC is stale' (markers present but empty). (4) python3 -m mdtoc generate /tmp/sample.md --in-place -> exit 0; python3 -m mdtoc check /tmp/sample.md -> exit 0 'TOC is up to date'. (5) cp /tmp/sample.md /tmp/sample_after1.md && python3 -m mdtoc generate /tmp/sample.md --in-place && diff /tmp/sample_after1.md /tmp/sample.md -> no diff (byte-identical / idempotent, confirmed independently by test_integration.test_generate_in_place_twice_is_byte_identical via subprocess). (6) sed -i '' 's/#introduction)/#introduction-tampered)/' /tmp/sample.md && python3 -m mdtoc check /tmp/sample.md -> exit 1 'TOC is stale'. (7) python3 -m mdtoc generate /tmp/sample.md (no --in-place) -> prints full doc with TOC to stdout, file on disk unchanged. Checklist vs T-028.json acceptance_criteria: [1] owns exactly cli.py/__main__.py/__init__.py/test_cli.py/test_integration.py/fixtures/sample.md/README.md (verified via git status --short projects/mdtoc, no other files touched, parser.py/inserter.py/slugger.py from T-021/T-022/T-027 read-only/unmodified) - MET. [2] cli.py wires parser.parse_headings -> inserter.render_toc(headings, slugger.slugify, max_depth) -> inserter.insert_toc; __init__.py present; __main__.py calls cli.main - MET (see mdtoc/cli.py _render()/_cmd_generate()/_cmd_check()). [3] generate command: default --max-depth 3, markers present -> idempotent insert (in-place writes file / else prints full doc to stdout), markers absent -> prints only rendered TOC to stdout - MET, verified by test_cli.TestGenerateStdoutMode.test_without_markers_prints_only_the_rendered_toc and manual e2e step 7. [4] check command: exit 0 fresh / 1 stale, clean --help for program+both subcommands - MET. [5] fixture exercises fenced code block '#' line, HTML comment '#' line, duplicate headings (## Cafe x2), unicode headings (accented Cafe + CJG 你好世界), toc markers - MET (projects/mdtoc/tests/fixtures/sample.md). [6] test_cli.py unit tests: generate --in-place, check 0-then-1-after-tamper, --max-depth truncation - MET (TestGenerateInPlace, TestCheck, TestMaxDepthTruncation). [7] test_integration.py e2e: generate --in-place TWICE byte-identical, fenced/comment lines never in TOC, duplicate headings get -1/-2 anchors, check 0 afterward - MET (subprocess-based, see test_generate_in_place_twice_is_byte_identical, test_duplicate_headings_get_dash1_dash2_anchors, test_check_returns_zero_after_generate). [8] README.md usage + copy-pasteable examples for generate (both modes) and check - MET (projects/mdtoc/README.md, includes both PYTHONPATH and cwd invocation styles as required by task step 5). [9] all suites pass via python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc, stdlib only (argparse/subprocess/unicodedata/re/os/sys/shutil/tempfile/contextlib/io - all stdlib) - MET. [10] shared conventions (3.9+ stdlib only, disjoint ownership, tests add projects/mdtoc to sys.path) - MET. DEVIATIONS/judgment calls where criteria were silent: markers-absent+--in-place combo prints stderr warning then falls back to TOC-only stdout with exit 0 (not tested by acceptance criteria explicitly, documented in cli.py docstring); check has no --max-depth flag, always uses default 3 (matches literal criteria text 'python3 -m mdtoc check FILE'); check with markers fully absent exits 1 with stderr diagnostic (undefined by criteria, chosen as safe default). goal_mode.py run --task T-028 --cmd '...' -> GOAL REACHED iteration 1/3, no failures encountered, no retries needed.",
+        "ts": "2026-07-04T07:47:51Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T07:54:28Z",
+      "completed_by": "harness-verifier"
     },
     "T-029": {
       "epic": "mdtoc",
       "title": "mdtoc epic final join: replay full suite + end-to-end generate/check, verdict epic",
-      "status": "open",
+      "status": "in_progress",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -651,8 +666,8 @@
         "T-027",
         "T-028"
       ],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "harness-verifier",
+      "claim_expires_at": "2026-07-04T08:56:07Z",
       "priority": 3,
       "detail_file": ".harness/tasks/T-029.json",
       "artifacts": [],
@@ -740,6 +755,74 @@
       "created_by": "fable-5-coordinator",
       "completed_at": "2026-07-04T07:29:54Z",
       "completed_by": "harness-verifier"
+    },
+    "T-030": {
+      "epic": "ready-for-usage",
+      "title": "USAGE.md at repo root: onboarding guide for a new human operator",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-030.json",
+      "artifacts": [
+        "USAGE.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "USAGE.md (repo root, 160 lines) ready for adversarial replay. REPLAY COMMANDS (all re-verified before this handoff): (1) wc -l USAGE.md -> 160. (2) python3 .harness/bin/blackboard.py show T-091 and show T-092 -> live scratch tasks (epic scratch-usage-doc): T-091 status=review with handoff.from=substrate-worker-2, T-092 status=open depends_on=[T-091]. (3) python3 .harness/bin/blackboard.py claim T-092 --agent <anyone> -> still refuses with 'refused (cascade gate): T-092 depends on unfinished task(s): T-091.' confirming review!=done as documented in doc §4. (4) python3 -c \"import json; g=json.load(open('.harness/state.json'))['human_gates']['require_human_approval_for']; print(g)\" -> the 4 strings match §5's golden-rules box verbatim (diffed char-for-char before shipping). (5) tail -n 5 .harness/logs/events.jsonl -> shows a real agent!=holder line (task_handoff agent=main from_agent=substrate-worker-2) matching §6's evidence claim. (6) wc -l .harness/logs/transcript.jsonl -> non-zero and growing in this repo-rooted session, matching §6's session-root nuance. (7) python3 .harness/bin/blackboard.py --help / lock.py --help / session.py --help / ast_index.py --help / goal_mode.py --help / notify.py --help all match the doc's cited syntax (session.py register is documented as syntax-only/coordinator-act, never executed by this worker persona, per the identity nuance in §5 rule 1). ACCEPTANCE CHECKLIST vs T-030.json description: (1) mental model paragraph + ORCHESTRATION.md pointer - §1; (2) posing a goal via add-task with real depends_on + planner-delegation mention + worked mini-example - §2; (3) dispatch/work cycle + in-session vs second-terminal (CLAUDE_HARNESS_AGENT_ID) - §3; (4) reading the board: status columns, review-vs-done, cascade-gate refusal (live example), /harness-status skill - §4; (5) golden-rules box: session.py register nuance, lock before/after, producer!=approver, verbatim human_gates (4/4 exact), never hand-edit blackboard.json, state.json limits - §5; (6) evidence: events.jsonl vs transcript.jsonl (session-root condition) + agent-vs-holder nuance + task JSONs + audit_gen*.md - §6; (7) evolution in two lines - §7. Owned file: USAGE.md only (no other file edited). ONE HONEST DEVIATION (self-disclosed, also written into the doc itself as a real anecdote in §5): a verification-phase mistake self-marked T-091 done without --agent, caught and reverted; permanent residual is a +1 in state.json reputation.substrate-worker-2.tasks_done (6->7) that no CLI can retract. Please verify independently, including re-deriving the human_gates diff and re-running the cascade-gate refusal.",
+        "ts": "2026-07-04T07:50:17Z"
+      },
+      "created_at": "2026-07-04T07:42:25Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T07:56:49Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-091": {
+      "epic": "scratch-usage-doc",
+      "title": "SCRATCH: USAGE.md worked example - producer task (T-030)",
+      "status": "review",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-091.json",
+      "artifacts": [
+        "SCRATCH-usage-example.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "SCRATCH worked-example probe for USAGE.md (T-030): full claim->lock->update->handoff cycle demonstrated; disposable, not real work. A verifier may verdict done, or ignore/leave as living documentation evidence of the review state.",
+        "ts": "2026-07-04T07:47:02Z"
+      },
+      "created_at": "2026-07-04T07:45:49Z",
+      "created_by": "substrate-worker-2",
+      "completed_at": "2026-07-04T07:46:14Z",
+      "completed_by": "main"
+    },
+    "T-092": {
+      "epic": "scratch-usage-doc",
+      "title": "SCRATCH: USAGE.md worked example - dependent join task (T-030)",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-091"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-092.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T07:45:50Z",
+      "created_by": "substrate-worker-2"
     }
   }
 }

@@ -1,0 +1,24 @@
+{
+  "id": "T-091",
+  "title": "SCRATCH: USAGE.md worked example - producer task (T-030)",
+  "description": "Disposable worked-example probe for USAGE.md (T-030): demonstrates add-task/claim/lock/update/handoff. Not real work; safe to ignore or terminate.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-04T07:46:10Z",
+      "agent": "substrate-worker-2",
+      "note": "plan: touch SCRATCH-usage-example.md to prove the cycle (worked example for USAGE.md, T-030)"
+    },
+    {
+      "ts": "2026-07-04T07:46:37Z",
+      "agent": "substrate-worker-2",
+      "note": "SELF-CORRECTION: a prior update call in this same session omitted --agent and used the default identity to set --status done directly on my own claimed task -- that is exactly the self-approval anti-pattern USAGE.md is written to prevent (producer != approver). Caught immediately, reverting to in_progress. Reputation side-effect note: that erroneous done transition briefly bumped substrate-worker-2 tasks_done in state.json (claimant/producer fallback in bump_reputation_locked) before this revert; disclosed here rather than hand-edited away. No file was ever actually touched (SCRATCH-usage-example.md is a placeholder path per the T-090 convention)."
+    },
+    {
+      "ts": "2026-07-04T07:47:02Z",
+      "agent": "substrate-worker-2",
+      "note": "HANDOFF -> verifier: SCRATCH worked-example probe for USAGE.md (T-030): full claim->lock->update->handoff cycle demonstrated; disposable, not real work. A verifier may verdict done, or ignore/leave as living documentation evidence of the review state."
+    }
+  ]
+}
