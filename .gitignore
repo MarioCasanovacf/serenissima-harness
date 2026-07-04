@@ -14,3 +14,7 @@ agentic-harness-engineering-reference/
 
 # Secrets (T-005 messenger config may hold tokens)
 .harness/notify_config.json
+
+# Goal-mode runner ephemeral state (T-004; observability data lives as files, not git)
+.harness/logs/goal_mode_state.json
+.harness/logs/goal_mode_last_failure.md

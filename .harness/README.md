@@ -33,6 +33,7 @@ this file is the substrate reference.
  └── bin/                   The deterministic control plane (python3 >= 3.9, stdlib-only):
       ├── blackboard.py     status | next | show | claim | update | handoff | add-task
       ├── lock.py           acquire | release | status | sweep
+      ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
       ├── log_event.py      hook: transcript logger (fail-open)
       ├── check_lock.py     hook: blocks edits to files write-locked by another agent (fail-open)
       └── harness_common.py shared helpers (guarded mutation, atomic writes, TTL logic)

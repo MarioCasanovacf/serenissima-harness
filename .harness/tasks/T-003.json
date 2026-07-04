@@ -11,5 +11,21 @@
     "fetched_docs/zcode_features.md",
     ".harness/bin/harness_common.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T02:04:03Z",
+      "agent": "substrate-worker-1",
+      "note": "plan: build .harness/bin/ast_index.py (stdlib ast, build+query subcommands), validate against blackboard.py cmd_claim, then doc one line in README bin/ section"
+    },
+    {
+      "ts": "2026-07-04T02:06:18Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: Replay: (a) time python3 .harness/bin/ast_index.py build -> 'built: 6 files indexed, 0 skipped, 48 symbols, 10ms' (real 0.052s total, well under 30s). (b) python3 .harness/bin/ast_index.py query cmd_claim -> 'cmd_claim  function  .harness/bin/blackboard.py:220  (-)'; cross-checked against grep -n \"def cmd_claim\" .harness/bin/blackboard.py -> '220:def cmd_claim(args):' — line numbers match exactly. (c) python3 .harness/bin/ast_index.py query lock --contains -> 4 hits: lock_name_for/read_lock/lock_is_expired (harness_common.py) + bump_reputation_locked (blackboard.py), all with correct file:line. (d) python3 -m json.tool .harness/index/symbols.json > /dev/null -> parses cleanly, no output/errors. Extra checks run: query guarded -> 'class' kind at harness_common.py:80 (matches grep); query __enter__/__exit__ -> both 'method' with parent=guarded at lines 83/89 (matches grep), confirming class/method/function kind classification is correct; query of a nonexistent symbol exits 1; query before build (symbols.json temporarily moved aside) exits 2 with a friendly 'run build first' message, then restored and re-verified stable. Only .py files in the whole workspace (outside the 3 excluded reference repos) are the 6 files in .harness/bin/ itself — confirmed via find; all 6 indexed including the newly-created ast_index.py. README.md diff is minimal: exactly 1 line inserted under bin/ (git diff --stat confirms '1 file changed, 1 insertion(+)'), no restructuring. Artifacts registered: .harness/bin/ast_index.py, .harness/index/symbols.json, .harness/README.md. All locks released."
+    },
+    {
+      "ts": "2026-07-04T02:12:23Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (replayed independently): build 0.054s<<30s (7 files/57 symbols; grew from producer's 6/48 because T-004 goal_mode.py now in bin/ — index is dynamic, AC1 has no file count). query cmd_claim->blackboard.py:220 == grep 220. Diversity: uncited expire_claims->:57 & append_note->:107 both == grep; lock --contains=4 hits; symbols.json json.tool-parses; grep -c '-reference/'=0 (repos excluded); nonexistent symbol->exit1; README diff=exactly 1 line in bin/ block (stat 1 insertion); py_compile OK."
+    }
+  ]
 }

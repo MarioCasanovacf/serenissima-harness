@@ -113,6 +113,16 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T01:40:52Z"
+      },
+      "substrate-worker-1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T02:12:23Z"
+      },
+      "substrate-worker-2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T02:14:54Z"
       }
     }
   },
