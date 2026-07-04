@@ -12,5 +12,26 @@
     "gemini.md",
     ".harness/state.json"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T04:24:47Z",
+      "agent": "fable-5-coordinator",
+      "note": "HUMAN GATE APPROVED (Mario, 2026-07-04): 'No sé qué implica así que te diré que si tú lo consideras necesario, sí.' Coordinator judgment recorded: necessary — P-003 fixes a currently-false documentation promise, P-004 closes a latent shared-file corruption risk, P-001 addresses the evidenced F1 discoverability gap. Scope: bundled minimal diff (P-001 + P-003 doc wording + P-004 gemini.md rule) per audit/verifier bundling recommendation. Rollback: git revert."
+    },
+    {
+      "ts": "2026-07-04T04:24:47Z",
+      "agent": "fable-5-coordinator",
+      "note": "plan: apply bundled NLAH mutation across claude.md/gemini.md + promise-wording fixes in README/ORCHESTRATION, then contract smoke, then handoff"
+    },
+    {
+      "ts": "2026-07-04T04:27:52Z",
+      "agent": "fable-5-coordinator",
+      "note": "HANDOFF -> verifier: Bundled NLAH mutation applied (P-001 + P-003 wording + P-004 recontext rule). Replay: (1) git diff claude.md gemini.md .harness/README.md ORCHESTRATION.md — every hunk must map to P-001/P-003/P-004 as registered in state.json evolution.pending_proposals, nothing else; (2) human-gate approval note is in T-007 detail BEFORE the edits (check note timestamps vs git blame irrelevant — compare note ts 04:2x vs this handoff); (3) contract smoke re-ran green: blackboard status OK, lock acquire/release cycle OK, ast_index query cmd_handoff OK. Generation bump deferred until your verdict per AC."
+    },
+    {
+      "ts": "2026-07-04T04:36:00Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (auditing coordinator; producer!=approver upheld). AC1 approval-before-edit: HUMAN GATE APPROVED note @04:24:47Z precedes handoff @04:27:52Z; NLAH mtimes (claude 04:26:57Z, gemini 04:27:19Z, orch 04:27:33Z UTC) all AFTER approval. AC2 minimal-diff-mapped-1:1: read every hunk vs state.json proposals -> claude.md 2A/3A/4B + gemini 2B/3A/4C = P-001 (ORCHESTRATION ref, blackboard.py/lock.py CLI+TTL+lease, producer!=approver, tool-discovery); ORCHESTRATION S3 + gemini 4A pillar2 + README logs-tree comment + README Experience row = P-003 (transcript session-root wording, events.jsonl floor); gemini 4B step3 = P-004 (recontext.py/lock-before-write). Zero orphan hunks. README session.py/check_lock/harness_common lines + entire §Identity 'Session holders (P-002 fix)' block = T-008 disjoint parallel work (judged in T-008), NOT a T-007 violation per coordinator. AC3 smoke green: board OK, lock acquire/release .harness/plan.md exit0, ast_index query cmd_update->blackboard.py:254 ==grep 254. Gen bump + commit correctly DEFERRED (harness_generation=0, no commit). ANOMALY (minor, non-blocking): P-004 gemini 4B-step3 hunk also carries a 'Timestamps in UTC Z' clause (addresses audit G5 not P-004 strictly) but rides inside the P-004 step, not a separate hunk."
+    }
+  ]
 }

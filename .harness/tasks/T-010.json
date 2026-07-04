@@ -1,0 +1,13 @@
+{
+  "id": "T-010",
+  "title": "Contention + crash-recovery smoke test (untested paths from audit_gen1 §4)",
+  "description": "Exercise every path audit_gen1 flagged as untested, capturing real outputs into .harness/logs/smoke_contention_report.md: (1) busy refusal between two distinct holders (exit 1); (2) TTL steal: acquire --ttl 1, wait 2s, acquire as another holder -> stole_expired:true event; (3) lease expiry: create scratch task T-090 via add-task, claim with --lease 1, wait 2s, run status -> claim_expired event + auto-release to open; (4) blocked path: claim T-090, update --status blocked, back to open; (5) failed path: update T-090 --status failed with note 'smoke artifact (T-010)' -> reputation tasks_failed bump for its holder. Clean: zero lock/claim residue after.",
+  "acceptance_criteria": [
+    "events.jsonl gains >=1 lock_acquired with stole_expired:true (TTL steal) and >=1 claim_expired (lease auto-release)",
+    "busy refusal between two distinct holders demonstrated with captured exit 1 output",
+    "blocked and failed paths exercised on scratch task T-090; reputation tasks_failed bumped for its holder",
+    ".harness/logs/smoke_contention_report.md contains every command with observed output; zero lock/claim residue at the end"
+  ],
+  "context_files": [],
+  "notes": []
+}

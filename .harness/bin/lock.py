@@ -4,8 +4,8 @@
 Usage:
   python3 .harness/bin/lock.py acquire <path> --holder <agent> [--task T-XXX] [--ttl 900]
   python3 .harness/bin/lock.py release <path> --holder <agent> [--force]
-  python3 .harness/bin/lock.py status
-  python3 .harness/bin/lock.py sweep
+  python3 .harness/bin/lock.py status [--agent <name>]
+  python3 .harness/bin/lock.py sweep [--agent <name>]
 
 Rules:
   - One lock file per workspace file: <rel__path>.lock with a JSON payload
@@ -15,6 +15,14 @@ Rules:
   - Re-acquiring your own live lock refreshes it (heartbeat pattern).
   - The PreToolUse hook (check_lock.py) enforces these locks mechanically
     for Claude Code sessions; other engines must call this CLI voluntarily.
+
+G4 fix: `status` and `sweep` now ACCEPT (but ignore) a --agent flag. Neither
+subcommand needs an actor identity -- status is a read-only report and sweep
+only removes locks that are already expired regardless of who holds them --
+so this is a harmless documented alias, not a behavior change: it exists
+purely so the pass-identity-everywhere discipline (every harness CLI call
+carries --agent/--holder) never errors out on these two read-only/janitor
+subcommands. Bare `status`/`sweep` (no --agent) are byte-for-byte unchanged.
 """
 import argparse
 import sys
@@ -95,7 +103,9 @@ def release(args):
     return 0
 
 
-def status(_args):
+def status(args):
+    # args.agent is accepted-but-unused (G4 harmless alias -- see module docstring).
+    del args
     hc.LOCKS.mkdir(parents=True, exist_ok=True)
     locks = sorted(hc.LOCKS.glob("*.lock"))
     if not locks:
@@ -117,7 +127,9 @@ def status(_args):
     return 0
 
 
-def sweep(_args):
+def sweep(args):
+    # args.agent is accepted-but-unused (G4 harmless alias -- see module docstring).
+    del args
     hc.LOCKS.mkdir(parents=True, exist_ok=True)
     removed = []
     with hc.guarded():
@@ -150,9 +162,11 @@ def main(argv):
     p_rel.set_defaults(func=release)
 
     p_st = sub.add_parser("status", help="list lock files and their liveness")
+    p_st.add_argument("--agent", default=None, help="accepted-but-unused alias (G4); no behavior change")
     p_st.set_defaults(func=status)
 
     p_sw = sub.add_parser("sweep", help="remove expired lock files")
+    p_sw.add_argument("--agent", default=None, help="accepted-but-unused alias (G4); no behavior change")
     p_sw.set_defaults(func=sweep)
 
     args = parser.parse_args(argv)

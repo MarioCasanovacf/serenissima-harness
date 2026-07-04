@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "harness_generation": 0,
+  "harness_generation": 1,
   "created_at": "2026-07-03T00:00:00Z",
   "created_by": "fable-5-coordinator (Claude Code session, generation-0 bootstrap)",
   "run": {
@@ -115,26 +115,32 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T02:12:23Z"
+        "last_outcome_at": "2026-07-04T04:40:31Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T02:14:54Z"
+        "last_outcome_at": "2026-07-04T04:42:30Z"
       },
       "evolution-analyst": {
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T02:26:00Z"
+      },
+      "fable-5-coordinator": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T04:36:00Z"
       }
     }
   },
   "evolution": {
-    "generation": 0,
+    "generation": 1,
     "last_audit_at": "2026-07-04T02:28:15Z",
-    "pending_proposals": [
+    "pending_proposals": [],
+    "accepted_mutations": [
       {
         "id": "P-001",
         "target": [
@@ -142,8 +148,10 @@
           "gemini.md"
         ],
         "summary": "After T-002 (cross-engine contract test) passes, add explicit references in both NLAHs to ORCHESTRATION.md, the blackboard.py/lock.py CLI protocol, TTL/lease semantics, and the producer!=approver rule, replacing the current informal wording.",
-        "status": "pending",
-        "gate": "claude.md §5A.4 verification gate + human approval (see state.human_gates)"
+        "status": "applied",
+        "gate": "claude.md §5A.4 verification gate + human approval (see state.human_gates)",
+        "applied_note": "applied in T-007 (claude.md §2A/§3A/§4B, gemini.md §2B/§3A/§4C)",
+        "applied_at": "2026-07-04T04:44:11Z"
       },
       {
         "id": "P-002",
@@ -156,8 +164,10 @@
         "summary": "check_lock.py resolves identity only from ambient CLAUDE_HARNESS_AGENT_ID, so in-session subagents with per-call identity overrides self-block on their own locks and must dodge the hook via Bash writes. Add hc.session_holders() (per-session marker/allowlist file) and allow holders in it.",
         "evidence": "T-004.json:23; check_lock.py:30-32; harness_common.py:55",
         "measurable_gain": "the synthetic PreToolUse payload from T-004 returns exit 0 instead of 2; bash-dodge handoff notes drop to 0",
-        "status": "pending",
-        "gate": "code-level (.harness/bin), NOT an NLAH mutation — normal worker task + verifier, no human gate"
+        "status": "applied",
+        "gate": "code-level (.harness/bin), NOT an NLAH mutation — normal worker task + verifier, no human gate",
+        "applied_note": "applied in T-008 (session.py + harness_common.session_holders + check_lock)",
+        "applied_at": "2026-07-04T04:44:11Z"
       },
       {
         "id": "P-003",
@@ -172,8 +182,10 @@
         "summary": "transcript.jsonl held 1 synthetic line vs 77+ real events — the Experience pillar captured no real traffic. Coordinator diagnosis: project-scoped hooks only fire in sessions whose root is THIS repo; today's coordination session ran rooted in another project, so PostToolUse never loaded. Fix: (a) verify transcripts flow in sessions opened in this repo (cheap smoke test), (b) reword the EVERY-tool-call promise to state the session-root condition, (c) optionally document events.jsonl as the engine-agnostic experience floor.",
         "evidence": "wc -l transcript.jsonl = 1 vs events.jsonl = 77 at audit time; README.md:29-30",
         "measurable_gain": "a session opened in this repo grows transcript.jsonl by >=1 line per tool call; promise wording matches observed behavior",
-        "status": "pending",
-        "gate": "doc/NLAH wording parts bundle into human-gated T-007; hook smoke test is code-level"
+        "status": "applied",
+        "gate": "doc/NLAH wording parts bundle into human-gated T-007; hook smoke test is code-level",
+        "applied_note": "applied in T-007 (promise wording: gemini.md §4A, README, ORCHESTRATION §3); residual: hook smoke test in a repo-rooted session",
+        "applied_at": "2026-07-04T04:44:11Z"
       },
       {
         "id": "P-004",
@@ -186,14 +198,21 @@
         "summary": "recontext_evidence.md is the only many-writer shared mutable file with no lock rule and no guarded() serialization (gemini-runner wrote it with zero locks). Add a lock-before-write rule to gemini.md §4B and the file header; optionally ship recontext.py add for atomic appends.",
         "evidence": "grep -c recontext_evidence events.jsonl = 0; gemini.md:62-67 has no lock step",
         "measurable_gain": "recontext lock events > 0 before writes; two-writer stress test yields zero interleaved/truncated entries",
-        "status": "pending",
-        "gate": "gemini.md edit is human-gated (bundle into T-007); CLI part is code-level"
+        "status": "applied",
+        "gate": "gemini.md edit is human-gated (bundle into T-007); CLI part is code-level",
+        "applied_note": "applied in T-007 (gemini.md §4B lock rule) + T-009 (recontext.py atomic CLI)",
+        "applied_at": "2026-07-04T04:44:11Z"
       }
     ],
-    "accepted_mutations": [],
     "audit_artifacts": [
       ".harness/logs/audit_gen1.md"
     ],
-    "notes": "Bundling recommendation (audit + verifier): apply P-001 + P-003(doc) + P-004(gemini.md) as ONE minimal-diff T-007 mutation behind a single human gate. P-002 and the CLI halves are ordinary worker tasks. Minor unregistered findings: G4 lock.py status/sweep reject --agent; G5 cross-engine timestamp local-vs-UTC; untested paths list in audit §4."
+    "notes": "Bundling recommendation (audit + verifier): apply P-001 + P-003(doc) + P-004(gemini.md) as ONE minimal-diff T-007 mutation behind a single human gate. P-002 and the CLI halves are ordinary worker tasks. Minor unregistered findings: G4 lock.py status/sweep reject --agent; G5 cross-engine timestamp local-vs-UTC; untested paths list in audit §4.",
+    "next_audit_inputs": [
+      "G6: harness_common ISO_FMT truncates sub-second precision — short TTLs (--ttl 1) race truncation; deterministic only at >=3s (T-008 verify anomaly)",
+      "G7: recontext.py logs the evidence file's ABSOLUTE path in lock events vs relative elsewhere (cosmetic inconsistency)",
+      "G8: blackboard.py update --artifact takes a single value — repeated flags in one call silently drop all but the last (candidate: action=append)",
+      "P-003 residual: verify transcript.jsonl fills in a session rooted in this repo (hook smoke test)"
+    ]
   }
 }

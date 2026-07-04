@@ -22,6 +22,7 @@ LOGS = HARNESS / "logs"
 TASKS = HARNESS / "tasks"
 BLACKBOARD = HARNESS / "blackboard.json"
 STATE = HARNESS / "state.json"
+SESSION_HOLDERS = HARNESS / "session_holders.json"
 TRANSCRIPT = LOGS / "transcript.jsonl"
 EVENTS = LOGS / "events.jsonl"
 GUARD = LOCKS / ".guard"
@@ -144,3 +145,34 @@ def lock_is_expired(payload):
     except (TypeError, ValueError):
         ttl = 900
     return (now_utc() - acquired).total_seconds() > ttl
+
+
+def session_holders():
+    """Names registered (via bin/session.py) as agents coordinated within THIS
+    session, filtered to LIVE (unexpired) entries only. check_lock.py treats a
+    lock holder in this set the same as `holder == me` (fixes P-002: in-session
+    subagents with per-call identity overrides no longer self-block on their
+    own locks). Registration is an explicit coordinator act -- nothing else in
+    this harness auto-registers a holder here, so cross-session/cross-engine
+    locks stay mechanically enforced.
+
+    Must never raise: any malformed data or I/O error yields an empty set, so
+    callers (notably the fail-open check_lock.py hook) stay fail-safe."""
+    try:
+        data = read_json(SESSION_HOLDERS, default=None)
+        if not isinstance(data, dict):
+            return set()
+        holders = data.get("holders")
+        if not isinstance(holders, dict):
+            return set()
+        now = now_utc()
+        live = set()
+        for name, entry in holders.items():
+            if not isinstance(entry, dict):
+                continue
+            expires_at = parse_iso(entry.get("expires_at", ""))
+            if expires_at is not None and expires_at > now:
+                live.add(name)
+        return live
+    except Exception:
+        return set()

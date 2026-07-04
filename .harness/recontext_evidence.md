@@ -37,3 +37,15 @@ Source: .harness/blackboard.json:6-11
     "collision_model": "One guarded mutable index (this file) + one detail file per task in .harness/tasks/ (written only by the claiming agent, via blackboard.py --note) + append-only event logs in .harness/logs/. Source-file edits additionally require a write lock (lock.py / .harness/locks/)."
   },
 ```
+
+## [T-009] demo: living proof for T-009 — substrate-worker-2 — 2026-07-04T04:28:09Z
+Source: .harness/bin/lock.py:98
+```
+test extract line
+```
+
+## [T-009] verifier replay probe — harness-verifier — 2026-07-04T04:41:20Z
+Source: .harness/bin/recontext.py:1
+```
+verifier replay probe
+```

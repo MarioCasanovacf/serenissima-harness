@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
-  "generation": 0,
-  "updated_at": "2026-07-04T02:26:00Z",
-  "updated_by": "harness-verifier",
+  "generation": 1,
+  "updated_at": "2026-07-04T04:44:11Z",
+  "updated_by": "fable-5-coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -14,6 +14,11 @@
       "ts": "2026-07-03T00:00:00Z",
       "from": "fable-5-coordinator",
       "message": "Generation 0 substrate bootstrapped. Before claiming any task, read ORCHESTRATION.md (repo root) for the delegation topology: dependency-DAG, claims with leases, write locks with TTL, and the producer!=approver rule."
+    },
+    {
+      "ts": "2026-07-04T04:44:11Z",
+      "from": "fable-5-coordinator",
+      "message": "Generation 1: gated NLAH mutation (P-001/P-003/P-004) applied via T-007 and verified; P-002 fixed via T-008; recontext CLI shipped via T-009. NLAHs now reference ORCHESTRATION.md, the CLI protocol, tool discovery, and producer!=approver."
     }
   ],
   "epics": {
@@ -201,7 +206,7 @@
     "T-007": {
       "epic": "E-03",
       "title": "Gated NLAH mutation: apply accepted proposals to claude.md/gemini.md, bump generation, git commit",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -211,8 +216,95 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-007.json",
+      "artifacts": [
+        "claude.md",
+        "gemini.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "fable-5-coordinator",
+        "note": "Bundled NLAH mutation applied (P-001 + P-003 wording + P-004 recontext rule). Replay: (1) git diff claude.md gemini.md .harness/README.md ORCHESTRATION.md — every hunk must map to P-001/P-003/P-004 as registered in state.json evolution.pending_proposals, nothing else; (2) human-gate approval note is in T-007 detail BEFORE the edits (check note timestamps vs git blame irrelevant — compare note ts 04:2x vs this handoff); (3) contract smoke re-ran green: blackboard status OK, lock acquire/release cycle OK, ast_index query cmd_handoff OK. Generation bump deferred until your verdict per AC.",
+        "ts": "2026-07-04T04:27:52Z"
+      },
+      "completed_at": "2026-07-04T04:36:00Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-008": {
+      "epic": "E-02",
+      "title": "Fix P-002: session-holders identity resolution for check_lock.py",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-008.json",
+      "artifacts": [
+        ".harness/bin/check_lock.py",
+        ".harness/README.md",
+        ".harness/bin/session.py",
+        ".harness/bin/harness_common.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "P-002 fixed. Files touched: .harness/bin/session.py (new: register <name> [--ttl 7200 --by <agent>] | unregister <name> | list; data file .harness/session_holders.json {\"holders\":{\"<name>\":{\"registered_at\",\"expires_at\",\"by\"}}}, all mutations under hc.guarded()+hc.atomic_write_json, expired entries physically pruned on every register/unregister write, list is read-only and filters live entries for display, events session_holder_registered/unregistered logged via hc.log_event); .harness/bin/harness_common.py (added SESSION_HOLDERS path const + session_holders() -> set of live names, wrapped in try/except returning set() on any error, no existing signatures changed); .harness/bin/check_lock.py (allow when holder==me OR holder in hc.session_holders(); docstring documents cross-session semantics; fail-open unchanged); .harness/README.md (SS Identity extended with the session-holder mechanism + explicit \"registered = this session's coordinated agents ONLY, never auto-registered by claim/acquire\" rule; directory map lists session.py and updated check_lock.py/harness_common.py one-liners).\n\nREPLAY (a) TTL expiry, live-then-pruned: `python3 .harness/bin/session.py register probe-holder --ttl 1 && python3 .harness/bin/session.py list` -> immediately showed \"no live session holders\" (observed cause: harness_common.ISO_FMT truncates to whole seconds, so a --ttl 1 window can already be consumed by sub-second truncation + process-fork overhead by the time `list` runs in a fresh process -- pre-existing quirk in the shared time helpers, not introduced by this change, out of scope to fix here). For an unambiguous two-phase proof also ran: `register probe-holder-3s --ttl 3` -> `list` immediately showed it live (registered_at/expires_at populated); `sleep 4` -> `list` -> \"no live session holders\". `unregister probe-holder` (already-expired) then confirmed the file itself was rewritten to {\"holders\":{}} (physical prune-on-write verified by reading .harness/session_holders.json before/after).\n\nREPLAY (b) core P-002 fix, no env override: `python3 .harness/bin/session.py register substrate-worker-2 --ttl 300` then `python3 .harness/bin/lock.py acquire .harness/logs/scratch_T008_probe.txt --holder substrate-worker-2 --task T-008` (scratch file created+deleted inside workspace root, since lock_name_for refuses paths outside ROOT). In a FRESH bash invocation with CLAUDE_HARNESS_AGENT_ID unset (confirmed via `hc.agent_id()` -> \"main\"): `printf '%s' '{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\".harness/logs/scratch_T008_probe.txt\"}}' | python3 .harness/bin/check_lock.py; echo $?` -> EXIT 0 (registered holder allowed). Then `python3 .harness/bin/session.py unregister substrate-worker-2` and repeated the identical piped payload -> EXIT 2 with \"HARNESS LOCK: ... held by agent 'substrate-worker-2' ...\" on stderr. Also cycled the lock to holder 'gemini-runner' (never registered, matches the acceptance-criteria example) -> same piped payload -> EXIT 2 as expected. Cleaned up: released scratch lock, deleted scratch file.\n\nREPLAY (c) fail-open: `printf '' | python3 .harness/bin/check_lock.py; echo $?` -> 0. Also tested malformed non-JSON stdin (`printf 'not json {{{' | ...`) -> 0.\n\nREPLAY (d) py_compile: `python3 -m py_compile .harness/bin/session.py .harness/bin/check_lock.py .harness/bin/harness_common.py` -> clean, no output, exit 0 (re-ran after all edits, confirmed clean again).\n\nREPLAY (e) harness_common still works: `python3 .harness/bin/blackboard.py status` -> ran cleanly, full board printed, no exceptions.\n\nFinal state left for the rest of this session per coordinator instruction: `python3 .harness/bin/session.py list` shows exactly substrate-worker-1 and substrate-worker-2 registered with ttl=7200 (expires ~2026-07-04T06:30:14Z), by=substrate-worker-1; no other probe holders remain (registry was confirmed {\"holders\":{}} immediately before this final pair of registrations). All locks I held (session.py, harness_common.py, check_lock.py, README.md) are released; `lock.py status` -> \"no active lock files\".\n\nDesign notes for the verifier to double check independently: (1) `list` is deliberately read-only/non-mutating (mirrors lock.py status) -- physical pruning happens on register/unregister writes, which is sufficient because session_holders() always filters by expires_at at read time regardless of what is still on disk, so correctness for check_lock.py's actual security-relevant path never depends on list's side effects. (2) blackboard.py claim and lock.py acquire were NOT touched and do not call session.py -- verified by inspection, registration stays an explicit, separate coordinator act. (3) No existing harness_common.py function signature was changed; only one new path constant (SESSION_HOLDERS) and one new function (session_holders()) were added.",
+        "ts": "2026-07-04T04:30:43Z"
+      },
+      "created_at": "2026-07-04T04:25:16Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T04:40:31Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-009": {
+      "epic": "E-02",
+      "title": "recontext.py atomic CLI + lock.py identity-flag consistency (G4/G5)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-009.json",
+      "artifacts": [
+        ".harness/bin/recontext.py",
+        ".harness/bin/lock.py",
+        ".harness/recontext_evidence.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "EXPECTED vs ACTUAL, replay commands (a)-(e), all green:\n(a) EXPECTED: demo add appends a header-template entry and logs recontext_added + lock_acquired/lock_released around it. ACTUAL: ran `echo \"test extract line\" | python3 .harness/bin/recontext.py add --task T-009 --source \".harness/bin/lock.py:98\" --label \"demo: living proof for T-009\"` -> printed \"appended: [T-009] demo: living proof for T-009 — substrate-worker-2 — 2026-07-04T04:28:09Z -> .../.harness/recontext_evidence.md\"; `tail -8 .harness/recontext_evidence.md` shows the entry exactly matching the file's own documented header template (## [T-XXX] label — agent — ts / Source: file:lines / fenced extract), separated from prior content by exactly one blank line, file ends with a single trailing newline (checked via python3 -c reading raw bytes), and the two pre-existing [T-002] gemini-runner entries are byte-for-byte untouched (first 2157 bytes unchanged). `grep recontext .harness/logs/events.jsonl` shows in order: lock_acquired(path=.../recontext_evidence.md, holder=substrate-worker-2, task=T-009), lock_released(same path/holder), recontext_added(task=T-009, source=.harness/bin/lock.py:98, label=\"demo: living proof for T-009\", agent=substrate-worker-2).\n(b) EXPECTED: list --task T-009 shows only the demo entry. ACTUAL: `python3 .harness/bin/recontext.py list --task T-009` -> \"[T-009] demo: living proof for T-009 — substrate-worker-2 — 2026-07-04T04:28:09Z\" (exactly one line). Unfiltered `list` also correctly returns all 4 header lines incl. the 2 pre-existing T-002 entries and the doc-template placeholder line (harmless grep noise, expected for a grep-level parser).\n(c) EXPECTED: status/sweep accept --agent and exit 0; bare calls unchanged. ACTUAL: `python3 .harness/bin/lock.py status --agent substrate-worker-2; echo $?` -> table printed, exit 0. `python3 .harness/bin/lock.py sweep --agent substrate-worker-2; echo $?` -> \"swept 0 expired lock(s)\", exit 0. Bare `status` and `sweep` (no --agent) produce identical output/exit 0, confirming zero behavior change; acquire/release code paths are byte-for-byte untouched (only status()/sweep() gained a no-op del args and argparse gained a --agent flag with default=None).\n(d) EXPECTED: py_compile clean. ACTUAL: `python3 -m py_compile .harness/bin/recontext.py .harness/bin/lock.py` -> exit 0, no output. Also ran `python3 -m py_compile .harness/bin/*.py` (all files incl. substrate-worker-1's harness_common.py/check_lock.py/session.py, read-only) -> exit 0, no collateral breakage.\n(e) EXPECTED: demo entry timestamp ends in Z (UTC, hc.now_iso(), fixes G5 for future entries). ACTUAL: parsed the demo header line programmatically -> extracted ts '2026-07-04T04:28:09Z', regex ^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$ matches True. (Pre-existing [T-002] entries still show local-offset '-06:00' timestamps from before this fix — left untouched per the append-only, never-rewrite-history design; recontext.py's own docstring calls this out explicitly.)\n\nDesign notes for the verifier: recontext.py replicates lock.py's acquire/release logic locally (own _acquire_evidence_lock/_release_evidence_lock helpers) scoped to the fixed path .harness/recontext_evidence.md rather than shelling out to lock.py, per the task's 'your call' latitude — lock file appearance/disappearance under .harness/locks/ and identical lock_acquired/lock_released event shapes were confirmed live during (a)'s run (observed the lock file present mid-command is timing-sensitive so it was validated via the events.jsonl trail instead, as anticipated in the dispatch). lock.py's acquire/release functions are untouched; only status/sweep gained the --agent alias. No edits made to .harness/README.md, harness_common.py, check_lock.py, session.py, or .gitignore (out of scope / owned by substrate-worker-1 this round). Demo [T-009] entry deliberately left in recontext_evidence.md as living proof per the acceptance criteria.",
+        "ts": "2026-07-04T04:29:02Z"
+      },
+      "created_at": "2026-07-04T04:25:16Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T04:42:30Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-010": {
+      "epic": "E-03",
+      "title": "Contention + crash-recovery smoke test (untested paths from audit_gen1 §4)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-008"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-010.json",
       "artifacts": [],
-      "handoff": null
+      "handoff": null,
+      "created_at": "2026-07-04T04:25:16Z",
+      "created_by": "fable-5-coordinator"
     }
   }
 }

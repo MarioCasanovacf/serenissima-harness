@@ -5,10 +5,20 @@ Blocks a write ONLY when a live (unexpired) lock on the target file is held
 by a DIFFERENT agent — this is the mechanical guarantee behind the
 multi-agent write-lock protocol (parallel safety across sessions/engines).
 
-Fail-open: on any internal error, or when no live foreign lock exists, the
-write is allowed (exit 0). Blocking protocol: exit code 2 with the reason on
-stderr, which Claude Code feeds back to the model so it can pick another
-task or wait for expiry.
+A write is also allowed when the lock's holder is registered (via
+bin/session.py) as a session holder: an agent name the COORDINATOR has
+explicitly declared to be coordinated within THIS session (fixes P-002 —
+in-session subagents with per-call identity overrides used to self-block on
+their own locks, because this hook only ever compared against the ambient
+CLAUDE_HARNESS_AGENT_ID). Registered holders = agents coordinated within
+THIS session ONLY; cross-session/cross-engine holders are NEVER
+auto-registered (blackboard.py claim does not register anyone), so their
+locks still block mechanically exactly as before.
+
+Fail-open: on any internal error, or when no live foreign/unregistered lock
+exists, the write is allowed (exit 0). Blocking protocol: exit code 2 with
+the reason on stderr, which Claude Code feeds back to the model so it can
+pick another task or wait for expiry.
 """
 import json
 import sys
@@ -29,7 +39,7 @@ def main():
 
     me = hc.agent_id()
     holder = lock.get("holder", "?")
-    if holder == me:
+    if holder == me or holder in hc.session_holders():
         return 0
 
     sys.stderr.write(
