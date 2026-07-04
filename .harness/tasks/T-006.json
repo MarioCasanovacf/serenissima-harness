@@ -12,5 +12,11 @@
     "claude.md",
     ".harness/state.json"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T01:42:00Z",
+      "agent": "fable-5-coordinator",
+      "note": "AUDIT INPUT (T-002 verification, 2026-07-04): frictions fact-checked by harness-verifier — F1 PARTIALLY VALID: proposed lock.py list/status ALREADY EXISTS (lock.py:98-117); real signal = CLI discoverability gap for cross-engine agents, not a missing feature. F2 VALID: gemini.md §2A mandatory Planning block duplicates Antigravity-native plan artifacts. F3 VALID: no recontext.py CLI; recontext_evidence.md requires no lock per gemini.md §4B and gemini-runner acquired 0 locks on it — collision gap. Extra anomalies: (i) lock.py status/sweep reject --agent, mismatch with the pass-identity-everywhere rule; (ii) cross-engine timestamp inconsistency in recontext headers (local -06:00 vs UTC Z). Evidence: .harness/logs/gemini_contract_report.md + T-002 verdict note."
+    }
+  ]
 }

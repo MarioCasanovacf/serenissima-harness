@@ -16,4 +16,24 @@ Source: <file>:<lines>
 ```
 
 ---
-(empty — no evidence replayed yet)
+## [T-002] NLAH gemini.md ReContext evidence — gemini-runner — 2026-07-03T19:34:13-06:00
+Source: gemini.md:62-67
+```
+### B. ReContext (Recursive Evidence Replay)
+To handle long-context reasoning in massive workspaces without losing focus:
+1. **Scan**: Perform a broad scan of the codebase using grep or local indexing.
+2. **Extract**: Copy the exact relevant code blocks, class definitions, or API signatures.
+3. **Replay**: Write these extracted segments into `.harness/recontext_evidence.md`.
+4. **Reason**: When writing the final code changes, reference the exact lines in `recontext_evidence.md` to ensure high-fidelity implementation.
+```
+
+## [T-002] Blackboard protocol evidence — gemini-runner — 2026-07-03T19:34:13-06:00
+Source: .harness/blackboard.json:6-11
+```
+  "protocol": {
+    "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
+    "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
+    "read_rule": "Read freely at any time; reading requires no lock.",
+    "collision_model": "One guarded mutable index (this file) + one detail file per task in .harness/tasks/ (written only by the claiming agent, via blackboard.py --note) + append-only event logs in .harness/logs/. Source-file edits additionally require a write lock (lock.py / .harness/locks/)."
+  },
+```

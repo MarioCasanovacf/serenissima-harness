@@ -13,5 +13,21 @@
     "ORCHESTRATION.md",
     "prompts para Gemini/1.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T01:34:22Z",
+      "agent": "gemini-runner",
+      "note": "gemini-runner: ejecutando checklist de contrato"
+    },
+    {
+      "ts": "2026-07-04T01:34:34Z",
+      "agent": "gemini-runner",
+      "note": "HANDOFF -> verifier: reporte y evidencia ReContext listos; replay: cat .harness/logs/gemini_contract_report.md"
+    },
+    {
+      "ts": "2026-07-04T01:40:52Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED: report+checklist present; events.jsonl shows gemini-runner claim->in_progress->artifact->handoff->lock_release; lock.py status clean (no live lock); ReContext extracts (gemini.md:62-67, blackboard.json:6-11) byte-verbatim; frictions coherent for T-006 (F1 PARTIALLY VALID-status subcmd already exists, F2 VALID, F3 VALID)."
+    }
+  ]
 }

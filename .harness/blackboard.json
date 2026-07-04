@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 0,
-  "updated_at": "2026-07-04T01:24:30Z",
-  "updated_by": "harness-verifier",
+  "updated_at": "2026-07-04T01:42:00Z",
+  "updated_by": "fable-5-coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -80,7 +80,7 @@
     "T-002": {
       "epic": "E-01",
       "title": "Cross-engine contract test: Gemini (Antigravity) runs the full protocol from gemini.md",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "gemini",
       "depends_on": [
@@ -90,8 +90,17 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-002.json",
-      "artifacts": [],
-      "handoff": null
+      "artifacts": [
+        ".harness/logs/gemini_contract_report.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "gemini-runner",
+        "note": "reporte y evidencia ReContext listos; replay: cat .harness/logs/gemini_contract_report.md",
+        "ts": "2026-07-04T01:34:34Z"
+      },
+      "completed_at": "2026-07-04T01:40:52Z",
+      "completed_by": "harness-verifier"
     },
     "T-003": {
       "epic": "E-02",

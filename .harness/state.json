@@ -108,6 +108,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T01:24:30Z"
+      },
+      "gemini-runner": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T01:40:52Z"
       }
     }
   },
