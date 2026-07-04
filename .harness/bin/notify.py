@@ -109,10 +109,23 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import harness_common as hc
 
 CONFIG_PATH = hc.HARNESS / "notify_config.json"
+
+
+def _normalized_log_path(p):
+    """P-008a: normalize a path-like value for the log boundary -- relative to
+    the workspace root (hc.ROOT) when it resolves inside it, else logged
+    verbatim (out-of-repo paths are not silently dropped, just not relativized).
+    Duplicated (not shared via harness_common) by design -- see T-014 note."""
+    try:
+        return str(Path(p).resolve().relative_to(hc.ROOT))
+    except ValueError:
+        return str(p)
+
 
 TEMPLATE = {
     "enabled": False,
@@ -197,7 +210,7 @@ def cmd_init(args):
         )
         return 1
     hc.atomic_write_json(CONFIG_PATH, TEMPLATE)
-    hc.log_event("notify_config_initialized", path=str(CONFIG_PATH))
+    hc.log_event("notify_config_initialized", path=_normalized_log_path(CONFIG_PATH))
     print(
         "created: {} (enabled=false, dry_run=true, provider=generic, url/token "
         "empty). This file is gitignored -- see .gitignore. Activation is a "

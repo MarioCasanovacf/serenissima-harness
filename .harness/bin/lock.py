@@ -26,8 +26,19 @@ subcommands. Bare `status`/`sweep` (no --agent) are byte-for-byte unchanged.
 """
 import argparse
 import sys
+from pathlib import Path
 
 import harness_common as hc
+
+
+def _normalized_log_path(p):
+    """P-008a: normalize a path-like value for the log boundary -- relative to
+    the workspace root (hc.ROOT) when it resolves inside it, else logged
+    verbatim (out-of-repo paths are not silently dropped, just not relativized)."""
+    try:
+        return str(Path(p).resolve().relative_to(hc.ROOT))
+    except ValueError:
+        return str(p)
 
 
 def acquire(args):
@@ -47,6 +58,16 @@ def acquire(args):
         existing = hc.read_json(lock_path)
         live = existing and not hc.lock_is_expired(existing)
         if live and existing.get("holder") != args.holder:
+            # P-006: contention observability -- record the refusal itself,
+            # not just the eventual acquire, so cross-agent contention is
+            # visible in events.jsonl even when the requester gives up.
+            hc.log_event(
+                "lock_busy",
+                path=_normalized_log_path(args.path),
+                holder=existing.get("holder"),
+                requester=args.holder,
+                task=args.task,
+            )
             print(
                 "busy: '{}' held by '{}' (task {}, acquired {}, ttl {}s). "
                 "Pick another task/file or wait for expiry.".format(
@@ -63,7 +84,7 @@ def acquire(args):
         hc.atomic_write_json(lock_path, payload)
     hc.log_event(
         "lock_acquired",
-        path=args.path,
+        path=_normalized_log_path(args.path),
         holder=args.holder,
         task=args.task,
         ttl_seconds=args.ttl,
@@ -95,7 +116,7 @@ def release(args):
         lock_path.unlink(missing_ok=True)
     hc.log_event(
         "lock_released",
-        path=args.path,
+        path=_normalized_log_path(args.path),
         holder=args.holder,
         forced=bool(args.force and existing.get("holder") != args.holder),
     )

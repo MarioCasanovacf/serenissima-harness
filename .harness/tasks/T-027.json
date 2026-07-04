@@ -20,5 +20,11 @@
     "projects/mdtoc/candidates/slugger_b.py",
     "projects/mdtoc/candidates/slugger_c.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T07:30:43Z",
+      "agent": "tournament-judge",
+      "note": "Claimed after harness-verifier released its T-027 claim (delegation race resolved). Golden: A/B/C all 24/24. Winner=B (unicodedata category loop) on real-input fidelity axis. Promoting verbatim + authoring pinned test."
+    }
+  ]
 }

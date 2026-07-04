@@ -14,6 +14,16 @@
       "ts": "2026-07-04T04:46:18Z",
       "agent": "smoke-a",
       "note": "smoke artifact terminal state (T-010) — intentional"
+    },
+    {
+      "ts": "2026-07-04T07:13:29Z",
+      "agent": "substrate-worker-3",
+      "note": "P-007 verification probe"
+    },
+    {
+      "ts": "2026-07-04T07:28:16Z",
+      "agent": "harness-verifier",
+      "note": "combined-regression: composed flow (lock-abs -> contention -> multi-artifact) by harness-verifier; handoff-style note"
     }
   ]
 }

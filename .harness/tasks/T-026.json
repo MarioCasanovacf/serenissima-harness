@@ -15,5 +15,26 @@
     "projects/mdtoc/candidates/slugger_c.py",
     "projects/mdtoc/candidates/vectors.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T06:42:31Z",
+      "agent": "main",
+      "note": "plan: implement slugify() as a faithful spec-port of github-slugger's documented pipeline (downcase -> explicit char-removal rule table matching the upstream punctuation regex, citing github-slugger's BTN/rus/emoji handling -> spaces to hyphens, no collapsing -> naive dedup matching vectors.py's base->count contract), then self-check against vectors.run_against and document any spec-vs-vectors divergences (emoji U+2728, dedup recursion) in the module docstring."
+    },
+    {
+      "ts": "2026-07-04T06:45:41Z",
+      "agent": "main",
+      "note": "EXPECTED: spec-port rule-table pipeline (downcase -> keep only [L/N/M Unicode major categories, underscore, hyphen, space] via explicit cited rule table -> hyphenate spaces without collapsing -> naive base-count dedup) would conform to vectors.py's documented algorithm and pass all golden vectors. ACTUAL: self-check via 'cd projects/mdtoc/candidates && python3 slugger_c.py' -> 'slugger_c self-check: 24/24 passed' (goal_mode.py run --task T-026 --cmd \"cd projects/mdtoc/candidates && python3 slugger_c.py\" -> GOAL REACHED iteration 1/3). No failures, no divergence between expected and actual. Documented in module docstring: (1) emoji U+2728 -- documented word-char spec removes it (matches vectors.py 'greatnews-update'), but real github-slugger's blocklist regex has a known gap and would keep it ('great✨news-update'); this candidate follows vectors.py. (2) dedup -- vectors.py pins a NAIVE base-slug->prior-count contract (implemented exactly), whereas real github-slugger also re-registers the literal suffixed output to guard against collisions with literal duplicate suffixes; not exercised by DEDUP_SEQUENCES so naive contract implemented per vectors.py."
+    },
+    {
+      "ts": "2026-07-04T06:45:56Z",
+      "agent": "substrate-worker-3",
+      "note": "HANDOFF -> verifier: Replay: cd projects/mdtoc/candidates && python3 slugger_c.py -> 'slugger_c self-check: 24/24 passed' (or: python3 .harness/bin/goal_mode.py run --task T-026 --cmd \"cd projects/mdtoc/candidates && python3 slugger_c.py\" -> GOAL REACHED iteration 1/3). Score: 24/24 vs vectors.run_against (11 SLUG_VECTORS + 13 DEDUP_SEQUENCES cases), zero failures. Approach: GITHUB-SLUGGER SPEC-PORT -- downcase -> strip every char outside an explicit, per-rule-cited RULE TABLE (Unicode major categories L/letter, N/number, M/mark, plus literal '_' '-' ' ') -> hyphenate remaining spaces without collapsing -> naive base-slug->prior-count dedup mutating seen in place. Genuinely distinct mechanism from a dynamic \\W regex (candidate A) or an ad hoc per-call category-set membership check (candidate B): this candidate's classification is a named, documented rule table with one cited rule per keep/remove decision. Documented spec divergences (module docstring, both resolved in vectors.py's favor per task ground-truth rule): (1) emoji U+2728 -- documented word-char spec strips it (matches vectors.py 'greatnews-update'); real github-slugger's actual regex.js blocklist has a known gap and would retain it ('great✨news-update') -- this candidate follows vectors.py, not the buggy shipped regex. (2) dedup collision handling -- vectors.py's docstring pins a NAIVE base-slug->prior-use-count contract (implemented verbatim); real github-slugger also re-registers each literal produced (suffixed) slug to guard against collisions with literal duplicate-looking headings (e.g. 'Foo' x2 + literal 'Foo 1'), which DEDUP_SEQUENCES does not exercise, so the richer recursive behavior was intentionally NOT ported. File owns exactly projects/mdtoc/candidates/slugger_c.py; stdlib only (unicodedata); no import of mdtoc package or of slugger_a.py/slugger_b.py (not inspected, per instructions)."
+    },
+    {
+      "ts": "2026-07-04T07:22:28Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (conformance): fresh python3 -c vectors.run_against(slugger_c.slugify) -> passed=24 total=24, zero failures. Interface: inspect.signature = slugify(text: str, seen: dict) -> str; mutation probe -> 'foo'/'foo-1'/'foo-2', seen bumped 1->2->3 in the SAME dict, exact per vectors.py docstring. Method-authenticity: documented RULE-TABLE spec-port -- _KEEP_MAJOR_CATEGORIES={L,N,M} / _KEEP_LITERAL_CHARS={_,-,space} consulted by _is_kept_char, with separate named steps _downcase/_strip_non_word_chars/_hyphenate_spaces; upstream citations present (html-pipeline TocFilter#generate_id, github-slugger regex.js, slugger.prototype.slug self.occurrences[slug]=0); BOTH required divergences documented in docstring: (1) emoji U+2728 (So) stripped to match vectors vs real github-slugger blocklist gap, (2) naive base->prior-count dedup vs upstream recursive re-registration. Module-level import ONLY unicodedata (vectors import is _self_check-only). Independence: no sibling/mdtoc import; distinct from B -- C keeps literal-space-only so tab is dropped ('tabhere' vs B 'tab-here') and uses a 3-stage rule-table pipeline, not B's fused inline loop. Discipline (events.jsonl): substrate-worker-3 lock_acquired slugger_c.py 06:42:25 BEFORE write, lock_released clean forced=false 06:45:58, handoff->verifier 06:45:56, no self-done, only owned file locked. Valid, disciplined tournament entry."
+    }
+  ]
 }

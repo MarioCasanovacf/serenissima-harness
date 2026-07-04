@@ -15,5 +15,26 @@
     "projects/mdtoc/candidates/slugger_a.py",
     "projects/mdtoc/candidates/vectors.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T06:42:37Z",
+      "agent": "main",
+      "note": "plan: implement projects/mdtoc/candidates/slugger_a.py using stdlib re module (downcase -> strip non-[\\w space hyphen] via compiled regex -> replace spaces with hyphens -> naive seen-dict base/count dedup per vectors.py contract); self-check via vectors.run_against, target 24/24."
+    },
+    {
+      "ts": "2026-07-04T06:43:30Z",
+      "agent": "main",
+      "note": "EXPECTED: regex-based slugify (lower -> re.sub strip non-[\\w space hyphen] -> space->hyphen -> naive seen-dict base/count dedup) scores 24/24 on vectors.run_against. ACTUAL: ran `python3 .harness/bin/goal_mode.py run --task T-024 --cmd 'cd projects/mdtoc/candidates && python3 -c \"import vectors, slugger_a, sys; p,t,f=vectors.run_against(slugger_a.slugify); print(f0)\"'` -> GOAL REACHED iteration 1/3; raw self-check `cd projects/mdtoc/candidates && python3 -c \"import vectors, slugger_a; print(vectors.run_against(slugger_a.slugify)[:2])\"` -> passed=24 total=24, zero failures. Expected matched actual exactly, no deviations. stdlib-only (re), owns exactly slugger_a.py, no import of mdtoc package or sibling candidates."
+    },
+    {
+      "ts": "2026-07-04T06:43:42Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: Replay: cd '/Users/mariocasanova10pa/Documents/Universal Harness/projects/mdtoc/candidates' && python3 -c \"import vectors, slugger_a, sys; p,t,f=vectors.run_against(slugger_a.slugify); print(f'passed={p} total={t}'); [print('FAIL:',c,'exp=',e,'got=',g) for c,e,g in f]; sys.exit(0 if p==t else 1)\" -> observed: passed=24 total=24, zero failures, exit 0. Bounded self-check also run via goal_mode.py run --task T-024 --cmd <same, cd-relative> -> GOAL REACHED on iteration 1/3. Approach: pure re module -- str.lower() then re.compile(r'[^\\w \\-]', re.UNICODE).sub('') to strip non-word/space/hyphen chars without collapsing whitespace (reproduces the Foo&Bar -> foo--bar double-hyphen quirk), then literal-space-to-hyphen substitution, then naive seen[base]-count dedup (base->1 first use, base-N on Nth repeat) matching vectors.py's DEDUP_SEQUENCES exactly. File owns exactly projects/mdtoc/candidates/slugger_a.py; stdlib-only (imports only re); does not import mdtoc package, vectors is only imported by the self-check script/verifier, not by slugger_a.py itself; does not import or read slugger_b.py/slugger_c.py. No deviations from the T-024 acceptance criteria."
+    },
+    {
+      "ts": "2026-07-04T07:22:06Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (conformance): fresh python3 -c vectors.run_against(slugger_a.slugify) -> passed=24 total=24, zero failures. Interface: inspect.signature = slugify(text: str, seen: dict) -> str; mutation probe slugify('Foo',seen) x3 -> 'foo'/'foo-1'/'foo-2' with the SAME dict object bumped seen['foo']=1->2->3, exact per vectors.py docstring. Method-authenticity: module-level import is ONLY re; _STRIP_RE=re.compile(r'[^\\w \\-]').sub does the core filtering, no unicodedata -> genuinely regex-core. Independence: imports no sibling candidate and no mdtoc pkg; edge probe shows A strips combining marks (Python \\w excludes Mn), a genuine behavioral divergence from B/C confirming a distinct implementation, not a copy. Discipline (events.jsonl): substrate-worker-1 claimed (open->), lock_acquired slugger_a.py 06:42:36 BEFORE write, lock_released clean forced=false 06:43:44, handoff->verifier 06:43:42, no self-done, locked only its owned file. Valid, disciplined tournament entry."
+    }
+  ]
 }

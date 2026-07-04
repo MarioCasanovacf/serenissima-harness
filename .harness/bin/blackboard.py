@@ -280,8 +280,9 @@ def cmd_update(args):
                 t["handoff"] = None
         if args.artifact:
             arts = t.setdefault("artifacts", [])
-            if args.artifact not in arts:
-                arts.append(args.artifact)
+            for art in args.artifact:
+                if art not in arts:
+                    arts.append(art)
         save_bb(bb, args.agent)
         if args.note:
             append_note(args.task_id, args.agent, args.note)
@@ -292,7 +293,7 @@ def cmd_update(args):
     if args.status:
         bits.append("status={}".format(args.status))
     if args.artifact:
-        bits.append("artifact+={}".format(args.artifact))
+        bits.append("artifact+={}".format(", ".join(args.artifact)))
     if args.note:
         bits.append("note appended to {}".format(detail_path(args.task_id)))
     print("updated {}: {}".format(args.task_id, "; ".join(bits)))
@@ -404,7 +405,8 @@ def main(argv):
     p_upd.add_argument("task_id")
     p_upd.add_argument("--status", default=None)
     p_upd.add_argument("--note", default=None)
-    p_upd.add_argument("--artifact", default=None)
+    p_upd.add_argument("--artifact", action="append", default=None,
+                       help="repeatable; each value is appended to the task's artifact list (values already present are skipped)")
     p_upd.set_defaults(func=cmd_update)
 
     p_ho = sub.add_parser("handoff", parents=[common], help="hand the task to another role (producer != approver)")

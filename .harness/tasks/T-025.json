@@ -15,5 +15,26 @@
     "projects/mdtoc/candidates/slugger_b.py",
     "projects/mdtoc/candidates/vectors.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T06:42:48Z",
+      "agent": "substrate-worker-2",
+      "note": "plan: category-based slugify via unicodedata.category (keep L*/N* + Mn/Mc/Me marks + literal _/-, map whitespace to hyphen, drop rest); dedup via seen-dict per vectors.py contract"
+    },
+    {
+      "ts": "2026-07-04T06:43:45Z",
+      "agent": "substrate-worker-2",
+      "note": "EXPECTED: unicodedata category-based char-by-char classification (keep L*/N* + Mn/Mc/Me marks + literal _/-, map whitespace->hyphen, drop rest) would satisfy vectors.py contract incl. double-hyphen ('Foo & Bar'->'foo--bar'), CJK/accents, emoji strip, dedup counter semantics. ACTUAL: self-check 'python3 -c \"import sys; sys.path.insert(0,'\\''projects/mdtoc/candidates'\\''); import vectors, slugger_b; p,t,f=vectors.run_against(slugger_b.slugify); print(f\\'{p}/{t}\\'); sys.exit(0 if p==t else 1)\"' -> 24/24 PASS, 0 failures, on goal_mode iteration 1/3 (no fix cycles needed)."
+    },
+    {
+      "ts": "2026-07-04T06:43:56Z",
+      "agent": "substrate-worker-2",
+      "note": "HANDOFF -> verifier: Replay: python3 -c \"import sys; sys.path.insert(0,'projects/mdtoc/candidates'); import vectors, slugger_b; p,t,f=vectors.run_against(slugger_b.slugify); print(f'{p}/{t}'); [print('FAIL',c,'exp=',e,'got=',g) for c,e,g in f]\" -> observed output '24/24' with zero FAIL lines (all SLUG_VECTORS + all DEDUP_SEQUENCES pass). Approach: unicodedata.category()-based char-by-char classification (no regex) -- keep category[0] in L/N, keep Mn/Mc/Me marks, keep literal '_'/'-', map ch.isspace() to '-', drop everything else; dedup via seen-dict per vectors.py contract (base->prior-use-count, Nth repeat -> base-(N-1)). Owns exactly projects/mdtoc/candidates/slugger_b.py, stdlib-only (unicodedata), imports no mdtoc package and no sibling candidate. Did not view slugger_a.py or slugger_c.py content during implementation."
+    },
+    {
+      "ts": "2026-07-04T07:22:19Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (conformance): fresh python3 -c vectors.run_against(slugger_b.slugify) -> passed=24 total=24, zero failures. Interface: inspect.signature = slugify(text: str, seen: dict) -> str; mutation probe -> 'foo'/'foo-1'/'foo-2', seen['foo'] bumped 1->2->3 in the SAME dict, exact per vectors.py docstring. Method-authenticity: module-level import is ONLY unicodedata; core filter is unicodedata.category(ch)[0] in ('L','N') + Mn/Mc/Me + ch.isspace(), NO re anywhere -> genuinely category-based, no core regex (its 'import vectors' is inside __main__ self-check only, not the slugify path). Independence: no sibling/mdtoc import; edge probe: B maps tab->hyphen via isspace() ('tab-here') and keeps combining marks, genuinely distinct from A (regex, strips marks) and C (rule-table, tab dropped). Discipline (events.jsonl): substrate-worker-2 lock_acquired slugger_b.py 06:42:42 BEFORE write, lock_released clean forced=false 06:44:01, handoff->verifier 06:43:56, no self-done, only owned file locked. Valid, disciplined tournament entry."
+    }
+  ]
 }

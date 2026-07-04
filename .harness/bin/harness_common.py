@@ -144,7 +144,7 @@ def lock_is_expired(payload):
         ttl = float(payload.get("ttl_seconds", 900))
     except (TypeError, ValueError):
         ttl = 900
-    return (now_utc() - acquired).total_seconds() > ttl
+    return (now_utc().replace(microsecond=0) - acquired).total_seconds() > ttl
 
 
 def session_holders():

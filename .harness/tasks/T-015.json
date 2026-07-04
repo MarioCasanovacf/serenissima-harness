@@ -1,0 +1,29 @@
+{
+  "id": "T-015",
+  "title": "Apply P-007 (WC): blackboard.py update --artifact action=append",
+  "description": "Edit .harness/bin/blackboard.py: change --artifact (~:407) to action='append' (default None) and make cmd_update extend the task artifact list with ALL supplied values (dedupe, preserve order). Owned file: .harness/bin/blackboard.py ONLY. Acceptance: 'update <T> --artifact A --artifact B' records both (verify against THROWAWAY task T-090 only — never a live task); single --artifact still works; no-artifact update unchanged; blackboard.py status/show/claim/handoff regression-clean. Handoff with replayable evidence.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-04T07:12:18Z",
+      "agent": "substrate-worker-3",
+      "note": "plan: change update --artifact to action='append' (default None); cmd_update extends task artifacts with all supplied values, order-preserving dedupe, silent skip of duplicates. All CLI bookkeeping done pre-edit; single atomic Edit; probe measurable on throwaway T-090 only; post-edit CLI calls double as live regression."
+    },
+    {
+      "ts": "2026-07-04T07:14:10Z",
+      "agent": "substrate-worker-3",
+      "note": "P-007 applied. Diff: parser --artifact now action='append' default=None (+help); cmd_update loops appending each value with order-preserving dedupe (silent skip if present); summary line joins values. Guards at :257/:281/:294 unchanged (None falsy / list truthy) so no-flag and single-flag behavior identical. Evidence on THROWAWAY T-090 only (scratch by design; artifact pollution disclosed): multi-flag call recorded scratch-A.md+scratch-B.md in one shot; single-flag added scratch-C.md; re-supplying scratch-A.md alongside scratch-D.md silently skipped the dupe (final list A,B,C,D); no-flag update still exits 1 'nothing to update'. Regression: py_compile OK; status/next/show clean; this very update is a live multi-flag call on the edited code path."
+    },
+    {
+      "ts": "2026-07-04T07:14:21Z",
+      "agent": "substrate-worker-3",
+      "note": "HANDOFF -> verifier: Replay: (1) git diff .harness/bin/blackboard.py — 6+/4- in cmd_update + parser. (2) python3 -m py_compile .harness/bin/blackboard.py. (3) Multi: python3 .harness/bin/blackboard.py update T-090 --artifact scratch-A.md --artifact scratch-B.md --agent <you> --note 'reprobe' then show T-090 (both present; re-runs are no-ops via dedupe — T-090 is the designated throwaway). (4) Single: update T-090 --artifact scratch-C.md. (5) Dedupe: update T-090 --artifact scratch-A.md --artifact scratch-D.md → only D newly appended. (6) No-flag: update T-090 --agent <you> → exit 1 'nothing to update'. (7) status/next/show run clean; T-015's own artifact list (2 entries from ONE call) is live proof."
+    },
+    {
+      "ts": "2026-07-04T07:29:54Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (replayed independently against THROWAWAY T-090 only): P-007 --artifact action=append. DIFF replayed: git diff scoped to cmd_update loop (order-preserving dedupe) + summary join + parser (--artifact action=append, default=None, +help); no-flag guard at :257 unchanged. Measurables, my own runs on T-090: MULTI (--artifact vrf-P.md --artifact vrf-Q.md) -> both landed in one call. SINGLE (--artifact vrf-R.md) -> landed. DEDUPE (--artifact vrf-P.md dup + vrf-S.md new) -> only vrf-S newly appended, vrf-P stored exactly once (count=1), silent (no error). NO-FLAG (update T-090 --agent) -> exit 1 'nothing to update: pass --status, --note and/or --artifact' (identical unchanged message). Final list order-preserved [scratch-A..D, vrf-P,Q,R,S]. Regression: status/show/next exit 0; claim-refusal proven clean on T-028 -> 'refused (cascade gate): T-028 depends on unfinished task(s): T-027' exit 1 (claim logic untouched by this diff). Discipline: worker-3 locked blackboard.py 07:12:09 before edit, handoff 07:14:21 (not self-done), released 07:14:22; only blackboard.py touched. Measurable-gain P-007 (--artifact A --artifact B records both) = TRUE. NOTE (non-blocking): task_updated event now logs 'artifact' as a list (was string) -- benign in-scope side-effect of action=append. COMBINED-REGRESSION (all 3 compose): lock abs-path -> contention (lock_busy holder=combo-a/requester=combo-b, T-013 lock_is_expired evaluated live) -> update --artifact combo-X --artifact combo-Y + note; result: 0 /Users/ leaks in new events, lock_busy fired, BOTH combo artifacts landed, note appended. All scratch cleaned."
+    }
+  ]
+}

@@ -41,10 +41,22 @@ Notes:
 """
 import argparse
 import sys
+from pathlib import Path
 
 import harness_common as hc
 
 EVIDENCE_PATH = hc.HARNESS / "recontext_evidence.md"
+
+
+def _normalized_log_path(p):
+    """P-008a: normalize a path-like value for the log boundary -- relative to
+    the workspace root (hc.ROOT) when it resolves inside it, else logged
+    verbatim (out-of-repo paths are not silently dropped, just not relativized).
+    Duplicated (not shared via harness_common) by design -- see T-014 note."""
+    try:
+        return str(Path(p).resolve().relative_to(hc.ROOT))
+    except ValueError:
+        return str(p)
 
 
 # --------------------------- lock mechanics (mirrors lock.py) --------------
@@ -55,7 +67,7 @@ def _acquire_evidence_lock(holder, task):
     name = hc.lock_name_for(EVIDENCE_PATH)
     lock_path = hc.LOCKS / name
     payload = {
-        "path": str(EVIDENCE_PATH),
+        "path": _normalized_log_path(EVIDENCE_PATH),
         "holder": holder,
         "task_id": task,
         "acquired_at": hc.now_iso(),
@@ -65,6 +77,14 @@ def _acquire_evidence_lock(holder, task):
         existing = hc.read_json(lock_path)
         live = existing and not hc.lock_is_expired(existing)
         if live and existing.get("holder") != holder:
+            # P-006: contention observability -- mirrors lock.py's busy branch.
+            hc.log_event(
+                "lock_busy",
+                path=_normalized_log_path(EVIDENCE_PATH),
+                holder=existing.get("holder"),
+                requester=holder,
+                task=task,
+            )
             print(
                 "busy: '{}' held by '{}' (task {}, acquired {}, ttl {}s). "
                 "Retry once released/expired.".format(
@@ -81,7 +101,7 @@ def _acquire_evidence_lock(holder, task):
         hc.atomic_write_json(lock_path, payload)
     hc.log_event(
         "lock_acquired",
-        path=str(EVIDENCE_PATH),
+        path=_normalized_log_path(EVIDENCE_PATH),
         holder=holder,
         task=task,
         ttl_seconds=payload["ttl_seconds"],
@@ -102,7 +122,7 @@ def _release_evidence_lock(holder):
         if existing.get("holder") != holder:
             return
         lock_path.unlink(missing_ok=True)
-    hc.log_event("lock_released", path=str(EVIDENCE_PATH), holder=holder, forced=False)
+    hc.log_event("lock_released", path=_normalized_log_path(EVIDENCE_PATH), holder=holder, forced=False)
 
 
 # --------------------------------- commands ---------------------------------

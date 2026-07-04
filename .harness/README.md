@@ -92,6 +92,9 @@ who executed the command.
 - Claude Code sessions get **mechanical** enforcement via the PreToolUse hook
   (`check_lock.py`); other engines (Gemini/Antigravity, humans) must call `lock.py`
   voluntarily — the contract is engine-agnostic, the hook is Claude-side sugar.
+- TTL precision is whole seconds (`ISO_FMT` has no sub-second field); `lock_is_expired`
+  floors both the acquired-at and now-side timestamps before comparing, so effective
+  lock lifetime is `[ttl, ttl+1)` seconds — never shorter than the requested TTL (P-005).
 
 ### Observability pillars → concrete files
 | Pillar (AHE) | Implementation here |

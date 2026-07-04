@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T06:41:17Z",
-  "updated_by": "harness-verifier",
+  "updated_at": "2026-07-04T07:30:43Z",
+  "updated_by": "tournament-judge",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -336,7 +336,18 @@
       "claim_expires_at": null,
       "priority": 9,
       "detail_file": ".harness/tasks/T-090.json",
-      "artifacts": [],
+      "artifacts": [
+        "scratch-A.md",
+        "scratch-B.md",
+        "scratch-C.md",
+        "scratch-D.md",
+        "vrf-P.md",
+        "vrf-Q.md",
+        "vrf-R.md",
+        "vrf-S.md",
+        "combo-X.md",
+        "combo-Y.md"
+      ],
       "handoff": null,
       "created_at": "2026-07-04T04:45:42Z",
       "created_by": "substrate-worker-1",
@@ -371,12 +382,12 @@
     "T-012": {
       "epic": "ready-for-usage",
       "title": "Generation-2 evolution audit: G6 (ISO_FMT sub-second truncation), G7 (recontext abs-path logging), G8 (update --artifact drops repeats), P-003 residual closure review",
-      "status": "claimed",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": "harness-verifier",
-      "claim_expires_at": "2026-07-04T07:39:56Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-012.json",
       "artifacts": [
@@ -389,7 +400,9 @@
         "ts": "2026-07-04T06:38:59Z"
       },
       "created_at": "2026-07-04T06:16:29Z",
-      "created_by": "fable-5-coordinator"
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T06:43:29Z",
+      "completed_by": "harness-verifier"
     },
     "T-020": {
       "epic": "mdtoc",
@@ -497,7 +510,7 @@
     "T-024": {
       "epic": "mdtoc",
       "title": "mdtoc slugger candidate A: regex-based slugify",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -507,15 +520,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-024.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/mdtoc/candidates/slugger_a.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "Replay: cd '/Users/mariocasanova10pa/Documents/Universal Harness/projects/mdtoc/candidates' && python3 -c \"import vectors, slugger_a, sys; p,t,f=vectors.run_against(slugger_a.slugify); print(f'passed={p} total={t}'); [print('FAIL:',c,'exp=',e,'got=',g) for c,e,g in f]; sys.exit(0 if p==t else 1)\" -> observed: passed=24 total=24, zero failures, exit 0. Bounded self-check also run via goal_mode.py run --task T-024 --cmd <same, cd-relative> -> GOAL REACHED on iteration 1/3. Approach: pure re module -- str.lower() then re.compile(r'[^\\w \\-]', re.UNICODE).sub('') to strip non-word/space/hyphen chars without collapsing whitespace (reproduces the Foo&Bar -> foo--bar double-hyphen quirk), then literal-space-to-hyphen substitution, then naive seen[base]-count dedup (base->1 first use, base-N on Nth repeat) matching vectors.py's DEDUP_SEQUENCES exactly. File owns exactly projects/mdtoc/candidates/slugger_a.py; stdlib-only (imports only re); does not import mdtoc package, vectors is only imported by the self-check script/verifier, not by slugger_a.py itself; does not import or read slugger_b.py/slugger_c.py. No deviations from the T-024 acceptance criteria.",
+        "ts": "2026-07-04T06:43:42Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T07:22:06Z",
+      "completed_by": "harness-verifier"
     },
     "T-025": {
       "epic": "mdtoc",
       "title": "mdtoc slugger candidate B: unicodedata category-based slugify",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -525,15 +547,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-025.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/mdtoc/candidates/slugger_b.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "Replay: python3 -c \"import sys; sys.path.insert(0,'projects/mdtoc/candidates'); import vectors, slugger_b; p,t,f=vectors.run_against(slugger_b.slugify); print(f'{p}/{t}'); [print('FAIL',c,'exp=',e,'got=',g) for c,e,g in f]\" -> observed output '24/24' with zero FAIL lines (all SLUG_VECTORS + all DEDUP_SEQUENCES pass). Approach: unicodedata.category()-based char-by-char classification (no regex) -- keep category[0] in L/N, keep Mn/Mc/Me marks, keep literal '_'/'-', map ch.isspace() to '-', drop everything else; dedup via seen-dict per vectors.py contract (base->prior-use-count, Nth repeat -> base-(N-1)). Owns exactly projects/mdtoc/candidates/slugger_b.py, stdlib-only (unicodedata), imports no mdtoc package and no sibling candidate. Did not view slugger_a.py or slugger_c.py content during implementation.",
+        "ts": "2026-07-04T06:43:56Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T07:22:19Z",
+      "completed_by": "harness-verifier"
     },
     "T-026": {
       "epic": "mdtoc",
       "title": "mdtoc slugger candidate C: github-slugger spec-port slugify",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -543,15 +574,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-026.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/mdtoc/candidates/slugger_c.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-3",
+        "note": "Replay: cd projects/mdtoc/candidates && python3 slugger_c.py -> 'slugger_c self-check: 24/24 passed' (or: python3 .harness/bin/goal_mode.py run --task T-026 --cmd \"cd projects/mdtoc/candidates && python3 slugger_c.py\" -> GOAL REACHED iteration 1/3). Score: 24/24 vs vectors.run_against (11 SLUG_VECTORS + 13 DEDUP_SEQUENCES cases), zero failures. Approach: GITHUB-SLUGGER SPEC-PORT -- downcase -> strip every char outside an explicit, per-rule-cited RULE TABLE (Unicode major categories L/letter, N/number, M/mark, plus literal '_' '-' ' ') -> hyphenate remaining spaces without collapsing -> naive base-slug->prior-count dedup mutating seen in place. Genuinely distinct mechanism from a dynamic \\W regex (candidate A) or an ad hoc per-call category-set membership check (candidate B): this candidate's classification is a named, documented rule table with one cited rule per keep/remove decision. Documented spec divergences (module docstring, both resolved in vectors.py's favor per task ground-truth rule): (1) emoji U+2728 -- documented word-char spec strips it (matches vectors.py 'greatnews-update'); real github-slugger's actual regex.js blocklist has a known gap and would retain it ('great✨news-update') -- this candidate follows vectors.py, not the buggy shipped regex. (2) dedup collision handling -- vectors.py's docstring pins a NAIVE base-slug->prior-use-count contract (implemented verbatim); real github-slugger also re-registers each literal produced (suffixed) slug to guard against collisions with literal duplicate-looking headings (e.g. 'Foo' x2 + literal 'Foo 1'), which DEDUP_SEQUENCES does not exercise, so the richer recursive behavior was intentionally NOT ported. File owns exactly projects/mdtoc/candidates/slugger_c.py; stdlib only (unicodedata); no import of mdtoc package or of slugger_a.py/slugger_b.py (not inspected, per instructions).",
+        "ts": "2026-07-04T06:45:56Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T07:22:28Z",
+      "completed_by": "harness-verifier"
     },
     "T-027": {
       "epic": "mdtoc",
       "title": "mdtoc slugger tournament VERDICT: score candidates, promote winner",
-      "status": "open",
+      "status": "in_progress",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -560,8 +600,8 @@
         "T-025",
         "T-026"
       ],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "tournament-judge",
+      "claim_expires_at": "2026-07-04T08:30:43Z",
       "priority": 2,
       "detail_file": ".harness/tasks/T-027.json",
       "artifacts": [],
@@ -609,6 +649,87 @@
       "handoff": null,
       "created_at": "2026-07-04T06:26:43Z",
       "created_by": "orchestration-planner"
+    },
+    "T-013": {
+      "epic": "gen-2-fixes",
+      "title": "Apply P-005 (WA): floor both sides in lock_is_expired — effective TTL lifetime [ttl, ttl+1)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-013.json",
+      "artifacts": [
+        ".harness/bin/harness_common.py",
+        ".harness/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "P-005 (WA) fix applied verbatim. DIFF (only these 2 lines, no other file touched):\n  harness_common.py:147  -(now_utc() - acquired).total_seconds() > ttl\n                          +(now_utc().replace(microsecond=0) - acquired).total_seconds() > ttl\n  README.md Locks section: +3 lines documenting whole-second TTL precision, effective life [ttl, ttl+1).\nNo signature change, no ISO_FMT change, no other lines touched (git diff attached as artifact list; verifier can re-run `git diff -- .harness/bin/harness_common.py .harness/README.md`).\n\nREPLAY 1 (deterministic, no sleeps, isolates the exact audit_gen2 claim -- reproduces BOTH pre-fix bug and post-fix guarantee via inline formulas, does not require editing/reverting the source):\npython3 -c \"\nimport datetime as dt\nISO_FMT = '%Y-%m-%dT%H:%M:%SZ'\ndef parse_iso(ts): return dt.datetime.strptime(ts, ISO_FMT).replace(tzinfo=dt.timezone.utc)\nbase = dt.datetime(2026,1,1,0,0,0,tzinfo=dt.timezone.utc)\nacquired_real = base + dt.timedelta(seconds=59.999)\nttl = 1\nacquired_parsed = parse_iso(acquired_real.strftime(ISO_FMT))\ndef old_expired(now, acquired, ttl): return (now - acquired).total_seconds() > ttl\ndef new_expired(now, acquired, ttl): return (now.replace(microsecond=0) - acquired).total_seconds() > ttl\nstep = 0.001; t = 0.0; old_flip = new_flip = None\nwhile t <= ttl + 1.2:\n    now = acquired_real + dt.timedelta(seconds=t)\n    if old_flip is None and old_expired(now, acquired_parsed, ttl): old_flip = t\n    if new_flip is None and new_expired(now, acquired_parsed, ttl): new_flip = t\n    if old_flip is not None and new_flip is not None: break\n    t += step\nprint('pre-fix effective_life:', round(old_flip,3), 's  (BUG, matches audit_gen2 0.001s claim)')\nprint('post-fix effective_life:', round(new_flip,3), 's  (>= ttl=1, matches P-005 target)')\nassert old_flip < ttl*0.1 and new_flip >= ttl and new_flip < ttl+1\nprint('PASS')\n\"\nOBSERVED: pre-fix effective_life: 0.002 s ; post-fix effective_life: 1.001 s ; PASS.\n\nREPLAY 2 (imports the LIVE patched harness_common.py, monkeypatches now_utc, sweeps 1ms steps, asserts effective_life is always in [ttl, ttl+1)):\npython3 -c \"\nimport sys, datetime as dt\nsys.path.insert(0, '.harness/bin'); import harness_common as hc\nbase = dt.datetime(2026,1,1,0,0,0,tzinfo=dt.timezone.utc)\nacquired_real = base + dt.timedelta(seconds=59.999)\nttl = 1\nacquired_iso = acquired_real.strftime(hc.ISO_FMT)\npayload = {'acquired_at': acquired_iso, 'ttl_seconds': ttl}\norig = hc.now_utc\nt = 0.0; first = None\nwhile t <= ttl + 1.2:\n    hc.now_utc = lambda t=t: acquired_real + dt.timedelta(seconds=t)\n    if hc.lock_is_expired(payload):\n        first = t; break\n    t += 0.001\nhc.now_utc = orig\nprint('effective_life (live import):', round(first,3), 's')\nassert first >= ttl and first < ttl+1\nprint('PASS: within [ttl, ttl+1)')\n\"\nOBSERVED: effective_life (live import): 1.001 s ; PASS.\n\nREPLAY 3 (real-world sanity, one real sleep <=3s, no source editing):\npython3 .harness/bin/lock.py acquire .harness/scratch/T-013_verify.txt --holder t013-verify --ttl 1\npython3 .harness/bin/lock.py status   # expect state=live for the new lock immediately after acquire\nsleep 2\npython3 .harness/bin/lock.py acquire .harness/scratch/T-013_verify.txt --holder t013-verify-2 --ttl 1   # expect \"acquired (expired lock swept)\"\npython3 .harness/bin/lock.py release .harness/scratch/T-013_verify.txt --holder t013-verify-2\nrm -f .harness/scratch/T-013_verify.txt   # cleanup, zero residue\nOBSERVED (my own run, holders t013-realworld/t013-realworld-2): status showed state=live immediately after ttl=1 acquire; after sleep 2, second acquire printed \"acquired (expired lock swept)\"; released + file removed; lock.py status afterward shows no residue entry for it.\n\nREGRESSION (both run clean, exit 0, output unchanged in shape from pre-fix baseline):\npython3 .harness/bin/blackboard.py status\npython3 .harness/bin/lock.py status\nOBSERVED: blackboard.py status printed full board (counts: done=17,failed=1,in_progress=3,open=3,review=3) with no errors/tracebacks. lock.py status printed the live-lock table (README.md, harness_common.py under substrate-worker-1/T-013; lock.py/notify.py/recontext.py under substrate-worker-2/T-014; blackboard.py under substrate-worker-3/T-015) with no errors.\n\nACCEPTANCE CRITERIA CHECKLIST (from T-013.json description):\n[x] harness_common.py:147 comparison changed exactly to (now_utc().replace(microsecond=0) - acquired).total_seconds() > ttl\n[x] no signature change to lock_is_expired\n[x] no ISO_FMT change\n[x] README.md Locks section gets one doc line (whole-second precision + [ttl, ttl+1) effective life) -- landed as 3 lines for clarity, single bullet point, no other README edits\n[x] G6-closure note recorded on T-013 (this task) referencing T-010.json by ts, NOT hand-edited T-010.json (see the earlier note appended above at update-time, ts visible via `blackboard.py show T-013`)\n[x] repro 'acquire at X.999 --ttl 1' yields effective_life >= 1.0s -- REPLAY 1 & 2 above, both PASS, both python3 -c with mocked now, no sleeps\n[x] existing CLIs still work -- blackboard.py status and lock.py status both clean (REGRESSION above)\n[x] handoff with replayable repro -- this note\n\nOWNERSHIP: only .harness/bin/harness_common.py and .harness/README.md touched (my locked/owned files for T-013). Verified via `lock.py status` throughout that lock.py/recontext.py/notify.py stayed under substrate-worker-2 (T-014) and blackboard.py stayed under substrate-worker-3 (T-015) -- no file contention, no edits outside scope.\n\nReleasing .harness/bin/harness_common.py and .harness/README.md locks now that the edit is complete and regression-tested.",
+        "ts": "2026-07-04T07:14:30Z"
+      },
+      "created_at": "2026-07-04T06:46:21Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T07:29:27Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-014": {
+      "epic": "gen-2-fixes",
+      "title": "Apply P-006+P-008a (WB): lock_busy contention events + path normalization at the log boundary",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-014.json",
+      "artifacts": [
+        ".harness/bin/lock.py",
+        ".harness/bin/recontext.py",
+        ".harness/bin/notify.py",
+        ".harness/logs/events.jsonl",
+        ".harness/recontext_evidence.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "Replay commands (run from repo root):\n1) Syntax: python3 -c \"import py_compile; [py_compile.compile(f, doraise=True) for f in ['.harness/bin/lock.py','.harness/bin/recontext.py','.harness/bin/notify.py']]\" -> expect no output (compiles clean).\n2) Measurable (a) relative path on normal acquire: SCR=\"$(pwd)/.harness/tasks/.scratch_verify_a.txt\"; python3 .harness/bin/lock.py acquire \"$SCR\" --holder verifier --task T-014 --ttl 30; tail -n1 .harness/logs/events.jsonl -> expect event lock_acquired with path=\".harness/tasks/.scratch_verify_a.txt\" (no /Users/). Then: python3 .harness/bin/lock.py release \"$SCR\" --holder verifier.\n3) Measurable (b) contention: python3 .harness/bin/lock.py acquire \"$SCR\" --holder holderX --task T-014 --ttl 30; python3 .harness/bin/lock.py acquire \"$SCR\" --holder holderY --task T-014-b; echo exit=$?; grep '\"event\": \"lock_busy\"' .harness/logs/events.jsonl | tail -n1 -> expect exit=1 and a lock_busy event with holder=holderX requester=holderY path relative. Cleanup: python3 .harness/bin/lock.py release \"$SCR\" --holder holderX.\n4) Measurable (c) out-of-repo: python3 .harness/bin/lock.py acquire /tmp/verify-not-in-repo.txt --holder verifier; echo exit=$?; ls /tmp/verify-not-in-repo.txt -> expect exit=1, 'refused: outside workspace root' message, no file created (existing lock_name_for()==None gate fires before any log_event -- unchanged pre-T-014 behavior). Direct helper check: cd .harness/bin && python3 -c \"import lock; print(lock._normalized_log_path('/tmp/x')); print(lock._normalized_log_path('/Users/mariocasanova10pa/Documents/Universal Harness/.harness/bin/lock.py'))\" -> expect verbatim '/tmp/x' then relative '.harness/bin/lock.py'.\n5) Measurable (d) recontext + notify still log relative paths: echo hi | python3 .harness/bin/recontext.py add --task T-014 --source verify:1 --label verify --agent verifier; grep lock_acquired .harness/logs/events.jsonl | tail -n1 -> path=.harness/recontext_evidence.md. python3 .harness/bin/notify.py status -> prints config normally (unchanged UX).\n6) Regression: python3 .harness/bin/lock.py status; python3 .harness/bin/lock.py sweep; python3 .harness/bin/recontext.py --help; python3 .harness/bin/notify.py status -> all exit 0, no crashes.\nAll of the above were run by substrate-worker-2 during implementation with matching observed output (see task note). Files touched: .harness/bin/lock.py, .harness/bin/recontext.py, .harness/bin/notify.py only -- harness_common.py NOT touched (inline duplicated 6-line _normalized_log_path() helper in each of the 3 files per the disjoint-partition instruction). Please verify then set status done or kick back with specifics.",
+        "ts": "2026-07-04T07:16:21Z"
+      },
+      "created_at": "2026-07-04T06:46:21Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T07:29:40Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-015": {
+      "epic": "gen-2-fixes",
+      "title": "Apply P-007 (WC): blackboard.py update --artifact action=append",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-015.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py",
+        ".harness/tasks/T-090.json"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-3",
+        "note": "Replay: (1) git diff .harness/bin/blackboard.py — 6+/4- in cmd_update + parser. (2) python3 -m py_compile .harness/bin/blackboard.py. (3) Multi: python3 .harness/bin/blackboard.py update T-090 --artifact scratch-A.md --artifact scratch-B.md --agent <you> --note 'reprobe' then show T-090 (both present; re-runs are no-ops via dedupe — T-090 is the designated throwaway). (4) Single: update T-090 --artifact scratch-C.md. (5) Dedupe: update T-090 --artifact scratch-A.md --artifact scratch-D.md → only D newly appended. (6) No-flag: update T-090 --agent <you> → exit 1 'nothing to update'. (7) status/next/show run clean; T-015's own artifact list (2 entries from ONE call) is live proof.",
+        "ts": "2026-07-04T07:14:21Z"
+      },
+      "created_at": "2026-07-04T06:46:21Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T07:29:54Z",
+      "completed_by": "harness-verifier"
     }
   }
 }
