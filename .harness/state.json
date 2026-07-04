@@ -153,6 +153,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T07:29:27Z"
+      },
+      "tournament-judge": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T07:40:53Z"
       }
     }
   },

@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T07:30:43Z",
-  "updated_by": "tournament-judge",
+  "updated_at": "2026-07-04T07:40:53Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -591,7 +591,7 @@
     "T-027": {
       "epic": "mdtoc",
       "title": "mdtoc slugger tournament VERDICT: score candidates, promote winner",
-      "status": "in_progress",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -600,14 +600,24 @@
         "T-025",
         "T-026"
       ],
-      "claimed_by": "tournament-judge",
-      "claim_expires_at": "2026-07-04T08:30:43Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-027.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/mdtoc/mdtoc/slugger.py",
+        "projects/mdtoc/tests/test_slugger.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "tournament-judge",
+        "note": "REPLAY: (1) score all: python3 - <<'PY' ; import sys; sys.path.insert(0,'projects/mdtoc/candidates'); import vectors,slugger_a,slugger_b,slugger_c; [print(n, vectors.run_against(f)[:2]) for n,f in [('A',slugger_a.slugify),('B',slugger_b.slugify),('C',slugger_c.slugify)]] ; PY  -> expect A/B/C (24,24) each. (2) PROMOTED test: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v -> 40 tests OK (5 new slugger). WINNER=B (unicodedata, slugger_b.py/T-025): only candidate faithful on BOTH real-input axes (keeps NFD combining marks; hyphenates tab & U+3000 via str.isspace()); golden was a 24/24 tie; C 2nd (best docs, drops tab/U+3000), A 3rd (dominated, strips NFD marks). Ranking 1st B>2nd C>3rd A. slugger.py is AST-verbatim B (5 symbols identical), only docstring new, __main__ dropped (imported candidates-local vectors.py). Full score table + gen-3 notes in task notes. Independent verifier: replay both commands + read the diff.",
+        "ts": "2026-07-04T07:34:25Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T07:40:53Z",
+      "completed_by": "harness-verifier"
     },
     "T-028": {
       "epic": "mdtoc",
