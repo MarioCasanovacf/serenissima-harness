@@ -4,5 +4,11 @@
   "description": "Disposable worked-example probe for USAGE.md (T-030): demonstrates a real depends_on edge and the cascade-gate refusal. Not real work; safe to ignore or terminate.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T08:05:24Z",
+      "agent": "fable-5-coordinator",
+      "note": "SCRATCH closure: disposable dep-gate demo task, intentionally never executed (its purpose was to show the cascade-gate refusal in USAGE.md 3). Terminal state failed=abandoned per protocol, mirroring T-090."
+    }
+  ]
 }

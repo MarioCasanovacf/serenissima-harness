@@ -120,9 +120,9 @@
         "last_outcome_at": "2026-07-04T07:54:28Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 8,
+        "tasks_done": 9,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T07:56:49Z"
+        "last_outcome_at": "2026-07-04T08:05:24Z"
       },
       "evolution-analyst": {
         "tasks_done": 2,
@@ -131,8 +131,8 @@
       },
       "fable-5-coordinator": {
         "tasks_done": 2,
-        "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T06:20:55Z"
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-04T08:05:24Z"
       },
       "smoke-a": {
         "tasks_done": 0,
@@ -158,6 +158,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T07:40:53Z"
+      },
+      "harness-verifier": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T08:05:24Z"
       }
     }
   },
@@ -299,7 +304,15 @@
       "mdtoc friction: tests/__init__.py needed by py3.9 unittest discover was unowned by the T-020 plan; two workers hit it, worker-2 created it as disclosed shared bootstrap. Planner checklist candidate: enumerate shared bootstrap files (test package markers, conftest-like infra) as owned artifacts.",
       "Nit (T-013 verify): mechanically-exact TTL interval is (ttl, ttl+1], README says [ttl, ttl+1) - prose is correct, bracket notation imprecise at measure-zero boundaries",
       "Shape change (T-015): task_updated events now log artifact as a list (was string) - downstream log parsers must handle both",
-      "Race (fix-verify session): verifier's claim-refusal probe on T-027 accidentally SUCCEEDED when deps went done mid-test; it self-healed by releasing. Candidate guardrail: a probe-claim convention (claim with --dry-run?) or use permanently-gated scratch tasks for refusal probes"
+      "Race (fix-verify session): verifier's claim-refusal probe on T-027 accidentally SUCCEEDED when deps went done mid-test; it self-healed by releasing. Candidate guardrail: a probe-claim convention (claim with --dry-run?) or use permanently-gated scratch tasks for refusal probes",
+      "F1 (T-021/T-022): tests/__init__.py unowned bootstrap - py3.9 unittest discover needs it when -s != -t (bpo-23882). Planner checklist: enumerate shared bootstrap files as owned artifacts",
+      "F2+F8 (T-028): check hardcodes DEFAULT_MAX_DEPTH=3, no --max-depth flag, and generate persists no depth record -> structural false-stale when generated at non-default depth. Fix needs stored config/frontmatter or a check flag",
+      "F3 (T-027): double-claim race - verifier probe-claim on a live open task succeeded when deps went done mid-test; claim != safe read. Guardrail candidate: --dry-run claim or permanently-gated scratch tasks for refusal probes",
+      "F4 (T-027): naive base->count dedup contract mandates output collision ['foo','foo-1','foo-1'] vs real github-slugger recursion - contract revision + new golden vectors is a real gen-3 item",
+      "F5 (T-027): slugger_c's cited rule-table doc style is an uplift candidate for the promoted slugger_b",
+      "F6 (epic mdtoc): verdict-layer monoculture - harness-verifier was sole approver of all 9 producer tasks and authored the join; consider verifier rotation or second reviewer on epic joins",
+      "F7 (events.jsonl): task_updated status=done events carry NO actor field; top-level agent is uniformly the ambient session id - producer!=approver auditing is reconstruction-dependent. Add explicit actor to verdict events",
+      "T-091 slip residuals: producer self-done is NOT mechanically blocked (normative only) and leaves un-retractable reputation +1 and stale completed_by on revert. Guardrail candidate: blackboard.py refuses --status done when acting agent == last claimant, unless --override-verifier"
     ]
   }
 }

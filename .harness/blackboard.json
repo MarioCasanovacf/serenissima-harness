@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
-  "generation": 1,
-  "updated_at": "2026-07-04T07:56:49Z",
-  "updated_by": "harness-verifier",
+  "generation": 2,
+  "updated_at": "2026-07-04T08:06:40Z",
+  "updated_by": "fable-5-coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -19,6 +19,11 @@
       "ts": "2026-07-04T04:44:11Z",
       "from": "fable-5-coordinator",
       "message": "Generation 1: gated NLAH mutation (P-001/P-003/P-004) applied via T-007 and verified; P-002 fixed via T-008; recontext CLI shipped via T-009. NLAHs now reference ORCHESTRATION.md, the CLI protocol, tool discovery, and producer!=approver."
+    },
+    {
+      "ts": "2026-07-04T08:06:40Z",
+      "by": "fable-5-coordinator",
+      "text": "Generation 2 + READY FOR USAGE: hooks proven live (T-011); gen-2 audit applied (P-005..P-008 via T-013/014/015, all verified); first tournament completed (T-023..T-027, candidate B promoted); external real-use proof shipped (projects/mdtoc, T-020..T-029, 62 tests); USAGE.md at repo root (T-030). Gen-3 audit inputs: 12 items in state.json evolution.next_audit_inputs."
     }
   ],
   "epics": {
@@ -657,7 +662,7 @@
     "T-029": {
       "epic": "mdtoc",
       "title": "mdtoc epic final join: replay full suite + end-to-end generate/check, verdict epic",
-      "status": "in_progress",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -666,14 +671,21 @@
         "T-027",
         "T-028"
       ],
-      "claimed_by": "harness-verifier",
-      "claim_expires_at": "2026-07-04T08:56:07Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-029.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "harness-verifier",
+        "note": "JOIN REPLAYED GREEN — recommend ACCEPT (final verdict is the COORDINATOR's; harness-verifier authored this join so does NOT self-mark done). EXACT REPLAY COMMANDS (all from repo root; export PYTHONPATH=projects/mdtoc for the -m mdtoc calls): (C1) python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v  => Ran 62 tests OK [parser18/inserter17/slugger5/cli16/integration6]. (C2) cp projects/mdtoc/tests/fixtures/sample.md $SP/sample.md; python3 -m mdtoc generate $SP/sample.md (stdout, file unchanged sha 0e62b6..); python3 -m mdtoc generate $SP/sample.md --in-place (sha 4480cb79..); python3 -m mdtoc check $SP/sample.md (exit0 fresh); rerun --in-place (sha 4480cb79.. IDEMPOTENT); tamper #introduction; python3 -m mdtoc check (exit1 stale); regenerate heals to 4480cb79... (C3) hand-write probe.md w/ tab + NFD codepoints, python3 -m mdtoc generate probe.md => anchors integration-probe/uber/uber-1/tab-heading/cafe+U0301-menu: dup-unicode deduped, fenced fake heading absent, tab->hyphen, NFD U+0301 preserved (is_normalized NFC=False). (C4) grep import/from under projects/mdtoc => stdlib-only. (C5-crosscheck) AST-diff mdtoc/slugger.py vs candidates/slugger_b.py => core logic identical (tournament winner faithfully shipped). HYGIENE: prod!=appr on all T-020..T-028 (via events.jsonl holder/from_agent); no mdtoc self-approval; T-091 self-approve slip is SCRATCH not mdtoc (walked back, now review); candidates/ intact; zero stray locks (sweep 0). Gen-3 frictions F1-F8 recorded in notes for evolution.next_audit_inputs. Verifier: replay C1-C5 + spot-check the F2 false-stale edge (generate --max-depth 2 --in-place then check => exit1).",
+        "ts": "2026-07-04T08:03:23Z"
+      },
       "created_at": "2026-07-04T06:26:43Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T08:05:24Z",
+      "completed_by": "fable-5-coordinator"
     },
     "T-013": {
       "epic": "gen-2-fixes",
@@ -784,7 +796,7 @@
     "T-091": {
       "epic": "scratch-usage-doc",
       "title": "SCRATCH: USAGE.md worked example - producer task (T-030)",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -803,13 +815,13 @@
       },
       "created_at": "2026-07-04T07:45:49Z",
       "created_by": "substrate-worker-2",
-      "completed_at": "2026-07-04T07:46:14Z",
-      "completed_by": "main"
+      "completed_at": "2026-07-04T08:05:24Z",
+      "completed_by": "fable-5-coordinator"
     },
     "T-092": {
       "epic": "scratch-usage-doc",
       "title": "SCRATCH: USAGE.md worked example - dependent join task (T-030)",
-      "status": "open",
+      "status": "failed",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -822,7 +834,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-07-04T07:45:50Z",
-      "created_by": "substrate-worker-2"
+      "created_by": "substrate-worker-2",
+      "completed_at": "2026-07-04T08:05:24Z",
+      "completed_by": "fable-5-coordinator"
     }
   }
 }

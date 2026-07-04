@@ -19,6 +19,11 @@
       "ts": "2026-07-04T07:47:02Z",
       "agent": "substrate-worker-2",
       "note": "HANDOFF -> verifier: SCRATCH worked-example probe for USAGE.md (T-030): full claim->lock->update->handoff cycle demonstrated; disposable, not real work. A verifier may verdict done, or ignore/leave as living documentation evidence of the review state."
+    },
+    {
+      "ts": "2026-07-04T08:05:24Z",
+      "agent": "fable-5-coordinator",
+      "note": "SCRATCH closure (coordinator verdict, producer=substrate-worker-2): worked example fulfilled its documentation purpose; artifact is a placeholder by design (never written). Self-approval slip was reverted and is disclosed in USAGE.md 5 as the cautionary anecdote; residuals (reputation +1, stale completed_by from the slip) recorded as gen-3 input."
     }
   ]
 }

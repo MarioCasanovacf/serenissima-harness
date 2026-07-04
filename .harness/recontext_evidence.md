@@ -49,3 +49,15 @@ Source: .harness/bin/recontext.py:1
 ```
 verifier replay probe
 ```
+
+## [T-014] scratch measurable-d evidence — substrate-worker-2 — 2026-07-04T07:15:05Z
+Source: T-014.json:1
+```
+scratch measurable text for T-014
+```
+
+## [T-014] vrf-t014-d — harness-verifier — 2026-07-04T07:22:52Z
+Source: vrf-replay:1
+```
+verifier replay line
+```

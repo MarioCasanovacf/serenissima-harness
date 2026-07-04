@@ -21,6 +21,46 @@
       "ts": "2026-07-04T07:56:07Z",
       "agent": "harness-verifier",
       "note": "Claimed by harness-verifier for epic final join replay. Beginning independent replay (not trusting hand-off logs)."
+    },
+    {
+      "ts": "2026-07-04T08:01:39Z",
+      "agent": "harness-verifier",
+      "note": "REPLAY C1 (full suite) — python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v => 'Ran 62 tests ... OK'. ACTUAL breakdown (task hint was imprecise): test_parser=18, test_inserter=17, test_slugger=5, test_cli=16, test_integration=6 = 62. NOTE: task JSON parenthetical said '18 cli+integration' — real split is 16 cli + 6 integration (still 62/62 green)."
+    },
+    {
+      "ts": "2026-07-04T08:01:39Z",
+      "agent": "harness-verifier",
+      "note": "REPLAY C2 (e2e on scratchpad COPY of fixture; PYTHONPATH=projects/mdtoc). [A] orig sha256=0e62b6...49. [B] generate (stdout, no --in-place): printed full spliced doc, file byte-UNCHANGED (sha still 0e62b6...49). [C] generate --in-place => exit 0, sha=4480cb79...1f. [D] check => exit 0 'TOC is up to date' (FRESH). [E] 2nd generate --in-place => sha=4480cb79...1f => BYTE-IDENTICAL / IDEMPOTENT. [F] tamper (#introduction->#TAMPERED-anchor between markers). [G] check => exit 1 'TOC is stale' (STALE). [H] regenerate --in-place => sha back to 4480cb79...1f (heals). All expected exit codes observed."
+    },
+    {
+      "ts": "2026-07-04T08:02:26Z",
+      "agent": "harness-verifier",
+      "note": "REPLAY C3 (integration spot-checks on a FRESH hand-written probe.md, NOT the fixture; byte-exact tab + NFD codepoints). Full pipeline via generate stdout. Anchors emitted: [integration-probe, uber(u-umlaut), uber-1, tab-heading, cafe+U0301-menu]. TABLE: (1) duplicate unicode heading Uber x2 => deduped uber + uber-1 PASS; (2) fake heading inside a triple-backtick code fence => ABSENT from TOC PASS; (3) heading with literal TAB => anchor tab-heading (tab -> hyphen), display text keeps literal tab PASS; (4) NFD Cafe+U+0301 => anchor codepoints [0x63,0x61,0x66,0x65,0x301,0x2d,0x6d,0x65,0x6e,0x75], contains U+0301, unicodedata.is_normalized(NFC)=False => combining MARK PRESERVED PASS. CROSS-CHECK (static/AST, a method the producer did not use): shipped mdtoc/slugger.py core (slugify/_slug_base/_is_word_or_hyphen_char) is AST-identical to tournament winner candidates/slugger_b.py; _WORD_MARK_CATEGORIES/_LITERAL_KEEP constants match => tournament T-023..T-027 outcome faithfully reached the shipped artifact."
+    },
+    {
+      "ts": "2026-07-04T08:02:43Z",
+      "agent": "harness-verifier",
+      "note": "REPLAY C4/C5 (stdlib-only + epic hygiene). STDLIB-ONLY: grep of all import/from under projects/mdtoc => only re, typing, unicodedata, argparse, sys, os, io, contextlib, shutil, subprocess, tempfile, collections, unittest + internal mdtoc.*/vectors imports. ZERO third-party. HYGIENE: producer!=approver reconstructed from events.jsonl (holder at claim + from_agent at handoff; done-actor inferred from preceding claim) — every mdtoc task T-020..T-028 produced by {orchestration-planner|substrate-worker-1/2/3|tournament-judge} and verdicted-done by harness-verifier => PROD!=APPR OK on all 9. T-029 (this join) authored by harness-verifier then handed to verifier for COORDINATOR verdict (prod!=appr preserved; T-029 sits in review post-handoff). NO mdtoc task self-approved. Only self-approval incident = T-091 (substrate-worker-2 claimed then set done itself) but T-091 is SCRATCH (USAGE.md example), NOT mdtoc, already walked back to in_progress + re-handoff (now review) — non-contaminating. candidates/ intact (slugger_a/b/c.py + vectors.py). lock.py status = no active lock files; sweep = 0 (no stray locks anywhere). Housekeeping: 0 leases expired/released this run."
+    },
+    {
+      "ts": "2026-07-04T08:02:55Z",
+      "agent": "harness-verifier",
+      "note": "GEN-3 FRICTION HARVEST (feeds evolution.next_audit_inputs). KNOWN: (F1) tests/__init__.py unowned bootstrap [T-021/T-022] — self-documented as a gap in T-020 decomposition; load-bearing (Py3.9 unittest discover needs it when -s != -t, cpython bpo-23882) yet enumerated in no task context_files. (F2) check@fixed-depth-3 false-stale edge [T-028] — CONFIRMED by replay: generate --max-depth 2 --in-place then check => exit 1 STALE, because check hardcodes DEFAULT_MAX_DEPTH=3 and has NO --max-depth flag. (F3) T-027 double-claim race + probe-claim hazard — CONFIRMED: harness-verifier claimed T-027 from open @07:24:49, released to open @07:26:31, then tournament-judge claimed from open @07:30:43; a verifier probe-claiming a still-open producer task is a hazard (claim != safe read). (F4) naive-dedup contract vs real github-slugger [T-027 gen-3 note] — pinned base->count contract yields ['foo','foo-1','foo-1'] for ['Foo','Foo','Foo-1'], a mandated output collision diverging from real github-slugger. (F5) C-style doc uplift candidate — slugger_c.py had best cited rule-table docs but lost on behavior (dropped tab + U+3000); doc style is an uplift candidate."
+    },
+    {
+      "ts": "2026-07-04T08:03:06Z",
+      "agent": "harness-verifier",
+      "note": "GEN-3 FRICTION HARVEST — NEW (found during this join): (F6) VERDICT-LAYER MONOCULTURE — harness-verifier is the SOLE approver of all 9 mdtoc producer tasks T-020..T-028 and also authored T-029. Producer!=approver holds per-task, but one agent verdicting an entire epic is a cognitive-monoculture risk; the join is deliberately handed to the COORDINATOR to break it, but gen-3 should consider verifier rotation / a second reviewer on epic joins. (F7) events.jsonl ACTOR-FIELD AMBIGUITY — the top-level 'agent' field is uniformly 'main' for every event; the real actor survives only in per-event fields (holder, from_agent), and task_updated status=done events carry NO actor field at all, so the done-actor must be INFERRED from the preceding claim. Producer!=approver auditing is thus reconstruction-dependent — a verifier cannot read the approver directly off the done event. Observability gap for the 5A evolution loop. (F8) check CANNOT KNOW INTENDED DEPTH — generate persists no record of the --max-depth used, and check has no --max-depth flag, so F2 is STRUCTURAL not just a missing flag: fix needs stored config/frontmatter or a --max-depth on check. All frictions replay-backed; recommend routing F1-F8 into evolution.next_audit_inputs for the gen-3 audit."
+    },
+    {
+      "ts": "2026-07-04T08:03:23Z",
+      "agent": "harness-verifier",
+      "note": "HANDOFF -> verifier: JOIN REPLAYED GREEN — recommend ACCEPT (final verdict is the COORDINATOR's; harness-verifier authored this join so does NOT self-mark done). EXACT REPLAY COMMANDS (all from repo root; export PYTHONPATH=projects/mdtoc for the -m mdtoc calls): (C1) python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v  => Ran 62 tests OK [parser18/inserter17/slugger5/cli16/integration6]. (C2) cp projects/mdtoc/tests/fixtures/sample.md $SP/sample.md; python3 -m mdtoc generate $SP/sample.md (stdout, file unchanged sha 0e62b6..); python3 -m mdtoc generate $SP/sample.md --in-place (sha 4480cb79..); python3 -m mdtoc check $SP/sample.md (exit0 fresh); rerun --in-place (sha 4480cb79.. IDEMPOTENT); tamper #introduction; python3 -m mdtoc check (exit1 stale); regenerate heals to 4480cb79... (C3) hand-write probe.md w/ tab + NFD codepoints, python3 -m mdtoc generate probe.md => anchors integration-probe/uber/uber-1/tab-heading/cafe+U0301-menu: dup-unicode deduped, fenced fake heading absent, tab->hyphen, NFD U+0301 preserved (is_normalized NFC=False). (C4) grep import/from under projects/mdtoc => stdlib-only. (C5-crosscheck) AST-diff mdtoc/slugger.py vs candidates/slugger_b.py => core logic identical (tournament winner faithfully shipped). HYGIENE: prod!=appr on all T-020..T-028 (via events.jsonl holder/from_agent); no mdtoc self-approval; T-091 self-approve slip is SCRATCH not mdtoc (walked back, now review); candidates/ intact; zero stray locks (sweep 0). Gen-3 frictions F1-F8 recorded in notes for evolution.next_audit_inputs. Verifier: replay C1-C5 + spot-check the F2 false-stale edge (generate --max-depth 2 --in-place then check => exit1)."
+    },
+    {
+      "ts": "2026-07-04T08:05:24Z",
+      "agent": "fable-5-coordinator",
+      "note": "VERIFIED (coordinator verdict, producer=harness-verifier): join replayed green by producer AND spot-checked independently by coordinator (62/62 suite + fresh e2e generate/check on scratch copy: up-to-date). mdtoc epic certified: planner -> DAG -> 3 parallel workers -> 3-candidate tournament -> promotion -> CLI -> join, every producer task verdicted by a different agent. Gen-3 frictions F1-F8 harvested to state.json next_audit_inputs."
     }
   ]
 }
