@@ -1,0 +1,42 @@
+{
+  "id": "T-021",
+  "title": "mdtoc parser: ATX heading extraction (code-fence + HTML-comment aware)",
+  "description": "Owns projects/mdtoc/mdtoc/parser.py and projects/mdtoc/tests/test_parser.py. Implement parse_headings(text) returning Heading(level,text,line) for ATX headings, ignoring headings inside fenced code blocks and HTML comments. Python 3.9 stdlib only. See acceptance_criteria for the full contract.",
+  "acceptance_criteria": [
+    "Owns EXACTLY: projects/mdtoc/mdtoc/parser.py and projects/mdtoc/tests/test_parser.py. Touch no other file.",
+    "parser.py exposes Heading (namedtuple or dataclass with fields level:int, text:str, line:int) and parse_headings(text: str) -> list[Heading].",
+    "Recognizes ATX headings only: 1-6 leading '#' chars, then at least one space, at the start of a line (allow up to 3 leading spaces). '#nospace' and 7+ hashes ('####### x') are NOT headings.",
+    "level = number of hashes; text = heading content with surrounding whitespace and any trailing ATX closing run of '#' stripped; line = 1-based line number.",
+    "Headings inside fenced code blocks are IGNORED. Support both ``` and ~~~ fences, including info strings (e.g. ```python). A fence closes only on a line whose fence char matches the opener and whose run length is >= the opener's length. Track the open fence so headings between opener and closer are skipped.",
+    "Headings inside HTML comments are IGNORED, including multi-line comments (<!-- ... --> spanning several lines).",
+    "test_parser.py (unittest) covers: all 6 ATX levels; up-to-3-space indentation; the two non-heading cases above; code-fence exclusion for BOTH fence types AND an info string; multi-line HTML-comment exclusion; correct 1-based line numbers.",
+    "Passes via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`; stdlib only; no import of slugger or inserter.",
+    "SHARED CONVENTIONS (all mdtoc tasks): Python 3.9+ stdlib ONLY, no pip deps. Package dir projects/mdtoc/mdtoc/ (namespace package; __init__.py is created only by T-028, so test files must add projects/mdtoc/ to sys.path and import as `from mdtoc.parser import ...`). Tests use unittest and must pass via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`. No file listed here may be created/edited by any other task (disjoint ownership)."
+  ],
+  "context_files": [
+    "projects/mdtoc/mdtoc/parser.py",
+    "projects/mdtoc/tests/test_parser.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-07-04T06:31:13Z",
+      "agent": "substrate-worker-1",
+      "note": "plan: implement Heading dataclass + parse_headings in parser.py with line-scanning state machine (fence tracking + HTML comment tracking), then unittest covering all ATX levels/indent/non-headings/fences/comments/line-numbers"
+    },
+    {
+      "ts": "2026-07-04T06:35:51Z",
+      "agent": "substrate-worker-1",
+      "note": "expected: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v to pass with parser tests green; actual: 35 tests total (18 mine in test_parser.py + 17 from parallel T-022's test_inserter.py sharing discovery), all OK, 0 failures. Standalone python3 -m unittest projects.mdtoc.tests.test_parser -v also OK (18/18). Deviation: unittest discover on Python 3.9 requires projects/mdtoc/tests/__init__.py to exist (start_dir != top_level_dir importability check, fixed only in 3.11+) -- this file is NOT in T-021's context_files; substrate-worker-2 (T-022) had already created+locked it as shared unowned bootstrap infra before I hit the same failure, so I did not need to touch it myself. No files touched beyond projects/mdtoc/mdtoc/parser.py and projects/mdtoc/tests/test_parser.py (owns exactly, confirmed via git status)."
+    },
+    {
+      "ts": "2026-07-04T06:36:06Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: Replay: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v => Ran 35 tests, OK (18 from test_parser.py, 17 from parallel T-022 test_inserter.py sharing the same discover run). Isolated replay: python3 -m unittest projects.mdtoc.tests.test_parser -v => Ran 18 tests, OK. Files owned/touched: projects/mdtoc/mdtoc/parser.py (Heading NamedTuple + parse_headings), projects/mdtoc/tests/test_parser.py (18 unittest cases covering all 6 ATX levels, 0-3 leading spaces + 4-space negative, #nospace + 7-hash negatives, closing-hash stripping incl. no-preceding-space literal case, backtick+tilde+info-string fence exclusion, fence-length/char matching rules, single+multi-line HTML comment exclusion, 1-based line numbers with interleaved fenced/blank content). No import of slugger/inserter. Note: unittest discover on py3.9 needs projects/mdtoc/tests/__init__.py (start_dir!=top_level_dir importability rule) -- that file is unowned by any mdtoc task's context_files; substrate-worker-2 (T-022) created+locked it first as shared bootstrap infra, so T-021 did not create or touch it."
+    },
+    {
+      "ts": "2026-07-04T06:40:15Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (replayed + cognitive-diversity probes). Replay: discover -s projects/mdtoc/tests -t projects/mdtoc => Ran 35 OK exit0 (18 test_parser + 17 T-022 test_inserter); isolated projects.mdtoc.tests.test_parser => Ran 18 OK exit0; Python 3.9.6. Heading=NamedTuple(level:int,text:str,line:int), line 1-based via enumerate(start=1); parse_headings->List[Heading]. Imports re+typing only, no slugger/inserter. All 9 acceptance criteria pass. Adversarial probes all correct+documented: 4-space indent=>[] (indented-code boundary); tab-after-hashes matches (docstring 'space/tab separator', CommonMark-correct); fence-inside-comment & comment-opener-inside-fence both exclude inner heading and recover 'After' (interleaving precedence correct both directions); unclosed fence at EOF keeps trailing headings excluded; setext ==='/'--- => [] (ATX-only scope, documented, not mis-parsed); '# foo###' keeps literal (no preceding space, per CommonMark), '## bar ###' strips; '# ' => empty text. Sole CommonMark divergence: bare '#'/'###' (no trailing space) => [] not empty-heading, but this is REQUIRED by the acceptance criterion 'then at least one space' and stated in the code docstring => documented limitation, not a defect. Discipline: locks parser.py+test_parser.py acquired 06:31:08 released 06:36:10 by substrate-worker-1/T-021; handoff-to-verifier 06:36:06 (no self-done); tests/__init__.py locked+created+released solely by substrate-worker-2/T-022 (events 06:34:55/06:36:01) => T-021 never touched it, attribution correct; git status shows only projects/mdtoc/ untracked. Housekeeping: lock.py sweep => 0 expired; no active lock files; prior evolution-analyst/T-012 lock on audit_gen2.md was voluntarily released (forced=false) 06:38:42Z, not swept/expired."
+    }
+  ]
+}

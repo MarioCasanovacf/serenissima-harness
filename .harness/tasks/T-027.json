@@ -1,0 +1,24 @@
+{
+  "id": "T-027",
+  "title": "mdtoc slugger tournament VERDICT: score candidates, promote winner",
+  "description": "Owns projects/mdtoc/mdtoc/slugger.py and projects/mdtoc/tests/test_slugger.py. Run vectors.run_against on slugger_a/b/c; record each pass rate; pick winner by pass rate then clarity; promote winner to mdtoc/slugger.py exposing slugify(text, seen); author test_slugger.py running vectors against the promoted slugger. Cite the winner in notes. A DIFFERENT agent must verdict this done (producer not approver).",
+  "acceptance_criteria": [
+    "ROLE = verifier. Owns EXACTLY: projects/mdtoc/mdtoc/slugger.py and projects/mdtoc/tests/test_slugger.py. Depends on T-023,T-024,T-025,T-026 (vectors + all three candidates) being done.",
+    "Run vectors.run_against against each of slugger_a, slugger_b, slugger_c; record each candidate's passed/total in the task notes as a comparison table.",
+    "Pick the winner by (1) highest pass rate, then (2) code clarity/maintainability as a documented tiebreaker; state the ranking and the reason in the notes.",
+    "PROMOTE the winner to projects/mdtoc/mdtoc/slugger.py: copy the winning slugify implementation verbatim (functionally), exposing slugify(text: str, seen: dict) -> str; add a module docstring naming which candidate won and why.",
+    "Author projects/mdtoc/tests/test_slugger.py: it runs vectors.run_against against the PROMOTED mdtoc/slugger.py (import via the mdtoc package) and asserts the recorded pass rate; it must pass.",
+    "PRODUCER != APPROVER: this task PRODUCES slugger.py + test_slugger.py, so a DIFFERENT agent must issue its done-verdict (hand off to verifier role; the final join T-029 also re-runs test_slugger.py against the promoted file).",
+    "stdlib only; the promotion is a mechanical copy, not new authoring of slug logic.",
+    "SHARED CONVENTIONS (all mdtoc tasks): Python 3.9+ stdlib ONLY, no pip deps. Package dir projects/mdtoc/mdtoc/ (namespace package; __init__.py is created only by T-028, so test files must add projects/mdtoc/ to sys.path and import as `from mdtoc.parser import ...`). Tests use unittest and must pass via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`. No file listed here may be created/edited by any other task (disjoint ownership)."
+  ],
+  "context_files": [
+    "projects/mdtoc/mdtoc/slugger.py",
+    "projects/mdtoc/tests/test_slugger.py",
+    "projects/mdtoc/candidates/vectors.py",
+    "projects/mdtoc/candidates/slugger_a.py",
+    "projects/mdtoc/candidates/slugger_b.py",
+    "projects/mdtoc/candidates/slugger_c.py"
+  ],
+  "notes": []
+}

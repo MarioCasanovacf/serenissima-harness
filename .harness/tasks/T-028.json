@@ -1,0 +1,30 @@
+{
+  "id": "T-028",
+  "title": "mdtoc CLI: argparse generate/check + package + integration test + README",
+  "description": "Owns projects/mdtoc/mdtoc/cli.py, mdtoc/__main__.py, mdtoc/__init__.py, tests/test_cli.py, tests/test_integration.py, tests/fixtures/sample.md, projects/mdtoc/README.md. Wire parser -> promoted slugger -> inserter behind: python3 -m mdtoc generate FILE [--max-depth N] [--in-place] and python3 -m mdtoc check FILE (exit 0 fresh, 1 stale). Author integration test on a fixture exercising code fences, duplicate + unicode headings, and idempotency; write README with usage examples. Stdlib only.",
+  "acceptance_criteria": [
+    "Owns EXACTLY: projects/mdtoc/mdtoc/cli.py, projects/mdtoc/mdtoc/__main__.py, projects/mdtoc/mdtoc/__init__.py, projects/mdtoc/tests/test_cli.py, projects/mdtoc/tests/test_integration.py, projects/mdtoc/tests/fixtures/sample.md, projects/mdtoc/README.md. Depends on T-021 (parser), T-022 (inserter), T-027 (promoted slugger.py).",
+    "cli.py wires the pipeline: parser.parse_headings -> render TOC via inserter.render_toc(headings, slugger.slugify, max_depth) -> inserter.insert_toc. __init__.py makes mdtoc a regular package; __main__.py calls cli.main so `python3 -m mdtoc ...` works.",
+    "Command `python3 -m mdtoc generate FILE [--max-depth N] [--in-place]`: default --max-depth 3. If the toc markers are present: insert/replace the TOC (idempotently); with --in-place write the file back, otherwise print the updated file to stdout. If markers are ABSENT: print just the rendered TOC to stdout.",
+    "Command `python3 -m mdtoc check FILE`: exit 0 if the TOC between the markers is already fresh (regenerating yields identical content), exit 1 if stale. Clean argparse --help for the program and both subcommands.",
+    "tests/fixtures/sample.md: a markdown fixture exercising a fenced code block containing '#' lines, an HTML comment containing a '#' line, duplicate headings (dedupe), unicode headings (accented + CJK), and the toc markers.",
+    "test_cli.py: unit tests that invoke cli.main on temp copies of the fixture - generate --in-place, check returns 0 when fresh and 1 after tampering, and --max-depth truncation.",
+    "test_integration.py: end-to-end on the fixture - running generate --in-place TWICE yields a byte-identical file (idempotency), the fenced/comment '#' lines never appear in the TOC, duplicate headings get -1/-2 anchors, and check returns 0 afterward.",
+    "README.md: usage + copy-pasteable examples for generate (both modes) and check.",
+    "All suites pass via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`; stdlib only.",
+    "SHARED CONVENTIONS (all mdtoc tasks): Python 3.9+ stdlib ONLY, no pip deps. Package dir projects/mdtoc/mdtoc/ (namespace package; __init__.py is created only by T-028, so test files must add projects/mdtoc/ to sys.path and import as `from mdtoc.parser import ...`). Tests use unittest and must pass via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`. No file listed here may be created/edited by any other task (disjoint ownership)."
+  ],
+  "context_files": [
+    "projects/mdtoc/mdtoc/cli.py",
+    "projects/mdtoc/mdtoc/__main__.py",
+    "projects/mdtoc/mdtoc/__init__.py",
+    "projects/mdtoc/tests/test_cli.py",
+    "projects/mdtoc/tests/test_integration.py",
+    "projects/mdtoc/tests/fixtures/sample.md",
+    "projects/mdtoc/README.md",
+    "projects/mdtoc/mdtoc/parser.py",
+    "projects/mdtoc/mdtoc/inserter.py",
+    "projects/mdtoc/mdtoc/slugger.py"
+  ],
+  "notes": []
+}

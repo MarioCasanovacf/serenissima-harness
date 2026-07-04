@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T06:20:55Z",
+  "updated_at": "2026-07-04T06:41:17Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -371,23 +371,30 @@
     "T-012": {
       "epic": "ready-for-usage",
       "title": "Generation-2 evolution audit: G6 (ISO_FMT sub-second truncation), G7 (recontext abs-path logging), G8 (update --artifact drops repeats), P-003 residual closure review",
-      "status": "in_progress",
+      "status": "claimed",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": "evolution-analyst",
-      "claim_expires_at": "2026-07-04T07:18:13Z",
+      "claimed_by": "harness-verifier",
+      "claim_expires_at": "2026-07-04T07:39:56Z",
       "priority": 1,
       "detail_file": ".harness/tasks/T-012.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/logs/audit_gen2.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "evolution-analyst",
+        "note": "revision (Rev-2): P-008 rediagnosed per REJECTED note; P-005/P-006/P-007 UNCHANGED (they passed replay verbatim). P-008 corrections, all independently re-verified: (1) grep -c '/Users/' events.jsonl = 9 (Rev-1 wrongly said 4 — I had counted only recontext hits, never the global set); ALL 9 predate the Rev-1 handoff (latest 06:20:14Z < 06:25:21Z) so it is a standing leak, not drift. (2) Breakdown: 4 recontext (ev116/117/160/161, hardcoded EVIDENCE_PATH recontext.py:47), 1 notify (ev199, notify.py:200 path=str(CONFIG_PATH)), 4 lock.py CALLER-supplied absolute (ev226-229, lock.py:66/:98 path=args.path verbatim). (3) Rediagnosis: missing path normalization AT THE LOG BOUNDARY, not recontext-only — lock.py leaks whatever the caller passes, so a recontext-only fix cannot deliver 'all lock-event paths relative'. (4) Achievable measurable: after fix, lock.py acquire <ABS-path-inside-repo> logs a RELATIVE path -> grep -c '/Users/' on the newly-appended event = 0 (today ev226-229 leak); same for recontext add + notify init. PARTITION CHANGED: WB now also owns notify.py -> WA=harness_common.py+T-010.json+README.md; WB=lock.py+recontext.py+notify.py; WC=blackboard.py (still fully DISJOINT). Flagged option (b) shared hc.rel_path() helper would pull P-008 into harness_common.py (WA's file) = overlap; I recommend option (a) inline to keep the 3-way split. Also refreshed the two stale live counts (events 225->286, transcript 74->182) with a snapshot-at-T caveat (append-only, cited line numbers stable). REPLAY: grep -c '/Users/' events.jsonl == 9; confirm all 9 ts < 06:25:21Z; sed -n '199p;226p' for the notify+lock samples; grep -n path= .harness/bin/notify.py -> :200.",
+        "ts": "2026-07-04T06:38:59Z"
+      },
       "created_at": "2026-07-04T06:16:29Z",
       "created_by": "fable-5-coordinator"
     },
     "T-020": {
       "epic": "mdtoc",
       "title": "Plan external real-use project 'mdtoc' (projects/mdtoc/): decompose into blackboard DAG T-021+",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
@@ -395,10 +402,213 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-020.json",
+      "artifacts": [
+        ".harness/plan.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "orchestration-planner",
+        "note": "DECOMPOSED mdtoc epic into T-021..T-029 (epic=mdtoc, engine=claude). Replay: blackboard.py status shows frontier 'claimable now: T-021,T-022,T-023' + 6 cascade gates matching the DAG (T-024/25/26 wait T-023; T-027 waits T-023,24,25,26; T-028 waits T-021,22,27; T-029 waits T-021,22,27,28). DISJOINT OWNERSHIP: grep context_files across .harness/tasks/T-02*.json - no file appears twice (inserter uses injected slugify -> no slugger edge; __init__.py owned only by T-028). TOURNAMENT: T-023 vectors authored first (imports no candidate), 3 method-diverse candidates T-024 regex / T-025 unicodedata / T-026 github-port, T-027 verifier scores via vectors.run_against + promotes winner to mdtoc/slugger.py; CLI depends on verdict not candidates. FINAL JOIN T-029 verifier depends on the 4 direct-consumption leaves (T-021,22,27,28) which transitively close the whole DAG. Plan+mermaid+rationale+dispatch-order in .harness/plan.md section 'mdtoc (external real-use proof)'. All 9 detail files carry executable acceptance_criteria (7-10 each) + context_files.",
+        "ts": "2026-07-04T06:29:26Z"
+      },
+      "created_at": "2026-07-04T06:17:13Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T06:35:00Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-021": {
+      "epic": "mdtoc",
+      "title": "mdtoc parser: ATX heading extraction (code-fence + HTML-comment aware)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-021.json",
+      "artifacts": [
+        "projects/mdtoc/mdtoc/parser.py",
+        "projects/mdtoc/tests/test_parser.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "Replay: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v => Ran 35 tests, OK (18 from test_parser.py, 17 from parallel T-022 test_inserter.py sharing the same discover run). Isolated replay: python3 -m unittest projects.mdtoc.tests.test_parser -v => Ran 18 tests, OK. Files owned/touched: projects/mdtoc/mdtoc/parser.py (Heading NamedTuple + parse_headings), projects/mdtoc/tests/test_parser.py (18 unittest cases covering all 6 ATX levels, 0-3 leading spaces + 4-space negative, #nospace + 7-hash negatives, closing-hash stripping incl. no-preceding-space literal case, backtick+tilde+info-string fence exclusion, fence-length/char matching rules, single+multi-line HTML comment exclusion, 1-based line numbers with interleaved fenced/blank content). No import of slugger/inserter. Note: unittest discover on py3.9 needs projects/mdtoc/tests/__init__.py (start_dir!=top_level_dir importability rule) -- that file is unowned by any mdtoc task's context_files; substrate-worker-2 (T-022) created+locked it first as shared bootstrap infra, so T-021 did not create or touch it.",
+        "ts": "2026-07-04T06:36:06Z"
+      },
+      "created_at": "2026-07-04T06:26:42Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T06:40:15Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-022": {
+      "epic": "mdtoc",
+      "title": "mdtoc inserter: nested TOC render + idempotent marker insert",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-022.json",
+      "artifacts": [
+        "projects/mdtoc/mdtoc/inserter.py",
+        "projects/mdtoc/tests/test_inserter.py",
+        "projects/mdtoc/tests/__init__.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "REPLAY: cd '/Users/mariocasanova10pa/Documents/Universal Harness' && python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v  => Ran 35 tests, OK (17 from test_inserter.py, 18 from T-021's test_parser.py already in tree; no failures/errors). Bounded loop: python3 .harness/bin/goal_mode.py run --task T-022 --cmd \"python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v\" => 'GOAL REACHED ... on iteration 2/3' (iter 1 failed on the pre-existing tests/__init__.py gap, fixed, iter 2 green). FILES: projects/mdtoc/mdtoc/inserter.py (render_toc + insert_toc, TOC_START_MARKER/TOC_STOP_MARKER, stdlib-only, slugify injected as callable(text,seen)->str, zero import of parser/slugger), projects/mdtoc/tests/test_inserter.py (17 unittest cases: nesting/indent incl. non-1 shallowest level, max_depth truncation incl. interleaved-omission and all-omitted/empty-headings, shared-seen-dict dedup, marker replacement incl. empty-region, all 4 markers-absent/malformed None-return branches + no-mutation check, idempotency incl. a full render_toc+insert_toc round trip x3). DEVIATION (documented, non-file-list): also created+locked projects/mdtoc/tests/__init__.py (empty marker, comment-only) -- required by Python 3.9 unittest discover when start_dir!=top_level_dir (cpython bpo-23882); not listed as any T-02x task's context_file, so no disjoint-ownership violation, content is inert/shared bootstrap. ACCEPTANCE CHECKLIST (all 8 criteria in T-022.json): (1) owns exactly inserter.py+test_inserter.py -- met, +1 unavoidable shared bootstrap file noted above; (2) render_toc(headings,slugify,max_depth=3) with injected slugify(text,seen), no slugger import -- met; (3) per-heading line + shared seen dict + indent=2sp*(level-shallowest_included) -- met; (4) depth>max_depth omitted -- met; (5) insert_toc replaces strictly between markers, markers preserved, documented None contract for markers-absent -- met (see inserter.py docstring); (6) idempotent insert_toc(insert_toc(text,toc),toc)==insert_toc(text,toc) -- met + tested; (7) unittest stub slugify covering nesting/max_depth/marker-replace/markers-absent/idempotency -- met; (8) passes via the mandated discover command -- met (see replay above).",
+        "ts": "2026-07-04T06:35:54Z"
+      },
+      "created_at": "2026-07-04T06:26:42Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T06:41:17Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-023": {
+      "epic": "mdtoc",
+      "title": "mdtoc slugger tournament: candidate-agnostic golden vectors",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-023.json",
+      "artifacts": [
+        "projects/mdtoc/candidates/vectors.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-3",
+        "note": "REPLAY: (1) python3 projects/mdtoc/candidates/vectors.py -> exits 0, prints 'self-check OK', 11 SLUG_VECTORS + 4 DEDUP_SEQUENCES (13 cases) = 24 total. (2) python3 -c \"import sys; sys.path.insert(0,'projects/mdtoc/candidates'); import vectors\" -> imports cleanly (no side effects at import time; self-check only runs under __main__ guard). (3) python3 .harness/bin/goal_mode.py run --cmd \"python3 projects/mdtoc/candidates/vectors.py\" -> GOAL REACHED iteration 1/3. (4) Interface check: vectors.run_against is defined as run_against(slugify_callable) -> (passed:int, total:int, failures:list[(case,expected,got)]) matching the module docstring's slugify(text:str, seen:dict)->str contract; SLUG_VECTORS entries are evaluated with a fresh seen={} each, DEDUP_SEQUENCES entries are evaluated with one shared seen dict threaded across that sequence's inputs. (5) Ground-truth sourcing: every SLUG_VECTORS/DEDUP_SEQUENCES entry has an inline comment citing the GitHub html-pipeline TocFilter#generate_id algorithm (downcase -> strip non [word|hyphen|space] chars -> space->hyphen) as the rule it encodes, including the well-known 'Foo & Bar' -> 'foo--bar' double-hyphen quirk (punctuation removal does not collapse surrounding whitespace) and case-insensitive dedup collision ('Config'/'CONFIG'/'config' all -> base 'config'). (6) Self-verified before handoff (not part of the shipped file): wrote a throwaway reference slugify in the scratchpad implementing exactly the cited algorithm and ran vectors.run_against(ref_slugify) -> passed=24 total=24, zero failures -- confirms the golden data is internally consistent with its own cited ground-truth rule, independent of any of the three future candidates. File touches EXACTLY projects/mdtoc/candidates/vectors.py, imports no candidate module, stdlib only (re/typing not even needed at runtime beyond typing hints from __future__/typing). One scope note for the verifier: the delegating prompt additionally suggested leading/trailing-space handling, punctuation-only headings, and code-span-stripping vectors; I deliberately omitted those because they are NOT in T-023.json's acceptance_criteria and their correct ground truth is ambiguous outside a parser context (e.g. whether slugify() or parser.py is responsible for trimming/code-fence handling) -- see my final report for the full rationale.",
+        "ts": "2026-07-04T06:35:09Z"
+      },
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-04T06:40:45Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-024": {
+      "epic": "mdtoc",
+      "title": "mdtoc slugger candidate A: regex-based slugify",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-023"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-024.json",
       "artifacts": [],
       "handoff": null,
-      "created_at": "2026-07-04T06:17:13Z",
-      "created_by": "fable-5-coordinator"
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-025": {
+      "epic": "mdtoc",
+      "title": "mdtoc slugger candidate B: unicodedata category-based slugify",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-023"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-025.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-026": {
+      "epic": "mdtoc",
+      "title": "mdtoc slugger candidate C: github-slugger spec-port slugify",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-023"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-026.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-027": {
+      "epic": "mdtoc",
+      "title": "mdtoc slugger tournament VERDICT: score candidates, promote winner",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-023",
+        "T-024",
+        "T-025",
+        "T-026"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-027.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-028": {
+      "epic": "mdtoc",
+      "title": "mdtoc CLI: argparse generate/check + package + integration test + README",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-021",
+        "T-022",
+        "T-027"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-028.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-029": {
+      "epic": "mdtoc",
+      "title": "mdtoc epic final join: replay full suite + end-to-end generate/check, verdict epic",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-021",
+        "T-022",
+        "T-027",
+        "T-028"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-029.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:26:43Z",
+      "created_by": "orchestration-planner"
     }
   }
 }

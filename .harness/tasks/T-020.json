@@ -4,5 +4,21 @@
   "description": "Criterion: prove the harness does real external work end-to-end (planner -> DAG -> parallel workers -> verifier). Deliverable: plan.md section + tasks T-021+ on the blackboard with real depends_on edges, disjoint file ownership per worker task, a tournament node (3 parallel slugger candidates + verifier pick, ORCHESTRATION.md section 5), and a final integration/verify join node. Python stdlib only.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T06:26:18Z",
+      "agent": "orchestration-planner",
+      "note": "Decompose mdtoc into 9 tasks T-021..T-029: frontier parser/inserter/vectors (no inter-edges, disjoint files, 3 claimable = max_parallel_workers); slugger tournament = vectors-first + 3 method-diverse candidates + verifier verdict that promotes winner to mdtoc/slugger.py; CLI depends on parser+inserter+verdict; final verifier join replays full suite + e2e. All engine=claude (code architecture + judgment; no long-context/math for Gemini)."
+    },
+    {
+      "ts": "2026-07-04T06:29:26Z",
+      "agent": "orchestration-planner",
+      "note": "HANDOFF -> verifier: DECOMPOSED mdtoc epic into T-021..T-029 (epic=mdtoc, engine=claude). Replay: blackboard.py status shows frontier 'claimable now: T-021,T-022,T-023' + 6 cascade gates matching the DAG (T-024/25/26 wait T-023; T-027 waits T-023,24,25,26; T-028 waits T-021,22,27; T-029 waits T-021,22,27,28). DISJOINT OWNERSHIP: grep context_files across .harness/tasks/T-02*.json - no file appears twice (inserter uses injected slugify -> no slugger edge; __init__.py owned only by T-028). TOURNAMENT: T-023 vectors authored first (imports no candidate), 3 method-diverse candidates T-024 regex / T-025 unicodedata / T-026 github-port, T-027 verifier scores via vectors.run_against + promotes winner to mdtoc/slugger.py; CLI depends on verdict not candidates. FINAL JOIN T-029 verifier depends on the 4 direct-consumption leaves (T-021,22,27,28) which transitively close the whole DAG. Plan+mermaid+rationale+dispatch-order in .harness/plan.md section 'mdtoc (external real-use proof)'. All 9 detail files carry executable acceptance_criteria (7-10 each) + context_files."
+    },
+    {
+      "ts": "2026-07-04T06:35:00Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (plan-only, no code touched): (1) DAG via blackboard show/JSON: T-021/022/023 depends_on=[] frontier w/ no inter-edges; T-024/025/026 depends_on=[T-023] only; T-027 depends_on=[T-023,T-024,T-025,T-026]; T-028=[T-021,T-022,T-027]; T-029=[T-021,T-022,T-027,T-028]. (2) Ownership DISJOINT: mechanical extract of 'Owns EXACTLY' clauses -> zero collisions; __init__.py owned solely by T-028 (its appearance in every task is the shared-convention warning, not ownership). context_files overlaps are all legit read-deps, each backed by a real depends_on edge. (3) Tournament: T-023 vectors authored-first, imports no candidate; 3 method-diverse candidates (T-024 regex / T-025 unicodedata.category / T-026 github-port); T-027 verifier-role consumes vectors+all candidates & promotes winner; CLI T-028 depends on VERDICT not candidates. (4) T-029 transitive closure = {T-021..T-028} entire epic, no false candidate edge. (5) Acceptance criteria concrete/executable (spot-checked T-021,024,027,029). (6) Dispatch schedule keeps claimable worker frontier<=3=max_parallel_workers; 3 workers live now (w1/T-021,w2/T-022,w3/T-023). (7) Producer discipline: T-020 thinker handed off (task_handoff from orchestration-planner->verifier), NOT self-marked done; planner locked only .harness task-JSONs+plan.md, zero projects/mdtoc events/edits."
+    }
+  ]
 }

@@ -115,14 +115,14 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 3,
+        "tasks_done": 4,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T04:51:31Z"
+        "last_outcome_at": "2026-07-04T06:40:15Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 3,
+        "tasks_done": 4,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T05:19:22Z"
+        "last_outcome_at": "2026-07-04T06:41:17Z"
       },
       "evolution-analyst": {
         "tasks_done": 1,
@@ -138,6 +138,16 @@
         "tasks_done": 0,
         "tasks_failed": 1,
         "last_outcome_at": "2026-07-04T04:46:18Z"
+      },
+      "orchestration-planner": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T06:35:00Z"
+      },
+      "substrate-worker-3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T06:40:45Z"
       }
     }
   },

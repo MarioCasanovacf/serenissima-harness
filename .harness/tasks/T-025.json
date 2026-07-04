@@ -1,0 +1,19 @@
+{
+  "id": "T-025",
+  "title": "mdtoc slugger candidate B: unicodedata category-based slugify",
+  "description": "Owns projects/mdtoc/candidates/slugger_b.py. Implement slugify(text, seen) classifying chars via unicodedata.category (keep letters/numbers/underscore, spaces to hyphens). Conform to vectors.py. Self-check with vectors.run_against, record passed/total. Stdlib only.",
+  "acceptance_criteria": [
+    "Owns EXACTLY: projects/mdtoc/candidates/slugger_b.py. Touch no other file. Depends on T-023 (vectors.py) being done.",
+    "Implements slugify(text: str, seen: dict) -> str conforming to the interface documented in projects/mdtoc/candidates/vectors.py.",
+    "APPROACH = UNICODEDATA CATEGORY-BASED: classify each char with unicodedata.category (keep L* letters and N* numbers, keep underscore and hyphen, map whitespace to hyphen, drop the rest) rather than one big regex.",
+    "Self-check: import vectors and run vectors.run_against(slugify); record the exact passed/total (and any failures) in the task handoff note.",
+    "Method must be genuinely different from candidates A (regex) and C (github-slugger port).",
+    "stdlib only; no import of the mdtoc package or the other candidates.",
+    "SHARED CONVENTIONS (all mdtoc tasks): Python 3.9+ stdlib ONLY, no pip deps. Package dir projects/mdtoc/mdtoc/ (namespace package; __init__.py is created only by T-028, so test files must add projects/mdtoc/ to sys.path and import as `from mdtoc.parser import ...`). Tests use unittest and must pass via `python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc`. No file listed here may be created/edited by any other task (disjoint ownership)."
+  ],
+  "context_files": [
+    "projects/mdtoc/candidates/slugger_b.py",
+    "projects/mdtoc/candidates/vectors.py"
+  ],
+  "notes": []
+}
