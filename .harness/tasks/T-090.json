@@ -1,0 +1,19 @@
+{
+  "id": "T-090",
+  "title": "SCRATCH smoke artifact (T-010)",
+  "description": "disposable lifecycle probe created and terminated by T-010",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-04T04:46:06Z",
+      "agent": "smoke-a",
+      "note": "smoke: simulating a hard blocker"
+    },
+    {
+      "ts": "2026-07-04T04:46:18Z",
+      "agent": "smoke-a",
+      "note": "smoke artifact terminal state (T-010) — intentional"
+    }
+  ]
+}

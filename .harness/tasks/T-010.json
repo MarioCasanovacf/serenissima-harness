@@ -1,7 +1,7 @@
 {
   "id": "T-010",
   "title": "Contention + crash-recovery smoke test (untested paths from audit_gen1 §4)",
-  "description": "Exercise every path audit_gen1 flagged as untested, capturing real outputs into .harness/logs/smoke_contention_report.md: (1) busy refusal between two distinct holders (exit 1); (2) TTL steal: acquire --ttl 1, wait 2s, acquire as another holder -> stole_expired:true event; (3) lease expiry: create scratch task T-090 via add-task, claim with --lease 1, wait 2s, run status -> claim_expired event + auto-release to open; (4) blocked path: claim T-090, update --status blocked, back to open; (5) failed path: update T-090 --status failed with note 'smoke artifact (T-010)' -> reputation tasks_failed bump for its holder. Clean: zero lock/claim residue after.",
+  "description": "Exercise every path audit_gen1 flagged as untested, capturing real outputs into .harness/logs/smoke_contention_report.md: (1) busy refusal between two distinct holders (exit 1); (2) TTL steal: acquire --ttl 3, wait 4s (G6: sub-second ISO truncation makes 1s TTLs racy), acquire as another holder -> stole_expired:true event; (3) lease expiry: create scratch task T-090 via add-task, claim with --lease 3, wait 4s (same G6 rationale), run status -> claim_expired event + auto-release to open; (4) blocked path: claim T-090, update --status blocked, back to open; (5) failed path: update T-090 --status failed with note 'smoke artifact (T-010)' -> reputation tasks_failed bump for its holder. Clean: zero lock/claim residue after.",
   "acceptance_criteria": [
     "events.jsonl gains >=1 lock_acquired with stole_expired:true (TTL steal) and >=1 claim_expired (lease auto-release)",
     "busy refusal between two distinct holders demonstrated with captured exit 1 output",
@@ -9,5 +9,26 @@
     ".harness/logs/smoke_contention_report.md contains every command with observed output; zero lock/claim residue at the end"
   ],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-04T04:45:02Z",
+      "agent": "substrate-worker-1",
+      "note": "plan: exercise busy-refusal, TTL-steal(ttl=3 per G6), lease-expiry, blocked, failed paths on scratch task T-090; capture verbatim output into .harness/logs/smoke_contention_report.md"
+    },
+    {
+      "ts": "2026-07-04T04:48:01Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: All 5 untested paths from audit_gen1 exercised with real captured output in .harness/logs/smoke_contention_report.md. Replay pointers: (1) busy refusal — rerun the two acquire calls on any scratch path with distinct --holder values, confirm exit 1 + 'busy:' text; (2) TTL steal — rerun 'lock.py acquire <path> --holder X --ttl 3', sleep 4, 'lock.py acquire <path> --holder Y', confirm '(expired lock swept)' + tail events.jsonl for stole_expired:true (note: used ttl=3/sleep=4 per G6, NOT the task-detail's ttl=1 — 1s TTLs race the substrate ISO sub-second truncation per state.json evolution.next_audit_inputs); (3) lease expiry — create a fresh scratch task, 'claim --lease 3 --agent Z', sleep 4, run any blackboard.py command (e.g. status), confirm the lease-expiry printout + claim_expired event; (4)/(5) blocked+failed — claim/update a scratch task through blocked->open->failed, confirm state.json agents.reputation.<holder>.tasks_failed increments (verified smoke-a went ABSENT -> tasks_failed:1). Residue check section at report bottom shows zero stray locks/claims post-run (only this task's own report lock, released momentarily). IMPORTANT: report documents a known identity-attribution split — events.jsonl 'agent' field = ambient session identity (substrate-worker-1) that ran the CLI, while 'holder'/'previous_holder'/'completed_by' = the --holder/--agent flag value (smoke-a/smoke-b); this is expected per the harness's flags-win identity model, not a bug, but worth double-checking during verification so it isn't mistaken for misattribution. Verifier should independently rerun at minimum the TTL-steal and lease-expiry paths themselves per protocol (cognitive-diversity check)."
+    },
+    {
+      "ts": "2026-07-04T04:51:31Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (independently replayed the recovery + contention paths with my own names ver-a..ver-d). AC1 stole_expired+claim_expired: MY TTL-steal (ver-a ttl3 @04:49:39Z, sleep4, ver-b @04:49:43Z) -> 'acquired (expired lock swept)' + fresh stole_expired:true event (holder=ver-b); events.jsonl now has 2 stole_expired:true (smoke-b producer + ver-b mine); claim_expired present for T-090 previous_holder=smoke-a. AC2 busy: MY ver-c acquire then ver-d same path -> 'busy: ... held by ver-c' EXIT_CODE=1 (independent repro, not just report). AC3 blocked+failed+reputation: T-090 event history = task_claimed->claim_expired(lease auto-release)->claim->blocked->open->claim->failed (all consistent); state.json reputation smoke-a = {tasks_done:0, tasks_failed:1}. AC4 residue: lock.py status = 'no active lock files' (my ver-* all released); T-090 board index = failed/claimed_by=null/completed_by=smoke-a (intentional terminal scratch, NOT residue); report documents every command+output. Identity-split confirmed in MY OWN events (agent=harness-verifier ran CLI, holder=ver-a/b = flag value) = flags-win model, not misattribution. ANOMALIES (non-blocking, both producer-disclosed): (1) G6 deviation - detail file says --ttl 1/--lease 1 but producer used ttl3/sleep4 per coordinator dispatch + the sub-second-ISO-truncation quirk I flagged in T-008; correct+deterministic, AC met identically; recommend updating T-010.json description text itself. (2) events.jsonl 'agent' vs 'holder' split worth documenting in README schema. No new defects."
+    },
+    {
+      "ts": "2026-07-04T04:52:52Z",
+      "agent": "fable-5-coordinator",
+      "note": "post-verdict doc fix: description updated from the racy --ttl/--lease 1 to the deterministic 3s method actually used and verified (G6)."
+    }
+  ]
 }

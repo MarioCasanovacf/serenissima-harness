@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T04:44:11Z",
-  "updated_by": "fable-5-coordinator",
+  "updated_at": "2026-07-04T04:51:31Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -291,7 +291,7 @@
     "T-010": {
       "epic": "E-03",
       "title": "Contention + crash-recovery smoke test (untested paths from audit_gen1 §4)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -301,10 +301,37 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-010.json",
+      "artifacts": [
+        ".harness/logs/smoke_contention_report.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "All 5 untested paths from audit_gen1 exercised with real captured output in .harness/logs/smoke_contention_report.md. Replay pointers: (1) busy refusal — rerun the two acquire calls on any scratch path with distinct --holder values, confirm exit 1 + 'busy:' text; (2) TTL steal — rerun 'lock.py acquire <path> --holder X --ttl 3', sleep 4, 'lock.py acquire <path> --holder Y', confirm '(expired lock swept)' + tail events.jsonl for stole_expired:true (note: used ttl=3/sleep=4 per G6, NOT the task-detail's ttl=1 — 1s TTLs race the substrate ISO sub-second truncation per state.json evolution.next_audit_inputs); (3) lease expiry — create a fresh scratch task, 'claim --lease 3 --agent Z', sleep 4, run any blackboard.py command (e.g. status), confirm the lease-expiry printout + claim_expired event; (4)/(5) blocked+failed — claim/update a scratch task through blocked->open->failed, confirm state.json agents.reputation.<holder>.tasks_failed increments (verified smoke-a went ABSENT -> tasks_failed:1). Residue check section at report bottom shows zero stray locks/claims post-run (only this task's own report lock, released momentarily). IMPORTANT: report documents a known identity-attribution split — events.jsonl 'agent' field = ambient session identity (substrate-worker-1) that ran the CLI, while 'holder'/'previous_holder'/'completed_by' = the --holder/--agent flag value (smoke-a/smoke-b); this is expected per the harness's flags-win identity model, not a bug, but worth double-checking during verification so it isn't mistaken for misattribution. Verifier should independently rerun at minimum the TTL-steal and lease-expiry paths themselves per protocol (cognitive-diversity check).",
+        "ts": "2026-07-04T04:48:01Z"
+      },
+      "created_at": "2026-07-04T04:25:16Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T04:51:31Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-090": {
+      "epic": "E-03",
+      "title": "SCRATCH smoke artifact (T-010)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-090.json",
       "artifacts": [],
       "handoff": null,
-      "created_at": "2026-07-04T04:25:16Z",
-      "created_by": "fable-5-coordinator"
+      "created_at": "2026-07-04T04:45:42Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-04T04:46:18Z",
+      "completed_by": "smoke-a"
     }
   }
 }

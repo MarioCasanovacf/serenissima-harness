@@ -115,9 +115,9 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 2,
+        "tasks_done": 3,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T04:40:31Z"
+        "last_outcome_at": "2026-07-04T04:51:31Z"
       },
       "substrate-worker-2": {
         "tasks_done": 2,
@@ -133,6 +133,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T04:36:00Z"
+      },
+      "smoke-a": {
+        "tasks_done": 0,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-04T04:46:18Z"
       }
     }
   },

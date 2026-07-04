@@ -78,6 +78,12 @@ holder — so **registered = this session's coordinated agents ONLY**;
 cross-session/cross-engine holders (another terminal, Gemini/Antigravity, a different
 machine) are never auto-registered and their locks keep blocking exactly as before.
 
+**events.jsonl attribution (flags-win model):** the `agent` field records the ambient
+session identity that RAN the CLI; `holder` / `previous_holder` / `completed_by` carry
+the flag-supplied identity. When a coordinator or verifier operates on behalf of other
+holders, `agent` ≠ `holder` **by design** — read `holder` for ownership, `agent` for
+who executed the command.
+
 ### Locks
 - One lock file per workspace file; name = relative path with `/` → `__`, plus `.lock`.
 - TTL (default 900 s from `state.json`) — a crashed holder never stalls the swarm;
