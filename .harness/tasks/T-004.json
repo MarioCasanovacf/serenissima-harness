@@ -1,0 +1,15 @@
+{
+  "id": "T-004",
+  "title": "Goal-mode runner v0",
+  "description": "Build .harness/bin/goal_mode.py: `--cmd '<test command>' --max-iters N` runs the command, and on failure writes a structured digest (.harness/logs/goal_mode_last_failure.md: exit code, tail of stderr/stdout, suspected files) then exits nonzero so the calling agent iterates; on success exits 0 and logs a goal_reached event. Bounded by state.json limits. ZCode parity item #1.",
+  "acceptance_criteria": [
+    "iterations strictly bounded; never loops forever",
+    "failure digest is actionable (names the failing command and captures stderr tail)",
+    "events.jsonl records goal_mode_start / goal_reached / goal_abandoned"
+  ],
+  "context_files": [
+    "fetched_docs/zcode_features.md",
+    ".harness/state.json"
+  ],
+  "notes": []
+}

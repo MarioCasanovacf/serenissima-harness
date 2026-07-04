@@ -1,0 +1,31 @@
+{
+  "id": "T-000",
+  "title": "Substrate smoke test: full lifecycle dry-run",
+  "description": "Exercise the complete delegation lifecycle on a no-op payload to prove the substrate works end to end: claim T-000, acquire a lock on a scratch file, mark in_progress with a note, hand off to verifier, verdict done. No source changes required.",
+  "acceptance_criteria": [
+    "claim/handoff/done transitions recorded in .harness/logs/events.jsonl",
+    "a lock was acquired and released (or swept) with no residue in .harness/locks/",
+    "reputation counter bumped in state.json for the executing agent"
+  ],
+  "context_files": [
+    "ORCHESTRATION.md",
+    ".harness/README.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-07-04T01:24:30Z",
+      "agent": "substrate-worker",
+      "note": "expected: full lifecycle transitions recorded; running dry-run payload"
+    },
+    {
+      "ts": "2026-07-04T01:24:30Z",
+      "agent": "substrate-worker",
+      "note": "HANDOFF -> verifier: replay: blackboard.py show T-000 + tail events.jsonl; expected transitions all present"
+    },
+    {
+      "ts": "2026-07-04T01:24:30Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED: events.jsonl shows claim->in_progress->handoff->done; lock cycle clean"
+    }
+  ]
+}

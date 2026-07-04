@@ -1,0 +1,15 @@
+{
+  "id": "T-003",
+  "title": "AST semantic indexer v0",
+  "description": "Build .harness/bin/ast_index.py (stdlib-only): `build` walks workspace *.py files (skip reference repos and .harness/logs) using the ast module and emits .harness/index/symbols.json mapping symbol -> [{file, line, kind}] for functions/classes/methods; `query <symbol>` prints locations. This is ZCode parity item #3 so agents can navigate without reading whole files.",
+  "acceptance_criteria": [
+    "build completes on this repo in under 30s",
+    "query finds a known symbol (e.g. cmd_claim) with correct file:line",
+    "usage documented in .harness/README.md section 'bin/'"
+  ],
+  "context_files": [
+    "fetched_docs/zcode_features.md",
+    ".harness/bin/harness_common.py"
+  ],
+  "notes": []
+}

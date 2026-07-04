@@ -1,0 +1,16 @@
+# macOS noise
+.DS_Store
+
+# External reference clones (own git history; not part of this repo)
+harness-optimization-reference/
+coffee-bench-reference/
+agentic-harness-engineering-reference/
+
+# Ephemeral runtime state (observability data lives as files, not in git)
+.harness/locks/*.lock
+.harness/locks/.guard
+.harness/logs/*.jsonl
+.harness/index/
+
+# Secrets (T-005 messenger config may hold tokens)
+.harness/notify_config.json

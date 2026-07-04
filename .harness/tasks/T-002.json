@@ -1,0 +1,17 @@
+{
+  "id": "T-002",
+  "title": "Cross-engine contract test (Gemini/Antigravity)",
+  "description": "From the Gemini side, follow gemini.md + ORCHESTRATION.md end to end AS gemini-runner: read the blackboard, claim this task, acquire a lock, write .harness/logs/gemini_contract_report.md (protocol checklist + 3 harness frictions from the Gemini perspective + proposed fixes), put a ReContext extract into .harness/recontext_evidence.md, hand off to verifier. Prompt handed over in 'prompts para Gemini/1.md'. Purpose: prove NLAH portability and break cognitive monoculture.",
+  "acceptance_criteria": [
+    ".harness/logs/gemini_contract_report.md exists with the full checklist",
+    "events.jsonl shows gemini-runner claim -> in_progress -> handoff",
+    "no live lock left behind by gemini-runner",
+    "friction notes usable as input for T-006"
+  ],
+  "context_files": [
+    "gemini.md",
+    "ORCHESTRATION.md",
+    "prompts para Gemini/1.md"
+  ],
+  "notes": []
+}

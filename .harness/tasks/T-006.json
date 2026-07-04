@@ -1,0 +1,16 @@
+{
+  "id": "T-006",
+  "title": "Generation-1 evolution audit",
+  "description": "Implement claude.md §5A steps 1-2: parse .harness/logs/transcript.jsonl and events.jsonl; build a failure taxonomy (tool errors, lock contention, expired leases, cascade-gate refusals, retry storms); audit decision gaps (expected vs actual outcomes recorded in task notes); write .harness/logs/audit_gen1.md with top-3 falsifiable mutation proposals, each citing concrete log lines; register proposals in state.json evolution.pending_proposals for the coordinator.",
+  "acceptance_criteria": [
+    "audit cites specific log line evidence for every claim",
+    "each proposal states the expected measurable improvement",
+    "no direct edits to claude.md/gemini.md (that is T-007, gated)"
+  ],
+  "context_files": [
+    ".harness/logs/",
+    "claude.md",
+    ".harness/state.json"
+  ],
+  "notes": []
+}

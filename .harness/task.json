@@ -1,0 +1,6 @@
+{
+  "_comment": "Mirror of the CURRENT task for single-runner sessions (claude.md §4 tree). Multi-agent sessions should rely on the blackboard instead; a solo runner may copy its claimed task payload here for quick reference.",
+  "active_task": null,
+  "claimed_via": "python3 .harness/bin/blackboard.py claim <T-ID> --agent <you>",
+  "updated_at": "2026-07-03T00:00:00Z"
+}

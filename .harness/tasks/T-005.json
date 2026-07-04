@@ -1,0 +1,15 @@
+{
+  "id": "T-005",
+  "title": "Remote messenger hook v0",
+  "description": "Build .harness/bin/notify.py reading .harness/notify_config.json (provider: telegram|generic webhook; url/token). Ships DISABLED with dry_run=true; supports --dry-run explicitly; never commits secrets (config is gitignored). Optionally wire as a Claude Code Notification/Stop hook AFTER human approval. ZCode parity item #2.",
+  "acceptance_criteria": [
+    "dry-run prints the payload without any network call",
+    "activation path documented and listed under state.json human_gates",
+    "no secret material tracked by git"
+  ],
+  "context_files": [
+    "fetched_docs/zcode_features.md",
+    ".harness/state.json"
+  ],
+  "notes": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T-007",
+  "title": "Gated NLAH mutation (generation bump)",
+  "description": "Implement claude.md §5A steps 3-4 for proposals accepted by the human: apply minimal diffs to claude.md/gemini.md, re-run the contract tests (T-000-style lifecycle + T-002-style cross-engine check), bump state.json harness_generation and blackboard generation, git commit 'generation 1'. Requires human approval per state.json human_gates.",
+  "acceptance_criteria": [
+    "human approval recorded in the task notes before any NLAH edit",
+    "verification gate re-run green after the mutation",
+    "git commit contains ONLY the accepted mutations (minimal diff)"
+  ],
+  "context_files": [
+    "claude.md",
+    "gemini.md",
+    ".harness/state.json"
+  ],
+  "notes": []
+}

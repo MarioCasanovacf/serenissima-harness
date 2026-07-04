@@ -1,0 +1,179 @@
+{
+  "schema_version": "0.1.0",
+  "generation": 0,
+  "updated_at": "2026-07-04T01:24:30Z",
+  "updated_by": "harness-verifier",
+  "protocol": {
+    "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
+    "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
+    "read_rule": "Read freely at any time; reading requires no lock.",
+    "collision_model": "One guarded mutable index (this file) + one detail file per task in .harness/tasks/ (written only by the claiming agent, via blackboard.py --note) + append-only event logs in .harness/logs/. Source-file edits additionally require a write lock (lock.py / .harness/locks/)."
+  },
+  "announcements": [
+    {
+      "ts": "2026-07-03T00:00:00Z",
+      "from": "fable-5-coordinator",
+      "message": "Generation 0 substrate bootstrapped. Before claiming any task, read ORCHESTRATION.md (repo root) for the delegation topology: dependency-DAG, claims with leases, write locks with TTL, and the producer!=approver rule."
+    }
+  ],
+  "epics": {
+    "E-01": {
+      "title": "Bootstrap the Universal Agent Harness substrate",
+      "status": "in_progress"
+    },
+    "E-02": {
+      "title": "Agency tooling (ZCode parity: AST index, goal-mode, messenger)",
+      "status": "open"
+    },
+    "E-03": {
+      "title": "Evolution loop (AHE): audit trajectories, mutate NLAHs under gate",
+      "status": "open"
+    }
+  },
+  "tasks": {
+    "T-000": {
+      "epic": "E-01",
+      "title": "Substrate smoke test: exercise the full claim->lock->work->handoff->done lifecycle",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 0,
+      "detail_file": ".harness/tasks/T-000.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker",
+        "note": "replay: blackboard.py show T-000 + tail events.jsonl; expected transitions all present",
+        "ts": "2026-07-04T01:24:30Z"
+      },
+      "completed_at": "2026-07-04T01:24:30Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-001": {
+      "epic": "E-01",
+      "title": "Initialize .harness/ runtime substrate (locks, logs, blackboard, state, bin CLIs, hooks, agent bench)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-001.json",
+      "artifacts": [
+        ".harness/",
+        ".harness/bin/blackboard.py",
+        ".harness/bin/lock.py",
+        ".harness/bin/log_event.py",
+        ".harness/bin/check_lock.py",
+        ".claude/settings.json",
+        ".claude/agents/",
+        "ORCHESTRATION.md"
+      ],
+      "handoff": null,
+      "completed_at": "2026-07-03T00:00:00Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-002": {
+      "epic": "E-01",
+      "title": "Cross-engine contract test: Gemini (Antigravity) runs the full protocol from gemini.md",
+      "status": "open",
+      "role": "worker",
+      "engine": "gemini",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-002.json",
+      "artifacts": [],
+      "handoff": null
+    },
+    "T-003": {
+      "epic": "E-02",
+      "title": "AST semantic indexer v0 (.harness/bin/ast_index.py: build + query symbol map)",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-003.json",
+      "artifacts": [],
+      "handoff": null
+    },
+    "T-004": {
+      "epic": "E-02",
+      "title": "Goal-mode runner v0 (.harness/bin/goal_mode.py: bounded edit-test-fix loop harness)",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-004.json",
+      "artifacts": [],
+      "handoff": null
+    },
+    "T-005": {
+      "epic": "E-02",
+      "title": "Remote messenger hook v0 (.harness/bin/notify.py: webhook notifications, human-gated activation)",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [
+        "T-001"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-005.json",
+      "artifacts": [],
+      "handoff": null
+    },
+    "T-006": {
+      "epic": "E-03",
+      "title": "Generation-1 evolution audit: parse logs, taxonomy of failures, mutation proposals (claude.md §5A)",
+      "status": "open",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [
+        "T-002",
+        "T-003",
+        "T-004"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-006.json",
+      "artifacts": [],
+      "handoff": null
+    },
+    "T-007": {
+      "epic": "E-03",
+      "title": "Gated NLAH mutation: apply accepted proposals to claude.md/gemini.md, bump generation, git commit",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-006"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-007.json",
+      "artifacts": [],
+      "handoff": null
+    }
+  }
+}

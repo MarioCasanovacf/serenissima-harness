@@ -1,0 +1,131 @@
+{
+  "schema_version": "0.1.0",
+  "harness_generation": 0,
+  "created_at": "2026-07-03T00:00:00Z",
+  "created_by": "fable-5-coordinator (Claude Code session, generation-0 bootstrap)",
+  "run": {
+    "run_counter": 0,
+    "last_run_id": null,
+    "last_session_start": null
+  },
+  "limits": {
+    "_comment": "Anti-agentic-trap bounds (research digest §3A). Every agent must respect these; the CLIs read the defaults from here.",
+    "max_steps_per_task": 50,
+    "max_seconds_per_command": 300,
+    "max_retries_per_failure": 3,
+    "lock_ttl_seconds_default": 900,
+    "claim_lease_seconds_default": 3600,
+    "max_parallel_workers": 3
+  },
+  "human_gates": {
+    "_comment": "Automation-bias mitigation: these operations ALWAYS require explicit human approval, regardless of role or autonomy level.",
+    "require_human_approval_for": [
+      "git push or any network publication of workspace content",
+      "deleting files outside .harness/ scratch areas",
+      "activating or sending remote webhook notifications (T-005) for the first time",
+      "mutating claude.md or gemini.md (harness generation bump via the §5A verification gate)"
+    ]
+  },
+  "agents": {
+    "_comment": "Capability contracts (intelligent-delegation paper): who can be delegated what. The bench lives in .claude/agents/; gemini-runner is reached through the numbered prompt bridge.",
+    "registry": {
+      "fable-5-coordinator": {
+        "engine": "claude",
+        "tier": "fable-5",
+        "role": "coordinator",
+        "capabilities": [
+          "goal decomposition into dependency-DAGs",
+          "delegation and join synthesis",
+          "harness evolution governance (§5A)",
+          "final reporting to the human"
+        ]
+      },
+      "orchestration-planner": {
+        "engine": "claude",
+        "tier": "opus",
+        "role": "thinker",
+        "capabilities": [
+          "decompose goals into blackboard tasks with real depends_on edges",
+          "maintain .harness/plan.md",
+          "design verification join nodes"
+        ]
+      },
+      "substrate-worker": {
+        "engine": "claude",
+        "tier": "sonnet",
+        "role": "worker",
+        "capabilities": [
+          "claim and execute open tasks",
+          "lock-disciplined file edits",
+          "bounded goal-mode loops",
+          "hand off to verifier with evidence"
+        ]
+      },
+      "harness-verifier": {
+        "engine": "claude",
+        "tier": "opus",
+        "role": "verifier",
+        "capabilities": [
+          "adversarial replay of hand-off evidence",
+          "acceptance-criteria verdicts",
+          "stale lock/claim sweeps",
+          "cognitive-diversity checks (verify by a different method than the producer)"
+        ]
+      },
+      "evolution-analyst": {
+        "engine": "claude",
+        "tier": "opus",
+        "role": "thinker",
+        "capabilities": [
+          "parse transcript.jsonl/events.jsonl",
+          "failure taxonomy and decision-gap audit",
+          "falsifiable harness mutation proposals"
+        ]
+      },
+      "research-librarian": {
+        "engine": "claude",
+        "tier": "sonnet",
+        "role": "thinker",
+        "capabilities": [
+          "grounded answers from papers/ and fetched_docs/ with file+page citations",
+          "ReContext evidence extraction"
+        ]
+      },
+      "gemini-runner": {
+        "engine": "gemini",
+        "tier": "3.5",
+        "role": "worker",
+        "capabilities": [
+          "million-token long-context digestion",
+          "python execution and plotting",
+          "ReContext evidence replay (gemini.md §4B)"
+        ],
+        "bridge": "prompts para Gemini/N.md — numbered hand-off files written by the coordinator; the human pastes them into Antigravity and returns the outputs"
+      }
+    },
+    "reputation": {
+      "substrate-worker": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T01:24:30Z"
+      }
+    }
+  },
+  "evolution": {
+    "generation": 0,
+    "last_audit_at": null,
+    "pending_proposals": [
+      {
+        "id": "P-001",
+        "target": [
+          "claude.md",
+          "gemini.md"
+        ],
+        "summary": "After T-002 (cross-engine contract test) passes, add explicit references in both NLAHs to ORCHESTRATION.md, the blackboard.py/lock.py CLI protocol, TTL/lease semantics, and the producer!=approver rule, replacing the current informal wording.",
+        "status": "pending",
+        "gate": "claude.md §5A.4 verification gate + human approval (see state.human_gates)"
+      }
+    ],
+    "accepted_mutations": []
+  }
+}

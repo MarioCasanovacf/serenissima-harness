@@ -1,0 +1,17 @@
+{
+  "id": "T-001",
+  "title": "Initialize .harness/ runtime substrate",
+  "description": "Bootstrap the physical local database and control plane: locks/, logs/, tasks/, blackboard.json (guarded index), state.json (limits, contracts, evolution queue), bin/ CLIs (blackboard.py, lock.py), observability hooks (log_event.py, check_lock.py wired in .claude/settings.json), agent bench (.claude/agents/), harness-status skill, ORCHESTRATION.md, Gemini prompt bridge, git baseline.",
+  "acceptance_criteria": [
+    "all JSON files parse; CLIs pass a scripted smoke test",
+    "hooks configured in .claude/settings.json with fail-open behavior",
+    "ORCHESTRATION.md documents the dependency-DAG delegation model",
+    "git repository initialized with a generation-0 commit"
+  ],
+  "context_files": [
+    "claude.md",
+    "gemini.md",
+    "harness_research_digest.md"
+  ],
+  "notes": []
+}
