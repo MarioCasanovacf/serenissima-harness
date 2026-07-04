@@ -26,17 +26,18 @@ this file is the substrate reference.
  ├── locks/                 Write locks: <rel__path>.lock (TTL JSON payloads)
  │                          + .guard (flock target serializing state mutations).
  ├── logs/
- │    ├── transcript.jsonl  EVERY tool call, auto-appended by the Claude Code
- │    │                     PostToolUse hook (Experience Observability).
+ │    ├── transcript.jsonl  Tool calls via the PostToolUse hook — fires ONLY in
+ │    │                     sessions rooted in this workspace (see pillar table).
  │    └── events.jsonl      Semantic events: claims, hand-offs, locks, expiries
  │                          (written by the CLIs).
  └── bin/                   The deterministic control plane (python3 >= 3.9, stdlib-only):
       ├── blackboard.py     status | next | show | claim | update | handoff | add-task
       ├── lock.py           acquire | release | status | sweep
+      ├── session.py        register <name> [--ttl 7200] | unregister <name> | list — session-holder registry (P-002 fix, see §Identity)
       ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
       ├── log_event.py      hook: transcript logger (fail-open)
-      ├── check_lock.py     hook: blocks edits to files write-locked by another agent (fail-open)
-      └── harness_common.py shared helpers (guarded mutation, atomic writes, TTL logic)
+      ├── check_lock.py     hook: blocks edits to files write-locked by another agent, unless the holder is a registered session holder (fail-open)
+      └── harness_common.py shared helpers (guarded mutation, atomic writes, TTL logic, session_holders())
 ```
 
 ## Core protocols
@@ -64,6 +65,19 @@ Cross-session/cross-engine runners: `export CLAUDE_HARNESS_AGENT_ID=<name>` (or 
 `--agent`/`--holder` explicitly, which always wins). In-session bench subagents use their
 bench name. Default identity is `main`.
 
+**Session holders (P-002 fix):** an in-session subagent whose identity is overridden
+per-call (`--agent`/`--holder`) used to self-block on its own live locks, because
+`check_lock.py` only ever compared a lock's `holder` against the *ambient*
+`CLAUDE_HARNESS_AGENT_ID`. A coordinator now declares which agent names are coordinated
+within THIS session via `session.py register <name> [--ttl 7200]` /
+`unregister <name>` / `list` (TTL entries in `.harness/session_holders.json`,
+`harness_common.session_holders()` reads live ones). `check_lock.py` allows a write when
+`holder == me` **or** `holder in session_holders()`. Registration is an explicit
+coordinator act — `blackboard.py claim` and `lock.py acquire` never auto-register a
+holder — so **registered = this session's coordinated agents ONLY**;
+cross-session/cross-engine holders (another terminal, Gemini/Antigravity, a different
+machine) are never auto-registered and their locks keep blocking exactly as before.
+
 ### Locks
 - One lock file per workspace file; name = relative path with `/` → `__`, plus `.lock`.
 - TTL (default 900 s from `state.json`) — a crashed holder never stalls the swarm;
@@ -76,7 +90,7 @@ bench name. Default identity is `main`.
 | Pillar (AHE) | Implementation here |
 |---|---|
 | Component | Everything under `.harness/` + NLAHs are explicit files, tracked by **git**; harness changes = commits (rollback = revert). |
-| Experience | `logs/transcript.jsonl` (hook-fed, every tool call) + `logs/events.jsonl` (semantic lifecycle events). |
+| Experience | `logs/events.jsonl` (semantic lifecycle events, written by the CLIs — the engine-agnostic floor) + `logs/transcript.jsonl` (hook-fed tool calls, ONLY in Claude Code sessions rooted in this workspace; coordination sessions rooted elsewhere do not populate it). |
 | Decision | Task notes record *expected vs actual*; verifier verdicts expose thinking–action gaps; `<thinking>` blocks stay in-session (subscription CLIs don't expose them to hooks — the notes are the durable proxy). |
 
 ### Governance (harness evolution, claude.md §5)

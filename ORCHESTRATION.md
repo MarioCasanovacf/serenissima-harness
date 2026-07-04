@@ -66,7 +66,7 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 | Replay, don't trust | Verifiers re-run hand-off commands themselves | Dynamic cloaking (falsified logs) |
 | Human gates | `state.json human_gates` list (push, NLAH mutation, webhooks, deletions) | Automation bias |
 | Bounded everything | `state.json limits` (steps, retries, timeouts, fan-out) | Runaway loops, rate-limit burn |
-| Hook-fed logging | PostToolUse hook appends every tool call to `transcript.jsonl` | Unobservable trajectories (no evolution evidence) |
+| Hook-fed logging | PostToolUse hook appends tool calls to `transcript.jsonl` in sessions rooted in this repo; `events.jsonl` (CLI-written) is the engine-agnostic floor | Unobservable trajectories (no evolution evidence) |
 
 ## 4. Roles and engines
 

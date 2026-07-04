@@ -22,8 +22,10 @@ Claude is optimized for XML structures and structured system instructions.
 ### A. Reasoning and Parallel Safety
 * **Internal Scratchpad**: Before executing any tool, modifying a file, or running a terminal command, write your reasoning inside `<thinking>` tags.
 * **Parallel Work Coordination**:
-  - When executing in parallel with other agents, read the shared blackboard in `.harness/blackboard.json` first.
-  - Before writing to any source file, verify and acquire the lock in `.harness/locks/` (e.g., check if a lock file exists for that path). If locked, wait or proceed to an unlocked task to avoid conflicts.
+  - When executing in parallel with other agents, read the shared blackboard in `.harness/blackboard.json` first. The delegation topology (dependency-DAG, claims with leases, producer ≠ approver) is defined in `ORCHESTRATION.md` — read it before claiming work.
+  - Mutate the blackboard ONLY via `python3 .harness/bin/blackboard.py` (claim / update / handoff / add-task); never hand-edit the JSON. Claims carry a lease and auto-expire, so a stalled agent never blocks the DAG.
+  - Before writing to any source file, acquire its write lock via `python3 .harness/bin/lock.py acquire <path> --holder <you> --task <T-ID>` (TTL-based; re-acquiring your own lock refreshes it). If locked by another agent, proceed to an unlocked task to avoid conflicts.
+  - A producer never marks its own task `done`: hand off via `blackboard.py handoff --to-role verifier` and let a different agent verdict.
 * **Strict Constraints**:
   - Do NOT modify files outside the designated project directories.
   - Limit sequential tool calls to prevent rate-limit caps on your subscription.
@@ -44,8 +46,9 @@ Claude interacts with the environment through local CLI tools.
 > **Strict Tool Constraint**: Under this harness, you do **NOT** have access to LLM/AI APIs. Do not attempt to make API requests to call other models. All tools are strictly local environment utilities (compilers, git, test runners, AST indexers).
 
 ### A. Core Local Tools
-*   **Goal Mode Loop**: Automate iterative test-fix cycles locally. Continue executing tests and fixing errors until the test suite passes.
-*   **AST Semantic Indexing**: Query local symbol lookup tools to find function, class, and variable definitions without reading entire files.
+*   **Tool Discovery (do this first)**: The deterministic control plane lives in `.harness/bin/` — list that directory and read each tool's docstring/`--help` before proposing new tooling; several affordances already exist.
+*   **Goal Mode Loop**: Automate iterative test-fix cycles locally via `python3 .harness/bin/goal_mode.py run --cmd "<test command>"` — the iteration bound is enforced mechanically (exit 3 = bound reached: stop and mark the task `blocked`).
+*   **AST Semantic Indexing**: `python3 .harness/bin/ast_index.py query <symbol>` (after `build`) finds function, class, and variable definitions without reading entire files.
 *   **Remote Hook Notifications**: Trigger script webhooks (integrating with WeChat, Feishu, or Telegram) to report long-running task completions or request human validation.
 
 ### B. Handling Tool Failures
@@ -78,7 +81,7 @@ Workspace Directory
 1. **Acquire Locks**: Check and request write locks in `.harness/locks/`.
 2. **Read State**: Read `.harness/task.json`, `.harness/blackboard.json`, and `.harness/state.json`.
 3. **Execute Cycle**: Perform the requested sub-tasks.
-4. **Release Locks & Write State**: Release acquired locks, update `.harness/blackboard.json` and `.harness/state.json`, and exit.
+4. **Release Locks & Write State**: Release acquired locks via `lock.py release`, record artifacts/notes and hand off via `blackboard.py handoff --to-role verifier` (never self-mark `done`), and exit.
 
 ---
 
