@@ -123,12 +123,17 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T02:14:54Z"
+      },
+      "evolution-analyst": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-04T02:26:00Z"
       }
     }
   },
   "evolution": {
     "generation": 0,
-    "last_audit_at": null,
+    "last_audit_at": "2026-07-04T02:28:15Z",
     "pending_proposals": [
       {
         "id": "P-001",
@@ -139,8 +144,56 @@
         "summary": "After T-002 (cross-engine contract test) passes, add explicit references in both NLAHs to ORCHESTRATION.md, the blackboard.py/lock.py CLI protocol, TTL/lease semantics, and the producer!=approver rule, replacing the current informal wording.",
         "status": "pending",
         "gate": "claude.md §5A.4 verification gate + human approval (see state.human_gates)"
+      },
+      {
+        "id": "P-002",
+        "source": "audit_gen1 Proposal A (rank 1)",
+        "target": [
+          ".harness/bin/check_lock.py",
+          ".harness/bin/harness_common.py",
+          ".harness/README.md §Identity"
+        ],
+        "summary": "check_lock.py resolves identity only from ambient CLAUDE_HARNESS_AGENT_ID, so in-session subagents with per-call identity overrides self-block on their own locks and must dodge the hook via Bash writes. Add hc.session_holders() (per-session marker/allowlist file) and allow holders in it.",
+        "evidence": "T-004.json:23; check_lock.py:30-32; harness_common.py:55",
+        "measurable_gain": "the synthetic PreToolUse payload from T-004 returns exit 0 instead of 2; bash-dodge handoff notes drop to 0",
+        "status": "pending",
+        "gate": "code-level (.harness/bin), NOT an NLAH mutation — normal worker task + verifier, no human gate"
+      },
+      {
+        "id": "P-003",
+        "source": "audit_gen1 Proposal B (rank 2)",
+        "target": [
+          ".claude/settings.json",
+          ".harness/bin/log_event.py",
+          ".harness/README.md:29-30,:79",
+          "gemini.md:59",
+          "ORCHESTRATION.md §3"
+        ],
+        "summary": "transcript.jsonl held 1 synthetic line vs 77+ real events — the Experience pillar captured no real traffic. Coordinator diagnosis: project-scoped hooks only fire in sessions whose root is THIS repo; today's coordination session ran rooted in another project, so PostToolUse never loaded. Fix: (a) verify transcripts flow in sessions opened in this repo (cheap smoke test), (b) reword the EVERY-tool-call promise to state the session-root condition, (c) optionally document events.jsonl as the engine-agnostic experience floor.",
+        "evidence": "wc -l transcript.jsonl = 1 vs events.jsonl = 77 at audit time; README.md:29-30",
+        "measurable_gain": "a session opened in this repo grows transcript.jsonl by >=1 line per tool call; promise wording matches observed behavior",
+        "status": "pending",
+        "gate": "doc/NLAH wording parts bundle into human-gated T-007; hook smoke test is code-level"
+      },
+      {
+        "id": "P-004",
+        "source": "audit_gen1 Proposal C (rank 3)",
+        "target": [
+          "gemini.md §4B step 3",
+          ".harness/recontext_evidence.md header",
+          "(optional) .harness/bin/recontext.py"
+        ],
+        "summary": "recontext_evidence.md is the only many-writer shared mutable file with no lock rule and no guarded() serialization (gemini-runner wrote it with zero locks). Add a lock-before-write rule to gemini.md §4B and the file header; optionally ship recontext.py add for atomic appends.",
+        "evidence": "grep -c recontext_evidence events.jsonl = 0; gemini.md:62-67 has no lock step",
+        "measurable_gain": "recontext lock events > 0 before writes; two-writer stress test yields zero interleaved/truncated entries",
+        "status": "pending",
+        "gate": "gemini.md edit is human-gated (bundle into T-007); CLI part is code-level"
       }
     ],
-    "accepted_mutations": []
+    "accepted_mutations": [],
+    "audit_artifacts": [
+      ".harness/logs/audit_gen1.md"
+    ],
+    "notes": "Bundling recommendation (audit + verifier): apply P-001 + P-003(doc) + P-004(gemini.md) as ONE minimal-diff T-007 mutation behind a single human gate. P-002 and the CLI halves are ordinary worker tasks. Minor unregistered findings: G4 lock.py status/sweep reject --agent; G5 cross-engine timestamp local-vs-UTC; untested paths list in audit §4."
   }
 }

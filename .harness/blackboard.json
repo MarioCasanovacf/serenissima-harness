@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 0,
-  "updated_at": "2026-07-04T02:14:54Z",
+  "updated_at": "2026-07-04T02:26:00Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -174,7 +174,7 @@
     "T-006": {
       "epic": "E-03",
       "title": "Generation-1 evolution audit: parse logs, taxonomy of failures, mutation proposals (claude.md §5A)",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [
@@ -186,8 +186,17 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-006.json",
-      "artifacts": [],
-      "handoff": null
+      "artifacts": [
+        ".harness/logs/audit_gen1.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "evolution-analyst",
+        "note": "audit at .harness/logs/audit_gen1.md; every claim cites quoted log lines; replay: grep the quoted lines. Top-3: A=check_lock.py per-session identity (rank1), B=transcript.jsonl coverage gap (rank2), C=recontext_evidence.md lock rule (rank3)",
+        "ts": "2026-07-04T02:21:09Z"
+      },
+      "completed_at": "2026-07-04T02:26:00Z",
+      "completed_by": "harness-verifier"
     },
     "T-007": {
       "epic": "E-03",

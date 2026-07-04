@@ -27,6 +27,21 @@
       "ts": "2026-07-04T02:10:28Z",
       "agent": "fable-5-coordinator",
       "note": "AUDIT INPUT (T-003/T-004 builds, positive+minor): (i) guarded() flock deterministically serialized an accidental parallel double-dispatch of goal_mode runs — collision design validated under a real race; (ii) worker-1 self-caught dead code + non-idiomatic imports in its first draft BEFORE validation (healthy decision-observability case); (iii) zero friction reported with blackboard.py/lock.py by either worker; (iv) known quirk: lock.py status/sweep reject --agent (see earlier note)."
+    },
+    {
+      "ts": "2026-07-04T02:16:55Z",
+      "agent": "evolution-analyst",
+      "note": "plan: parse logs, taxonomy, decision gaps, top-3 proposals"
+    },
+    {
+      "ts": "2026-07-04T02:21:09Z",
+      "agent": "evolution-analyst",
+      "note": "HANDOFF -> verifier: audit at .harness/logs/audit_gen1.md; every claim cites quoted log lines; replay: grep the quoted lines. Top-3: A=check_lock.py per-session identity (rank1), B=transcript.jsonl coverage gap (rank2), C=recontext_evidence.md lock rule (rank3)"
+    },
+    {
+      "ts": "2026-07-04T02:26:00Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (replayed >12 quoted claims). AC1 evidence: transcript wc=1 (synthetic test-session/echo hola), events grep verbatim: 'me=main' @T-004.json:23, reputation reason 'credit producer not verdict-time claimant', goal_abandoned note x2, recontext_evidence=0, rejected=0, stole_expired:true=0/false=10, blocked/failed/forced/lock_swept/busy=0, goal_abandoned=4. Source cites real: lock.py:98 def status (F1 already-exists valid), harness_common.py:55 env agent_id, check_lock.py:30-32 holder==me (audit said :31-32, +-1 drift, content exact), README.md:29-30 transcript promise. events 77->82 delta = ONLY post-audit T-006 lifecycle events (analyst claim/in_progress/lock/handoff + my claim, all ts>=02:16:48Z) - no corpus drift. AC2 measurable: A=exit0-not-2 + bash-dodge-notes->0; B=transcript grows>=1/call OR grep 'every tool call'->0; C=grep recontext_evidence>0 + zero interleaved. All 3 proposals pass 4-part falsifiability (evidence/target/mechanism/measurable). AC3 NLAH untouched: git diff --stat claude.md gemini.md EMPTY, git status clean, mtimes Jul3 predate audit. ANOMALY (non-blocking, coordinator action): state.json pending_proposals has ONLY P-001; audit S4 defers registering A/B/C to coordinator - not in the 3 acceptance criteria."
     }
   ]
 }
