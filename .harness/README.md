@@ -37,6 +37,7 @@ this file is the substrate reference.
       ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
       ├── log_event.py      hook: transcript logger (fail-open)
       ├── check_lock.py     hook: blocks edits to files write-locked by another agent, unless the holder is a registered session holder (fail-open)
+      ├── notify.py         init | status | send — webhook/Telegram messenger (T-005); ships DISABLED (enabled=false, dry_run=true, empty url), activation is a human gate (state.json human_gates)
       └── harness_common.py shared helpers (guarded mutation, atomic writes, TTL logic, session_holders())
 ```
 

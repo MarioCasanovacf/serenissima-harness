@@ -120,9 +120,9 @@
         "last_outcome_at": "2026-07-04T04:51:31Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 2,
+        "tasks_done": 3,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T04:42:30Z"
+        "last_outcome_at": "2026-07-04T05:19:22Z"
       },
       "evolution-analyst": {
         "tasks_done": 1,

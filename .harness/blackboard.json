@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T04:51:31Z",
+  "updated_at": "2026-07-04T05:19:22Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -163,7 +163,7 @@
     "T-005": {
       "epic": "E-02",
       "title": "Remote messenger hook v0 (.harness/bin/notify.py: webhook notifications, human-gated activation)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [
@@ -173,8 +173,18 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-005.json",
-      "artifacts": [],
-      "handoff": null
+      "artifacts": [
+        ".harness/bin/notify.py",
+        ".harness/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "REPLAY (a)-(h), all dry-run/no-network: (a) git check-ignore -v .harness/notify_config.json -> '.gitignore:16:.harness/notify_config.json .harness/notify_config.json' exit=0 (ignored, confirmed both pre- and post-existence). (b) python3 .harness/bin/notify.py init -> 'created: .../.harness/notify_config.json (enabled=false, dry_run=true, provider=generic, url/token empty)...'; re-running init -> 'refused: ... already exists. Not overwriting...' exit=1. (c) python3 .harness/bin/notify.py status -> enabled:False dry_run:True provider:generic url:(empty) token:(empty) effective mode:DRY RUN(config.enabled is not true) -- token NEVER printed raw. (d) python3 .harness/bin/notify.py send --message 'smoke test T-005' -> 'DRY RUN (reason: config.enabled is not true) -- no network call made.' + provider/url/full JSON payload printed, exit=0; grep notify_dry_run .harness/logs/events.jsonl -> event present with reason='config.enabled is not true'. (e) python3 .harness/bin/notify.py send --message x --dry-run -> same dry-run banner, reason='--dry-run flag passed', exit=0; second notify_dry_run event confirmed (grep -c =2 total). (f) NO NETWORK PROOF -- shipped .harness/notify_config.json literally contains enabled=false (bool, not string) AND dry_run=true (bool) AND url='' (empty string); asserted programmatically (python3 -c assert cfg[enabled] is False and cfg[dry_run] is True and cfg[url]=='' -> ASSERTIONS_PASSED). send()'s only network branch (urllib.request.urlopen) is gated behind _should_dry_run() returning False, which requires enabled==True AND dry_run==False AND url non-empty -- verified via pure-function unit calls (no send() invocation, no network): shipped config -> (True,'config.enabled is not true'); 4 hypothetical configs each toggling one guard independently confirm only the fully-live hypothetical (never persisted, never sent) returns dry_run=False. (g) python3 -m py_compile .harness/bin/notify.py -> exit 0, no output (ran twice, both clean). (h) git status --short -> ' M .harness/README.md', ' M .harness/blackboard.json', ' M .harness/tasks/T-005.json', '?? .harness/bin/notify.py' -- notify_config.json NOT listed; git ls-files | grep notify_config -> no output (not tracked); grep -in secret/password/api_key/sekret .harness/bin/notify.py -> no matches (only empty-string placeholders ship in code/config). ADDITIONAL: notify.py --help and send --help render correctly (argparse subcommands init/status/send wired); docstring documents full activation path incl. example Stop/Notification hook JSON block for .claude/settings.json, labeled 'DO NOT WIRE THIS HOOK JSON until the human gate approves activation' in two places; .claude/settings.json itself was NOT touched (verified: only Read, never Edit/Write on that path this session). README.md diff is exactly one added line in the bin/ tree matching existing style (see git diff .harness/README.md). Artifacts recorded via two separate --artifact calls (G8-safe): .harness/bin/notify.py, .harness/README.md -- both confirmed present in blackboard show T-005. EXPECTED vs ACTUAL: expected the shipped config's three guards (enabled/dry_run/url) to independently force dry-run and block urllib.request; actual matches exactly, confirmed both via CLI-level replay (d/e) and pure-function unit isolation of _should_dry_run (f) without ever calling send() against a live-toggled config. No secrets were ever written to any file -- init only writes the empty-string TEMPLATE constant.",
+        "ts": "2026-07-04T05:16:36Z"
+      },
+      "completed_at": "2026-07-04T05:19:22Z",
+      "completed_by": "harness-verifier"
     },
     "T-006": {
       "epic": "E-03",
