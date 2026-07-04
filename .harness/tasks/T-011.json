@@ -1,0 +1,29 @@
+{
+  "id": "T-011",
+  "title": "Hook liveness smoke test: transcript.jsonl fills with real session traffic + check_lock.py blocks a live Edit on a foreign lock (closes P-003 residual)",
+  "description": "Session rooted in this repo. Evidence: (a) transcript.jsonl grows >=1 line per tool call with this session_id; (b) an Edit tool call on a file write-locked by an unregistered foreign holder is denied by the PreToolUse hook with the HARNESS LOCK message; (c) after lock release the same Edit succeeds. Fix docs only if reality differs.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-04T06:14:54Z",
+      "agent": "fable-5-coordinator",
+      "note": "plan: (a) show transcript.jsonl growth with this session_id; (b) mkdir scratch, Write scratch file (unlocked -> allowed); (c) lock it as ghost-agent (unregistered), attempt Edit tool call -> expect PreToolUse denial; (d) release, Edit again -> allowed; handoff to verifier"
+    },
+    {
+      "ts": "2026-07-04T06:15:51Z",
+      "agent": "fable-5-coordinator",
+      "note": "EVIDENCE (session 15636cc2, rooted in this repo): (1) transcript.jsonl grew from 1 synthetic line (audit gen-1) to 7+ real PostToolUse lines with session_id 15636cc2-22dd-4ee8-8047-516cb2b65a41 — grep the session_id. (2) LIVE BLOCK: lock.py acquire scratch file --holder ghost-agent, then a real Edit tool call was DENIED by PreToolUse with 'HARNESS LOCK: ... write-locked by agent ghost-agent (task T-011, acquired 2026-07-04T06:15:10Z, ttl 900s)'; blocked call correctly ABSENT from transcript.jsonl (PostToolUse never fired). (3) After lock.py release, the same Edit SUCCEEDED (file now reads EDITED-AFTER-RELEASE). (4) Docs match reality — no correction needed; P-003 residual closed. REPLAY: acquire a lock as any unregistered holder on any file, pipe a synthetic PreToolUse payload with that file_path to check_lock.py, expect exit 2 + HARNESS LOCK on stderr; release, expect exit 0. Cross-check events.jsonl lock_acquired/lock_released by ghost-agent."
+    },
+    {
+      "ts": "2026-07-04T06:15:51Z",
+      "agent": "fable-5-coordinator",
+      "note": "HANDOFF -> verifier: Producer=fable-5-coordinator. Verify hook liveness both ways: transcript growth for this session_id AND mechanical block replay (exit 2 foreign, exit 0 after release / registered holder). Verdict done or send back."
+    },
+    {
+      "ts": "2026-07-04T06:20:55Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (replayed, not trusted): (1) transcript.jsonl live-fills with real PostToolUse traffic for session 15636cc2 (60 session records; tool_names Bash/Read/Write/Edit/Agent/TodoWrite/ToolSearch; ts 06:12:00Z-06:19:18Z; grew under my own tool calls = direct liveness proof; baseline had exactly 1 synthetic test-session line, file is gitignored so no git baseline). (2) Mechanical block replayed via synthetic PreToolUse payload (method differs from producer's live Edit): foreign holder ghost-verify -> exit 2 + 'HARNESS LOCK'; after release -> exit 0; registered holder harness-verifier -> exit 0 (no block). (3) events.jsonl shows ghost-agent lock_acquired 06:15:10Z / lock_released 06:15:22Z. (4) artifact hook_smoke_T-011.txt reads 'EDITED-AFTER-RELEASE'. (5) Docs match reality (ORCHESTRATION §3 hook-fed-logging row; README transcript session-root note + check_lock session-holder rule) - no correction needed. P-003 residual closed."
+    }
+  ]
+}

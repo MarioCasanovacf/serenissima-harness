@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 1,
-  "updated_at": "2026-07-04T05:19:22Z",
+  "updated_at": "2026-07-04T06:20:55Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -342,6 +342,63 @@
       "created_by": "substrate-worker-1",
       "completed_at": "2026-07-04T04:46:18Z",
       "completed_by": "smoke-a"
+    },
+    "T-011": {
+      "epic": "ready-for-usage",
+      "title": "Hook liveness smoke test: transcript.jsonl fills with real session traffic + check_lock.py blocks a live Edit on a foreign lock (closes P-003 residual)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-011.json",
+      "artifacts": [
+        ".harness/scratch/hook_smoke_T-011.txt"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "fable-5-coordinator",
+        "note": "Producer=fable-5-coordinator. Verify hook liveness both ways: transcript growth for this session_id AND mechanical block replay (exit 2 foreign, exit 0 after release / registered holder). Verdict done or send back.",
+        "ts": "2026-07-04T06:15:51Z"
+      },
+      "created_at": "2026-07-04T06:14:34Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-04T06:20:55Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-012": {
+      "epic": "ready-for-usage",
+      "title": "Generation-2 evolution audit: G6 (ISO_FMT sub-second truncation), G7 (recontext abs-path logging), G8 (update --artifact drops repeats), P-003 residual closure review",
+      "status": "in_progress",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": "evolution-analyst",
+      "claim_expires_at": "2026-07-04T07:18:13Z",
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-012.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:16:29Z",
+      "created_by": "fable-5-coordinator"
+    },
+    "T-020": {
+      "epic": "mdtoc",
+      "title": "Plan external real-use project 'mdtoc' (projects/mdtoc/): decompose into blackboard DAG T-021+",
+      "status": "open",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-020.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-04T06:17:13Z",
+      "created_by": "fable-5-coordinator"
     }
   }
 }

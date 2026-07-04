@@ -130,9 +130,9 @@
         "last_outcome_at": "2026-07-04T02:26:00Z"
       },
       "fable-5-coordinator": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T04:36:00Z"
+        "last_outcome_at": "2026-07-04T06:20:55Z"
       },
       "smoke-a": {
         "tasks_done": 0,

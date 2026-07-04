@@ -1,0 +1,8 @@
+{
+  "id": "T-020",
+  "title": "Plan external real-use project 'mdtoc' (projects/mdtoc/): decompose into blackboard DAG T-021+",
+  "description": "Criterion: prove the harness does real external work end-to-end (planner -> DAG -> parallel workers -> verifier). Deliverable: plan.md section + tasks T-021+ on the blackboard with real depends_on edges, disjoint file ownership per worker task, a tournament node (3 parallel slugger candidates + verifier pick, ORCHESTRATION.md section 5), and a final integration/verify join node. Python stdlib only.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

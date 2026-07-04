@@ -1,0 +1,14 @@
+{
+  "id": "T-012",
+  "title": "Generation-2 evolution audit: G6 (ISO_FMT sub-second truncation), G7 (recontext abs-path logging), G8 (update --artifact drops repeats), P-003 residual closure review",
+  "description": "claude.md 5A audit over ALL state.json evolution.next_audit_inputs. Parse events.jsonl + transcript.jsonl (now hook-fed with real traffic, see T-011 evidence in tasks/T-011.json). Deliver .harness/logs/audit_gen2.md with quoted evidence, failure taxonomy, and falsifiable ranked proposals split code-level vs NLAH-gated. PROPOSE ONLY - do not apply.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-04T06:18:23Z",
+      "agent": "evolution-analyst",
+      "note": "Gen-2 audit: (1) reproduce G6 ISO_FMT sub-second TTL race arithmetically from harness_common; (2) quote G7 recontext.py abs-path lock lines + events sample; (3) demonstrate G8 --artifact single-value drop from argparse + static reason; (4) verify P-003 residual via T-011.json + real transcript session 15636cc2; (5) fresh trajectory sweep of events/transcript for NEW failure modes. Deliverable audit_gen2.md; split code-level vs NLAH-gated; rank + disjoint worker partition."
+    }
+  ]
+}
