@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Universal Agent Harness — Explicador de componentes</title>
+<style>
+  :root {
+    --bg: #faf9f7; --panel: #ffffff; --ink: #1a1a1a; --muted: #5c5c5c;
+    --accent: #0d5c63; --accent-soft: #e3f0f1; --warn-bg: #fdf3e3; --warn-edge: #c98a1b;
+    --ok-bg: #e9f4ea; --ok-edge: #2c7a39; --code-bg: #f0efec; --edge: #dcdad5;
+    --danger-bg: #fbeaea; --danger-edge: #b3392f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 0 6rem 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    background: var(--accent); color: #fff; padding: 2.2rem 1.5rem 1.8rem;
+  }
+  header h1 { margin: 0 auto; max-width: 880px; font-size: 1.7rem; font-weight: 600; }
+  header p  { margin: .6rem auto 0; max-width: 880px; opacity: .92; }
+  nav {
+    max-width: 880px; margin: 1.2rem auto 0; padding: 0 1.5rem;
+    display: flex; flex-wrap: wrap; gap: .45rem;
+  }
+  nav a {
+    text-decoration: none; font-size: .82rem; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 999px; padding: .18rem .7rem;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
+  section {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 10px;
+    padding: 1.4rem 1.6rem; margin-top: 1.4rem;
+  }
+  h2 { margin: 0 0 .3rem; font-size: 1.25rem; color: var(--accent); }
+  h3 { margin: 1.1rem 0 .3rem; font-size: 1rem; }
+  .kicker { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .2rem; }
+  p { margin: .55rem 0; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--edge); border-radius: 8px;
+    padding: .85rem 1rem; overflow-x: auto; font: 13px/1.55 "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  code { background: var(--code-bg); border-radius: 4px; padding: .08rem .35rem; font: 13.5px "SF Mono", ui-monospace, Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: .7rem 0; font-size: .92rem; }
+  th, td { border: 1px solid var(--edge); padding: .45rem .65rem; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  .box { border-radius: 8px; padding: .8rem 1rem; margin: .8rem 0; border: 1px solid; }
+  .rule { background: var(--ok-bg); border-color: var(--ok-edge); }
+  .care { background: var(--warn-bg); border-color: var(--warn-edge); }
+  .never { background: var(--danger-bg); border-color: var(--danger-edge); }
+  .box b:first-child { display: block; margin-bottom: .15rem; }
+  .why { color: var(--muted); font-size: .9rem; font-style: italic; }
+  footer { max-width: 880px; margin: 2.2rem auto 0; padding: 0 1.5rem; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Universal Agent Harness — los componentes que debes entender</h1>
+  <p>Un sistema de coordinación para que varios agentes de IA trabajen en paralelo sobre un
+  repositorio sin pisarse, sin auto-aprobarse y dejando evidencia auditable. Estado al
+  2026-07-04: <b>generación 2, READY FOR USAGE</b> — tablero T-000…T-031, torneo estrenado,
+  proyecto externo real (<code>mdtoc</code>) construido y certificado de punta a punta.</p>
+</header>
+
+<nav>
+  <a href="#mapa">Mapa</a>
+  <a href="#tablero">1 · Tablero</a>
+  <a href="#locks">2 · Locks y leases</a>
+  <a href="#identidad">3 · Identidades</a>
+  <a href="#hooks">4 · Hooks</a>
+  <a href="#roles">5 · Roles</a>
+  <a href="#verdad">6 · Productor ≠ aprobador</a>
+  <a href="#torneo">7 · Torneos</a>
+  <a href="#gates">8 · Gates y límites</a>
+  <a href="#evolucion">9 · Evolución</a>
+  <a href="#migrar">10 · Llevarlo a otro repo</a>
+  <a href="#glosario">Glosario</a>
+</nav>
+
+<main>
+
+<section id="mapa">
+  <p class="kicker">El mapa en 30 segundos</p>
+  <h2>Cómo encajan las piezas</h2>
+  <pre>
+ TÚ (humano) ──plantea la meta──▶ COORDINADOR (Fable, la sesión principal)
+                                        │
+                        ┌───────────────┼───────────────────┐
+                        ▼               ▼                   ▼
+                    PLANNER          WORKERS ×3          VERIFICADORES
+                (arma el DAG de   (reclaman, bloquean,  (replican la evidencia
+                 tareas, no toca   implementan, entregan  sin confiar en nadie,
+                 código)           con evidencia)         dan el veredicto)
+                        │               │                   │
+                        └───────┬───────┴───────────────────┘
+                                ▼
+                    .harness/  ←— el "campo de juego" compartido
+                    ├── blackboard.json   el tablero de tareas (DAG)
+                    ├── bin/              9 CLIs que hacen cumplir las reglas
+                    ├── locks/            candados por archivo, con caducidad
+                    ├── logs/             evidencia de todo lo que pasó
+                    └── state.json        límites, gates humanos, memoria evolutiva
+  </pre>
+  <p>La idea central: <b>las reglas no son promesas, son programas</b>. Un agente no puede
+  reclamar una tarea bloqueada, no puede editar un archivo con candado ajeno, y (desde hoy)
+  no puede aprobar su propio trabajo — porque el CLI lo rechaza, no porque prometió portarse bien.</p>
+</section>
+
+<section id="tablero">
+  <p class="kicker">Componente 1 · el corazón</p>
+  <h2>El tablero (<code>blackboard.json</code> + <code>blackboard.py</code>)</h2>
+  <p>Es la única fuente de verdad sobre <b>qué trabajo existe, de quién es y en qué estado va</b>.
+  Cada tarea tiene un ID (<code>T-021</code>), un rol (worker / thinker / verifier), y lo más
+  importante: <b>dependencias</b> (<code>depends_on</code>). Una dependencia se declara solo
+  cuando una tarea consume literalmente el artefacto de otra.</p>
+  <h3>El ciclo de vida de toda tarea</h3>
+  <pre>
+ open ──claim──▶ claimed ──update──▶ in_progress ──handoff──▶ review ──veredicto──▶ done
+   ▲                                                             │
+   └────────── lease vencido / RECHAZADA ◀───────────────────────┘     (failed = abandonada)
+  </pre>
+  <h3>El "gate de cascada"</h3>
+  <p>Si intentas reclamar una tarea cuyas dependencias no están <code>done</code>, el comando
+  te rechaza con un mensaje claro. Así la cascada existe <i>exactamente</i> donde hay una
+  dependencia real, y todo lo demás corre en paralelo. Hoy lo viste funcionar: los candidatos
+  del torneo no pudieron arrancar hasta que los vectores dorados (T-023) fueron aprobados.</p>
+  <pre><code># ver el tablero completo
+python3 .harness/bin/blackboard.py status
+
+# pedir trabajo (el despachador te sugiere la mejor tarea reclamable)
+python3 .harness/bin/blackboard.py next --agent tu-nombre --role worker
+
+# intentar reclamar algo bloqueado → rechazo mecánico
+$ python3 .harness/bin/blackboard.py claim T-092 --agent tu-nombre
+refused (cascade gate): T-092 depends on unfinished task(s): T-091.</code></pre>
+  <div class="box never"><b>Regla de oro</b> Nunca edites <code>blackboard.json</code> a mano.
+  Solo <code>blackboard.py</code> lo muta, serializado con un candado de sistema (flock) — así
+  dos agentes escribiendo a la vez jamás corrompen el estado.</div>
+</section>
+
+<section id="locks">
+  <p class="kicker">Componente 2 · anti-colisión</p>
+  <h2>Candados de archivo con caducidad (locks TTL) y leases</h2>
+  <p>Dos protecciones gemelas contra los dos accidentes clásicos del paralelismo:</p>
+  <table>
+    <tr><th></th><th>Protege contra</th><th>Cómo</th></tr>
+    <tr><td><b>Lock</b> (por archivo)</td><td>Dos agentes editando el mismo archivo a la vez</td>
+        <td>Antes de editar, <code>lock.py acquire</code>. El candado caduca solo (900&nbsp;s por defecto) — un agente colgado nunca deja el archivo secuestrado.</td></tr>
+    <tr><td><b>Lease</b> (por tarea)</td><td>Un agente muerto dejando una tarea "reclamada" para siempre</td>
+        <td>Cada claim trae fecha de vencimiento (1&nbsp;h). Si vence, cualquier comando la libera de vuelta al pool automáticamente.</td></tr>
+  </table>
+  <pre><code>python3 .harness/bin/lock.py acquire ruta/al/archivo.py --holder tu-nombre --task T-0XX
+# ... editas ...
+python3 .harness/bin/lock.py release ruta/al/archivo.py --holder tu-nombre
+python3 .harness/bin/lock.py status     # ver candados vivos
+python3 .harness/bin/lock.py sweep      # barrer los caducados</code></pre>
+  <p class="why">Por qué funciona: el sistema entero está diseñado para que <b>nada pueda
+  atascarse permanentemente</b>. Todo lo que se toma, caduca; todo lo que caduca, vuelve al pool.
+  En la generación 2 además afinamos la precisión (un lock de 1&nbsp;s ya no puede morir en 1&nbsp;ms
+  por un redondeo) y la contención ahora deja huella (<code>lock_busy</code> en el log).</p>
+</section>
+
+<section id="identidad">
+  <p class="kicker">Componente 3 · quién es quién</p>
+  <h2>Identidades y <code>session.py</code></h2>
+  <p>Cada agente actúa bajo un nombre (<code>substrate-worker-1</code>, <code>harness-verifier</code>…)
+  que pasa en cada comando con <code>--agent</code> / <code>--holder</code>. Los candados y la
+  reputación se atribuyen a ese nombre.</p>
+  <p>El matiz importante: cuando el coordinador lanza sub-agentes <i>dentro de su propia sesión</i>
+  de Claude Code, el hook guardián solo ve la identidad ambiente de la sesión ("main"). Para que
+  no se bloqueen entre sí, el coordinador <b>registra explícitamente</b> qué nombres coordina:</p>
+  <pre><code>python3 .harness/bin/session.py register substrate-worker-1 --ttl 14400
+python3 .harness/bin/session.py list
+python3 .harness/bin/session.py unregister substrate-worker-1   # al cerrar</code></pre>
+  <div class="box care"><b>Cuidado</b> Registrar es un acto del coordinador y solo para agentes
+  de <i>esta</i> sesión. Un agente de otra terminal, otra máquina u otro motor (Gemini) <b>nunca</b>
+  se registra — sus candados deben seguir bloqueándote, que es todo el punto.</div>
+</section>
+
+<section id="hooks">
+  <p class="kicker">Componente 4 · el guardián silencioso</p>
+  <h2>Hooks: enforcement y caja negra (<code>.claude/settings.json</code>)</h2>
+  <p>En cualquier sesión de Claude Code <b>abierta en este repo</b>, dos hooks corren solos:</p>
+  <table>
+    <tr><th>Hook</th><th>Cuándo dispara</th><th>Qué hace</th></tr>
+    <tr><td><code>check_lock.py</code></td><td>Antes de cada edición de archivo</td>
+        <td>Si el archivo tiene candado vivo de otro agente, <b>bloquea la edición</b> antes de que ocurra, con un mensaje que te dice de quién es y qué hacer.</td></tr>
+    <tr><td><code>log_event.py</code></td><td>Después de cada uso de herramienta</td>
+        <td>Anota la llamada en <code>transcript.jsonl</code> — la caja negra de la sesión.</td></tr>
+  </table>
+  <p>La evidencia vive en dos capas: <code>events.jsonl</code> (eventos semánticos — claims,
+  handoffs, locks, veredictos — escritos por los CLIs, funciona con <i>cualquier</i> motor) y
+  <code>transcript.jsonl</code> (cada llamada de herramienta, solo en sesiones Claude Code
+  enraizadas aquí). Esto se demostró en vivo en T-011: un Edit sobre candado ajeno fue denegado
+  ante tus ojos, y el transcript pasó de 1 línea sintética a cientos de líneas reales.</p>
+</section>
+
+<section id="roles">
+  <p class="kicker">Componente 5 · la mesa de internos</p>
+  <h2>Roles y agentes de banca (<code>.claude/agents/</code>)</h2>
+  <table>
+    <tr><th>Agente</th><th>Rol</th><th>Qué hace / qué NO hace</th></tr>
+    <tr><td><code>orchestration-planner</code></td><td>thinker</td><td>Descompone metas en tareas con dependencias reales; mantiene <code>plan.md</code>. <b>No toca código.</b></td></tr>
+    <tr><td><code>substrate-worker</code></td><td>worker</td><td>Reclama, bloquea, implementa, prueba en bucle acotado, entrega con evidencia. <b>Nunca se aprueba a sí mismo.</b></td></tr>
+    <tr><td><code>harness-verifier</code></td><td>verifier</td><td>Replica la evidencia adversarialmente (re-corre todo), da el veredicto, barre candados caducos. <b>No arregla código.</b></td></tr>
+    <tr><td><code>evolution-analyst</code></td><td>thinker</td><td>Audita los logs, arma taxonomías de fallas, propone mutaciones falsificables. <b>Propone, jamás aplica.</b></td></tr>
+    <tr><td><code>research-librarian</code></td><td>thinker</td><td>Responde con citas exactas del corpus de papers. Solo lectura.</td></tr>
+  </table>
+  <p class="why">El coordinador (la sesión principal) despacha, sintetiza en los joins y gobierna
+  la evolución — pero no acapara tareas de worker. La separación de poderes es deliberada:
+  quien planea no implementa, quien implementa no aprueba, quien audita no aplica.</p>
+</section>
+
+<section id="verdad">
+  <p class="kicker">Componente 6 · el control de calidad</p>
+  <h2>Productor ≠ aprobador, y "replica, no confíes"</h2>
+  <p>Toda tarea terminada se <b>entrega</b> (<code>handoff</code>) a un verificador distinto, que
+  no lee las notas como verdad: <b>re-ejecuta los comandos</b> y compara. Hoy este mecanismo
+  demostró su valor dos veces:</p>
+  <div class="box rule"><b>Caso 1 — el rechazo que valió oro</b> La auditoría gen-2 afirmaba
+  "hay 4 paths absolutos en el log". El verificador contó: eran 9, y 4 venían de otro programa.
+  RECHAZADA → el analista re-diagnosticó (el fix correcto era más amplio) → re-entregó → aceptada.
+  Sin este gate, habríamos aplicado un fix que no arreglaba el problema.</div>
+  <div class="box rule"><b>Caso 2 — el desliz que enseñó</b> Un worker, por omitir un flag, marcó
+  su propia tarea como <code>done</code>. Lo divulgó y revirtió — pero probó que la regla era
+  social, no física. <b>Hoy mismo se está corrigiendo (T-031)</b>: el CLI rechazará
+  <code>done</code> si la tarea no pasó por <code>review</code> o si quien lo pide es el productor.</div>
+</section>
+
+<section id="torneo">
+  <p class="kicker">Componente 7 · para decisiones inciertas</p>
+  <h2>Torneos: N candidatos, un juez</h2>
+  <p>Cuando hay varias maneras razonables de resolver algo, no se apuesta a una: se publican
+  N tareas candidatas <b>con métodos deliberadamente distintos</b>, todas contra una misma vara
+  de medir creada <i>antes</i> que los candidatos, y una tarea-juez compara y promueve al ganador.</p>
+  <pre>
+      T-023 vectores dorados (la vara de medir, primero)
+        │
+   ┌────┼─────────┐
+   ▼    ▼         ▼
+ T-024  T-025   T-026        ← tres implementaciones en paralelo,
+ regex  unicode  port-spec     tres enfoques, cero comunicación entre ellas
+   └────┼─────────┘
+        ▼
+      T-027 JUEZ: puntúa las tres, desempata con casos límite,
+            promueve la ganadora VERBATIM (sin mezclar código)
+  </pre>
+  <p class="why">Por qué así: la diversidad de método descubre errores que la redundancia no.
+  Las tres empataron 24/24 en lo básico; solo los casos límite (acentos descompuestos,
+  tabuladores) revelaron cuál se comportaba como el mundo real. El juicio del juez fue además
+  re-verificado por otro agente — hasta el juez tiene auditor.</p>
+</section>
+
+<section id="gates">
+  <p class="kicker">Componente 8 · tu control</p>
+  <h2>Gates humanos y límites (<code>state.json</code>)</h2>
+  <p>Cuatro operaciones <b>siempre</b> requieren tu aprobación explícita, sin importar cuánta
+  autonomía tenga el sistema:</p>
+  <ol>
+    <li><code>git push</code> o cualquier publicación en red del contenido del workspace</li>
+    <li>Borrar archivos fuera de las áreas scratch de <code>.harness/</code></li>
+    <li>Activar o enviar notificaciones remotas (webhooks) por primera vez</li>
+    <li>Mutar <code>claude.md</code> o <code>gemini.md</code> (las "constituciones" de los agentes)</li>
+  </ol>
+  <p>Y todo agente opera dentro de límites duros: máx. 50 pasos por tarea, 300&nbsp;s por comando,
+  3 reintentos por falla, <b>máx. 3 workers en paralelo</b>. Son el freno contra los bucles
+  infinitos y el consumo desbocado.</p>
+  <div class="box care"><b>Sobre el punto 6.3 que preguntaste</b> El puente a Gemini ya es
+  100% sin APIs — ese es justamente su diseño: el coordinador escribe un prompt numerado y
+  autocontenido en <code>prompts para Gemini/</code>, <b>tú lo pegas a mano</b> en Antigravity,
+  y pegas la respuesta de vuelta. Tu intuición es correcta: automatizarlo requeriría una API;
+  por eso el eslabón eres tú, y el harness lo trata como un motor más que simplemente tarda lo
+  que tú tardes.</div>
+</section>
+
+<section id="evolucion">
+  <p class="kicker">Componente 9 · cómo mejora solo</p>
+  <h2>Evolución por generaciones (el bucle §5A)</h2>
+  <pre>
+ logs (events/transcript) ─▶ AUDITORÍA (analista: evidencia citada, propuestas falsificables)
+                                  │
+                                  ▼
+                     VERIFICACIÓN adversarial de la auditoría misma
+                                  │
+              ┌───────────────────┴──────────────────┐
+              ▼                                      ▼
+     fixes de código (.harness/bin)          mutaciones a claude.md/gemini.md
+     workers normales, sin gate              SIEMPRE gate humano (tú apruebas)
+              └───────────────────┬──────────────────┘
+                                  ▼
+              generación +1, commit de git (revertir = rollback)
+  </pre>
+  <p>Cada fricción del trabajo diario se anota en <code>evolution.next_audit_inputs</code>.
+  Hoy quedaron <b>12 insumos para la generación 3</b> — incluidos los que tú acabas de priorizar
+  (el guardrail ya en curso, la rotación de verificadores). Toda mejora exige una <b>ganancia
+  medible</b>: un número que puede fallar. Si no se puede medir, no se aplica.</p>
+</section>
+
+<section id="migrar">
+  <p class="kicker">Componente 10 · lo que preguntaste</p>
+  <h2>Llevar el harness a otro repo (receta completa)</h2>
+  <p>Escenario: tienes un proyecto a medias en <code>~/Proyectos/mi-app</code> y quieres que
+  la mesa de agentes continúe el trabajo ahí. Son tres movimientos: <b>copiar la maquinaria,
+  resetear el estado, sembrar el tablero nuevo</b>.</p>
+  <h3>Paso 1 — copiar la maquinaria (una sola vez)</h3>
+  <pre><code>cd ~/Proyectos/mi-app
+H="/Users/mariocasanova10pa/Documents/Universal Harness"
+
+cp -R "$H/.harness" .harness                  # sustrato completo (incluye bin/)
+mkdir -p .claude
+cp "$H/.claude/settings.json" .claude/        # hooks: guardián de locks + caja negra
+cp -R "$H/.claude/agents" .claude/agents      # la mesa de internos
+cp -R "$H/.claude/skills" .claude/skills      # /harness-status etc.
+cp "$H/ORCHESTRATION.md" "$H/USAGE.md" .      # los contratos</code></pre>
+  <h3>Paso 2 — resetear el estado (el tablero viejo no aplica)</h3>
+  <pre><code>rm -f .harness/locks/*.lock .harness/session_holders.json
+rm -f .harness/logs/*.jsonl .harness/logs/audit_gen*.md
+# blackboard.json y state.json: conservar la ESTRUCTURA, vaciar tareas/reputación.
+# (El primer proyecto natural de la gen-3 es un `harness_init.py` que haga
+#  exactamente esto con un comando. Mientras, pídemelo y lo dejo limpio yo.)</code></pre>
+  <h3>Paso 3 — integrar las instrucciones y sembrar la meta</h3>
+  <pre><code># Si mi-app ya tiene CLAUDE.md, agrégale al final la sección del harness
+# (roles, protocolo CLI, reglas de paralelismo) en vez de reemplazarlo.
+cat "$H/CLAUDE.md" &gt;&gt; CLAUDE.md   # y edita para fusionar con criterio
+
+# Abre Claude Code EN mi-app (los hooks solo viven donde está la raíz) y di:
+#   "Lee ORCHESTRATION.md y USAGE.md. El proyecto está a medias: [contexto].
+#    Planner: descompón lo pendiente en el tablero y despacha."</code></pre>
+  <p>El planner lee tu repo + tu descripción de lo pendiente, arma el DAG (T-001, T-002…),
+  y de ahí en adelante es exactamente lo que viste hoy: workers en paralelo, verificadores,
+  veredictos, commits por hitos. <b>El trabajo a medias no se migra como tareas — se
+  re-describe como meta</b>, y el planner lo convierte en tablero con el código existente
+  como punto de partida.</p>
+  <div class="box care"><b>Los tres errores típicos al migrar</b>
+  1) Abrir la sesión en otra carpeta — los hooks no cargan y pierdes el guardián de locks.
+  2) Copiar el tablero viejo con tareas de otro proyecto — confunde al despachador.
+  3) Olvidar fusionar CLAUDE.md — los agentes pierden sus reglas de comportamiento.</div>
+</section>
+
+<section id="glosario">
+  <p class="kicker">Referencia rápida</p>
+  <h2>Glosario</h2>
+  <table>
+    <tr><th>Término</th><th>En una línea</th></tr>
+    <tr><td>DAG</td><td>Grafo de tareas donde las flechas son dependencias reales de artefactos; sin ciclos.</td></tr>
+    <tr><td>Frontera</td><td>Las tareas reclamables ahora mismo (sin dependencias pendientes).</td></tr>
+    <tr><td>Claim / lease</td><td>Reservar una tarea / la caducidad automática de esa reserva.</td></tr>
+    <tr><td>Lock TTL</td><td>Candado por archivo que expira solo.</td></tr>
+    <tr><td>Handoff</td><td>Entregar el trabajo terminado a otro rol para veredicto.</td></tr>
+    <tr><td>Cascade gate</td><td>El rechazo mecánico de reclamar tareas con dependencias sin terminar.</td></tr>
+    <tr><td>Producer ≠ approver</td><td>Quien produce nunca da el veredicto de su propio trabajo.</td></tr>
+    <tr><td>Torneo</td><td>N candidatos con métodos distintos + un juez que compara y promueve.</td></tr>
+    <tr><td>Join</td><td>Tarea que integra y certifica el trabajo de varias ramas paralelas.</td></tr>
+    <tr><td>Gate humano</td><td>Operación que siempre requiere tu aprobación (push, borrado, webhooks, NLAHs).</td></tr>
+    <tr><td>NLAH</td><td>Los archivos de instrucciones de cada motor (claude.md, gemini.md) — solo mutan vía auditoría + tu aprobación.</td></tr>
+    <tr><td>Generación</td><td>Cada ronda verificada de auto-mejora del harness, con su commit.</td></tr>
+    <tr><td>Scratch (T-090…)</td><td>Tareas/archivos desechables para probar sin ensuciar lo real.</td></tr>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  Generado por el coordinador Fable · 2026-07-04 · Fuentes: ORCHESTRATION.md, .harness/README.md,
+  USAGE.md, state.json (generación 2) y los veredictos T-000…T-030 del tablero.
+</footer>
+
+</body>
+</html>

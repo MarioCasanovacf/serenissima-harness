@@ -115,9 +115,9 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 6,
+        "tasks_done": 7,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T07:54:28Z"
+        "last_outcome_at": "2026-07-05T00:56:50Z"
       },
       "substrate-worker-2": {
         "tasks_done": 9,
@@ -163,6 +163,31 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-04T08:05:24Z"
+      },
+      "probe-x": {
+        "tasks_done": 4,
+        "tasks_failed": 3,
+        "last_outcome_at": "2026-07-05T00:56:36Z"
+      },
+      "probe-z": {
+        "tasks_done": 0,
+        "tasks_failed": 5,
+        "last_outcome_at": "2026-07-05T00:56:36Z"
+      },
+      "agent-Y": {
+        "tasks_done": 1,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T00:56:36Z"
+      },
+      "agent-P": {
+        "tasks_done": 1,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T00:56:36Z"
+      },
+      "verifier-b": {
+        "tasks_done": 0,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T00:56:36Z"
       }
     }
   },
@@ -293,6 +318,20 @@
         "gate": "code-level, no human gate",
         "applied_note": "applied in T-014, verified done by harness-verifier (all measurable gains confirmed TRUE, combined regression passed)",
         "applied_at": "2026-07-04T07:35:00Z"
+      },
+      {
+        "id": "P-009",
+        "source": "gen-3 early item (T-091 slip residuals input) prioritized by the human 2026-07-04",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Mechanical producer!=approver: update --status done refused unless task is in review AND acting agent != handoff.from; --override-producer-check requires --note and logs producer_check_overridden; task_updated events carry an explicit agent field (closes F7 for status changes).",
+        "evidence": "T-091 slip (self-done from in_progress via ambient identity); verifier-b attack table 14/14 incl. the exact slip vector (omit --agent) now refused",
+        "measurable_gain": "self-done from any non-review status = exit 1 (was exit 0); done-by-producer in review = exit 1; ambient-identity actor now explicit in events.jsonl",
+        "status": "applied",
+        "gate": "code-level, no human gate",
+        "applied_note": "applied in T-031 (substrate-worker-1), verdicted by verifier-b (rotated reviewer, F6 practice). INFO semantics note: guardrail checks producer-OF-RECORD (handoff.from), not lifetime authorship - a re-handoff by a second agent legitimately re-opens the original producer as an eligible approver",
+        "applied_at": "2026-07-04T09:05:00Z"
       }
     ],
     "audit_artifacts": [
@@ -312,7 +351,7 @@
       "F5 (T-027): slugger_c's cited rule-table doc style is an uplift candidate for the promoted slugger_b",
       "F6 (epic mdtoc): verdict-layer monoculture - harness-verifier was sole approver of all 9 producer tasks and authored the join; consider verifier rotation or second reviewer on epic joins",
       "F7 (events.jsonl): task_updated status=done events carry NO actor field; top-level agent is uniformly the ambient session id - producer!=approver auditing is reconstruction-dependent. Add explicit actor to verdict events",
-      "T-091 slip residuals: producer self-done is NOT mechanically blocked (normative only) and leaves un-retractable reputation +1 and stale completed_by on revert. Guardrail candidate: blackboard.py refuses --status done when acting agent == last claimant, unless --override-verifier"
+      "P-009 follow-ups: (i) done-on-done now refused (idempotence loss, coherent but note it); (ii) F7 remains open for events other than task_updated; (iii) consider lifetime-authorship mode if producer-of-record proves too lax in practice"
     ]
   }
 }

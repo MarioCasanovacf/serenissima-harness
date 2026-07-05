@@ -1,0 +1,49 @@
+{
+  "id": "T-093",
+  "title": "SCRATCH-GUARDRAIL: disposable probe task for T-031 producer-check guardrail",
+  "description": "Disposable scratch task created solely to probe the mechanical producer!=approver guardrail added in T-031. Will be marked failed with a closure note after probing.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T00:50:31Z",
+      "agent": "probe-x",
+      "note": "probe: starting work"
+    },
+    {
+      "ts": "2026-07-05T00:50:37Z",
+      "agent": "probe-x",
+      "note": "HANDOFF -> verifier: probe: ready for review"
+    },
+    {
+      "ts": "2026-07-05T00:50:37Z",
+      "agent": "probe-y",
+      "note": "probe: verdict done by different agent"
+    },
+    {
+      "ts": "2026-07-05T00:50:44Z",
+      "agent": "probe-reset",
+      "note": "probe: reset for override test"
+    },
+    {
+      "ts": "2026-07-05T00:50:44Z",
+      "agent": "probe-x",
+      "note": "probe: round 2"
+    },
+    {
+      "ts": "2026-07-05T00:50:44Z",
+      "agent": "probe-x",
+      "note": "HANDOFF -> verifier: probe: ready for review round 2"
+    },
+    {
+      "ts": "2026-07-05T00:50:44Z",
+      "agent": "probe-x",
+      "note": "probe: emergency override — testing escape hatch"
+    },
+    {
+      "ts": "2026-07-05T00:50:59Z",
+      "agent": "substrate-worker-1",
+      "note": "SCRATCH DISPOSAL: probe complete for T-031 guardrail. All 6 probes + override escape hatch behaved as expected (see T-031 handoff note for full table). Task intentionally disposed as failed; not real work."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "T-098",
+  "title": "SCRATCH ambient-agent attack",
+  "description": "d",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-P",
+      "note": "wip"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-P",
+      "note": "HANDOFF -> verifier: P handoff"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "main",
+      "note": "ambient verdict"
+    },
+    {
+      "ts": "2026-07-05T00:56:36Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH DISPOSAL: T-031 guardrail attack-matrix probe complete; disposing per protocol."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "T-094",
+  "title": "SCRATCH-GUARDRAIL-VERIFY: attack matrix probe (verifier-b)",
+  "description": "disposable adversarial probe of T-031 guardrail",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T00:54:36Z",
+      "agent": "probe-x",
+      "note": "working"
+    },
+    {
+      "ts": "2026-07-05T00:54:36Z",
+      "agent": "probe-x",
+      "note": "HANDOFF -> verifier: handoff for review"
+    },
+    {
+      "ts": "2026-07-05T00:54:36Z",
+      "agent": "probe-x",
+      "note": "emergency override test"
+    },
+    {
+      "ts": "2026-07-05T00:54:55Z",
+      "agent": "probe-reset",
+      "note": "reset for accept-path test"
+    },
+    {
+      "ts": "2026-07-05T00:54:55Z",
+      "agent": "probe-x",
+      "note": "x"
+    },
+    {
+      "ts": "2026-07-05T00:54:55Z",
+      "agent": "probe-x",
+      "note": "HANDOFF -> verifier: handoff2"
+    },
+    {
+      "ts": "2026-07-05T00:54:55Z",
+      "agent": "probe-y",
+      "note": "verified by probe-y"
+    },
+    {
+      "ts": "2026-07-05T00:55:16Z",
+      "agent": "verifier-b",
+      "note": "scratch disposal - abandon from done"
+    },
+    {
+      "ts": "2026-07-05T00:56:36Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH DISPOSAL: T-031 guardrail attack-matrix probe complete; disposing per protocol."
+    }
+  ]
+}

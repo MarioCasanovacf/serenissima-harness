@@ -1,0 +1,44 @@
+{
+  "id": "T-097",
+  "title": "SCRATCH re-handoff attack",
+  "description": "d",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-X",
+      "note": "wip"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-X",
+      "note": "HANDOFF -> verifier: X handoff #1"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-Y",
+      "note": "Y rejects"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-Y",
+      "note": "wip"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-Y",
+      "note": "HANDOFF -> verifier: Y handoff #2"
+    },
+    {
+      "ts": "2026-07-05T00:55:37Z",
+      "agent": "agent-X",
+      "note": "X verdicts after Y re-handoff"
+    },
+    {
+      "ts": "2026-07-05T00:56:36Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH DISPOSAL: T-031 guardrail attack-matrix probe complete; disposing per protocol."
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 2,
-  "updated_at": "2026-07-04T08:06:40Z",
-  "updated_by": "fable-5-coordinator",
+  "updated_at": "2026-07-05T00:56:50Z",
+  "updated_by": "verifier-b",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -837,6 +837,164 @@
       "created_by": "substrate-worker-2",
       "completed_at": "2026-07-04T08:05:24Z",
       "completed_by": "fable-5-coordinator"
+    },
+    "T-031": {
+      "epic": "gen-3-early",
+      "title": "Guardrail: make producer!=approver MECHANICAL in blackboard.py (closes the T-091 slip class)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-031.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "Mechanical producer!=approver guardrail implemented in .harness/bin/blackboard.py cmd_update(): --status done refused unless previous status==review AND acting --agent != handoff.from; --override-producer-check escape hatch requires --note and is logged (producer_check_refused / producer_check_overridden events with explicit agent field); task_updated now also logs agent=args.agent explicitly (F7); 'failed' remains allowed from any status. Full probe protocol run on fresh scratch T-093 (created + disposed as failed by me) — replay: claim T-093 --agent probe-x; update in_progress; update done --agent probe-x (REFUSED: not in review); update done --agent probe-y (REFUSED: not in review); handoff --to-role verifier --agent probe-x; update done --agent probe-x (REFUSED: producer==approver); update done --agent probe-y (ACCEPTED); update open (reset); re-handoff; update done --agent probe-x --override-producer-check (REFUSED: needs --note); update done --agent probe-x --override-producer-check --note '...' (ACCEPTED + WARNING + producer_check_overridden logged); update failed --agent substrate-worker-1 (ACCEPTED from status=done, proving failed works from any status). Exact refusal/acceptance texts and events.jsonl excerpts are in the detail-file note I just appended. Regression verified: status/next/show unchanged, historical tasks (e.g. T-030) untouched, py_compile clean pre-use. Verifier note: my own attempt to self-verdict T-031 would hit the same refusal path as PROBE C; your verdict (different agent, task now in review) will hit the same accept path as PROBE D.",
+        "ts": "2026-07-05T00:52:03Z"
+      },
+      "created_at": "2026-07-05T00:47:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T00:56:50Z",
+      "completed_by": "verifier-b"
+    },
+    "T-093": {
+      "epic": "scratch-guardrail",
+      "title": "SCRATCH-GUARDRAIL: disposable probe task for T-031 producer-check guardrail",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-093.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "probe-x",
+        "note": "probe: ready for review round 2",
+        "ts": "2026-07-05T00:50:44Z"
+      },
+      "created_at": "2026-07-05T00:50:16Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-05T00:50:59Z",
+      "completed_by": "substrate-worker-1"
+    },
+    "T-094": {
+      "epic": "E-01",
+      "title": "SCRATCH-GUARDRAIL-VERIFY: attack matrix probe (verifier-b)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-094.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "probe-x",
+        "note": "handoff2",
+        "ts": "2026-07-05T00:54:55Z"
+      },
+      "created_at": "2026-07-05T00:54:23Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T00:56:36Z",
+      "completed_by": "verifier-b"
+    },
+    "T-095": {
+      "epic": "E-01",
+      "title": "SCRATCH-GUARDRAIL-VERIFY: re-handoff/blocked/failed probes",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-095.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T00:54:23Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T00:56:36Z",
+      "completed_by": "verifier-b"
+    },
+    "T-096": {
+      "epic": "E-01",
+      "title": "SCRATCH fail-path",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-096.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "probe-z",
+        "note": "ho",
+        "ts": "2026-07-05T00:55:16Z"
+      },
+      "created_at": "2026-07-05T00:55:16Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T00:56:36Z",
+      "completed_by": "verifier-b"
+    },
+    "T-097": {
+      "epic": "E-01",
+      "title": "SCRATCH re-handoff attack",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-097.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "agent-Y",
+        "note": "Y handoff #2",
+        "ts": "2026-07-05T00:55:37Z"
+      },
+      "created_at": "2026-07-05T00:55:37Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T00:56:36Z",
+      "completed_by": "verifier-b"
+    },
+    "T-098": {
+      "epic": "E-01",
+      "title": "SCRATCH ambient-agent attack",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-098.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "agent-P",
+        "note": "P handoff",
+        "ts": "2026-07-05T00:55:37Z"
+      },
+      "created_at": "2026-07-05T00:55:37Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T00:56:36Z",
+      "completed_by": "verifier-b"
     }
   }
 }

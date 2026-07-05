@@ -12,7 +12,12 @@ This tool mechanically encodes the delegation topology (see ORCHESTRATION.md):
     auto-released on every command, so a crashed/stuck agent never blocks
     the DAG frontier.
   - PRODUCER != APPROVER: workers hand off to reviewers (status=review);
-    only a different agent should mark a task done.
+    only a different agent should mark a task done. This is now MECHANICAL,
+    not just cultural: `update --status done` is refused unless the task's
+    current status is 'review' AND the acting --agent differs from
+    handoff.from. Escape hatch: --override-producer-check (requires --note);
+    every refusal and override is logged to events.jsonl with the acting
+    agent recorded explicitly.
 
 Usage examples:
   python3 .harness/bin/blackboard.py status
@@ -23,6 +28,9 @@ Usage examples:
   python3 .harness/bin/blackboard.py update T-003 --artifact .harness/bin/ast_index.py
   python3 .harness/bin/blackboard.py handoff T-003 --to-role verifier --note "tests green: <cmds>"
   python3 .harness/bin/blackboard.py update T-003 --status done --note "verified by replaying cmds"
+  # producer!=approver is mechanical: --status done is refused unless the task
+  # is 'review' AND --agent != the handoff's from_agent. Escape hatch (rare,
+  # audited): --override-producer-check --note "why this is safe"
   python3 .harness/bin/blackboard.py add-task --id T-010 --title "..." --role worker \
       --engine any --depends-on T-001,T-003 --priority 2 --description "..."
 """
@@ -256,6 +264,9 @@ def cmd_update(args):
         sys.exit("invalid --status '{}'. Valid: {}".format(args.status, ", ".join(VALID_STATUS)))
     if not (args.status or args.note or args.artifact):
         sys.exit("nothing to update: pass --status, --note and/or --artifact")
+    if args.override_producer_check and not args.note:
+        sys.exit("refused: --override-producer-check requires --note explaining why "
+                  "(the reason is recorded to events.jsonl for audit)")
     with hc.guarded():
         bb = load_bb()
         released = expire_claims(bb)
@@ -263,6 +274,45 @@ def cmd_update(args):
         if t is None:
             sys.exit("unknown task {}".format(args.task_id))
         claimant = t.get("claimed_by")
+        previous_status = t.get("status")
+        override_used = False
+        if args.status == "done":
+            # MECHANICAL producer != approver guardrail (closes the T-091/T-030
+            # slip class: an --agent-less `update --status done` could jump a
+            # claimed/in_progress task straight to done). Both conditions must
+            # hold: (a) the task went through review, (b) the acting agent is
+            # not the one who produced the handoff.
+            handoff = t.get("handoff") or {}
+            handoff_producer = handoff.get("from")
+            refusal = None
+            if previous_status != "review":
+                refusal = (
+                    "refused: {tid} cannot go straight to 'done' from '{prev}'. Mechanical "
+                    "guardrail (producer != approver): a task must be handed off for review "
+                    "first -- `blackboard.py handoff {tid} --to-role verifier --note \"...\"` -- "
+                    "before it can be marked done. Pass --override-producer-check together with "
+                    "--note to force it."
+                ).format(tid=args.task_id, prev=previous_status)
+            elif handoff_producer is not None and args.agent == handoff_producer:
+                refusal = (
+                    "refused: {tid} was handed off by '{producer}' -- the producer cannot "
+                    "verdict their own work (producer != approver). A different agent must mark "
+                    "it done, or pass --override-producer-check together with --note explaining "
+                    "why."
+                ).format(tid=args.task_id, producer=handoff_producer)
+            if refusal:
+                if args.override_producer_check:
+                    override_used = True
+                    hc.log_event("producer_check_overridden", task=args.task_id, agent=args.agent,
+                                 previous_status=previous_status, producer=handoff_producer,
+                                 refused_reason=refusal, note=args.note)
+                    print("WARNING: producer-check override used on {} by {}: {}".format(
+                        args.task_id, args.agent, refusal))
+                else:
+                    hc.log_event("producer_check_refused", task=args.task_id, agent=args.agent,
+                                 previous_status=previous_status, producer=handoff_producer,
+                                 reason=refusal)
+                    sys.exit(refusal)
         if args.status:
             t["status"] = args.status
             if args.status in ("done", "failed"):
@@ -287,8 +337,12 @@ def cmd_update(args):
         if args.note:
             append_note(args.task_id, args.agent, args.note)
     report_expirations(released)
-    hc.log_event("task_updated", task=args.task_id, status=args.status,
-                 artifact=args.artifact, has_note=bool(args.note))
+    # F7: log the acting agent explicitly on every status change, not just the
+    # ambient CLAUDE_HARNESS_AGENT_ID default -- makes producer != approver
+    # auditable from events.jsonl alone, without reconstructing from notes.
+    hc.log_event("task_updated", task=args.task_id, agent=args.agent, status=args.status,
+                 artifact=args.artifact, has_note=bool(args.note),
+                 override_producer_check=override_used if args.status == "done" else None)
     bits = []
     if args.status:
         bits.append("status={}".format(args.status))
@@ -407,6 +461,10 @@ def main(argv):
     p_upd.add_argument("--note", default=None)
     p_upd.add_argument("--artifact", action="append", default=None,
                        help="repeatable; each value is appended to the task's artifact list (values already present are skipped)")
+    p_upd.add_argument("--override-producer-check", dest="override_producer_check", action="store_true",
+                       default=False,
+                       help="escape hatch for the mechanical producer!=approver guardrail on "
+                            "--status done; requires --note (logged to events.jsonl)")
     p_upd.set_defaults(func=cmd_update)
 
     p_ho = sub.add_parser("handoff", parents=[common], help="hand the task to another role (producer != approver)")
