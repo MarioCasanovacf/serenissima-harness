@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
-  "generation": 3,
-  "updated_at": "2026-07-05T06:37:19Z",
-  "updated_by": "harness-verifier",
+  "generation": 4,
+  "updated_at": "2026-07-05T06:52:10Z",
+  "updated_by": "fable-5-coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -29,6 +29,11 @@
       "ts": "2026-07-05T03:34:48Z",
       "by": "fable-5-coordinator",
       "text": "Generation 3: de-Fable (P-010, human-gated) - the harness is model-agnostic; authorship-first done-guard (P-011) - producer!=approver is mechanical AND frictionless for legit verifiers; Thariq unknowns U1-U4 normative (planner Unknowns section + blindspot interview, ORCHESTRATION note taxonomy + pre-gate ritual); verifier rotation (F6) in force; mdtoc depth round-trip + collision-safe dedup (github parity). Readiness criteria in state.json evolution.readiness_criteria; pending joins: multi-session swarm smoke + second external project."
+    },
+    {
+      "ts": "2026-07-05T06:52:10Z",
+      "by": "fable-5-coordinator",
+      "text": "Generation 4 + PRODUCTION-READY certified (audit_gen4, opus-verified): all 7 readiness criteria met. Two external projects shipped (mdtoc py, cronsplain node), two tournaments, swarm smoke clean, registration auth-gated, notes byte-safe (--note-file), verifier-execute joins modeled. Cost policy P-020 in force: sonnet verifiers by default, consolidation, session hygiene. Publication package in docs/; git push remains human-gated behind the U4 ritual."
     }
   ],
   "epics": {
@@ -2221,6 +2226,215 @@
       "created_by": "fable-5-coordinator",
       "completed_at": "2026-07-05T06:37:19Z",
       "completed_by": "harness-verifier"
+    },
+    "T-056": {
+      "epic": "gen-4",
+      "title": "P-021+P-022: note-from-file/stdin + verifier-execute join modeling in blackboard.py",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-056.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "T-056 P-021+P-022 shipped in .harness/bin/blackboard.py. py_compile clean. REPLAY (from repo root):\n(a) P-021 byte-exact note-file, backticks+$()+repo path survive: printf '%s' 'DECISION: note with `backticks`, $(danger command), and path /Users/mariocasanova10pa/Documents/Universal Harness must survive byte-exact via --note-file (P-021 probe a)' > /tmp/probe_a.txt ; python3 .harness/bin/blackboard.py update T-090 --agent substrate-worker-1 --note-file /tmp/probe_a.txt ; python3 .harness/bin/blackboard.py show T-090 | grep -F 'backticks' -> exit 0, line printed verbatim with literal backtick and $(danger command) unexpanded (observed).\n(b) P-022 verifier-execute: python3 .harness/bin/blackboard.py add-task --id T-114 --role verifier --agent substrate-worker-1 ... ; then update T-114 --agent substrate-worker-1 --status done -> refused exit 1 (self-done by creator still blocked, event producer_check_refused); then update T-114 --agent probe-verifier-y --status done --note-file ... -> exit 0, NO override, events.jsonl shows task_updated override_producer_check=false AND a new verifier_execute_done event with agent=probe-verifier-y created_by=substrate-worker-1 (both observed via grep T-114 .harness/logs/events.jsonl).\n(c) worker-role regression: add-task --id T-115 --role worker ; update T-115 --agent probe-verifier-y --status done (no handoff) -> refused exit 1, unchanged behavior (observed).\n(d) full regression: status/show/next/claim/update(in_progress)/handoff/update(failed) all exit 0 on scratch T-116; --note+--note-file together correctly rejected by argparse mutex group exit 2; --note-stdin path exercised on T-090 exit 0.\n(e) scratch disposed: T-090/T-114/T-115/T-116 all set to failed (T-090 was already failed, only note appended).\nVerifier: replay (a)-(d) yourself, diff blackboard.py against git HEAD~1 for scope (owned file only), confirm no other CLI subcommand regressed.\n",
+        "ts": "2026-07-05T06:44:40Z"
+      },
+      "created_at": "2026-07-05T06:38:47Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T06:51:01Z",
+      "completed_by": "verifier-b"
+    },
+    "T-057": {
+      "epic": "gen-4",
+      "title": "P-024+P-025+P-026: three process rules into ORCHESTRATION.md (proportional verification, test-discovery precision, verbatim-promotion definition)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-057.json",
+      "artifacts": [
+        "ORCHESTRATION.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "T-057 P-024+P-025+P-026 shipped in ORCHESTRATION.md, additive-only. REPLAY (from repo root):\n(1) greppable: grep -n P-024 ORCHESTRATION.md ; grep -n P-025 ORCHESTRATION.md ; grep -n P-026 ORCHESTRATION.md -> all 3 present (P-025 line 71 sec2 lifecycle, P-024 line 117 sec4 near F6, P-026 line 150 sec5 tournament pattern).\n(2) additions-only diff: git diff --stat ORCHESTRATION.md -> 1 file changed, 26 insertions(+), 0 deletions; git diff ORCHESTRATION.md | grep '^-' | grep -v '^--- ' -> empty (only the diff meta line matched, confirmed zero content lines removed).\n(3) headers unchanged: git diff HEAD -- ORCHESTRATION.md | grep '^[+-]#' -> empty (no # header line touched).\n(4) markdown renders: bold-marker (**) count is even (56) i.e. balanced across the file after the 3 additions; no header/list-structure breakage, each addition placed as a paragraph or nested bullet inside its existing section (2, 4, 5) with unchanged section titles.\nContent shipped verbatim (see file): P-025 cites the bare `node --test` false-green on cronsplain tests/test_*.js layout (T-044/T-052) and mandates a nonzero executed-test-count assertion plus the layout-matching command `node --test tests/*.js`. P-024 cites state.json cost_policy rules 1-2 + the 2026-07-05 operator directive, ties verifier tier default (sonnet) + coordinator opus override to NLAH mutations/guardrail changes/epic joins/tournament promotions. P-026 defines verbatim promotion (byte-identical + legitimate decoupling: renamed candidate-identifying strings, stripped self-test/__main__, zero runtime requires of candidates/) citing T-049's schedule.js promotion fidelity note.\nVerifier: replay (1)-(4), read the 3 added paragraphs in context, confirm voice/style match existing U2/U4/F6 additions (bold-name-with-code, precedent citation, no rewritten prose elsewhere).\n",
+        "ts": "2026-07-05T06:46:06Z"
+      },
+      "created_at": "2026-07-05T06:38:47Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T06:51:19Z",
+      "completed_by": "verifier-b"
+    },
+    "T-114": {
+      "epic": "E-01",
+      "title": "SCRATCH-P022: verifier-execute done-guard probe (disposable)",
+      "status": "failed",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-114.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T06:43:26Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-05T06:44:12Z",
+      "completed_by": "substrate-worker-1"
+    },
+    "T-115": {
+      "epic": "E-01",
+      "title": "SCRATCH-P022: worker-role done-guard regression probe (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-115.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T06:43:58Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-05T06:44:12Z",
+      "completed_by": "substrate-worker-1"
+    },
+    "T-116": {
+      "epic": "E-01",
+      "title": "SCRATCH regression: claim/handoff cycle",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-116.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "regression handoff, plain --note path",
+        "ts": "2026-07-05T06:44:21Z"
+      },
+      "created_at": "2026-07-05T06:44:21Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-05T06:44:21Z",
+      "completed_by": "probe-verifier-z"
+    },
+    "T-117": {
+      "epic": "E-01",
+      "title": "SCRATCH-VERIFY-P022: verifier-role probe (verifier-b)",
+      "status": "failed",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-117.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T06:48:08Z",
+      "created_by": "probe-x",
+      "completed_at": "2026-07-05T06:49:15Z",
+      "completed_by": "verifier-b"
+    },
+    "T-118": {
+      "epic": "E-01",
+      "title": "SCRATCH-VERIFY-P022: worker-role probe (verifier-b)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-118.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "probe-x",
+        "note": "handing off for review",
+        "ts": "2026-07-05T06:48:17Z"
+      },
+      "created_at": "2026-07-05T06:48:17Z",
+      "created_by": "probe-x",
+      "completed_at": "2026-07-05T06:49:15Z",
+      "completed_by": "verifier-b"
+    },
+    "T-119": {
+      "epic": "E-01",
+      "title": "SCRATCH-VERIFY-P022: ambient-default slip vector (verifier-b)",
+      "status": "failed",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-119.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T06:48:24Z",
+      "created_by": "main",
+      "completed_at": "2026-07-05T06:49:15Z",
+      "completed_by": "verifier-b"
+    },
+    "T-120": {
+      "epic": "E-01",
+      "title": "SCRATCH-VERIFY-P022: epic-join-class task (verifier-b)",
+      "status": "failed",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-120.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T06:48:52Z",
+      "created_by": "producer-x",
+      "completed_at": "2026-07-05T06:49:15Z",
+      "completed_by": "verifier-b"
+    },
+    "T-121": {
+      "epic": "E-01",
+      "title": "SCRATCH-VERIFY: full lifecycle regression (verifier-b)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-121.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "lc-producer",
+        "note": "done, please review",
+        "ts": "2026-07-05T06:49:02Z"
+      },
+      "created_at": "2026-07-05T06:49:02Z",
+      "created_by": "lc-producer",
+      "completed_at": "2026-07-05T06:49:15Z",
+      "completed_by": "verifier-b"
     }
   }
 }

@@ -20,7 +20,12 @@ This tool mechanically encodes the delegation topology (see ORCHESTRATION.md):
     review task may verdict done with no extra friction; only the original
     producer of record is blocked. Escape hatch: --override-producer-check
     (requires --note); every refusal and override is logged to events.jsonl
-    with the acting agent recorded explicitly.
+    with the acting agent recorded explicitly. EXCEPTION (P-022): a
+    role=='verifier' task (the task itself IS the review/execution step --
+    tournament verdicts, epic joins) may go straight to done with NO handoff
+    at all, provided --agent differs from the task's created_by; logged as
+    event verifier_execute_done. Self-done by the creator is still refused;
+    worker/thinker-role tasks are unaffected.
 
 Usage examples:
   python3 .harness/bin/blackboard.py status
@@ -35,8 +40,21 @@ Usage examples:
   # record exists AND --agent != the handoff's from_agent (current status is
   # irrelevant -- P-011). Escape hatch (rare, audited): --override-producer-check
   # --note "why this is safe"
+  # P-022: role=='verifier' tasks (the task itself IS the review/execution --
+  # tournament verdicts, epic joins) may go straight to done with NO handoff,
+  # as long as --agent differs from the task's created_by. Self-done by the
+  # creator is still refused. worker/thinker-role tasks are unchanged (handoff
+  # still required). Logged explicitly as event verifier_execute_done.
   python3 .harness/bin/blackboard.py add-task --id T-010 --title "..." --role worker \
       --engine any --depends-on T-001,T-003 --priority 2 --description "..."
+  # P-021: --note takes raw shell args, so backticks/$()/etc are expanded by
+  # YOUR shell before this CLI ever sees them (a live hazard, not a hypothetical
+  # one). For any note containing those characters, use --note-file <path>
+  # (content read byte-exact) or --note-stdin (byte-exact from stdin) instead --
+  # available on both `update` and `handoff`, mutually exclusive with --note.
+  printf '%s' 'note with `backticks` and $(danger)' > /tmp/note.txt
+  python3 .harness/bin/blackboard.py update T-003 --note-file /tmp/note.txt
+  echo 'note with `backticks`' | python3 .harness/bin/blackboard.py update T-003 --note-stdin
 """
 import argparse
 import datetime as dt
@@ -127,6 +145,30 @@ def append_note(task_id, agent, note):
     }
     detail.setdefault("notes", []).append({"ts": hc.now_iso(), "agent": agent, "note": note})
     hc.atomic_write_json(detail_path(task_id), detail)
+
+
+def resolve_note(args):
+    """P-021: resolve the effective note text from --note / --note-file / --note-stdin.
+
+    argparse's mutually-exclusive group (set up in main()) already refuses more
+    than one of these being passed together, so no re-check is needed here.
+    --note-file and --note-stdin are read as raw bytes and decoded utf-8 with
+    NO stripping/rstrip -- byte-exact -- specifically so hazardous shell
+    metacharacters (backticks, $(), etc.) survive intact instead of being
+    expanded by the invoking shell (the P-021 hazard --note is inherently
+    exposed to).
+    """
+    note_file = getattr(args, "note_file", None)
+    note_stdin = getattr(args, "note_stdin", False)
+    if note_file:
+        try:
+            with open(note_file, "rb") as f:
+                return f.read().decode("utf-8")
+        except OSError as e:
+            sys.exit("refused: cannot read --note-file {}: {}".format(note_file, e))
+    if note_stdin:
+        return sys.stdin.buffer.read().decode("utf-8")
+    return args.note
 
 
 def report_expirations(released):
@@ -264,13 +306,14 @@ def cmd_claim(args):
 
 
 def cmd_update(args):
+    note = resolve_note(args)
     if args.status and args.status not in VALID_STATUS:
         sys.exit("invalid --status '{}'. Valid: {}".format(args.status, ", ".join(VALID_STATUS)))
-    if not (args.status or args.note or args.artifact):
-        sys.exit("nothing to update: pass --status, --note and/or --artifact")
-    if args.override_producer_check and not args.note:
-        sys.exit("refused: --override-producer-check requires --note explaining why "
-                  "(the reason is recorded to events.jsonl for audit)")
+    if not (args.status or note or args.artifact):
+        sys.exit("nothing to update: pass --status, --note (or --note-file/--note-stdin) and/or --artifact")
+    if args.override_producer_check and not note:
+        sys.exit("refused: --override-producer-check requires --note (or --note-file/--note-stdin) "
+                  "explaining why (the reason is recorded to events.jsonl for audit)")
     with hc.guarded():
         bb = load_bb()
         released = expire_claims(bb)
@@ -280,6 +323,7 @@ def cmd_update(args):
         claimant = t.get("claimed_by")
         previous_status = t.get("status")
         override_used = False
+        verifier_execute_used = False
         if args.status == "done":
             # MECHANICAL producer != approver guardrail -- AUTHORSHIP-FIRST (P-011).
             # Originally this gated on previous_status == 'review' BEFORE checking
@@ -296,13 +340,27 @@ def cmd_update(args):
             handoff_producer = handoff.get("from") if handoff else None
             refusal = None
             if not handoff:
-                refusal = (
-                    "refused: {tid} cannot go to 'done' -- no handoff record exists (current "
-                    "status '{prev}'). Mechanical guardrail (producer != approver): a task must "
-                    "be handed off for review first -- `blackboard.py handoff {tid} --to-role "
-                    "verifier --note \"...\"` -- before it can be marked done. Pass "
-                    "--override-producer-check together with --note to force it."
-                ).format(tid=args.task_id, prev=previous_status)
+                # P-022: a role=='verifier' task IS the review/execution step
+                # itself (tournament verdicts, epic joins -- T-049/T-052/T-054/
+                # T-092 precedent) -- there is no separate reviewer to hand off
+                # to. Previously these had NO clean path and were forced through
+                # --override-producer-check every time (audited: T-052, T-054
+                # both overrode). Model it properly instead: allow done with NO
+                # handoff when the task's role is 'verifier' AND the acting
+                # agent differs from the task's created_by (someone other than
+                # whoever authored the task executed/verdicted it). Self-done by
+                # the creator is still refused below -- worker/thinker-role
+                # tasks are completely unaffected, handoff is still required.
+                if t.get("role") == "verifier" and args.agent != t.get("created_by"):
+                    verifier_execute_used = True
+                else:
+                    refusal = (
+                        "refused: {tid} cannot go to 'done' -- no handoff record exists (current "
+                        "status '{prev}'). Mechanical guardrail (producer != approver): a task must "
+                        "be handed off for review first -- `blackboard.py handoff {tid} --to-role "
+                        "verifier --note \"...\"` -- before it can be marked done. Pass "
+                        "--override-producer-check together with --note to force it."
+                    ).format(tid=args.task_id, prev=previous_status)
             elif args.agent == handoff_producer:
                 refusal = (
                     "refused: {tid} was handed off by '{producer}' -- the producer cannot "
@@ -315,7 +373,7 @@ def cmd_update(args):
                     override_used = True
                     hc.log_event("producer_check_overridden", task=args.task_id, agent=args.agent,
                                  previous_status=previous_status, producer=handoff_producer,
-                                 refused_reason=refusal, note=args.note)
+                                 refused_reason=refusal, note=note)
                     print("WARNING: producer-check override used on {} by {}: {}".format(
                         args.task_id, args.agent, refusal))
                 else:
@@ -344,21 +402,27 @@ def cmd_update(args):
                 if art not in arts:
                     arts.append(art)
         save_bb(bb, args.agent)
-        if args.note:
-            append_note(args.task_id, args.agent, args.note)
+        if note:
+            append_note(args.task_id, args.agent, note)
     report_expirations(released)
     # F7: log the acting agent explicitly on every status change, not just the
     # ambient CLAUDE_HARNESS_AGENT_ID default -- makes producer != approver
     # auditable from events.jsonl alone, without reconstructing from notes.
     hc.log_event("task_updated", task=args.task_id, agent=args.agent, status=args.status,
-                 artifact=args.artifact, has_note=bool(args.note),
+                 artifact=args.artifact, has_note=bool(note),
                  override_producer_check=override_used if args.status == "done" else None)
+    if verifier_execute_used:
+        # P-022: explicit, separately-greppable event for the verifier-execute
+        # done path (distinct from producer_check_overridden -- this is not an
+        # override, it's a sanctioned path with its own authorship guard).
+        hc.log_event("verifier_execute_done", task=args.task_id, agent=args.agent,
+                     created_by=t.get("created_by"))
     bits = []
     if args.status:
         bits.append("status={}".format(args.status))
     if args.artifact:
         bits.append("artifact+={}".format(", ".join(args.artifact)))
-    if args.note:
+    if note:
         bits.append("note appended to {}".format(detail_path(args.task_id)))
     print("updated {}: {}".format(args.task_id, "; ".join(bits)))
     if args.status == "done":
@@ -373,6 +437,7 @@ def cmd_update(args):
 
 
 def cmd_handoff(args):
+    note = resolve_note(args)
     if args.to_role not in VALID_ROLES:
         sys.exit("invalid --to-role '{}'. Valid: {}".format(args.to_role, ", ".join(VALID_ROLES)))
     with hc.guarded():
@@ -383,12 +448,12 @@ def cmd_handoff(args):
             sys.exit("unknown task {}".format(args.task_id))
         t["status"] = "review"
         t["handoff"] = {"to_role": args.to_role, "from": args.agent,
-                        "note": args.note, "ts": hc.now_iso()}
+                        "note": note, "ts": hc.now_iso()}
         t["claimed_by"] = None
         t["claim_expires_at"] = None
         save_bb(bb, args.agent)
-        if args.note:
-            append_note(args.task_id, args.agent, "HANDOFF -> {}: {}".format(args.to_role, args.note))
+        if note:
+            append_note(args.task_id, args.agent, "HANDOFF -> {}: {}".format(args.to_role, note))
     report_expirations(released)
     hc.log_event("task_handoff", task=args.task_id, from_agent=args.agent, to_role=args.to_role)
     print("handed off {} to role '{}'. A {} must now claim it and verdict done/open.".format(
@@ -442,6 +507,26 @@ def cmd_add_task(args):
     return 0
 
 
+def add_note_args(parser):
+    """P-021: shared --note / --note-file / --note-stdin mutually-exclusive group.
+
+    --note is plain argv text -- your shell expands backticks, $(), etc.
+    BEFORE this CLI ever receives them, so a note containing those characters
+    is corrupted (or worse, executed) at the shell, not by this tool. Use
+    --note-file <path> or --note-stdin for byte-exact content containing
+    shell metacharacters.
+    """
+    grp = parser.add_mutually_exclusive_group()
+    grp.add_argument("--note", default=None,
+                     help="inline note text -- AVOID backticks/$()/other shell metacharacters "
+                          "here, your shell expands them before this CLI sees them (P-021); "
+                          "use --note-file or --note-stdin instead for hazardous content")
+    grp.add_argument("--note-file", dest="note_file", default=None,
+                     help="read note content byte-exact from a file; safe for backticks/$()")
+    grp.add_argument("--note-stdin", dest="note_stdin", action="store_true", default=False,
+                     help="read note content byte-exact from stdin; safe for backticks/$()")
+
+
 def main(argv):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     common = argparse.ArgumentParser(add_help=False)
@@ -468,19 +553,19 @@ def main(argv):
     p_upd = sub.add_parser("update", parents=[common], help="update status / add note / register artifact")
     p_upd.add_argument("task_id")
     p_upd.add_argument("--status", default=None)
-    p_upd.add_argument("--note", default=None)
+    add_note_args(p_upd)
     p_upd.add_argument("--artifact", action="append", default=None,
                        help="repeatable; each value is appended to the task's artifact list (values already present are skipped)")
     p_upd.add_argument("--override-producer-check", dest="override_producer_check", action="store_true",
                        default=False,
                        help="escape hatch for the mechanical producer!=approver guardrail on "
-                            "--status done; requires --note (logged to events.jsonl)")
+                            "--status done; requires --note/--note-file/--note-stdin (logged to events.jsonl)")
     p_upd.set_defaults(func=cmd_update)
 
     p_ho = sub.add_parser("handoff", parents=[common], help="hand the task to another role (producer != approver)")
     p_ho.add_argument("task_id")
     p_ho.add_argument("--to-role", required=True)
-    p_ho.add_argument("--note", default=None)
+    add_note_args(p_ho)
     p_ho.set_defaults(func=cmd_handoff)
 
     p_add = sub.add_parser("add-task", parents=[common], help="publish a new task on the board")

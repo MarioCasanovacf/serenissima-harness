@@ -24,6 +24,31 @@
       "ts": "2026-07-04T07:28:16Z",
       "agent": "harness-verifier",
       "note": "combined-regression: composed flow (lock-abs -> contention -> multi-artifact) by harness-verifier; handoff-style note"
+    },
+    {
+      "ts": "2026-07-05T06:43:16Z",
+      "agent": "substrate-worker-1",
+      "note": "DECISION: note with `backticks`, $(danger command), and path /Users/mariocasanova10pa/Documents/Universal Harness must survive byte-exact via --note-file (P-021 probe a)"
+    },
+    {
+      "ts": "2026-07-05T06:44:07Z",
+      "agent": "substrate-worker-1",
+      "note": "DECISION: stdin note regression check for P-021 (T-090 disposal)\n"
+    },
+    {
+      "ts": "2026-07-05T06:47:42Z",
+      "agent": "verifier-b",
+      "note": "VERIFIER-B PROBE: `backtick-cmd`, $(rm -rf /tmp/nope), \"double quotes\", 'single quotes', path=/Users/mariocasanova10pa/Documents/Universal Harness/weird\\path\nsecond line with trailing tab\tend"
+    },
+    {
+      "ts": "2026-07-05T06:48:00Z",
+      "agent": "verifier-b",
+      "note": "STDIN PROBE: `stdin-backtick`, $(echo pwned)"
+    },
+    {
+      "ts": "2026-07-05T06:48:00Z",
+      "agent": "verifier-b",
+      "note": "plain note verifier-b regression check"
     }
   ]
 }

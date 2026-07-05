@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "harness_generation": 3,
+  "harness_generation": 4,
   "created_at": "2026-07-03T00:00:00Z",
   "created_by": "fable-5-coordinator (Claude Code session, generation-0 bootstrap)",
   "run": {
@@ -115,9 +115,9 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 11,
-        "tasks_failed": 1,
-        "last_outcome_at": "2026-07-05T05:31:56Z"
+        "tasks_done": 13,
+        "tasks_failed": 4,
+        "last_outcome_at": "2026-07-05T06:51:19Z"
       },
       "substrate-worker-2": {
         "tasks_done": 14,
@@ -165,9 +165,9 @@
         "last_outcome_at": "2026-07-05T06:21:39Z"
       },
       "probe-x": {
-        "tasks_done": 4,
-        "tasks_failed": 3,
-        "last_outcome_at": "2026-07-05T00:56:36Z"
+        "tasks_done": 5,
+        "tasks_failed": 4,
+        "last_outcome_at": "2026-07-05T06:49:15Z"
       },
       "probe-z": {
         "tasks_done": 0,
@@ -186,8 +186,8 @@
       },
       "verifier-b": {
         "tasks_done": 0,
-        "tasks_failed": 4,
-        "last_outcome_at": "2026-07-05T03:15:23Z"
+        "tasks_failed": 7,
+        "last_outcome_at": "2026-07-05T06:49:15Z"
       },
       "probe-agent-x": {
         "tasks_done": 4,
@@ -243,69 +243,33 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-05T05:34:27Z"
+      },
+      "probe-verifier-y": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-05T06:43:44Z"
+      },
+      "probe-y": {
+        "tasks_done": 2,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-05T06:48:42Z"
+      },
+      "producer-x": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-05T06:48:52Z"
+      },
+      "lc-producer": {
+        "tasks_done": 1,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T06:49:15Z"
       }
     }
   },
   "evolution": {
-    "generation": 3,
+    "generation": 4,
     "last_audit_at": "2026-07-05T07:15:00Z",
-    "pending_proposals": [
-      {
-        "id": "P-021",
-        "source": "audit_gen4 rank 1 (MED)",
-        "target": [
-          ".harness/bin/blackboard.py"
-        ],
-        "summary": "Note corruption: backticks/$() in --note get shell-substituted (4+ incidents). Add --note-file <path> and --note-stdin support to update/handoff; document the no-backticks convention in the CLI help.",
-        "measurable_gain": "a note containing backticks survives byte-exact via --note-file; incident count drops to 0",
-        "status": "accepted_by_verifier (T-055), dispatched as T-056",
-        "gate": "code-level"
-      },
-      {
-        "id": "P-022",
-        "source": "audit_gen4 rank 2 (MED)",
-        "target": [
-          ".harness/bin/blackboard.py"
-        ],
-        "summary": "Verifier-execute owns-nothing joins (T-052/T-054 class) force --override-producer-check because no handoff exists though producer!=approver is satisfied. Model them: allow done without handoff when the task role is verifier AND the actor != created_by (the producer of record for verifier-execute tasks), logged as verifier_execute_done.",
-        "measurable_gain": "a verifier-role task created by X and done by Y!=X exits 0 without override; self-done by X still refused; worker-role tasks unchanged (still need handoff)",
-        "status": "accepted_by_verifier (T-055), dispatched as T-056",
-        "gate": "code-level"
-      },
-      {
-        "id": "P-024",
-        "source": "audit_gen4 (process rules)",
-        "target": [
-          "ORCHESTRATION.md"
-        ],
-        "summary": "Proportional-verification tiering (P-020 rule 2 formalized): verification effort scales with blast radius; verifier tier defaults sonnet, opus per-dispatch for NLAH/guardrail/join/tournament verdicts.",
-        "measurable_gain": "rule greppable in ORCHESTRATION; dispatch prompts cite it",
-        "status": "accepted_by_verifier (T-055), dispatched as T-057",
-        "gate": "code-level (contract text)"
-      },
-      {
-        "id": "P-025",
-        "source": "audit_gen4 (process rules)",
-        "target": [
-          "ORCHESTRATION.md"
-        ],
-        "summary": "Test-discovery precision rule: acceptance criteria must carry the exact layout-matching test command AND verifiers must assert a NONZERO test count (kills the bare-node--test false-green class).",
-        "measurable_gain": "rule greppable; future criteria carry exact commands",
-        "status": "accepted_by_verifier (T-055), dispatched as T-057",
-        "gate": "code-level (contract text)"
-      },
-      {
-        "id": "P-026",
-        "source": "audit_gen4 (process rules)",
-        "target": [
-          "ORCHESTRATION.md"
-        ],
-        "summary": "Define 'verbatim promotion': algorithm byte-verbatim + legitimate decoupling (candidate-identifying strings renamed, candidate self-test blocks stripped, zero runtime deps on candidates/).",
-        "measurable_gain": "definition greppable in the tournament pattern section",
-        "status": "accepted_by_verifier (T-055), dispatched as T-057",
-        "gate": "code-level (contract text)"
-      }
-    ],
+    "pending_proposals": [],
     "accepted_mutations": [
       {
         "id": "P-001",
@@ -599,6 +563,71 @@
         "status": "applied",
         "gate": "operator-directed config change; applied inline by coordinator; verification of continued verdict quality falls to the gen-4 audit",
         "applied_at": "2026-07-05T06:20:00Z"
+      },
+      {
+        "id": "P-021",
+        "source": "audit_gen4 rank 1 (MED)",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Note corruption: backticks/$() in --note get shell-substituted (4+ incidents). Add --note-file <path> and --note-stdin support to update/handoff; document the no-backticks convention in the CLI help.",
+        "measurable_gain": "a note containing backticks survives byte-exact via --note-file; incident count drops to 0",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-056, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
+        "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-022",
+        "source": "audit_gen4 rank 2 (MED)",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Verifier-execute owns-nothing joins (T-052/T-054 class) force --override-producer-check because no handoff exists though producer!=approver is satisfied. Model them: allow done without handoff when the task role is verifier AND the actor != created_by (the producer of record for verifier-execute tasks), logged as verifier_execute_done.",
+        "measurable_gain": "a verifier-role task created by X and done by Y!=X exits 0 without override; self-done by X still refused; worker-role tasks unchanged (still need handoff)",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-056, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
+        "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-024",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Proportional-verification tiering (P-020 rule 2 formalized): verification effort scales with blast radius; verifier tier defaults sonnet, opus per-dispatch for NLAH/guardrail/join/tournament verdicts.",
+        "measurable_gain": "rule greppable in ORCHESTRATION; dispatch prompts cite it",
+        "status": "applied",
+        "gate": "code-level (contract text)",
+        "applied_note": "applied in T-057, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
+        "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-025",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Test-discovery precision rule: acceptance criteria must carry the exact layout-matching test command AND verifiers must assert a NONZERO test count (kills the bare-node--test false-green class).",
+        "measurable_gain": "rule greppable; future criteria carry exact commands",
+        "status": "applied",
+        "gate": "code-level (contract text)",
+        "applied_note": "applied in T-057, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
+        "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-026",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Define 'verbatim promotion': algorithm byte-verbatim + legitimate decoupling (candidate-identifying strings renamed, candidate self-test blocks stripped, zero runtime deps on candidates/).",
+        "measurable_gain": "definition greppable in the tournament pattern section",
+        "status": "applied",
+        "gate": "code-level (contract text)",
+        "applied_note": "applied in T-057, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
+        "applied_at": "2026-07-05T07:50:00Z"
       }
     ],
     "audit_artifacts": [
@@ -607,7 +636,7 @@
       ".harness/logs/audit_gen3.md",
       ".harness/logs/audit_gen4.md"
     ],
-    "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append). Generation 3 closed 2026-07-05T04:05Z: P-010 (human-directed de-Fable) + P-011..P-018 (audit_gen3, one gated pre-approved) applied across two 3-worker waves with rotated verifiers (harness-verifier, verifier-b, verifier-c - no sole approver, F6 honored in its own rollout). Unknowns framework U1-U4 now normative (planner + ORCHESTRATION).",
+    "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append). Generation 3 closed 2026-07-05T04:05Z: P-010 (human-directed de-Fable) + P-011..P-018 (audit_gen3, one gated pre-approved) applied across two 3-worker waves with rotated verifiers (harness-verifier, verifier-b, verifier-c - no sole approver, F6 honored in its own rollout). Unknowns framework U1-U4 now normative (planner + ORCHESTRATION). Generation 4 closed 2026-07-05T07:50Z: audit_gen4 certified PRODUCTION-READY (yes-with-notes, opus-verified); P-021/P-022 (blackboard ergonomics+coherence) and P-024/025/026 (process rules) applied. All 7 readiness criteria MET (2 with honest caveats, U4 pending its gate). Cost policy P-020 in force.",
     "next_audit_inputs": [
       "gen-5 backlog: P-023 terminal-state --reopen rule (LOW, latent); doc-only nits (volatile line citations, slugger pseudocode 1-token, F6 prose); audit_gen4 note - T-032/T-033-class no-handoff overrides still possible by design (logged escape hatch), watch for misuse"
     ],

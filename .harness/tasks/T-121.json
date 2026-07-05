@@ -1,0 +1,29 @@
+{
+  "id": "T-121",
+  "title": "SCRATCH-VERIFY: full lifecycle regression (verifier-b)",
+  "description": "scratch disposable",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:49:02Z",
+      "agent": "lc-producer",
+      "note": "working"
+    },
+    {
+      "ts": "2026-07-05T06:49:02Z",
+      "agent": "lc-producer",
+      "note": "HANDOFF -> verifier: done, please review"
+    },
+    {
+      "ts": "2026-07-05T06:49:02Z",
+      "agent": "lc-reviewer",
+      "note": "verified"
+    },
+    {
+      "ts": "2026-07-05T06:49:15Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH disposed after verifier-b P-022/P-021 replay (T-056 verification)"
+    }
+  ]
+}

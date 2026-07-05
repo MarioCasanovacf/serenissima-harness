@@ -1,0 +1,24 @@
+{
+  "id": "T-120",
+  "title": "SCRATCH-VERIFY-P022: epic-join-class task (verifier-b)",
+  "description": "models T-052/T-054 pattern",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:48:52Z",
+      "agent": "producer-x",
+      "note": "producer doing the join replay work"
+    },
+    {
+      "ts": "2026-07-05T06:48:52Z",
+      "agent": "verifier-z",
+      "note": "epic join verdict, no override flag used"
+    },
+    {
+      "ts": "2026-07-05T06:49:15Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH disposed after verifier-b P-022/P-021 replay (T-056 verification)"
+    }
+  ]
+}

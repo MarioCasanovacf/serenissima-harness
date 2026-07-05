@@ -1,0 +1,19 @@
+{
+  "id": "T-119",
+  "title": "SCRATCH-VERIFY-P022: ambient-default slip vector (verifier-b)",
+  "description": "scratch disposable, tests X==main self-done via ambient default",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:48:42Z",
+      "agent": "probe-y",
+      "note": "cross-agent verdict confirms ambient refusal above was identity-based, not a blanket block"
+    },
+    {
+      "ts": "2026-07-05T06:49:15Z",
+      "agent": "verifier-b",
+      "note": "SCRATCH disposed after verifier-b P-022/P-021 replay (T-056 verification)"
+    }
+  ]
+}

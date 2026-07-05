@@ -68,6 +68,16 @@ audits can `grep` them mechanically instead of re-reading prose:
 Evolution audits (§6) count and chase every `OPEN-QUESTION:` note to closure before a
 generation is declared clean (`audit_gen3.md` §5.7, input U2 — `state.json:356`).
 
+**Test-discovery precision (P-025)**: acceptance criteria MUST carry the exact,
+layout-matching test command — not a generic invocation that silently discovers zero
+tests against a mismatched file layout. Verifiers MUST assert a **nonzero executed-test
+count** before trusting a green run; exit 0 alone is not evidence. Precedent this
+codifies: a bare `node --test` returned exit 0 with 0 tests executed against the
+cronsplain `tests/test_*.js` layout (node's default discovery pattern doesn't match it)
+— a false-green a less careful verifier could have rubber-stamped; the corrected,
+layout-matching criterion command is `node --test tests/*.js` (T-044/T-052 join note,
+`events.jsonl`).
+
 ## 3. Invariants and the risks they neutralize
 
 | Invariant | Mechanism | Risk neutralized (digest §3A) |
@@ -104,6 +114,14 @@ forecloses: the mdtoc epic (T-021..T-029), where a single `harness-verifier` ide
 claimed and approved all 9 producer tasks (`events.jsonl:312-481`) — exactly the
 monoculture risk the §5A loop flagged (`audit_gen3.md` §4 row F6, input `state.json:352`).
 
+**Proportional verification (P-024)**: verification effort scales with blast radius —
+doc/scratch tasks get a brief replay, control-plane/contract tasks get full adversarial
+replay; do not spend 20 tool calls verifying a README. Reviewer tier defaults to
+`sonnet`; the coordinator overrides to `opus` per-dispatch ONLY for high-stakes
+categories — NLAH mutations, guardrail changes, epic joins, tournament promotions
+(`state.json cost_policy` rules 1–2, operator directive 2026-07-05: 95% of token usage
+traced to subagent-heavy sessions, 79% to 8h+ sessions).
+
 **The bench** (`.claude/agents/` — mesa de internos): `orchestration-planner` (thinker),
 `substrate-worker` (worker), `harness-verifier` (verifier), `evolution-analyst`
 (thinker, §5A loop), `research-librarian` (thinker, corpus grounding). Capability
@@ -129,6 +147,14 @@ execution. Tasks tagged `--engine gemini` wait for the bridge.
 - **Tournament / consensus** (Co-Scientist): for high-uncertainty nodes, publish N
   parallel candidate tasks with different approaches, then one verifier task compares
   and picks. Prefer diversity of method over redundancy of the same method.
+  **Verbatim promotion (P-026)**: when the winner is promoted into production, "verbatim"
+  means algorithm **byte-identical** PLUS legitimate decoupling from its candidate
+  harness — candidate-identifying strings/prefixes renamed, the candidate's own
+  self-test/`__main__` block stripped, and zero runtime `require`/`import` of anything
+  under `candidates/`. Precedent: T-049's promoted `lib/schedule.js` is byte-identical to
+  `schedule_b.js` except two renamed error-message prefixes (`schedule_b:` →
+  `schedule:`), with the self-check guard dropped and no runtime dependency on
+  `candidates/` (`events.jsonl` T-049 verdict note, "PROMOTION FIDELITY").
 - **Market-lite dispatch**: `blackboard.py next` is a greedy dispatcher (priority, then
   id) filtered by role/engine — a minimal stand-in for bid/auction protocols until
   reputation data (state.json) justifies smarter assignment.

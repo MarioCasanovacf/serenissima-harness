@@ -1,0 +1,19 @@
+{
+  "id": "T-114",
+  "title": "SCRATCH-P022: verifier-execute done-guard probe (disposable)",
+  "description": "disposable probe for P-022",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:43:44Z",
+      "agent": "probe-verifier-y",
+      "note": "DECISION: verifier-execute done, no separate reviewer needed, agent differs from created_by (P-022 probe b)"
+    },
+    {
+      "ts": "2026-07-05T06:44:12Z",
+      "agent": "substrate-worker-1",
+      "note": "SCRATCH disposal: P-022 probe complete, disposing"
+    }
+  ]
+}

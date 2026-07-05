@@ -1,0 +1,24 @@
+{
+  "id": "T-116",
+  "title": "SCRATCH regression: claim/handoff cycle",
+  "description": "disposable",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:44:21Z",
+      "agent": "substrate-worker-1",
+      "note": "plan: regression probe"
+    },
+    {
+      "ts": "2026-07-05T06:44:21Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: regression handoff, plain --note path"
+    },
+    {
+      "ts": "2026-07-05T06:44:21Z",
+      "agent": "probe-verifier-z",
+      "note": "SCRATCH disposal: claim/handoff regression complete"
+    }
+  ]
+}

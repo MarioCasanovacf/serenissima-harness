@@ -1,0 +1,14 @@
+{
+  "id": "T-115",
+  "title": "SCRATCH-P022: worker-role done-guard regression probe (disposable)",
+  "description": "disposable probe for P-022 regression on worker role",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:44:12Z",
+      "agent": "substrate-worker-1",
+      "note": "SCRATCH disposal: P-022 regression probe complete, disposing"
+    }
+  ]
+}
