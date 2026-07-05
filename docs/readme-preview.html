@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>README preview — Universal Agent Harness</title>
+<style>
+body{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 6rem;background:#fff;color:#1f2328;
+font:16px/1.6 -apple-system,"Segoe UI",system-ui,sans-serif}
+.ghbar{background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px 8px 0 0;padding:.6rem 1rem;
+font-size:.85rem;color:#57606a;margin-bottom:0}
+.ghbar b{color:#1f2328}
+.frame{border:1px solid #d0d7de;border-top:none;border-radius:0 0 8px 8px;padding:1.5rem 2rem}
+h1{font-size:2rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:0}
+h2{font-size:1.5rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:1.8em}
+code{background:#eff1f3;border-radius:6px;padding:.15em .4em;font:13px ui-monospace,Menlo,monospace}
+pre{background:#f6f8fa;border-radius:6px;padding:1rem;overflow-x:auto}
+pre code{background:none;padding:0;font-size:12.5px;line-height:1.45}
+table{border-collapse:collapse;margin:1rem 0;width:100%}
+th,td{border:1px solid #d0d7de;padding:.5rem .8rem;text-align:left;vertical-align:top;font-size:.93rem}
+th{background:#f6f8fa}
+tr:nth-child(even) td{background:#f6f8fa}
+li{margin:.3em 0}
+.note{background:#fff8e6;border:1px solid #e0c96a;border-radius:6px;padding:.7rem 1rem;font-size:.88rem;color:#6b5900;margin-bottom:1.2rem}
+</style></head><body>
+<div class="note"><b>Vista previa</b> — así se vería el README renderizado en GitHub. Texto en tu voz
+(vía tu Substack), sin emojis, números verificados. El único pendiente marcado adentro es la licencia.</div>
+<div class="ghbar"><b>README.md</b> · Universal Agent Harness</div>
+<div class="frame">
+<h1>Universal Agent Harness</h1>
+
+<p>A file-based coordination substrate that lets several AI agents work on one real codebase in parallel — without stepping on each other, without approving their own work, and leaving an auditable trail behind every decision.</p>
+
+<p>No database. No external APIs. No framework to buy into. Plain files, nine stdlib-only Python CLIs, and a set of rules that are <strong>programs, not promises</strong> — an agent can&#x27;t claim a blocked task or edit a file someone else is holding because the command refuses it, not because it agreed to behave.</p>
+
+<p>It was built for Claude Code, but nothing in the contract is Claude-specific. Any agent — or human — that can run a CLI can join the board. The enforcement hooks are Claude-side convenience; the coordination rules are universal.</p>
+
+<h2>What this is not</h2>
+
+<p>Let me get this out of the way first, because it&#x27;s the part most likely to save you time.</p>
+
+<ul>
+<li><strong>It is not an agent framework.</strong> It doesn&#x27;t give you agents, prompts, memory, or a runtime. You bring those.</li>
+<li><strong>It is not a replacement for Claude Code.</strong> It sits <em>on top of</em> Claude Code (or any CLI-capable agent) and gives a group of them a shared task board, file locking, and a hand-off protocol.</li>
+<li><strong>It is not a headless multi-LLM swarm.</strong> That was the original ambition — several different models running unattended against one board. The file substrate genuinely supports it, and there&#x27;s a documented prompt-bridge for a second engine (Gemini), but a fully autonomous cross-model swarm was left out of <em>proven</em> scope: I have not exercised it end-to-end enough to claim it works, so I don&#x27;t. The mechanics are there; the receipts are not.</li>
+</ul>
+
+<p>What it <em>is</em>: the boring, load-bearing layer underneath multi-agent work — the part that decides who does what, who&#x27;s allowed to say it&#x27;s done, and how you&#x27;d ever reconstruct what happened.</p>
+
+<h2>Why it exists</h2>
+
+<p>Two failure modes show up the moment you run more than one coding agent at once:</p>
+
+<ul>
+<li><strong>Unmanaged parallelism.</strong> No shared task index, no ownership, no dependency gates. Agents duplicate work, overwrite each other, and nobody actually delegates.</li>
+<li><strong>The giant cascade.</strong> The tempting fix — one long chain A→B→C→…→N. It trades chaos for fragility: every hop loses context, and one stalled link freezes the whole pipeline.</li>
+</ul>
+
+<p>The resolution is a single idea: <strong>delegation is a property of the task graph, not the org chart.</strong> Work is a dependency-DAG on a shared blackboard. A cascade exists <em>exactly</em> where one task literally consumes another&#x27;s artifact — and nowhere else. Everything else runs in parallel under leased claims and TTL write-locks, so nothing collides and nothing can stall the board forever.</p>
+
+<h2>The rules, and what enforces them</h2>
+
+<p>Each rule is backed by a mechanism, not a good intention:</p>
+
+<table>
+<tr><th>Rule</th><th>Mechanism</th></tr>
+<tr><td>No claiming a blocked task</td><td><code>blackboard.py claim</code> refuses any task whose <code>depends_on</code> aren&#x27;t <code>done</code> (the cascade gate)</td></tr>
+<tr><td>No editing a file someone else holds</td><td>TTL write-locks + a PreToolUse hook that blocks the edit before it lands</td></tr>
+<tr><td>No agent can freeze the swarm</td><td>Claims carry leases, locks carry TTLs — a crashed or looping agent&#x27;s work expires back to the pool</td></tr>
+<tr><td><strong>No one approves their own work</strong></td><td><code>--status done</code> is refused unless the task went through review <em>and</em> the actor differs from the producer of record</td></tr>
+<tr><td>No self-whitelisting</td><td>Session-holder registration is coordinator-gated by ambient identity</td></tr>
+<tr><td>No unsupervised escalation</td><td>Human gates — <code>git push</code>, deletions, first webhook, mutating an agent&#x27;s constitution — always require an explicit human yes</td></tr>
+<tr><td>No silent self-modification</td><td>The harness changes itself only through an audit loop: logs → evidence-cited proposals → adversarial verification → gated apply → generation bump (git is the undo button)</td></tr>
+</table>
+
+<h2>What&#x27;s in the box</h2>
+
+<pre><code>
+.harness/               The runtime substrate
+ ├── blackboard.json    Task DAG (only blackboard.py may write it)
+ ├── bin/               9 stdlib-only CLIs: blackboard, lock, session,
+ │                      goal_mode, ast_index, notify, recontext, log hooks,
+ │                      and migracion_proyecto.py (one-command transplant)
+ ├── locks/  logs/      TTL locks · append-only evidence (events + transcript)
+ └── state.json         Limits, human gates, agent registry, evolution memory
+.claude/agents/         The bench: planner / worker / verifier / evolution-analyst
+.claude/settings.json   Hooks: mechanical lock enforcement + flight recorder
+ORCHESTRATION.md        The topology contract (DAG, lifecycle, invariants, patterns)
+USAGE.md                Operator guide — start here
+projects/               Proof of work: two real projects built BY the harness
+</code></pre>
+
+<h2>Proof it works (the dogfood record)</h2>
+
+<p>I didn&#x27;t want to write a README full of adjectives, so here&#x27;s the part you can check with <code>grep</code>. This harness built itself, evolved itself across <strong>four generations</strong>, and shipped two real projects under its own rules — every task with producer ≠ approver, every verdict adversarially replayed. Across the whole record, <strong>55 tasks passed through the producer ≠ approver hand-off</strong>.</p>
+
+<ul>
+<li><strong>mdtoc</strong> (Python) — a Markdown table-of-contents generator, and the harness&#x27;s first <em>tournament</em>: three independent slugger implementations written with deliberately different methods, judged on real-input fidelity, and the winner promoted verbatim. <strong>62 tests</strong> (<strong>63</strong> after a later fix).</li>
+<li><strong>cronsplain</strong> (Node.js, zero dependencies) — a cron-expression explainer and next-occurrence engine. Planned with a formal Unknowns pass (a four-quadrant blindspot interview run <em>before</em> the DAG was published), a second tournament (brute-force vs. field-cascade candidates cross-diffed over 450 inputs), and <strong>93 tests</strong>.</li>
+<li><strong>Two tournaments</strong> total — one per project — each promoting a byte-identical winner rather than a paraphrase of it.</li>
+<li><strong>Four generations of self-audits</strong> with falsifiable proposals, and the audits caught themselves: one audit was <em>rejected</em> for a wrong evidence count and had to re-diagnose; a verifier once caught the coordinator&#x27;s own arithmetic error. Across those generations the evolution loop produced <strong>25 accepted mutations (P-001–P-026, with P-023 still in the gen-5 backlog)</strong>.</li>
+<li><strong>A swarm smoke test</strong>: two concurrent OS processes racing one board — zero double-claims, cross-identity locks held.</li>
+</ul>
+
+<p>The full evidence trail — task files, verdicts, event logs, audits — ships in the repo. Nothing here is claimed that the logs can&#x27;t confirm.</p>
+
+<h2>Quickstart</h2>
+
+<pre><code>
+# 1. Get it into your project. One command, and it never overwrites your files:
+python3 .harness/bin/migracion_proyecto.py /path/to/your/repo --dry-run   # preview
+python3 .harness/bin/migracion_proyecto.py /path/to/your/repo             # transplant
+
+# 2. Open Claude Code IN your repo (the hooks live where the session is rooted) and say:
+#    &quot;Read ORCHESTRATION.md and USAGE.md. My goal: &lt;describe it&gt;.
+#     Planner: decompose it onto the board and dispatch.&quot;
+
+# 3. Watch the board:
+python3 .harness/bin/blackboard.py status
+</code></pre>
+
+<p>Requirements: Python ≥ 3.9 (stdlib only), git, and any Claude Code plan. The coordinator is a <em>role</em>, not a model — it runs the same on Opus or Sonnet.</p>
+
+<h2>Design lineage</h2>
+
+<p>This stands on the blackboard-architecture tradition, on Anthropic&#x27;s published multi-agent patterns, and on **Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — his pre-flight blindspot pass is now a mandatory planner step here. Frictions become audit inputs; audits become generations. The tool that coordinates the work is itself work the tool coordinated.</p>
+
+<h2>License &amp; contributions</h2>
+
+<p><strong>[Mario to decide the license — I&#x27;m not picking one for you.]</strong></p>
+
+<p>Issues and PRs are welcome, but read <code>ORCHESTRATION.md</code> first. This repo eats its own dogfood: a proposal against the harness follows the same §5A evolution loop as everything else — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p>
+</div></body></html>

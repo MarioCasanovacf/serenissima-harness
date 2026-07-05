@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>✅ MISIÓN TERMINADA — Revisión final del Universal Agent Harness</title>
+<title> MISIÓN TERMINADA — Revisión final del Universal Agent Harness</title>
 <style>
   :root {
     --bg:#faf9f7; --panel:#fff; --ink:#1a1a1a; --muted:#5c5c5c; --accent:#0d5c63;
@@ -31,8 +31,8 @@
   .gate{background:var(--gate-bg);border-color:var(--gate-edge)}
   .check{list-style:none;padding-left:0}
   .check li{padding:.35rem 0 .35rem 2rem;position:relative}
-  .check li::before{content:"☐";position:absolute;left:.4rem;color:var(--accent);font-size:1.1rem}
-  .done::before{content:"✅" !important}
+  .check li::before{content:"–";position:absolute;left:.4rem;color:var(--accent);font-size:1.1rem}
+  .done::before{content:"" !important}
   .muted{color:var(--muted);font-size:.9rem}
   a{color:var(--accent)}
 </style>
@@ -40,7 +40,7 @@
 <body>
 
 <header>
-  <h1>Misión terminada 🏁</h1>
+  <h1>Misión terminada</h1>
   <p>El Universal Agent Harness está <b>certificado PRODUCTION-READY</b> (generación 4,
   auditoría verificada adversarialmente en tier opus). Esta página es tu lista de revisión:
   qué se logró, qué debes mirar con tus propios ojos, y las decisiones que solo tú puedes tomar.</p>
@@ -54,13 +54,13 @@
   <h2>Qué se logró desde tu última instrucción</h2>
   <table>
     <tr><th>Criterio de producción</th><th>Veredicto</th><th>Evidencia clave</th></tr>
-    <tr><td>1 · Guardrail productor≠aprobador confiable</td><td>✅ MET</td><td>Todo veredicto legítimo pasa sin overrides; auto-aprobaciones rechazadas mecánicamente</td></tr>
-    <tr><td>2 · Enjambre multi-sesión</td><td>✅ MET (caveat honesto)</td><td>Dos procesos concurrentes reales: 6 tareas, cero doble-claims, bloqueo cross-identidad probado dos veces</td></tr>
-    <tr><td>3 · Segundo proyecto externo (no-Python)</td><td>✅ MET</td><td><b>cronsplain</b> (Node.js): 93/93 tests, torneo de 2 candidatas, 4 aprobadores distintos, cero toques al código del harness</td></tr>
-    <tr><td>4 · Framework de unknowns (Thariq) en uso real</td><td>✅ MET (U4 espera su gate)</td><td>Entrevista de puntos ciegos + 4 cuadrantes resueltos ANTES de publicar el DAG (orden probado por eventos)</td></tr>
-    <tr><td>5 · Correcciones mdtoc cerradas</td><td>✅ MET</td><td>Round-trip de profundidad + dedup colisión-segura con paridad github</td></tr>
-    <tr><td>6 · active_role + de-Fable reconciliados</td><td>✅ MET</td><td>El harness corre idéntico en Opus/Sonnet — el 7 de julio no te afecta</td></tr>
-    <tr><td>7 · Auditoría gen-4 limpia</td><td>✅ MET</td><td>Cero gaps HIGH; los MED ya se aplicaron y verificaron (P-021/P-022)</td></tr>
+    <tr><td>1 · Guardrail productor≠aprobador confiable</td><td>MET</td><td>Todo veredicto legítimo pasa sin overrides; auto-aprobaciones rechazadas mecánicamente</td></tr>
+    <tr><td>2 · Enjambre multi-sesión</td><td>MET (caveat honesto)</td><td>Dos procesos concurrentes reales: 6 tareas, cero doble-claims, bloqueo cross-identidad probado dos veces</td></tr>
+    <tr><td>3 · Segundo proyecto externo (no-Python)</td><td>MET</td><td><b>cronsplain</b> (Node.js): 93/93 tests, torneo de 2 candidatas, 4 aprobadores distintos, cero toques al código del harness</td></tr>
+    <tr><td>4 · Framework de unknowns (Thariq) en uso real</td><td>MET (U4 espera su gate)</td><td>Entrevista de puntos ciegos + 4 cuadrantes resueltos ANTES de publicar el DAG (orden probado por eventos)</td></tr>
+    <tr><td>5 · Correcciones mdtoc cerradas</td><td>MET</td><td>Round-trip de profundidad + dedup colisión-segura con paridad github</td></tr>
+    <tr><td>6 · active_role + de-Fable reconciliados</td><td>MET</td><td>El harness corre idéntico en Opus/Sonnet — el 7 de julio no te afecta</td></tr>
+    <tr><td>7 · Auditoría gen-4 limpia</td><td>MET</td><td>Cero gaps HIGH; los MED ya se aplicaron y verificaron (P-021/P-022)</td></tr>
   </table>
   <p class="muted">Además: política de costos P-020 activa (verificadores en sonnet, consolidación de
   spawns, higiene de sesión) — la respuesta a tu reporte de uso del 95%/79%.</p>
@@ -182,7 +182,7 @@ npm test</pre></li>
   (2) copiar el tablero viejo con tareas de otro proyecto; (3) olvidar fusionar CLAUDE.md.</div>
 
   <div class="warn box"><b>3 · Gates humanos → 2 de 4</b><br>
-  Acertaste <b>git push</b> ✅ y <b>borrar archivos fuera de scratch</b> ✅. Te faltaron los dos más
+  Acertaste <b>git push</b>  y <b>borrar archivos fuera de scratch</b> . Te faltaron los dos más
   sutiles y peligrosos: <b>activar notificaciones remotas (webhooks) por primera vez</b> (mandar
   datos tuyos afuera) y <b>mutar las constituciones de los agentes</b> (<code>claude.md</code> /
   <code>gemini.md</code>). Nota: <i>git pull</i> NO es gate (no publica nada) y "git bash" es una
