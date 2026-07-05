@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 2,
-  "updated_at": "2026-07-05T02:15:19Z",
-  "updated_by": "verifier-c",
+  "updated_at": "2026-07-05T02:52:04Z",
+  "updated_by": "verifier-b",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1045,6 +1045,51 @@
       "created_by": "fable-5-coordinator",
       "completed_at": "2026-07-05T02:15:19Z",
       "completed_by": "verifier-c"
+    },
+    "T-034": {
+      "epic": "gen-3-early",
+      "title": "De-Fable the harness docs: coordinator role becomes model-agnostic (HUMAN-GATED NLAH mutation, approved by operator 2026-07-05 - Fable access ends 2026-07-07)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-034.json",
+      "artifacts": [
+        "claude.md",
+        "gemini.md",
+        "ORCHESTRATION.md",
+        "README.md",
+        "docs/harness-explainer.html"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "De-Fable mutation complete, human-gated by operator approval 2026-07-05. REPLAY: (1) git diff claude.md gemini.md ORCHESTRATION.md README.md docs/harness-explainer.html -- review for rewording-only (no added/removed lines, symmetric ins/del per file). (2) grep -ni fable claude.md gemini.md ORCHESTRATION.md README.md docs/harness-explainer.html -- expect ONLY: claude.md:14 and gemini.md:14 '(tested with Fable 5; runs identically on Opus or Sonnet)' in the Orchestration Coordinator HarnessCard line; README.md:3 same tested-with parenthetical in the intro; docs/harness-explainer.html:422 the unchanged footer credit 'Generado por el coordinador Fable · 2026-07-04'; ORCHESTRATION.md returns ZERO matches (its one Fable mention was fully reworded). (3) python3 -c \"import html.parser; html.parser.HTMLParser().feed(open('docs/harness-explainer.html',encoding='utf-8').read()); print('ok')\" -- confirms HTML still parses/opens. (4) python3 -c \"import json; print(json.load(open('.harness/state.json'))['human_gates'])\" -- confirms the 4 human gates (incl. 'mutating claude.md or gemini.md') are verbatim/untouched. Key before/after quotes: claude.md L1 'NLAH Specification for Fable 5 (Revised)' -> 'NLAH Specification for the Coordinator (Revised)'; claude.md L14 'Fable 5 (coordinating creation and multi-agent topologies)' -> 'the strongest Claude model available in the main Claude Code session (tested with Fable 5; runs identically on Opus or Sonnet), coordinating creation and multi-agent topologies'; claude.md section-5 heading 'Fable 5 Creator & Evolutionary Guidelines' -> 'Coordinator & Evolutionary Guidelines' (and body 'Fable 5 MUST'/'Fable 5 coordinates' -> 'the Coordinator MUST'/'The Coordinator coordinates'); gemini.md got identical L1/L14 treatment; ORCHESTRATION.md L75 '**Coordinator** (Fable 5):' -> '**Coordinator** (main session, strongest available model):'; README.md L3 'under the Fable 5 Orchestration Framework' -> ', coordinated by the strongest Claude model available in the main session (tested with Fable 5; runs identically on Opus or Sonnet)', README.md L10/L48/L50 'Fable 5' -> 'the Coordinator'; docs/harness-explainer.html L92 diagram 'COORDINADOR (Fable, la sesion principal)' -> 'COORDINADOR (la sesion principal de Claude Code)' (exact wording from task contract), L365 'con Fable 5 la calidad' -> 'con un coordinador de agentes como este la calidad' (present-tense philosophical claim, not a historical record, so reworded), L422 footer credit left verbatim (explicitly historical/credit per contract). No changes to roles, gates, limits, protocols, XML-tag conventions, or section structure/numbering (section 5 kept its position, just renamed from 'Fable 5 Creator & Evolutionary Guidelines' to 'Coordinator & Evolutionary Guidelines'). Excluded paths (.harness/tasks/, .harness/logs/, .harness/plan.md, 'prompts para Gemini/', state.json, blackboard.json) confirmed untouched via git status.",
+        "ts": "2026-07-05T02:48:29Z"
+      },
+      "created_at": "2026-07-05T02:44:39Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T02:52:04Z",
+      "completed_by": "verifier-b"
+    },
+    "T-035": {
+      "epic": "gen-3",
+      "title": "Generation-3 evolution audit: process ALL next_audit_inputs (18 items incl. U1-U4 unknowns, P-009 frictions, F-series, active_role NLAH)",
+      "status": "in_progress",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": "evolution-analyst",
+      "claim_expires_at": "2026-07-05T03:50:29Z",
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-035.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T02:49:31Z",
+      "created_by": "fable-5-coordinator"
     }
   }
 }

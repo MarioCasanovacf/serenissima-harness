@@ -72,7 +72,7 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 
 **Roles** (claude.md §2B): `thinker` (plans, decomposes, audits — no source edits),
 `worker` (claims, locks, implements, hands off), `verifier` (replays, verdicts, sweeps).
-**Coordinator** (Fable 5): decomposes goals into the DAG (or delegates that to the
+**Coordinator** (main session, strongest available model): decomposes goals into the DAG (or delegates that to the
 planner), dispatches the frontier, synthesizes at joins, governs evolution. The
 coordinator does not hog worker tasks on multi-task builds.
 

@@ -1,6 +1,6 @@
-# Claude Agent Harness: NLAH Specification for Fable 5 (Revised)
+# Claude Agent Harness: NLAH Specification for the Coordinator (Revised)
 
-This document defines the **Natural-Language Agent Harness (NLAHs)** specification for Claude-based subscription agents (e.g., Claude Code, Anthropic CLI, or Claude-driven runners) operating under the **Fable 5 Orchestration Framework**. 
+This document defines the **Natural-Language Agent Harness (NLAHs)** specification for Claude-based subscription agents (e.g., Claude Code, Anthropic CLI, or Claude-driven runners) operating under the **Universal Agent Harness Orchestration Framework**. 
 
 The goal of this harness is to enable Claude-based agents to operate in parallel, coordinate via a local workspace database, maintain local observability, and leverage environment-level tools without calling external model APIs.
 
@@ -11,7 +11,7 @@ The goal of this harness is to enable Claude-based agents to operate in parallel
 * **Target Engine**: Claude (Model-agnostic; optimized for Claude 3.5 Sonnet / 3.5 Haiku subscription runners)
 * **Execution Paradigm**: Subscription-based CLI / Local Terminal agent
 * **State Substrate**: Local workspace file system (`.harness/` directory)
-* **Orchestration Coordinator**: Fable 5 (coordinating creation and multi-agent topologies)
+* **Orchestration Coordinator**: the strongest Claude model available in the main Claude Code session (tested with Fable 5; runs identically on Opus or Sonnet), coordinating creation and multi-agent topologies
 
 ---
 
@@ -85,19 +85,19 @@ Workspace Directory
 
 ---
 
-## 5. Fable 5 Creator & Evolutionary Guidelines
+## 5. Coordinator & Evolutionary Guidelines
 
-This section provides the meta-rules for **Fable 5** to coordinate the creation, validation, and automated optimization of this harness specification.
+This section provides the meta-rules for **the Coordinator** to coordinate the creation, validation, and automated optimization of this harness specification.
 
 ### A. Harness Optimization Loop (AHE Implementation)
-Fable 5 coordinates the evolution of this harness file (`claude.md`) using an observability-driven feedback loop:
+The Coordinator coordinates the evolution of this harness file (`claude.md`) using an observability-driven feedback loop:
 1.  **Collect Trajectories**: Parse `.harness/logs/transcript.jsonl` to analyze tool failures, command errors, and execution timeouts.
 2.  **Audit Decision Gaps**: Compare `<thinking>` sections against the actual test outcomes. Identify files where Claude repeatedly entered wait states or made redundant edits.
 3.  **Harness Update**: Propose specific updates to the instructions (e.g., refining the `<thinking>` format, adjusting lock waits, or adding tool guardrails) and apply them to `claude.md`.
 4.  **Verification Gate**: Run validation suites. If the new harness increases success rates on development tasks, commit the updated `claude.md` using Git.
 
 ### B. Structural Guardrails for Generation
-When modifying or generating this harness, Fable 5 MUST:
+When modifying or generating this harness, the Coordinator MUST:
 *   Ensure that **no external LLM/AI APIs** are added to the tool specifications (keep tool agency strictly local).
 *   Maintain the XML-tag format constraints (`<thinking>`, `<debugging>`, `<transition>`) for Claude agents.
 *   Enforce parallel safety rules (e.g., maintaining the locks mechanism and blackboard schemas).

@@ -1,0 +1,8 @@
+{
+  "id": "T-035",
+  "title": "Generation-3 evolution audit: process ALL next_audit_inputs (18 items incl. U1-U4 unknowns, P-009 frictions, F-series, active_role NLAH)",
+  "description": "claude.md 5A audit. Scope: every item in state.json evolution.next_audit_inputs PLUS fresh trajectory sweep of events.jsonl/transcript.jsonl covering the T-031..T-034 traffic (guardrail rollout, migration script, de-Fable mutation). Standing human decisions to honor, not re-litigate: (1) U1-U4 (Thariq unknowns pre-phase) are PRE-APPROVED for implementation - convert them into concrete falsifiable task specs, do not debate their worth; (2) the active_role NLAH removal is PRE-APPROVED by the operator (2026-07-05, 'avienta a agentes a hacer los 18 insumos') - spec the minimal CLAUDE.md diff and bundle it with any other NLAH-gated wording fixes into ONE gated task; (3) de-Fable is being applied in T-034 concurrently - do not duplicate it, but verify its inputs are consistent with your proposals. Deliverable: .harness/logs/audit_gen3.md with quoted evidence, ranked falsifiable proposals each with measurable gain, split code-level vs NLAH-gated, and a worker partition with STRICTLY disjoint file ownership sized for max 3 parallel workers (multiple waves allowed - state the wave plan). PROPOSE ONLY - never apply.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-04T07:29:54Z"
       },
       "main": {
-        "tasks_done": 2,
+        "tasks_done": 3,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T02:15:19Z"
+        "last_outcome_at": "2026-07-05T02:52:04Z"
       },
       "tournament-judge": {
         "tasks_done": 1,
@@ -332,6 +332,24 @@
         "gate": "code-level, no human gate",
         "applied_note": "applied in T-031 (substrate-worker-1), verdicted by verifier-b (rotated reviewer, F6 practice). INFO semantics note: guardrail checks producer-OF-RECORD (handoff.from), not lifetime authorship - a re-handoff by a second agent legitimately re-opens the original producer as an eligible approver",
         "applied_at": "2026-07-04T09:05:00Z"
+      },
+      {
+        "id": "P-010",
+        "source": "HUMAN-DIRECTED (operator, 2026-07-05): Fable 5 access ends 2026-07-07; harness must be model-agnostic. Gate satisfied by explicit operator instruction; audit-exempt",
+        "target": [
+          "claude.md",
+          "gemini.md",
+          "ORCHESTRATION.md",
+          "README.md",
+          "docs/harness-explainer.html"
+        ],
+        "summary": "De-Fable: every normative reference to Fable 5 reworded to 'the Coordinator' = strongest Claude model available in the main session (tested with Fable 5; runs identically on Opus or Sonnet). Framework renamed 'Universal Agent Harness Orchestration Framework'. Rewording only - roles, gates, limits, protocols unchanged.",
+        "evidence": "Pre-change: normative Fable refs in claude.md title/HarnessCard/section5, gemini.md, ORCHESTRATION.md section4, README. Post-change grep: only historical parentheticals remain. Machine layer had ZERO Fable deps (bin/ clean, bench agents pin opus/sonnet).",
+        "measurable_gain": "grep -rni fable over the 5 normative docs returns 0 requirement-implying mentions; harness runs identically when the main session model is Opus/Sonnet after 2026-07-07",
+        "status": "applied",
+        "gate": "NLAH mutation - human gate SATISFIED by direct operator instruction 2026-07-05",
+        "applied_note": "applied in T-034 (substrate-worker-1), verified by verifier-b (hunk-by-hunk drift hunt: zero semantic changes; active_role correctly left for the gen-3 bundle)",
+        "applied_at": "2026-07-05T03:15:00Z"
       }
     ],
     "audit_artifacts": [

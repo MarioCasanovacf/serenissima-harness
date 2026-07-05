@@ -1,13 +1,13 @@
 # Universal Agent Harness Workspace
 
-This workspace contains the foundational specifications, research digests, reference implementations, and research papers to build the **Universal Agent Harness** under the **Fable 5 Orchestration Framework**.
+This workspace contains the foundational specifications, research digests, reference implementations, and research papers to build the **Universal Agent Harness**, coordinated by the strongest Claude model available in the main session (tested with Fable 5; runs identically on Opus or Sonnet).
 
 ---
 
 ## Workspace Structure
 
 ### 1. Harness Specifications (NLAHs)
-*   **[claude.md](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/claude.md)**: Natural-Language Agent Harness for Claude models. Includes Section 5 detailing guidelines for Fable 5 to coordinate the creation, validation, and evolution of the harness.
+*   **[claude.md](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/claude.md)**: Natural-Language Agent Harness for Claude models. Includes Section 5 detailing guidelines for the Coordinator to coordinate the creation, validation, and evolution of the harness.
 *   **[gemini.md](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/gemini.md)**: Natural-Language Agent Harness for Gemini models, utilizing ReContext (Evidence Replay) and long-context optimizations.
 
 ### 2. Research & Literature
@@ -45,9 +45,9 @@ We have fetched and cloned the reference source code repositories for key framew
 
 ---
 
-## Instructions for Fable 5 Coordinator
+## Instructions for the Coordinator
 
-Fable 5 should begin by reading `README.md` and `harness_research_digest.md` to acquire the necessary context. 
+The Coordinator should begin by reading `README.md` and `harness_research_digest.md` to acquire the necessary context. 
 It should then parse Section 5 of `claude.md` to run the harness generation and evolutionary optimization loop.
 
 **Generation 0 exists.** Before planning any new work: run `python3 .harness/bin/blackboard.py status`, read `ORCHESTRATION.md`, and dispatch the claimable frontier to the bench instead of working serially. Mutations to `claude.md`/`gemini.md` go exclusively through the evolution queue in `.harness/state.json` (human-gated, per §5A).

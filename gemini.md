@@ -1,6 +1,6 @@
-# Gemini Agent Harness: NLAH Specification for Fable 5 (Revised)
+# Gemini Agent Harness: NLAH Specification for the Coordinator (Revised)
 
-This document defines the **Natural-Language Agent Harness (NLAHs)** specification for Gemini-based subscription agents (e.g., Antigravity, Gemini Code Assist, or Gemini-driven runners) operating under the **Fable 5 Orchestration Framework**. 
+This document defines the **Natural-Language Agent Harness (NLAHs)** specification for Gemini-based subscription agents (e.g., Antigravity, Gemini Code Assist, or Gemini-driven runners) operating under the **Universal Agent Harness Orchestration Framework**. 
 
 The goal of this harness is to leverage Gemini's massive context window and native JSON-handling strengths, enabling parallel multi-agent execution and local observability without calling external model APIs.
 
@@ -11,7 +11,7 @@ The goal of this harness is to leverage Gemini's massive context window and nati
 * **Target Engine**: Gemini (Model-agnostic; optimized for Gemini 1.5 Pro / 2.0 Flash / 3.5 Flash subscription runners)
 * **Execution Paradigm**: Subscription-based IDE Integration / Local CLI agent
 * **State Substrate**: Local workspace file system (`.harness/` directory)
-* **Orchestration Coordinator**: Fable 5 (coordinating creation and multi-agent topologies)
+* **Orchestration Coordinator**: the strongest Claude model available in the main Claude Code session (tested with Fable 5; runs identically on Opus or Sonnet), coordinating creation and multi-agent topologies
 
 ---
 
