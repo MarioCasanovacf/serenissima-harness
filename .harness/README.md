@@ -31,7 +31,7 @@ this file is the substrate reference.
  └── bin/                   The deterministic control plane (python3 >= 3.9, stdlib-only):
       ├── blackboard.py     status | next | show | claim | update | handoff | add-task
       ├── lock.py           acquire | release | status | sweep
-      ├── session.py        register <name> [--ttl 7200] | unregister <name> | list — session-holder registry (P-002 fix, see §Identity)
+      ├── session.py        register <name> [--ttl 7200] [--task T-ID] | unregister <name> | list — session-holder registry (P-002 fix; register/unregister are coordinator-only, see §Identity)
       ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
       ├── log_event.py      hook: transcript logger (fail-open)
       ├── check_lock.py     hook: blocks edits to files write-locked by another agent, unless the holder is a registered session holder (fail-open)
@@ -76,6 +76,37 @@ coordinator act — `blackboard.py claim` and `lock.py acquire` never auto-regis
 holder — so **registered = this session's coordinated agents ONLY**;
 cross-session/cross-engine holders (another terminal, Gemini/Antigravity, a different
 machine) are never auto-registered and their locks keep blocking exactly as before.
+
+**Mechanical registration authorization (P-019, closes the T-042 self-whitelist gap):**
+T-042's forensic investigation found that `session.py register`/`unregister` enforced no
+authorization at all — any caller could self-whitelist itself (e.g.
+`CLAUDE_HARNESS_AGENT_ID=gemini-runner session.py register gemini-runner`), silently
+defeating `check_lock.py`'s lock-blocking invariant for genuinely cross-session/
+cross-engine agents. Both commands now refuse (exit 1) unless the **AMBIENT** identity —
+`harness_common.agent_id()`, never the `--by` flag or the `<name>` being registered — is
+in the *coordinator set*: `{'main'}` union every name in `state.json`'s
+`agents.registry` whose `role == 'coordinator'` (read LIVE off disk on every call; a
+missing/malformed registry falls back to `{'main'}` alone — fail-closed). A refusal logs
+`session_holder_register_refused` (`agent=<ambient>`, `action`, `name`, `by`) and names
+the ambient identity and the rule on stderr. This gates on ambient identity, not `--by`,
+specifically so the T-037 in-session flow keeps working unchanged: a bench worker whose
+per-call identity is overridden (`--agent`/`--holder`) still runs inside the
+coordinator's real terminal session, so its ambient `CLAUDE_HARNESS_AGENT_ID` is
+unset/`main` — that self-registration keeps returning exit 0. A genuine cross-session
+runner that follows protocol (exports its *own* `CLAUDE_HARNESS_AGENT_ID`, per this
+section, from a second terminal or a different engine) now gets refused instead of
+silently opting itself in. `register` also accepts an optional `--task T-ID`, stamped
+into the entry and the `session_holder_registered` event (attribution fix).
+
+*Honest threat model:* this guards the sanctioned `session.py` CLI path against
+**accidental** protocol violations only — a well-behaved cross-session runner that
+exports its own identity and calls this CLI. It does **not**, and cannot, stop a
+malicious/adversarial actor from hand-editing `.harness/session_holders.json` directly
+(no CLI, no ambient-identity check to trip): that bypass is outside this trust model,
+the same boundary the fail-open `check_lock.py` hook already accepts for direct
+file-write bypasses. This is a mechanical guardrail against a cooperating agent
+following the wrong (or no) protocol, not a security control against a hostile process
+with filesystem access.
 
 **events.jsonl attribution (flags-win model):** the `agent` field records the ambient
 session identity that RAN the CLI; `holder` / `previous_holder` / `completed_by` carry

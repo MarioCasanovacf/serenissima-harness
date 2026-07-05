@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T04:31:40Z",
-  "updated_by": "substrate-worker-2",
+  "updated_at": "2026-07-05T04:36:11Z",
+  "updated_by": "verifier-b",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1629,12 +1629,12 @@
     "T-044": {
       "epic": "cronsplain",
       "title": "cronsplain bootstrap+contract: package.json + lib/errors.js + lib/fields.js + tests/test_fields.js (SOLE ROOT, F1 shared infra)",
-      "status": "review",
+      "status": "in_progress",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "verifier-c",
+      "claim_expires_at": "2026-07-05T05:33:09Z",
       "priority": 1,
       "detail_file": ".harness/tasks/T-044.json",
       "artifacts": [
@@ -1806,12 +1806,12 @@
     "T-053": {
       "epic": "gen-4",
       "title": "P-019: mechanical authorization for session-holder registration (ambient-coordinator rule)",
-      "status": "claimed",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": "verifier-b",
-      "claim_expires_at": "2026-07-05T05:30:26Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-053.json",
       "artifacts": [
@@ -1825,7 +1825,9 @@
         "ts": "2026-07-05T04:29:12Z"
       },
       "created_at": "2026-07-05T04:22:19Z",
-      "created_by": "fable-5-coordinator"
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T04:36:11Z",
+      "completed_by": "verifier-b"
     }
   }
 }
