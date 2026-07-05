@@ -115,6 +115,241 @@ All nine tasks are `--engine claude`: code architecture, spec judgment, and a
 consensus verdict — no million-token digestion, heavy numeric math, or plotting, so
 nothing is bridged to Gemini for this epic.
 
+## cronsplain (external real-use proof #2 — NON-Python, Node.js)  [PUBLISHED 2026-07-05 — T-044..T-052 LIVE on the board]
+
+> STATUS: **PHASE 2 PUBLISHED 2026-07-05.** All 4 BLOCKING known-unknowns (Q1–Q4) were
+> answered by fable-5-coordinator (delegated operator authority; operator veto until ship)
+> and recorded in the `## Unknowns` Confirmation lines — every planner default ACCEPTED as
+> written. Tasks T-044..T-052 were then published via `blackboard.py add-task`; acceptance
+> criteria filled in each `.harness/tasks/T-04x/05x.json`. T-043 is handed to a verifier as
+> the phase-2 gate. (Phase 1 = interview-only; the DAG below was a DRAFT until Q1–Q4 closed.)
+
+### Why
+The harness has proven itself on itself and on one Python deliverable (mdtoc). **cronsplain**
+— a Node.js CLI (`projects/cronsplain/`, node v24, `node:test` built-in runner, ZERO npm
+dependencies) — is the second external deliverable and closes readiness criteria 3 (a
+**non-Python** repo, source untouched, full epic end-to-end) and 4 (U1–U4 exercised for
+real). Goal: parse standard 5-field cron expressions and expose two commands —
+`explain <expr>` → human-readable English, and `next <expr> [--from ISO] [--count N]` →
+next N occurrences in UTC — with the classic day-of-month OR day-of-week quirk correct and
+clean (stack-trace-free) errors on invalid input.
+
+### Key NON-Python fact that reshapes bootstrap ownership (F1)
+`node --test` discovers tests by filename glob (`**/*.test.js`, `**/test/**/*.js`, etc.) and
+needs **NO package-marker file** — there is no `tests/__init__.py`-class artifact here (the
+exact friction the mdtoc epic raced, audit_gen3 P-013/F1). The analogous shared-infra file
+in Node is **`package.json`** (it fixes the module system CommonJS-vs-ESM, the `test`
+script, `bin`, and `engines`). Every `.js` file must agree on `require` vs `import` BEFORE
+parallel workers write them, so the module-system decision is a true shared contract
+(BLOCKING Q4, CONFIRMED CommonJS) and `package.json` is owned by exactly ONE task (T-044, root).
+
+### The DAG (T-044 … T-052, epic `cronsplain`, engine `claude`) — PUBLISHED
+
+```mermaid
+graph TD
+  T044["T-044 BOOTSTRAP/CONTRACT<br/>package.json + lib/errors.js + lib/fields.js<br/>+ tests/test_fields.js (worker, p1) — sole root"]
+  T045["T-045 lib/parser.js + tests/test_parser.js<br/>(worker, p1) — produces the parse-result shape"]
+  T046["T-046 candidates/vectors.js<br/>candidate-agnostic golden vectors (worker, p2)"]
+  T050["T-050 lib/explain.js + tests/test_explain.js<br/>(worker, p2)"]
+  subgraph tourney["schedule/next tournament (diversity of method)"]
+    T047["T-047 candidates/schedule_a.js<br/>brute-force minute-tick (worker, p3) [HEADLESS-OK]"]
+    T048["T-048 candidates/schedule_b.js<br/>field-cascade carry increment (worker, p3) [HEADLESS-OK]"]
+    T049["T-049 VERDICT → promote to lib/schedule.js<br/>+ tests/test_schedule.js (verifier, p3)"]
+  end
+  T051["T-051 bin/cronsplain.js + lib/cli.js + tests/test_cli.js<br/>+ tests/test_integration.js + README.md (worker, p4)"]
+  T052["T-052 FINAL JOIN: replay node --test + e2e explain/next<br/>verdict epic (verifier, p5)"]
+
+  T044 --> T045
+  T045 --> T046
+  T045 --> T050
+  T046 --> T047
+  T046 --> T048
+  T046 --> T049
+  T047 --> T049
+  T048 --> T049
+  T045 --> T051
+  T050 --> T051
+  T049 --> T051
+  T045 --> T052
+  T049 --> T052
+  T050 --> T052
+  T051 --> T052
+```
+
+### Every edge is a real artifact-consumption (no false cascade)
+- `T-044 → T-045` — parser `require`s `lib/errors.js` (throws `CronParseError`) and
+  `lib/fields.js` (field order, bounds, JAN-DEC/SUN-SAT name maps). Real consumption.
+- `T-045 → T-046` — `vectors.js` calls the real `parser` to build the `parsed` inputs it
+  feeds candidates (it imports the PARSER, never a candidate). Real consumption.
+- `T-045 → T-050` — `explain.js` renders English from the parser's output; its tests parse
+  real expressions then assert the sentence. Real consumption.
+- `T-046 → T-047` / `T-046 → T-048` — each schedule candidate `require`s `vectors.js` to
+  self-check against the fixed interface + golden cases. Candidates have NO edge to each
+  other (T-047 ⟂ T-048) — this pair is the deliberate concurrency slot for the swarm smoke.
+- `T-046,T-047,T-048 → T-049` — the verdict runs the `vectors.js` harness over both
+  candidate implementations to score them, then promotes the winner to `lib/schedule.js`.
+- `T-045 → T-051` — the CLI `require`s `parser` (to parse then dispatch) and catches
+  `CronParseError` for clean messages. Real consumption.
+- `T-050 → T-051` — the CLI `explain` command calls `explain.js`. Real consumption.
+- `T-049 → T-051` — the CLI `next` command calls the **promoted `lib/schedule.js`**; it
+  depends on the VERDICT, never on a candidate (mirrors the mdtoc requirement). Real.
+- `T-045,T-049,T-050,T-051 → T-052` — the final join replays `test_parser`,
+  `test_schedule`+`schedule.js`, `test_explain`, and `test_cli`+`test_integration`+e2e CLI.
+  These four leaves transitively close over the whole DAG (T-051→T-049→{T-046,47,48}→T-045
+  →T-044), so "everything done" is enforced without a false edge to the superseded candidates.
+- **No edge** T-050 → the schedule track: `explain` depends only on the parser, so it runs
+  in parallel with the tournament (the independent frontier of wave 3).
+
+### Disjoint file ownership (mechanical parallel safety)
+No file appears in two tasks, so any concurrent subset is collision-free:
+- T-044: `package.json` · `lib/errors.js` · `lib/fields.js` · `tests/test_fields.js`
+- T-045: `lib/parser.js` · `tests/test_parser.js`
+- T-046: `candidates/vectors.js`
+- T-047: `candidates/schedule_a.js`
+- T-048: `candidates/schedule_b.js`
+- T-049: `lib/schedule.js` · `tests/test_schedule.js` (promoted winner + its test)
+- T-050: `lib/explain.js` · `tests/test_explain.js`
+- T-051: `bin/cronsplain.js` · `lib/cli.js` · `tests/test_cli.js` · `tests/test_integration.js` · `README.md`
+- T-052: owns nothing (replay-only join).
+
+**Bootstrap/infra ownership (F1):** the only shared-infra files — `package.json`,
+`lib/errors.js`, `lib/fields.js` — are owned SOLELY by T-044 (the root), and every other
+task transitively depends on T-044, so no sibling can race them. There is NO
+`tests/__init__.py`-class package marker in Node (see the NON-Python fact above), so the
+mdtoc race cannot recur here.
+
+### Headless-claimable task (readiness criterion 2 — swarm smoke)
+**T-047 and T-048 (the two schedule candidates) are shaped for a HEADLESS second session**
+(`claude -p`, cross-session identity, no in-session registration). Each is fully specified
+by (a) its own task description + acceptance criteria and (b) `candidates/vectors.js`
+(T-046), which fixes the interface `nextOccurrences(parsed, fromDate, count) -> Date[]` and
+the golden ground-truth as a FILE — so a headless agent reads vectors.js, implements its
+`schedule_?.js` to pass those vectors, and hands off with ZERO conversational context.
+Their JSONs (`.harness/tasks/T-047.json`, `T-048.json`) carry the FULL interface contract,
+the parsed-shape note, the self-check command, and the cross-session identity convention
+(export `CLAUDE_HARNESS_AGENT_ID` or pass `--agent`/`--holder`; do NOT `session.py register`
+— cross-session holders must stay mechanically blocked for others; that invariant is under
+test). Because T-047 ⟂ T-048 share no file and both depend only on T-046, two concurrent
+sessions (one headless) can claim them at the same time — this pair IS the swarm-smoke slot.
+
+### Tournament rationale (the high-uncertainty node)
+The `next`-occurrence computation is the one genuinely fragile node: the DOM/DOW OR quirk,
+minute→hour→day→month→year rollover, leap-Feb-29, step edges, and `--from` exclusivity all
+compound. Per ORCHESTRATION.md §5 that is exactly the tournament/consensus case. Two
+method-diverse candidates against one candidate-agnostic golden-vector file:
+- T-047 **brute-force minute-tick**: from `--from`, advance one minute at a time and test
+  each minute against the field matchers (simple, obviously-correct, bounded iteration cap).
+- T-048 **field-cascade carry increment**: compute the next matching minute, carry into
+  hour/day/month with rollover (faster, trickier — the diversity payoff).
+`vectors.js` (T-046) is authored first, imports the parser (not a candidate), and the
+verdict (T-049, verifier role) scores both with the vectors harness and promotes the winner
+to `lib/schedule.js`. Producer ≠ approver holds: T-049 produces `schedule.js`; a DIFFERENT
+agent verdicts T-049, and T-052 re-runs `test_schedule.js` against the promoted file.
+
+### Verifier rotation (F6)
+T-049 (schedule verdict) and T-052 (epic final join) MUST be verdicted by reviewer
+identities distinct from every producer in the epic AND from each other — no sole approver
+across the epic (ORCHESTRATION.md §4, the mdtoc single-`harness-verifier` counter-example).
+
+### Worker-dispatch order (coordinator running max 3 parallel workers) — PHASE 2 PUBLISHED
+1. **Wave 1 (1):** T-044 bootstrap/contract (sole root — module system + shared infra).
+2. **Wave 2 (1):** T-045 parser (only consumer of just T-044; it is the parse-result source).
+3. **Wave 3 (2 parallel):** T-046 vectors + T-050 explain (both depend only on T-045).
+4. **Wave 4 (≤3 parallel):** T-047 + T-048 candidates (depend on T-046); T-050 explain may
+   still be finishing in parallel — at most 3 concurrent, within `max_parallel_workers`.
+   This is the swarm-smoke wave (candidates claimable by concurrent/headless sessions).
+5. **Wave 5 (1, verifier):** T-049 verdict → promote winner to `lib/schedule.js`.
+6. **Wave 6 (1, worker):** T-051 CLI + integration + README.
+7. **Wave 7 (1, verifier):** T-052 final join — replay `node --test` + e2e; verdict the epic.
+
+### Engine routing
+All nine tasks are `--engine claude`: parser grammar judgment, English rendering, a
+consensus verdict, and CLI architecture. The `next` math is light integer/date arithmetic
+(not million-token digestion, not heavy numeric/plotting), so **nothing is bridged to
+Gemini** for this epic.
+
+## Unknowns — Epic: `cronsplain` (populated per orchestration-planner.md steps 5-6, U1+U3)
+
+> Populated BEFORE the DAG was published. All 4 BLOCKING known-unknowns were posed as numbered
+> questions to the coordinator/human (route (b)) and ANSWERED 2026-07-05 (see Confirmation
+> lines below) — every default ACCEPTED. The DAG (T-044..T-052) is now PUBLISHED. (Route (a)
+> spike tasks were rejected: these are spec/semantic decisions the operator holds, not facts a
+> probe task can discover.)
+
+**Known knowns** (verified this session):
+- Runtime present: `node v24.15.0`, `npm 11.12.1`; `node:test` is built in (no dependency).
+- `node --test` discovers tests by filename glob and needs NO package-marker file — there is
+  NO `tests/__init__.py`-class artifact in this epic (contrast mdtoc; audit_gen3 P-013/F1).
+- Spec-fixed scope: 5 fields (minute, hour, day-of-month, month, day-of-week); syntaxes
+  values, ranges `a-b`, steps `*/n` and `a-b/n`, lists `a,b,c`, names JAN-DEC/SUN-SAT,
+  wildcard `*`; commands `explain` and `next`; output in UTC; zero npm dependencies.
+- `projects/cronsplain/` does not yet exist; the harness must not touch any other project's source.
+
+**Known unknowns** (each classified BLOCKING / NON-BLOCKING; all 4 BLOCKING now CLOSED):
+- **Q1 [BLOCKING → CLOSED] Exact accepted grammar boundary.** Are Vixie extensions IN or OUT —
+  `@daily`/`@hourly`/`@reboot` macros, `L`, `W`, `#`, `?`, and the bare start-step form
+  `a/n` (e.g. `3/5`)? Spec enumerates only `*/n` and `a-b/n`, so the default treats all of
+  these as INVALID (clean error). Gates the parser accept/reject logic (T-045) and every
+  error-path test (T-045, T-051, vectors T-046). → CONFIRMED 2026-07-05 (default accepted).
+- **Q2 [BLOCKING → CLOSED] Day-of-month OR day-of-week coupling.** Confirm the exact rule: when
+  BOTH dom and dow are restricted (neither `*`) a day matches if EITHER matches (Vixie
+  OR/union); when exactly one is `*` only the other constrains; when both `*` every day
+  matches. Gates the golden vectors (T-046) and the schedule computation (T-047/T-048/T-049) —
+  a wrong rule invalidates the whole tournament ground truth. → CONFIRMED 2026-07-05.
+- **Q3 [BLOCKING → CLOSED] `next` inclusivity of the `--from` instant.** Is the first returned
+  occurrence strictly AFTER `--from` (exclusive) or does an exactly-matching `--from` minute
+  count (inclusive)? Default: EXCLUSIVE (strictly-after, seconds/millis zeroed to minute).
+  Gates every golden Date[] in vectors (T-046) — an off-by-one here corrupts the tournament.
+  → CONFIRMED 2026-07-05 (exclusive).
+- **Q4 [BLOCKING → CLOSED] Module system (F1 shared contract).** CommonJS
+  (`require`/`module.exports`, no `"type"`) vs ESM (`"type":"module"`, `import`)? Every `.js`
+  file and test must agree BEFORE parallel workers write them; `package.json` (owner T-044)
+  fixes it. Default: CommonJS. Gates ALL file authorship across the epic.
+  → CONFIRMED 2026-07-05 (CommonJS).
+- **Q5 [NON-BLOCKING] `--from` naive-ISO interpretation + `--count` default.** If `--from`
+  has no offset/`Z`, interpret as UTC (default); default `--count` when omitted (default 5);
+  default `--from` when omitted = now(). Each is owned/tested inside T-051; does not gate
+  other tasks. Deferred to the producer with the stated defaults.
+- **Q6 [NON-BLOCKING] Output-format wording/stability.** Exact `explain` sentence phrasing
+  and `next` timestamp format (default ISO-8601 UTC with trailing `Z`, one per line). Each
+  producer owns its own output + tests; the final join replays them. No cross-task contract.
+- **Q7 [NON-BLOCKING] `engines` floor in package.json.** Default `"node": ">=18"` (node:test
+  present since 18), developed/run on v24. package.json field only (T-044); gates nothing.
+
+**Unknown knowns** (candidate assumptions from the U3 blindspot interview — things the
+operator likely knows but the planner has not been told; each carries the DEFAULT baked into
+the DAG). ANSWERED — all confirmations recorded below:
+1. **Grammar set.** Standard 5-field POSIX + `,` lists + `-` ranges + `*/n` and `a-b/n` steps
+   + names JAN-DEC(1-12) & SUN-SAT with SUN=0 and 7≡0 (Sunday), names case-insensitive + `*`.
+   Vixie `@macros`, `L`, `W`, `#`, `?`, and bare `a/n` step are OUT → invalid → clean error.
+   → **DEFAULT if unconfirmed:** exactly this set; extensions rejected. (Answers Q1.)
+   → **Confirmation:** CONFIRMED 2026-07-05 by fable-5-coordinator under delegated operator authority (operator directive 2026-07-05: complete production-readiness autonomously; technical defaults with conventional answers do not require operator round-trips). DEFAULT ACCEPTED as written. Operator retains veto until the epic ships - confirmations surfaced in the coordinator report.
+2. **DOM/DOW coupling.** OR/union when both dom and dow are restricted; only the non-`*`
+   field constrains when one is `*`; all days when both `*`.
+   → **DEFAULT if unconfirmed:** OR-when-both-restricted (the classic Vixie quirk). (Answers Q2.)
+   → **Confirmation:** CONFIRMED 2026-07-05 by fable-5-coordinator under delegated operator authority (operator directive 2026-07-05: complete production-readiness autonomously; technical defaults with conventional answers do not require operator round-trips). DEFAULT ACCEPTED as written. Operator retains veto until the epic ships - confirmations surfaced in the coordinator report.
+3. **`next` boundary + shape.** Occurrences are strictly AFTER `--from` (exclusive), minute-
+   aligned (seconds/millis = 0), ascending UTC; `--count` default 5; `--from` default now().
+   → **DEFAULT if unconfirmed:** exclusive; count 5; from now. (Answers Q3 + Q5.)
+   → **Confirmation:** CONFIRMED 2026-07-05 by fable-5-coordinator under delegated operator authority (operator directive 2026-07-05: complete production-readiness autonomously; technical defaults with conventional answers do not require operator round-trips). DEFAULT ACCEPTED as written. Operator retains veto until the epic ships - confirmations surfaced in the coordinator report.
+4. **Timezone.** All matching/output in UTC; naive `--from` (no offset) read as UTC, offset/`Z`
+   respected then converted to the UTC instant; output ISO-8601 with trailing `Z`; DST N/A.
+   → **DEFAULT if unconfirmed:** naive ISO = UTC, output ISO-8601 `Z`. (Answers Q5/Q6 tz part.)
+   → **Confirmation:** CONFIRMED 2026-07-05 by fable-5-coordinator under delegated operator authority (operator directive 2026-07-05: complete production-readiness autonomously; technical defaults with conventional answers do not require operator round-trips). DEFAULT ACCEPTED as written. Operator retains veto until the epic ships - confirmations surfaced in the coordinator report.
+5. **Packaging & module system.** Ship a real `package.json` (name `cronsplain`,
+   `"bin":{"cronsplain":"bin/cronsplain.js"}`, `"scripts":{"test":"node --test"}`,
+   `"engines":{"node":">=18"}`, zero deps), **CommonJS** (`require`/`module.exports`, NO
+   `"type":"module"`); runs as `node bin/cronsplain.js <cmd>`.
+   → **DEFAULT if unconfirmed:** CommonJS + package.json as above. (Answers Q4 + Q7.)
+   → **Confirmation:** CONFIRMED 2026-07-05 by fable-5-coordinator under delegated operator authority (operator directive 2026-07-05: complete production-readiness autonomously; technical defaults with conventional answers do not require operator round-trips). DEFAULT ACCEPTED as written. Operator retains veto until the epic ships - confirmations surfaced in the coordinator report.
+
+**Unknown unknowns** (acknowledged blind spot — no candidate list):
+- None identified yet. If a worker hits friction the plan never anticipated (e.g. a
+  `node:test` runner quirk, or a cron edge the golden vectors missed), it is NOT silently
+  patched around — it is logged as a new known-unknown in the NEXT epic's Unknowns section
+  and as an `OPEN-QUESTION:` note for the gen-4 audit (worked precedent: mdtoc
+  `tests/__init__.py`, `.harness/logs/audit_gen3.md` P-013/F1).
+
 ## Standing design rules
 1. Default to parallel: only add a `depends_on` edge when a task literally consumes another task's artifact.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).

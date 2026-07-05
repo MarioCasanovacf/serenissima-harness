@@ -1,0 +1,16 @@
+{
+  "id": "T-052",
+  "title": "cronsplain epic FINAL JOIN: replay full node --test suite + e2e explain/next; verdict the epic",
+  "description": "Replay-only epic final join (owns nothing). Depends on T-045 (parser), T-049 (promoted schedule), T-050 (explain), T-051 (CLI + integration) — these four leaves transitively close over the whole DAG, so this verdict cannot pass unless every task is done. Re-runs the full node --test suite and the e2e CLI, verifies zero-deps + source-untouched, and F6 verifier-rotation.",
+  "acceptance_criteria": [
+    "OWNS NOTHING (create/edit no file; replay + verdict only).",
+    "FULL SUITE: from projects/cronsplain/ run `node --test` — it discovers test_fields, test_parser, test_schedule, test_explain, test_cli, test_integration. Confirm ALL green and quote the runner summary (tests/pass/fail counts) in the verdict.",
+    "E2E replay: run `node bin/cronsplain.js explain <expr>` for a few exprs; run `node bin/cronsplain.js next <expr> --from <ISO> --count N` and HAND-VERIFY the ISO-Z occurrences for (a) a DOM/DOW-OR expr (e.g. '0 0 13 * 5'), (b) a leap-year expr ('0 0 29 2 *'), and (c) EXCLUSIVITY (a --from landing exactly on a match returns the NEXT minute, not that one). Confirm an invalid expr exits non-zero with a clean one-line message and NO stack trace.",
+    "HYGIENE: confirm ZERO npm deps (no node_modules/, no dependencies/devDependencies in package.json) and CommonJS (no \"type\":\"module\"). Confirm the harness edited NO file outside projects/cronsplain/ (readiness criterion 3: source untouched) — spot-check git status / diff scope.",
+    "F6 VERIFIER ROTATION: this final-join approver MUST be an identity distinct from every producer (T-044,045,046,047,048,050,051) AND from the T-049 verdict approver — no sole approver across the epic (ORCHESTRATION.md section 4).",
+    "VERDICT: mark the epic done ONLY if all the above hold; otherwise re-open the offending task with a specific REJECTED note (replayable). Record the OPEN-QUESTION taxonomy note for any residual friction to feed the gen-4 audit.",
+    "SHARED CONVENTIONS: CommonJS, zero deps, UTC. Run from projects/cronsplain/."
+  ],
+  "context_files": [".harness/plan.md"],
+  "notes": []
+}

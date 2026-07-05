@@ -1,0 +1,17 @@
+{
+  "id": "T-049",
+  "title": "cronsplain schedule tournament VERDICT: score A/B via vectors, promote winner to lib/schedule.js + tests/test_schedule.js",
+  "description": "Verifier-role tournament verdict (Co-Scientist consensus). Scores both candidates against the candidate-agnostic golden vectors, promotes the winner to the shipped lib/schedule.js, and writes its test. Depends on T-046 (vectors harness) + T-047 + T-048 (both candidates). PRODUCES lib/schedule.js -> must be handed off to a DIFFERENT verifier identity (producer != approver); F6: the approver must differ from every producer in the epic.",
+  "acceptance_criteria": [
+    "OWNS EXACTLY: projects/cronsplain/lib/schedule.js, projects/cronsplain/tests/test_schedule.js. Touch no candidate file (read-only) and no other file.",
+    "SCORE: require candidates/vectors.js (runAgainst) + candidates/schedule_a.js + candidates/schedule_b.js. Run runAgainst on BOTH candidates. Record each candidate's passed/total + failures in the handoff note (replayable). Pick the winner by pass-rate, then on a tie by clarity/robustness/edge-case handling. Document the rationale in the handoff note AND a header comment in lib/schedule.js naming which candidate won and why + the verdict date.",
+    "PROMOTE by COPY: lib/schedule.js contains the winner's implementation as the canonical shipped module (export nextOccurrences per the vectors interface). It MUST NOT require() anything from candidates/ at runtime (promotion = copy, so the shipped lib has zero candidates/ dependency). module.exports = { nextOccurrences }.",
+    "tests/test_schedule.js (node:test): (1) require('../candidates/vectors').runAgainst against require('../lib/schedule').nextOccurrences and assert passed===total; (2) PLUS >=2 explicit assertions written independently of vectors.js — one DOM/DOW-OR case (e.g. '0 0 13 * 5') and one EXCLUSIVITY case (from exactly on a match returns the NEXT minute).",
+    "PRODUCER != APPROVER + F6: hand off to a verifier whose identity differs from every producer (T-044..T-048, T-050, T-051). Do not self-verdict. The final join (T-052) re-runs test_schedule.js against the promoted file.",
+    "SHARED CONVENTIONS: CommonJS, zero deps, UTC. Run from projects/cronsplain/.",
+    "HARNESS PROTOCOL: claim/lock(lib/schedule.js, tests/test_schedule.js)/in_progress/handoff --to-role verifier; NEVER self-mark done; --agent <you>.",
+    "VERIFY (in handoff note): from projects/cronsplain/ `node --test tests/test_schedule.js` green; include both candidates' runAgainst scores + the winner rationale."
+  ],
+  "context_files": ["projects/cronsplain/candidates/vectors.js", "projects/cronsplain/candidates/schedule_a.js", "projects/cronsplain/candidates/schedule_b.js"],
+  "notes": []
+}

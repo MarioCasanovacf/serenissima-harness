@@ -1,0 +1,18 @@
+{
+  "id": "T-051",
+  "title": "cronsplain CLI + integration + README: bin/cronsplain.js + lib/cli.js + tests/test_cli.js + tests/test_integration.js + README.md",
+  "description": "Wires the two user commands over parser+explain+the PROMOTED schedule, with clean stack-trace-free error handling, plus in-process unit tests, shell-out integration tests, and the README. Depends on T-045 (parser/errors), T-050 (explain), and T-049 (the promoted lib/schedule.js VERDICT — never a candidate).",
+  "acceptance_criteria": [
+    "OWNS EXACTLY: projects/cronsplain/bin/cronsplain.js, projects/cronsplain/lib/cli.js, projects/cronsplain/tests/test_cli.js, projects/cronsplain/tests/test_integration.js, projects/cronsplain/README.md. Touch no other file.",
+    "lib/cli.js: export run(argv) -> { code, stdout, stderr } (pure/testable; argv is the args AFTER node+script). Commands: `explain <expr>` -> stdout = explain(expr), code 0. `next <expr> [--from ISO] [--count N]` -> stdout = the next N occurrences (ISO-8601 UTC, trailing Z) one per line, code 0; --count default 5; --from default now(); naive ISO (no offset/Z) parsed as UTC, offset/Z respected then converted. Unknown command / missing args / invalid expr / bad --from / bad --count -> catch CronParseError AND argument errors, write a clean ONE-LINE message to stderr, code != 0, NO stack trace. Provide a --help/usage string.",
+    "bin/cronsplain.js: `#!/usr/bin/env node` shebang; require('../lib/cli').run(process.argv.slice(2)); write result.stdout to process.stdout, result.stderr to process.stderr, process.exit(result.code). This is the package.json bin target.",
+    "tests/test_cli.js (node:test): call run() IN-PROCESS; assert stdout/stderr/code for explain, next (with a FIXED --from for determinism, e.g. --from 2026-01-01T00:00:00Z --count 3), and error cases (invalid expr, missing arg) — assert code!=0 and stderr has no 'at ' stack frame.",
+    "tests/test_integration.js (node:test): shell out via node:child_process (execFileSync 'node', ['bin/cronsplain.js', ...]) to run `explain \"...\"` and `next \"...\" --from <ISO> --count 3`; assert stdout + exit code; assert an invalid expr yields a NON-zero exit and stderr containing NO stack trace.",
+    "README.md: what cronsplain is; how to run (`node bin/cronsplain.js <cmd>` or via the `cronsplain` bin); the supported grammar (the confirmed Q1 set); both commands with worked examples; the DOM/DOW OR note; the UTC/timezone note; and `node --test` to run the suite. State ZERO npm deps.",
+    "SHARED CONVENTIONS: CommonJS, zero deps, UTC, clean errors. Run from projects/cronsplain/. The `next` command uses require('../lib/schedule') (the PROMOTED module), never a candidate.",
+    "HARNESS PROTOCOL: claim/lock(all 5 owned files)/in_progress/handoff --to-role verifier; NEVER self-mark done; --agent <you>.",
+    "VERIFY (in handoff note): from projects/cronsplain/ `node --test` (whole suite) green; `node bin/cronsplain.js explain \"*/15 * * * *\"` and `node bin/cronsplain.js next \"0 0 * * *\" --from 2026-01-01T00:00:00Z --count 3` clean output; an invalid expr exits non-zero with a one-line message and NO stack trace."
+  ],
+  "context_files": [".harness/plan.md", "projects/cronsplain/lib/parser.js", "projects/cronsplain/lib/explain.js", "projects/cronsplain/lib/schedule.js"],
+  "notes": []
+}

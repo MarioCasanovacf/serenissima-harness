@@ -1,0 +1,44 @@
+{
+  "id": "T-043",
+  "title": "Plan external project #2 'cronsplain' (projects/cronsplain/, Node.js - NON-Python): decompose into DAG T-044+ USING the new U1-U4 protocol",
+  "description": "Production-readiness criteria 3+4: prove the harness runs a NON-Python project end to end AND exercise the new Unknowns protocol for real. Goal: cronsplain, a Node.js CLI (node v24 available; node:test built-in runner; ZERO npm dependencies) in projects/cronsplain/: parse standard 5-field cron expressions (minute hour day-of-month month day-of-week; values, ranges a-b, steps */n and a-b/n, lists a,b,c, names JAN-DEC/SUN-SAT, wildcards); command 'explain <expr>' -> human-readable English; command 'next <expr> [--from ISO] [--count N]' -> next N occurrences in UTC; correct day-of-month OR day-of-week semantics (the classic cron quirk when both are restricted); clean errors on invalid expressions (no stack traces). Deliverables: lib modules, CLI entry, node:test suites per module + integration, README. MANDATORY: follow your NEW protocol steps 5-6 (blindspot interview + Unknowns section) BEFORE publishing any DAG task: hand off FIRST with (a) the populated Unknowns 4-quadrant section in plan.md, (b) your 3-5 numbered assumptions for the coordinator/human to confirm, and (c) the DRAFT DAG (do NOT add-task yet). The coordinator will answer, then you resume and publish T-044+ with disjoint ownership (max 3 parallel workers), bootstrap files explicitly owned (F1), and a final verifier join. Task ID namespace: T-044..T-052. NOTE for your DAG design: at least ONE worker task must be shaped so a HEADLESS second session (claude -p, cross-session identity, no session registration) can claim and execute it - self-contained, no in-session context needed (this feeds the swarm smoke, criterion 2).",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T04:10:50Z",
+      "agent": "orchestration-planner",
+      "note": "DECISION: phase 1 (U1/U3 interview) only — drafting cronsplain DAG + Unknowns in plan.md, NOT publishing T-044+ until BLOCKING known-unknowns answered by coordinator/human."
+    },
+    {
+      "ts": "2026-07-05T04:13:18Z",
+      "agent": "orchestration-planner",
+      "note": "DECISION: cronsplain PHASE-1 complete. Drafted DAG T-044..T-052 (9 tasks) + populated ## Unknowns (4 quadrants) in plan.md. 4 BLOCKING known-unknowns posed as numbered Q1-Q4 (route b, human answer): Q1 grammar boundary (Vixie @macros/L/W/#/bare a-n step IN or OUT), Q2 DOM/DOW OR-coupling rule, Q3 next inclusive/exclusive of --from, Q4 module system CommonJS vs ESM. 3 NON-BLOCKING (Q5-Q7). DAG NOT PUBLISHED per protocol until Q1-Q4 answered+recorded."
+    },
+    {
+      "ts": "2026-07-05T04:13:31Z",
+      "agent": "orchestration-planner",
+      "note": "HANDOFF -> verifier: PHASE 1 (U1/U3 interview) AWAITS COORDINATOR/HUMAN ANSWERS — do NOT verdict as 'epic built', this hand-off is a gate. Deliverable: .harness/plan.md cronsplain section = DRAFT DAG (T-044..T-052, marked NOT PUBLISHED) + populated ## Unknowns (4 quadrants). BLOCKING known-unknowns Q1(grammar boundary),Q2(DOM/DOW OR rule),Q3(next inclusive/exclusive),Q4(module system) MUST be answered+recorded in plan.md BEFORE the planner runs add-task. OPEN-QUESTION: coordinator to answer Q1-Q4 (defaults proposed in the 5 numbered blindspot assumptions), then resume orchestration-planner for PHASE 2 (publish T-044+, re-handoff). Verifier action here = confirm plan.md contains the DRAFT DAG + all 4 quadrants + 4 BLOCKING Qs and that zero T-044+ tasks exist on the board yet (correct: publication is gated)."
+    },
+    {
+      "ts": "2026-07-05T04:16:02Z",
+      "agent": "orchestration-planner",
+      "note": "DECISION: PHASE 2 authorized by fable-5-coordinator 2026-07-05 (delegated operator authority, operator veto until ship). All 4 BLOCKING unknowns Q1-Q4 answered = my defaults accepted. Publishing T-044..T-052; updating plan.md DRAFT->PUBLISHED."
+    },
+    {
+      "ts": "2026-07-05T04:25:59Z",
+      "agent": "orchestration-planner",
+      "note": "PHASE 2 PUBLISHED. Created T-044..T-052 (epic cronsplain, engine claude) with cascade-verified edges; acceptance_criteria filled in all 9 .harness/tasks/T-04x-05x.json (self-contained; T-047/T-048 marked [HEADLESS-OK] with full interface contract + cross-session identity convention: export CLAUDE_HARNESS_AGENT_ID or --agent, NO session.py register). plan.md updated DRAFT->PUBLISHED. Frontier = T-044 (sole root). Priorities p1..p5 by wave. Nothing routed to Gemini."
+    },
+    {
+      "ts": "2026-07-05T04:26:11Z",
+      "agent": "orchestration-planner",
+      "note": "HANDOFF -> verifier: PHASE 2 COMPLETE — cronsplain DAG PUBLISHED. Verifier checklist (replayable): (1) blackboard.py status shows T-044..T-052 open with edges T-045<-T-044; T-046,T-050<-T-045; T-047,T-048<-T-046; T-049<-T-046,047,048; T-051<-T-045,050,049; T-052<-T-045,049,050,051; frontier 'claimable now: T-044' only. (2) Each .harness/tasks/T-04x-05x.json has non-empty acceptance_criteria; disjoint file ownership (no file in two tasks); T-044 sole owner of shared infra package.json+lib/errors.js+lib/fields.js (F1). (3) T-047 & T-048 titled [HEADLESS-OK], self-contained, carry cross-session identity convention (CLAUDE_HARNESS_AGENT_ID/--agent, NO session.py register) — swarm-smoke slot (criterion 2). (4) plan.md cronsplain section = PUBLISHED, all 4 BLOCKING unknowns Q1-Q4 show CONFIRMED 2026-07-05, all defaults accepted. (5) T-049 & T-052 are verifier-role joins requiring F6 rotation (approver != any producer, and != each other). NOTE: this is a PLANNING verdict (structure only) — the epic itself is built by workers claiming T-044+. DECISION: producer(orchestration-planner)!=approver, so a different verifier identity verdicts this."
+    },
+    {
+      "ts": "2026-07-05T04:31:16Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (harness-verifier; producer=orchestration-planner, distinct approver). Replayed, not trusted. (1) DAG: blackboard depends_on match published table EXACTLY — T-044[]=root; T-045[044]; T-046[045]; T-047[046]; T-048[046] (no T-047<->T-048 edge); T-049[046,047,048]; T-050[045]; T-051[045,050,049]; T-052[045,049,050,051]. Every edge = real require()/replay consumption (cross-checked context_files + acceptance). Mechanical ownership scan of all 9 OWNS-EXACTLY sets: ZERO file in two tasks; package.json+lib/errors.js+lib/fields.js sole-owned by T-044 (F1). (2) Unknowns protocol: plan.md has all 4 quadrants populated for cronsplain; Q1-Q4 each [BLOCKING->CLOSED] + CONFIRMED 2026-07-05; 5 blindspot assumptions each keep DEFAULT-if-unconfirmed; section marked PUBLISHED. ORDERING (events.jsonl): coordinator confirmation edit to plan.md 04:14:46-04:14:57Z; PHASE-2 resume 04:15:55Z; add-task T-044 04:19:11Z, T-045..T-052 04:19:31Z. created_at (04:19:11/04:19:31) POSTDATE confirmations => NO blocking unknown resolved after publication. (3) T-047/T-048 [HEADLESS-OK] self-contained: full nextOccurrences interface + parsed-shape + DOM/DOW-OR/exclusivity/UTC rules inline, vectors.js path + self-check node -e command, claim/lock/update/handoff w/ --agent/--holder, CLAUDE_HARNESS_AGENT_ID + NO session.py register; ground truth is committed vectors.js (T-046 dep). Zero conversational context needed. (4) T-044 contract concrete (exact package.json JSON, CronParseError signature, FIELDS bounds/name maps); T-049 scoring+promotion explicit (runAgainst both, pass-rate+tiebreak, copy-promote no candidates/ runtime dep, F6 rotation). (5) Parallelism: waves 1/1/2/<=3/1/1/1, max=3 (wave4 swarm), state.json max_parallel_workers=3. (6) Discipline: projects/cronsplain absent (no source edits); planner locks all acquired+released (plan.md, 9 task JSONs); T-043 handed off to verifier twice (04:13:31, 04:26:11), never self-done. Housekeeping: lock.py status = 4 live locks (substrate-worker-2 on T-044 files), no expired leases; did NOT sweep (T-044/T-053 workers live, per task)."
+    }
+  ]
+}

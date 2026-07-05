@@ -1,0 +1,17 @@
+{
+  "id": "T-045",
+  "title": "cronsplain parser: lib/parser.js + tests/test_parser.js (5-field cron -> normalized parse-result shape)",
+  "description": "Authors the parser AND pins the parse-result SHAPE that explain (T-050), vectors (T-046) and the schedule track consume. Depends on T-044 (require()s lib/errors.js to throw and lib/fields.js for bounds + name maps). This shape is the epic's central contract — keep it simple and stable.",
+  "acceptance_criteria": [
+    "OWNS EXACTLY: projects/cronsplain/lib/parser.js, projects/cronsplain/tests/test_parser.js. Touch no other file. require()s lib/errors.js (CronParseError) and lib/fields.js (bounds + MONTH_NAMES/DOW_NAMES/normalizeDow).",
+    "PARSE-RESULT SHAPE (pin exactly; documented in the module docstring since T-046/T-050 read it): parse(expr) -> { fields: { minute:Set<int>, hour:Set<int>, dayOfMonth:Set<int>, month:Set<int>, dayOfWeek:Set<int> }, domRestricted:boolean, dowRestricted:boolean, source:string }. Each Set is the FULLY-EXPANDED set of allowed integers for that field. domRestricted = (day-of-month field text !== '*'); dowRestricted = (day-of-week field text !== '*'). dayOfWeek Set uses 0-6 with 7 normalized to 0. source = the original expression string. DECISION: use Set of ints per field + the two booleans (not a matcher fn) so downstream code is trivial.",
+    "Parse 5 whitespace-separated fields. Per field support: single value; range a-b; step */n and a-b/n (n>=1 integer); comma list combining any of these; names (JAN-DEC month=1..12, SUN-SAT dow=0..6, case-insensitive, usable in ranges/lists e.g. MON-FRI, JAN,MAR); wildcard * (expands to [min..max]). dow accepts 0-7 (7->0, and if both 0 and 7 present they collapse).",
+    "REJECT with CronParseError (clean message naming the offending field; NO stack leak): field count != 5; value out of the field's [min,max]; reversed range b<a; step n<=0 or non-integer; empty field or empty list element; unknown name; Vixie extensions (@macros, L, W, #, ?, and the bare start-step form a/n such as 3/5); any trailing/garbage token. DECISION+DOCUMENT the reversed-range choice (reject).",
+    "tests/test_parser.js (node:test + node:assert): cover every syntax (value, range, */n, a-b/n, list, names incl. case-insensitivity, wildcard); dow 7->0; domRestricted/dowRestricted flags for * vs restricted; expanded-Set correctness for a couple of exprs; and an INVALID-INPUT table (>=8 cases incl. wrong field count, out-of-range, reversed range, step 0, @daily, L, 3/5, unknown name) each asserting assert.throws(()=>parse(x), CronParseError).",
+    "SHARED CONVENTIONS: see T-044 acceptance item (CommonJS, zero deps, grammar Q1, DOM/DOW Q2, next Q3, tz Q4). Run from projects/cronsplain/.",
+    "HARNESS PROTOCOL: claim/lock(lib/parser.js, tests/test_parser.js)/in_progress/handoff --to-role verifier; NEVER self-mark done; --agent <you> on every call.",
+    "VERIFY (commands + output in handoff note): from projects/cronsplain/ `node --test tests/test_parser.js` green; `node -e \"const {parse}=require('./lib/parser'); const p=parse('*/15 0 * * 1-5'); console.log([...p.fields.minute].length, p.domRestricted, p.dowRestricted)\"` prints \"4 false true\"."
+  ],
+  "context_files": [".harness/plan.md", "projects/cronsplain/lib/fields.js", "projects/cronsplain/lib/errors.js"],
+  "notes": []
+}

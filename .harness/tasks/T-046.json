@@ -1,0 +1,17 @@
+{
+  "id": "T-046",
+  "title": "cronsplain schedule golden vectors: candidates/vectors.js (candidate-agnostic interface + ground truth)",
+  "description": "Candidate-agnostic golden-vector file for the schedule tournament (mirrors mdtoc's vectors.py role). Authored BEFORE any candidate. Fixes the nextOccurrences interface + the hand-computed ground truth so candidates (T-047/T-048) and the verdict (T-049) can self-check. Depends on T-045: it require()s lib/parser.js to build parsed inputs. Imports NO candidate.",
+  "acceptance_criteria": [
+    "OWNS EXACTLY: projects/cronsplain/candidates/vectors.js. Touch no other file. require()s ../lib/parser (parser.parse) to build parsed inputs. Imports NO schedule_*.js candidate.",
+    "INTERFACE (documented in the module docstring; every candidate implements it): nextOccurrences(parsed, fromDate, count) -> Date[]. Returns the next `count` UTC Date objects whose minute matches `parsed` (the parse-result from parser.parse), each strictly AFTER fromDate (EXCLUSIVE), minute-aligned (seconds=0, ms=0), ascending. Applies DOM/DOW OR coupling: when parsed.domRestricted && parsed.dowRestricted, a day matches if day-of-month OR day-of-week matches; if only one restricted, only that field constrains; if neither, all days.",
+    "VECTORS: array of ground-truth cases { expr, from (ISO-Z string), count, expected (array of ISO-Z strings) }. MUST cover: (a) simple step '*/15 * * * *'; (b) daily '0 0 * * *'; (c) month rollover (a late-in-month match rolling to next month); (d) YEAR rollover (Dec 31 -> Jan 1); (e) leap Feb 29 '0 0 29 2 *' -> only leap years; (f) DOM/DOW OR quirk '0 0 13 * 5' (13th OR Friday) and '0 0 1 * 1' (1st OR Monday); (g) one-field-* cases (dom restricted with dow=*, and dow restricted with dom=*); (h) EXCLUSIVITY: a `from` landing exactly on a matching minute must NOT return that minute (returns the next). Each expected value hand-computed and annotated with a // comment citing the rule it exercises (OR-coupling / exclusivity / rollover / leap).",
+    "runAgainst(nextOccurrencesFn) -> { passed:int, total:int, failures:[{expr, expected, got}] }: for each VECTOR, parse expr via parser.parse, call nextOccurrencesFn(parsed, new Date(from), count), map returned Dates to ISO-Z (d.toISOString(), which is already Z; ensure seconds=0), compare to expected; accumulate. Imports NO candidate (the fn is passed in). module.exports = { VECTORS, runAgainst, INTERFACE_DOC }.",
+    "Provide at least ~10 VECTORS total spanning the categories above. The `expected` arrays are the TRUSTED GROUND TRUTH — compute them carefully by hand and cite each.",
+    "SHARED CONVENTIONS: see T-044 acceptance item. CommonJS, zero deps, UTC everywhere.",
+    "HARNESS PROTOCOL: claim/lock(candidates/vectors.js)/in_progress/handoff --to-role verifier; NEVER self-mark done; --agent <you>.",
+    "VERIFY (in handoff note): from projects/cronsplain/ `node -e \"const v=require('./candidates/vectors'); console.log(typeof v.runAgainst, Array.isArray(v.VECTORS), v.VECTORS.length)\"` prints \"function true <N>\" with N>=10."
+  ],
+  "context_files": [".harness/plan.md", "projects/cronsplain/lib/parser.js"],
+  "notes": []
+}

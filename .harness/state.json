@@ -125,9 +125,9 @@
         "last_outcome_at": "2026-07-05T03:13:57Z"
       },
       "evolution-analyst": {
-        "tasks_done": 3,
+        "tasks_done": 4,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T03:03:04Z"
+        "last_outcome_at": "2026-07-05T04:20:49Z"
       },
       "fable-5-coordinator": {
         "tasks_done": 2,
@@ -140,9 +140,9 @@
         "last_outcome_at": "2026-07-04T04:46:18Z"
       },
       "orchestration-planner": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T06:35:00Z"
+        "last_outcome_at": "2026-07-05T04:31:16Z"
       },
       "substrate-worker-3": {
         "tasks_done": 3,
@@ -224,7 +224,21 @@
   "evolution": {
     "generation": 3,
     "last_audit_at": "2026-07-05T03:40:00Z",
-    "pending_proposals": [],
+    "pending_proposals": [
+      {
+        "id": "P-019",
+        "source": "T-042 forensic investigation (P-042A refined by verifier-b's threat-model + OQ1 analysis; coordinator design decision 2026-07-05)",
+        "target": [
+          ".harness/bin/session.py",
+          ".harness/README.md"
+        ],
+        "summary": "session.py register/unregister gain mechanical authorization: allowed only when the AMBIENT identity (hc.agent_id()) is a coordinator identity (the set {'main'} union registry entries with role=coordinator). In-session bench workers inherit the coordinator's ambient (main) so the P-002 flow and T-037-style self-heal keep working; cross-session/cross-engine runners export their own CLAUDE_HARNESS_AGENT_ID per protocol, so their self-registration is refused and logged (session_holder_register_refused). Optional --task flag on register for attribution (OQ2). Docstring states the honest trust boundary: this guards the SANCTIONED CLI path against accidental protocol violations; direct file edits are outside the local-files trust model, same as the fail-open hook.",
+        "evidence": "T-042: register() [session.py:58-81] has no auth; live repro: CLAUDE_HARNESS_AGENT_ID=fake-cross-engine register fake-cross-engine -> EXIT 0 then check_lock bypass EXIT 0 (control without registration: EXIT 2). T-037 legit flow: ambient=main, --by=substrate-worker-2 -> preserved under ambient-rule",
+        "measurable_gain": "CLAUDE_HARNESS_AGENT_ID=<non-coordinator> register <name> -> exit!=0, not in session_holders(), refusal event logged; ambient-main register (T-037 replay) -> exit 0 unchanged; the fake-cross-engine bypass sequence flips EXIT 0 -> EXIT 2",
+        "status": "accepted_by_verifier (T-042), dispatched as T-053",
+        "gate": "code-level, no human gate"
+      }
+    ],
     "accepted_mutations": [
       {
         "id": "P-001",

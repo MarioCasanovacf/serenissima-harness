@@ -1,0 +1,17 @@
+{
+  "id": "T-050",
+  "title": "cronsplain explain: lib/explain.js + tests/test_explain.js (parsed cron -> deterministic English)",
+  "description": "The `explain` renderer: turns a cron expression into one deterministic human-readable English sentence. Depends only on T-045 (parser) + T-044 (fields display names) — it has NO dependency on the schedule track, so it runs in parallel with the tournament (independent frontier of wave 3).",
+  "acceptance_criteria": [
+    "OWNS EXACTLY: projects/cronsplain/lib/explain.js, projects/cronsplain/tests/test_explain.js. Touch no other file. require()s ../lib/parser (parse) and ../lib/fields (MONTH_DISPLAY, DOW_DISPLAY).",
+    "EXPORT explain(expr) -> string: parse via parser.parse, then render a single deterministic English sentence. (You MAY also export explainParsed(parsed) and have explain compose parse+explainParsed — document which.) Same expr ALWAYS yields the same string (tests depend on it).",
+    "RENDER each field readably: '*' -> 'every minute'/'every hour'/etc.; step '*/n' -> 'every N minutes/hours/...'; list/range -> readable phrasing ('minutes 0 and 30', 'hours 9 through 17'); month/day-of-week numbers -> names via fields display arrays ('January', 'Monday'). When BOTH dayOfMonth and dayOfWeek are restricted, the prose MUST express the OR coupling (e.g. 'on the 13th of the month OR on Friday'). Pick a clear sentence template and keep it stable.",
+    "ERRORS: an invalid expr should surface cleanly — either let CronParseError propagate (documented) or wrap it; do NOT emit a stack trace from explain itself. Document the choice.",
+    "tests/test_explain.js (node:test + node:assert): assert the EXACT sentence for a handful of exprs including '*/15 * * * *', '0 0 * * *', '0 9-17 * * 1-5', and a both-restricted OR case like '0 0 13 * 5'; assert an invalid expr throws/surfaces CronParseError.",
+    "SHARED CONVENTIONS: CommonJS, zero deps, deterministic output. Run from projects/cronsplain/.",
+    "HARNESS PROTOCOL: claim/lock(lib/explain.js, tests/test_explain.js)/in_progress/handoff --to-role verifier; NEVER self-mark done; --agent <you>.",
+    "VERIFY (in handoff note): from projects/cronsplain/ `node --test tests/test_explain.js` green; `node -e \"console.log(require('./lib/explain').explain('*/15 * * * *'))\"` prints your deterministic sentence."
+  ],
+  "context_files": [".harness/plan.md", "projects/cronsplain/lib/parser.js", "projects/cronsplain/lib/fields.js"],
+  "notes": []
+}

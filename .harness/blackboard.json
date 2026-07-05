@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T03:34:48Z",
-  "updated_by": "fable-5-coordinator",
+  "updated_at": "2026-07-05T04:31:40Z",
+  "updated_by": "substrate-worker-2",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1577,6 +1577,255 @@
       "created_by": "verifier-b",
       "completed_at": "2026-07-05T03:15:23Z",
       "completed_by": "verifier-b"
+    },
+    "T-042": {
+      "epic": "gen-4",
+      "title": "INVESTIGATION: why did check_lock not block substrate-worker-2's Edit writes without a live session registration? (P-002 liveness question)",
+      "status": "done",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-042.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "evolution-analyst",
+        "note": "VERDICT H4 (works-as-designed): substrate-worker-2 self-registered at 03:08:38Z (transcript:1157, events.jsonl:693, expires 05:08:38) BEFORE all 4 Edits (transcript:1161/1163 orchestration-planner.md 03:08:52/03:09:00; 1168/1171 plan.md 03:09:15/03:09:27), inside the live lock (events.jsonl:677-678 acquire 03:08:07 ttl900; released 03:10:11). check_lock returned 0 via 'holder in session_holders()'. Operator premise 'no live registration' is false (missed events.jsonl:693). Reproduced 4 scenarios in isolated scratch repo piping synthetic PreToolUse payloads to check_lock.py: A(no reg,me=main)=EXIT2 block; B(live reg,me=main)=EXIT0 allow=actual; C(holder==me)=EXIT0; D(expired reg)=EXIT2. H1/H2/H3/H5 ruled out with cited lines. NO gap in T-037. Latent gap flagged: session.py register() has no auth on --by (worker self-whitelisted) -> falsifiable proposal P-042A registered in the task note for coordinator to enter evolution.pending_proposals. To reproduce: copy .harness/bin/{check_lock,harness_common}.py into a scratch repo, write a live lock (holder=substrate-worker-2) + toggle session_holders.json, pipe {\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"<scratch>/.claude/agents/orchestration-planner.md\"}} with CLAUDE_HARNESS_AGENT_ID=main.",
+        "ts": "2026-07-05T04:12:45Z"
+      },
+      "created_at": "2026-07-05T04:05:21Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T04:20:49Z",
+      "completed_by": "verifier-b"
+    },
+    "T-043": {
+      "epic": "cronsplain",
+      "title": "Plan external project #2 'cronsplain' (projects/cronsplain/, Node.js - NON-Python): decompose into DAG T-044+ USING the new U1-U4 protocol",
+      "status": "done",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-043.json",
+      "artifacts": [
+        ".harness/plan.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "orchestration-planner",
+        "note": "PHASE 2 COMPLETE — cronsplain DAG PUBLISHED. Verifier checklist (replayable): (1) blackboard.py status shows T-044..T-052 open with edges T-045<-T-044; T-046,T-050<-T-045; T-047,T-048<-T-046; T-049<-T-046,047,048; T-051<-T-045,050,049; T-052<-T-045,049,050,051; frontier 'claimable now: T-044' only. (2) Each .harness/tasks/T-04x-05x.json has non-empty acceptance_criteria; disjoint file ownership (no file in two tasks); T-044 sole owner of shared infra package.json+lib/errors.js+lib/fields.js (F1). (3) T-047 & T-048 titled [HEADLESS-OK], self-contained, carry cross-session identity convention (CLAUDE_HARNESS_AGENT_ID/--agent, NO session.py register) — swarm-smoke slot (criterion 2). (4) plan.md cronsplain section = PUBLISHED, all 4 BLOCKING unknowns Q1-Q4 show CONFIRMED 2026-07-05, all defaults accepted. (5) T-049 & T-052 are verifier-role joins requiring F6 rotation (approver != any producer, and != each other). NOTE: this is a PLANNING verdict (structure only) — the epic itself is built by workers claiming T-044+. DECISION: producer(orchestration-planner)!=approver, so a different verifier identity verdicts this.",
+        "ts": "2026-07-05T04:26:11Z"
+      },
+      "created_at": "2026-07-05T04:05:21Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T04:31:16Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-044": {
+      "epic": "cronsplain",
+      "title": "cronsplain bootstrap+contract: package.json + lib/errors.js + lib/fields.js + tests/test_fields.js (SOLE ROOT, F1 shared infra)",
+      "status": "review",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-044.json",
+      "artifacts": [
+        "projects/cronsplain/package.json",
+        "projects/cronsplain/lib/errors.js",
+        "projects/cronsplain/lib/fields.js",
+        "projects/cronsplain/tests/test_fields.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "REPLAY: cd projects/cronsplain && node --test tests/test_fields.js  =>  observed: 11 tests, 11 pass, 0 fail, exit 0. ALSO: cd projects/cronsplain && node -e \"require('./lib/errors'); require('./lib/fields')\"  =>  observed: no output, exit 0 (no throw). ALSO ran via bounded loop: python3 .harness/bin/goal_mode.py run --task T-044 --cmd 'cd projects/cronsplain && node --test tests/test_fields.js' --timeout 300 => 'GOAL REACHED ... on iteration 1/3'. Files created (owns exactly, touched nothing else): projects/cronsplain/package.json (name/version/private/bin/scripts.test=node --test/engines>=18; NO type field => CommonJS default; NO dependencies/devDependencies => zero npm deps -- verified via node -e reading package.json, both checks pass), projects/cronsplain/lib/errors.js (module.exports={CronParseError}; class extends Error, name='CronParseError', constructor(message,{expression,field}={}) stores this.expression/this.field, Error.captureStackTrace guarded), projects/cronsplain/lib/fields.js (module.exports={FIELDS,MONTH_NAMES,DOW_NAMES,MONTH_DISPLAY,DOW_DISPLAY,normalizeDow}; FIELDS is the 5-entry ordered array minute/hour/dayOfMonth/month/dayOfWeek with exact bounds min/max plus a display string; MONTH_NAMES/DOW_NAMES are Proxy-backed case-insensitive maps built via an internal makeCaseInsensitiveMap helper (get/has/ownKeys/getOwnPropertyDescriptor all upper-case the lookup key) so MONTH_NAMES.jan===MONTH_NAMES.JAN===1 and 'dec' in MONTH_NAMES is true; normalizeDow(7)===0, all other n unchanged), projects/cronsplain/tests/test_fields.js (node:test + node:assert, 11 tests: FIELDS length/order, FIELDS bounds per field, FIELDS display strings, MONTH_NAMES full JAN-DEC + case-insensitivity incl. 'dec'->12, DOW_NAMES full SUN-SAT + case-insensitivity, normalizeDow(7)/other values, MONTH_DISPLAY/DOW_DISPLAY length+endpoints, round-trip checks tying names to display arrays). DEVIATION/RISK flagged as OPEN-QUESTION in the T-044 task notes (taxonomy-prefixed): node's default 'node --test'/'npm test' recursive discovery does NOT pick up 'tests/test_*.js' prefix-named files (only *.test.js/*-test.js/*_test.js suffix-named files under a 'tests' dir, or ANY filename under a dir literally named 'test' singular, are auto-discovered) -- verified empirically in a throwaway scratch probe (node v24.15.0): bare 'node --test' from projects/cronsplain/ reports 0 tests / exit 0 (silent false-green), while 'node --test tests/test_fields.js' or 'node --test tests/*.js' correctly discovers and runs it. package.json scripts.test is fixed verbatim by this task's acceptance criteria as 'node --test' so it was NOT altered. Downstream tasks T-045/T-046/T-050/T-051 and the T-052 final-join verifier should invoke node --test with explicit paths (e.g. 'node --test tests/*.js' from projects/cronsplain/) rather than trust bare 'node --test'/'npm test' to prove the suite is green -- see full note text on T-044 for detail. Locks released after this handoff.",
+        "ts": "2026-07-05T04:31:40Z"
+      },
+      "created_at": "2026-07-05T04:19:11Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-045": {
+      "epic": "cronsplain",
+      "title": "cronsplain parser: lib/parser.js + tests/test_parser.js (5-field cron -> normalized parse-result shape)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-044"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-045.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-046": {
+      "epic": "cronsplain",
+      "title": "cronsplain schedule golden vectors: candidates/vectors.js (candidate-agnostic interface + ground truth)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-045"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-046.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-047": {
+      "epic": "cronsplain",
+      "title": "[HEADLESS-OK] cronsplain schedule candidate A (brute-force minute-tick): candidates/schedule_a.js",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-046"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-047.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-048": {
+      "epic": "cronsplain",
+      "title": "[HEADLESS-OK] cronsplain schedule candidate B (field-cascade carry): candidates/schedule_b.js",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-046"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-048.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-049": {
+      "epic": "cronsplain",
+      "title": "cronsplain schedule tournament VERDICT: score A/B via vectors, promote winner to lib/schedule.js + tests/test_schedule.js",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-046",
+        "T-047",
+        "T-048"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-049.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-050": {
+      "epic": "cronsplain",
+      "title": "cronsplain explain: lib/explain.js + tests/test_explain.js (parsed cron -> deterministic English)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-045"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-050.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-051": {
+      "epic": "cronsplain",
+      "title": "cronsplain CLI + integration + README: bin/cronsplain.js + lib/cli.js + tests/test_cli.js + tests/test_integration.js + README.md",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-045",
+        "T-050",
+        "T-049"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 4,
+      "detail_file": ".harness/tasks/T-051.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-052": {
+      "epic": "cronsplain",
+      "title": "cronsplain epic FINAL JOIN: replay full node --test suite + e2e explain/next; verdict the epic",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-045",
+        "T-049",
+        "T-050",
+        "T-051"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-052.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T04:19:31Z",
+      "created_by": "orchestration-planner"
+    },
+    "T-053": {
+      "epic": "gen-4",
+      "title": "P-019: mechanical authorization for session-holder registration (ambient-coordinator rule)",
+      "status": "claimed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": "verifier-b",
+      "claim_expires_at": "2026-07-05T05:30:26Z",
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-053.json",
+      "artifacts": [
+        ".harness/bin/session.py",
+        ".harness/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "Replay commands (run from repo root; scratch-named, clean up after):\n1) py_compile: python3 -m py_compile .harness/bin/session.py .harness/bin/harness_common.py .harness/bin/check_lock.py  (expect exit 0, no output)\n2) probe (a) T-037 replay: python3 .harness/bin/session.py register scratch-verify-a --by substrate-worker-1 --ttl 60 --task T-053  (expect exit 0, \"registered:\" incl task=T-053); then: python3 .harness/bin/session.py unregister scratch-verify-a  (expect exit 0)\n3) probe (b) refusal: CLAUDE_HARNESS_AGENT_ID=fake-cross-engine python3 .harness/bin/session.py register fake-cross-engine  (expect exit 1, stderr REFUSED..., absent from `session.py list`); tail .harness/logs/events.jsonl for session_holder_register_refused agent=fake-cross-engine.\n4) probe (b) full bypass repro: printf x > scratch_verify.tmp; python3 .harness/bin/lock.py acquire scratch_verify.tmp --holder fake-cross-engine --task T-053; python3 -c \"import json;print(json.dumps({'tool_name':'Edit','tool_input':{'file_path':'$(pwd)/scratch_verify.tmp'}}))\" | python3 .harness/bin/check_lock.py  (expect exit 2, HARNESS LOCK message); then python3 .harness/bin/lock.py release scratch_verify.tmp --holder fake-cross-engine; rm scratch_verify.tmp\n5) probe (c): CLAUDE_HARNESS_AGENT_ID=fake-cross-engine python3 .harness/bin/session.py unregister substrate-worker-1  (expect exit 1, and substrate-worker-1 still present in `session.py list` afterward -- do NOT unregister real live holders)\n6) probe (e) expiry regression: python3 .harness/bin/session.py register scratch-verify-e --ttl 1; sleep 2; python3 .harness/bin/session.py list | grep scratch-verify-e  (expect no match -- pruned); python3 .harness/bin/session.py unregister scratch-verify-e (expect \"noop\", exit 0)\n\nFull detail (implementation summary, exact probe outputs I observed, checklist, deviations) is in the task notes above. Owned files touched: .harness/bin/session.py, .harness/README.md only (git diff --stat -- .harness/bin/session.py .harness/README.md). Live session holders (substrate-worker-1, fable-5-coordinator, evolution-analyst, orchestration-planner) verified untouched; all scratch registrations/locks I created were cleaned up.",
+        "ts": "2026-07-05T04:29:12Z"
+      },
+      "created_at": "2026-07-05T04:22:19Z",
+      "created_by": "fable-5-coordinator"
     }
   }
 }
