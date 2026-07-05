@@ -1,18 +1,16 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README preview</title><style>
 body{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 6rem;background:#fff;color:#1f2328;font:16px/1.6 -apple-system,"Segoe UI",system-ui,sans-serif}
-.frame{border:1px solid #d0d7de;border-radius:8px;padding:1.5rem 2rem;margin-top:0}
-.ghbar{background:#f6f8fa;border:1px solid #d0d7de;border-bottom:none;border-radius:8px 8px 0 0;padding:.6rem 1rem;font-size:.85rem;color:#57606a}
-.ghbar b{color:#1f2328}
-.frame{border-radius:0 0 8px 8px;border-top:none}
+.ghbar{background:#f6f8fa;border:1px solid #d0d7de;border-bottom:none;border-radius:8px 8px 0 0;padding:.6rem 1rem;font-size:.85rem;color:#57606a}.ghbar b{color:#1f2328}
+.frame{border:1px solid #d0d7de;border-top:none;border-radius:0 0 8px 8px;padding:1.5rem 2rem}
 h1{font-size:2rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:0}
 h2{font-size:1.4rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:1.8em;line-height:1.3}
 code{background:#eff1f3;border-radius:6px;padding:.15em .4em;font:13px ui-monospace,Menlo,monospace}
 pre{background:#f6f8fa;border-radius:6px;padding:1rem;overflow-x:auto}pre code{background:none;padding:0;font-size:12.5px;line-height:1.45}
 table{border-collapse:collapse;margin:1rem 0;width:100%}th,td{border:1px solid #d0d7de;padding:.5rem .8rem;text-align:left;vertical-align:top;font-size:.93rem}
-th{background:#f6f8fa}tr:nth-child(even) td{background:#f6f8fa}li{margin:.3em 0}
+th{background:#f6f8fa}tr:nth-child(even) td{background:#f6f8fa}li{margin:.3em 0}a{color:#0969da}
 .note{background:#fff8e6;border:1px solid #e0c96a;border-radius:6px;padding:.7rem 1rem;font-size:.88rem;color:#6b5900;margin-bottom:1.2rem}
 </style></head><body>
-<div class="note"><b>Vista previa del README</b> — con tus correcciones aplicadas, licencia MIT, inspiraciones listadas con su porqu&eacute;, sin emojis. As&iacute; se ver&iacute;a publicado en GitHub.</div>
+<div class="note"><b>Vista previa del README</b> &mdash; forks (no PRs), fuentes con links (los [LINK: ...] son los que t&uacute; pegas: podcast de Tom&aacute;šev y Co-Scientist), licencia MIT. Verifica cada link arXiv antes de publicar.</div>
 <div class="ghbar"><b>README.md</b> &middot; Universal Agent Harness</div>
 <div class="frame"><h1>Universal Agent Harness</h1>
 
@@ -110,23 +108,27 @@ python3 .harness/bin/blackboard.py status
 
 <h2>Design lineage — what inspired this, and why</h2>
 
+
+
 <p>This isn&#x27;t a from-scratch invention; it&#x27;s a synthesis. Each of these shaped a specific part of the harness:</p>
 
 <ul>
-<li><strong>The blackboard-architecture tradition</strong> — <em>why:</em> it&#x27;s the oldest good answer to &quot;how do independent workers share state without a central brain.&quot; The shared <code>blackboard.json</code> task board is a direct descendant.</li>
-<li><strong>The CAR decomposition &amp; Natural-Language Agent Harnesses (NLAHs)</strong> — <em>why:</em> it gave me the three-layer split the whole repo is organized around — Control (the rules/personas), Agency (the CLI tools), Runtime (the file substrate) — and the idea that an agent&#x27;s &quot;constitution&quot; is a plain document you can version and mutate.</li>
-<li><strong>Nenad Tomašev&#x27;s &quot;society of agents&quot; &amp; the serial-stagnation critique</strong> — <em>why:</em> this is the argument against the giant cascade. It&#x27;s the reason delegation here is a dependency-DAG (parallel where possible, cascade only where an artifact is truly consumed) instead of one long fragile chain.</li>
-<li><strong>DeepMind&#x27;s AI Co-Scientist</strong> — <em>why:</em> the tournament/consensus pattern. When a task has more than one reasonable solution, the harness spawns N candidates with deliberately different methods and has a judge pick — that&#x27;s straight from Co-Scientist, and it&#x27;s how both <code>mdtoc</code> and <code>cronsplain</code> chose their winning implementations.</li>
-<li><strong>&quot;Don&#x27;t train the model, evolve the harness&quot; (Joel Niklaus)</strong> — <em>why:</em> the entire generations mechanism. The system improves by auditing its own logs and mutating its own rules under a human gate, not by touching model weights.</li>
-<li><strong>The intelligent-AI-delegation literature</strong> — <em>why:</em> capability contracts — the registry of which agent can be trusted with which kind of work, and the producer ≠ approver rule that no one grades their own homework.</li>
-<li><strong>ReContext</strong> — <em>why:</em> evidence replay. Verifiers don&#x27;t trust notes; they re-run the hand-off commands themselves. <code>recontext.py</code> and the &quot;replay, don&#x27;t trust&quot; invariant come from here.</li>
-<li>**Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — <em>why:</em> this is what lets me place a context-wise questionnaire into the harness for the user <em>before</em> the agents start working. The planner now runs a four-quadrant blindspot pass and asks the human the questions only the human can answer, instead of guessing and discovering the mistake halfway through.</li>
+<li><strong>The blackboard-architecture tradition</strong> (Erman et al., <em>Hearsay-II</em>, 1980) — <em>why:</em> it&#x27;s the oldest good answer to &quot;how do independent workers share state without a central brain.&quot; The shared <code>blackboard.json</code> task board is a direct descendant.</li>
+<li><strong>Natural-Language Agent Harnesses &amp; the CAR decomposition</strong> — <a href="https://doi.org/10.48550/arXiv.2603.25723">arXiv:2603.25723</a> — <em>why:</em> it gave me the three-layer split the whole repo is organized around — Control (rules/personas), Agency (the CLI tools), Runtime (the file substrate) — and the idea that an agent&#x27;s &quot;constitution&quot; is a plain document you can version and mutate.</li>
+<li><strong>Nenad Tomašev — &quot;society of agents&quot; &amp; the serial-stagnation critique</strong> — [LINK: podcast Mario shared — &quot;When Millions of AI Agents Meet&quot;, DeepMind] — <em>why:</em> this is the argument against the giant cascade. It&#x27;s why delegation here is a dependency-DAG (parallel where possible, cascade only where an artifact is truly consumed) instead of one long fragile chain.</li>
+<li><strong>DeepMind&#x27;s AI Co-Scientist</strong> — [LINK: DeepMind Co-Scientist announcement] — <em>why:</em> the tournament/consensus pattern. When a task has more than one reasonable solution, the harness spawns N candidates with deliberately different methods and lets a judge pick — that&#x27;s how both <code>mdtoc</code> and <code>cronsplain</code> chose their winning implementations.</li>
+<li><strong>Intelligent AI delegation</strong> — <a href="https://doi.org/10.48550/arXiv.2602.11865">arXiv:2602.11865</a> — <em>why:</em> capability contracts (which agent is trusted with which work) and the producer ≠ approver rule that no one grades their own homework.</li>
+<li><strong>ReContext</strong> — <a href="https://doi.org/10.48550/arXiv.2607.02509">arXiv:2607.02509</a> — <em>why:</em> evidence replay. Verifiers don&#x27;t trust notes; they re-run the hand-off commands themselves. <code>recontext.py</code> and the &quot;replay, don&#x27;t trust&quot; invariant come from here.</li>
+<li><strong>Agentic harness engineering</strong> — <a href="https://doi.org/10.48550/arXiv.2604.25850">arXiv:2604.25850</a> — <em>why:</em> the general grounding for &quot;improve the harness, not the weights&quot; — the observability pillars and the evolution loop that turns logs into the next generation.</li>
+<li>**Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — <a href="https://the-decoder.com/anthropic-developer-shares-prompting-tips-for-fable-5-that-focus-on-finding-your-own-blind-spots-first/">the-decoder.com coverage</a> · <a href="https://x.com/trq212/status/2056415973125796184">prompt post</a> — <em>why:</em> this is what lets me place a context-wise questionnaire into the harness for the user <em>before</em> the agents start working. The planner runs a four-quadrant blindspot pass and asks the human the questions only the human can answer, instead of guessing and discovering the mistake halfway through.</li>
 </ul>
 
 <p>Frictions become audit inputs; audits become generations. The tool that coordinates the work is itself work the tool coordinated.</p>
 
-<h2>License &amp; contributions</h2>
+<h2>License &amp; using this</h2>
 
-<p><strong>MIT License.</strong> Do what you want with this — just keep the copyright notice. (See <code>LICENSE</code>.)</p>
+<p><strong>MIT License</strong> — do what you want with this, just keep the copyright notice. (See <code>LICENSE</code>.)</p>
 
-<p>Issues and PRs are welcome, but read <code>ORCHESTRATION.md</code> first. This repo is built and maintained <em>using itself</em>: a proposal against the harness runs through the same §5A evolution loop as everything else — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p></div></body></html>
+<p><strong>This is built to be forked, not PR&#x27;d.</strong> Don&#x27;t send pull requests — <strong>fork it and make it yours.</strong> The whole point is that you drop it into your own repo and let it evolve under <em>your</em> goals; a shared upstream would defeat that. If you build something interesting on top of it or find a real flaw, open an issue so others can find it — but the expected path is: fork, transplant, adapt.</p>
+
+<p>Internally, the repo is maintained <em>using itself</em>: any change to the harness runs through its own §5A evolution loop — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p></div></body></html>
