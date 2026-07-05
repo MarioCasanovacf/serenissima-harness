@@ -1,0 +1,14 @@
+{
+  "name": "cronsplain",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "cronsplain": "bin/cronsplain.js"
+  },
+  "scripts": {
+    "test": "node --test tests/*.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

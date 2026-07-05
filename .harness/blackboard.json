@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T04:36:11Z",
-  "updated_by": "verifier-b",
+  "updated_at": "2026-07-05T04:54:47Z",
+  "updated_by": "substrate-worker-2",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1629,12 +1629,12 @@
     "T-044": {
       "epic": "cronsplain",
       "title": "cronsplain bootstrap+contract: package.json + lib/errors.js + lib/fields.js + tests/test_fields.js (SOLE ROOT, F1 shared infra)",
-      "status": "in_progress",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": "verifier-c",
-      "claim_expires_at": "2026-07-05T05:33:09Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-044.json",
       "artifacts": [
@@ -1646,16 +1646,18 @@
       "handoff": {
         "to_role": "verifier",
         "from": "substrate-worker-2",
-        "note": "REPLAY: cd projects/cronsplain && node --test tests/test_fields.js  =>  observed: 11 tests, 11 pass, 0 fail, exit 0. ALSO: cd projects/cronsplain && node -e \"require('./lib/errors'); require('./lib/fields')\"  =>  observed: no output, exit 0 (no throw). ALSO ran via bounded loop: python3 .harness/bin/goal_mode.py run --task T-044 --cmd 'cd projects/cronsplain && node --test tests/test_fields.js' --timeout 300 => 'GOAL REACHED ... on iteration 1/3'. Files created (owns exactly, touched nothing else): projects/cronsplain/package.json (name/version/private/bin/scripts.test=node --test/engines>=18; NO type field => CommonJS default; NO dependencies/devDependencies => zero npm deps -- verified via node -e reading package.json, both checks pass), projects/cronsplain/lib/errors.js (module.exports={CronParseError}; class extends Error, name='CronParseError', constructor(message,{expression,field}={}) stores this.expression/this.field, Error.captureStackTrace guarded), projects/cronsplain/lib/fields.js (module.exports={FIELDS,MONTH_NAMES,DOW_NAMES,MONTH_DISPLAY,DOW_DISPLAY,normalizeDow}; FIELDS is the 5-entry ordered array minute/hour/dayOfMonth/month/dayOfWeek with exact bounds min/max plus a display string; MONTH_NAMES/DOW_NAMES are Proxy-backed case-insensitive maps built via an internal makeCaseInsensitiveMap helper (get/has/ownKeys/getOwnPropertyDescriptor all upper-case the lookup key) so MONTH_NAMES.jan===MONTH_NAMES.JAN===1 and 'dec' in MONTH_NAMES is true; normalizeDow(7)===0, all other n unchanged), projects/cronsplain/tests/test_fields.js (node:test + node:assert, 11 tests: FIELDS length/order, FIELDS bounds per field, FIELDS display strings, MONTH_NAMES full JAN-DEC + case-insensitivity incl. 'dec'->12, DOW_NAMES full SUN-SAT + case-insensitivity, normalizeDow(7)/other values, MONTH_DISPLAY/DOW_DISPLAY length+endpoints, round-trip checks tying names to display arrays). DEVIATION/RISK flagged as OPEN-QUESTION in the T-044 task notes (taxonomy-prefixed): node's default 'node --test'/'npm test' recursive discovery does NOT pick up 'tests/test_*.js' prefix-named files (only *.test.js/*-test.js/*_test.js suffix-named files under a 'tests' dir, or ANY filename under a dir literally named 'test' singular, are auto-discovered) -- verified empirically in a throwaway scratch probe (node v24.15.0): bare 'node --test' from projects/cronsplain/ reports 0 tests / exit 0 (silent false-green), while 'node --test tests/test_fields.js' or 'node --test tests/*.js' correctly discovers and runs it. package.json scripts.test is fixed verbatim by this task's acceptance criteria as 'node --test' so it was NOT altered. Downstream tasks T-045/T-046/T-050/T-051 and the T-052 final-join verifier should invoke node --test with explicit paths (e.g. 'node --test tests/*.js' from projects/cronsplain/) rather than trust bare 'node --test'/'npm test' to prove the suite is green -- see full note text on T-044 for detail. Locks released after this handoff.",
-        "ts": "2026-07-05T04:31:40Z"
+        "note": "RE-HANDOFF after verifier-c REJECT fixed. REPLAY commands + observed output: (1) cd projects/cronsplain && npm test => 'tests 14 / pass 14 / fail 0', exit 0 (was 0/0/0 before fix -- false-green CONFIRMED GONE). (2) cd projects/cronsplain && node --test tests/*.js => same 14/14/0, exit 0. (3) cd projects/cronsplain && node --test \"tests/*.js\" (quoted/node-native glob) => same 14/14/0, exit 0. (4) cd projects/cronsplain && node -e \"require('./lib/errors'); require('./lib/fields')\" => exit 0, no throw. (5) python3 .harness/bin/goal_mode.py run --task T-044 --cmd 'cd projects/cronsplain && npm test' --timeout 300 => 'GOAL REACHED ... on iteration 1/3'. MANDATORY FIX: package.json scripts.test = \"node --test tests/*.js\" (was \"node --test\"). Cites verifier-c's 2026-07-05T04:37:29Z reject note as authorization for this deviation from acceptance criterion #2's verbatim pinned value -- verifier-c empirically proved 'node --test tests/' fails (exit 1, module-not-found) and 'node --test tests/*.js' passes 3 ways; I re-verified all 3 ways again above. RECOMMENDED HARDENING APPLIED (non-blocking advisory, disclosed as DEVIATION: additive hardening per verifier advisory): lib/fields.js -- Object.freeze on the Proxy-backed name-map targets (MONTH_NAMES/DOW_NAMES store, frozen before Proxy-wrapping), Object.freeze on each FIELDS entry + the FIELDS array, Object.freeze on MONTH_DISPLAY and DOW_DISPLAY. tests/test_fields.js -- added 3 tests (11->14 total) asserting Object.isFrozen(...) and that mutation attempts on FIELDS/MONTH_DISPLAY/DOW_DISPLAY/MONTH_NAMES/DOW_NAMES all throw TypeError (strict mode) and never stick. Exported API surface UNCHANGED: lib/errors.js module.exports={CronParseError} (untouched this round); lib/fields.js module.exports={FIELDS,MONTH_NAMES,DOW_NAMES,MONTH_DISPLAY,DOW_DISPLAY,normalizeDow} (same names/shapes, now frozen). package.json still: CommonJS (no type field), zero deps (no dependencies/devDependencies), bin.cronsplain=bin/cronsplain.js, engines.node>=18 -- only scripts.test changed. Locks (package.json, lib/fields.js, tests/test_fields.js) released after this handoff; lib/errors.js was not touched this round so was not re-locked.",
+        "ts": "2026-07-05T04:41:27Z"
       },
       "created_at": "2026-07-05T04:19:11Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T04:46:24Z",
+      "completed_by": "verifier-c"
     },
     "T-045": {
       "epic": "cronsplain",
       "title": "cronsplain parser: lib/parser.js + tests/test_parser.js (5-field cron -> normalized parse-result shape)",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1665,8 +1667,16 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-045.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/lib/parser.js",
+        "projects/cronsplain/tests/test_parser.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "READY FOR VERIFICATION. Owned files created (untouched otherwise): projects/cronsplain/lib/parser.js, projects/cronsplain/tests/test_parser.js. PARSE-RESULT SHAPE (pinned, matches acceptance criteria exactly, documented in parser.js module docstring): parse(expr) -> { fields: { minute:Set<int>, hour:Set<int>, dayOfMonth:Set<int>, month:Set<int>, dayOfWeek:Set<int> }, domRestricted:boolean, dowRestricted:boolean, source:string }. Sets are fully-expanded ints; domRestricted/dowRestricted are literal-text checks (rawField !== '*'); dayOfWeek Set is 0-6 (7 normalized to 0 on insertion, 0+7-both-present collapse to one entry); source is the verbatim original expression string (untrimmed). REPLAY COMMANDS + OBSERVED OUTPUT (all from projects/cronsplain/): (1)  -> tests 24, pass 24, fail 0, exit 0. (2)  -> tests 38, pass 38, fail 0, exit 0 (14 from T-044's test_fields.js + 24 here) -- use this form, NOT bare 'node --test' (T-044's documented false-green: bare form silently reports 0/0/0 on node v24). (3)  -> prints '4 false true' exactly as pinned in the acceptance criteria. (4) GOAL REACHED: 'cd projects/cronsplain && node --test tests/*.js' succeeded on iteration 1/3 (0.06s). -> GOAL REACHED iteration 1/3. ACCEPTANCE CRITERIA CHECKLIST: [1] owns exactly the 2 files, requires ./errors (CronParseError) and ./fields (FIELDS/MONTH_NAMES/DOW_NAMES/normalizeDow) -- yes, no other file touched (git status confirms). [2] parse-result shape pinned + documented verbatim in docstring -- yes. [3] 5-field grammar (value/range/step */n+a-b/n/list/names JAN-DEC+SUN-SAT case-insensitive/wildcard, dow 0-7 with 7->0 collapse) -- yes, covered by 'single value/range/step/list/wildcard/names/case-insensitivity/name-ranges/7->0/0+7-collapse' tests. [4] rejects field-count!=5, out-of-range, reversed range, bad step, empty field/list element, unknown name, Vixie extensions (@,L,W,#,?,bare a/n), trailing garbage, each with CronParseError+.field where field-scoped -- yes, 23-case invalid table (>= required 8) asserts instanceof CronParseError, .expression, and .field per case. [5] tests cover every syntax + dow 7->0 + domRestricted/dowRestricted flags (all 4 combinations) + expanded-Set correctness (2 full exprs) + invalid table -- yes, 38 total assertions across 24 new test() blocks. [6] shared conventions (CommonJS, zero deps, run from projects/cronsplain/) -- yes, no require()s beyond node:test/node:assert/../lib/errors/../lib/fields. [7] harness protocol (claim/lock/in_progress/handoff, never self-done) -- followed. [8] VERIFY command output matches verbatim -- confirmed above. DEVIATIONS: none from the acceptance criteria text itself. One documented DESIGN NOTE (not a deviation, just disclosed reasoning): a literal zero-length field token cannot actually be produced by the trimmed+whitespace-collapsing tokenizer, so the 'empty field' rejection rule is exercised via its reachable manifestation (empty list elements: '1,,5', trailing/leading commas) rather than a literal empty top-level field; the defensive empty-fieldText guard remains in the code and is documented as such in the docstring. Locks on both owned files released after this handoff.",
+        "ts": "2026-07-05T04:54:00Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
       "created_by": "orchestration-planner"
     },
