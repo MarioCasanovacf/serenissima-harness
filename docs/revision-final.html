@@ -67,6 +67,81 @@
 </section>
 
 <section>
+  <p class="kicker">Los 7 criterios, en cristiano</p>
+  <h2>Qué significa cada uno (con ejemplo)</h2>
+  <p>Dijiste que le entendiste a la mitad. Aquí van sin jerga — cada criterio era una pregunta
+  del tipo "¿de verdad sirve para esto?", y cada uno se contestó con evidencia, no con fe.</p>
+
+  <div class="ok box"><b>1 · "Nadie se autocalifica su propia tarea"</b><br>
+  <i>Qué es:</i> un agente que hace trabajo no puede declararlo terminado él mismo; otro agente
+  distinto tiene que revisarlo y aceptarlo.<br>
+  <i>Ejemplo:</i> el worker que escribió el parser de cronsplain intentó (por error) marcarlo
+  "hecho" — el sistema lo <b>rechazó automáticamente</b> y lo obligó a entregárselo a un
+  verificador. Como cuando en un banco quien pide el préstamo no es quien lo aprueba.</div>
+
+  <div class="ok box"><b>2 · "Dos agentes pueden trabajar a la vez sin chocar"</b><br>
+  <i>Qué es:</i> si dos agentes corren en paralelo sobre el mismo repo, no deben pisarse ni hacer
+  el mismo trabajo dos veces.<br>
+  <i>Ejemplo:</i> lancé dos procesos reales al mismo tiempo a pelear por 6 tareas. Se repartieron
+  3 y 3 <b>sin que ninguna tarea se hiciera doble</b>, y cuando uno quiso tocar un archivo que el
+  otro tenía agarrado, el sistema se lo impidió. Como dos cajeros que no pueden cobrar el mismo
+  cheque.</div>
+
+  <div class="ok box"><b>3 · "Sirve para proyectos reales, no solo para construirse a sí mismo"</b><br>
+  <i>Qué es:</i> el harness tenía que construir algo útil de verdad, en un lenguaje distinto al
+  suyo (él es Python; el producto, no).<br>
+  <i>Ejemplo:</i> construyó <b>cronsplain</b> — una herramienta de Node.js que te explica en
+  inglés qué significa una expresión cron (esos <code>*/15 0 * * 1-5</code> crípticos) y te dice
+  cuándo se va a ejecutar. 93 pruebas en verde. Es exactamente lo que vas a probar en 5 minutos.</div>
+
+  <div class="ok box"><b>4 · "Piensa en lo que no sabe ANTES de empezar"</b> (el framework de Thariq)<br>
+  <i>Qué es:</i> antes de armar el plan, el agente escribe qué cosas no sabe y te pregunta las que
+  son tuyas — en vez de asumir y equivocarse a medio camino.<br>
+  <i>Ejemplo:</i> para cronsplain, el planeador se detuvo y listó 4 preguntas ("¿qué dialecto de
+  cron?", "¿UTC o zonas horarias?"...) <b>antes</b> de crear una sola tarea. Esas son las 5
+  decisiones que verás abajo. Como un contratista que te pregunta el color de la pintura antes de
+  comprarla, no después.</div>
+
+  <div class="ok box"><b>5 · "Se cerraron los pendientes del primer proyecto (mdtoc)"</b><br>
+  <i>Qué es:</i> mdtoc (el primer proyecto, en Python) tenía dos bugs sutiles; se arreglaron y
+  verificaron.<br>
+  <i>Ejemplo:</i> un bug hacía que dos títulos iguales generaran el mismo enlace (colisión); ahora
+  se numeran distinto, igual que lo hace GitHub. Verificado contra el comportamiento real de
+  GitHub.</div>
+
+  <div class="ok box"><b>6 · "Ya no depende de Fable"</b> (tu urgencia del 7 de julio)<br>
+  <i>Qué es:</i> el harness estaba redactado como si Fable fuera obligatorio; se reescribió para
+  que corra idéntico con cualquier modelo Claude.<br>
+  <i>Ejemplo:</i> cuando pierdas Fable, abres la sesión con Opus y <b>todo funciona igual</b> — el
+  coordinador es un rol, no un modelo. Ya está protegido.</div>
+
+  <div class="ok box"><b>7 · "El sistema se auditó a sí mismo y no encontró nada grave"</b><br>
+  <i>Qué es:</i> una auditoría final revisó todo y declaró si hay problemas serios (HIGH) o solo
+  menores.<br>
+  <i>Ejemplo:</i> <b>cero problemas graves</b>. Los dos menores que encontró (una molestia con
+  comillas en las notas, un detalle de coherencia) ya se arreglaron y verificaron. Y para que no
+  fuera "juez y parte", un verificador <b>opus independiente</b> revisó la auditoría misma.</div>
+</section>
+
+<section id="decisiones">
+  <p class="kicker">Criterio 4 en acción · tu ventana de veto</p>
+  <h2>Las 5 decisiones que tomé por ti (y puedes revertir)</h2>
+  <p>Cuando el planeador de cronsplain se detuvo a preguntar (criterio 4), eran decisiones técnicas
+  con respuesta convencional, así que las confirmé yo con tu autoridad delegada para no frenar el
+  trabajo. Ninguna es difícil de cambiar. Si alguna te choca, dime y se ajusta:</p>
+  <table>
+    <tr><th>#</th><th>Decisión</th><th>Qué elegí</th><th>Por qué</th></tr>
+    <tr><td>1</td><td>Qué tan "completo" es el parser de cron</td><td>Los 5 campos estándar (POSIX); las extensiones raras tipo <code>@daily</code>, <code>L</code>, <code>#</code> quedan <b>fuera</b> con error claro</td><td>Es lo que el 95% de la gente usa; agregar el resto es fácil después si alguien lo pide</td></tr>
+    <tr><td>2</td><td>La esquina tramposa de cron (día-del-mes Y día-de-semana a la vez)</td><td>Unión / "O": dispara si coincide cualquiera de los dos</td><td>Es lo que hace el cron real de Linux — replicar el estándar, no inventar</td></tr>
+    <tr><td>3</td><td>Cómo cuenta "las próximas ejecuciones"</td><td>Estrictamente <b>después</b> del momento dado, 5 por defecto, en UTC</td><td>Evita el bug clásico de incluir "ahora mismo" como si fuera futuro</td></tr>
+    <tr><td>4</td><td>Estilo de código Node</td><td>CommonJS, cero dependencias externas</td><td>Cero <code>npm install</code>, corre en cualquier Node ≥18 — igual que el resto del repo</td></tr>
+    <tr><td>5</td><td>Zonas horarias</td><td>Todo en UTC; fechas sin zona se leen como UTC</td><td>Predecible y sin sorpresas de horario de verano; lo estándar para una herramienta CLI</td></tr>
+  </table>
+  <p class="muted">Todas viven registradas en <code>.harness/plan.md</code> con la marca "CONFIRMED
+  bajo autoridad delegada, veto del operador vigente".</p>
+</section>
+
+<section>
   <p class="kicker">Tu checklist</p>
   <h2>Lo que debes revisar, en orden</h2>
   <ul class="check">
@@ -77,9 +152,8 @@ node bin/cronsplain.js next "0 9 * * 1-5" --count 3
 npm test</pre></li>
     <li><b>Lee el veredicto de producción</b> — <code>.harness/logs/audit_gen4.md</code>: los 7 criterios con citas, y las notas honestas (los dos caveats de alcance).</li>
     <li><b>Revisa las 5 decisiones que confirmé por ti</b> en cronsplain (gramática POSIX sin extensiones Vixie, regla OR de días, next exclusivo, CommonJS, UTC) — están en <code>.harness/plan.md</code> sección Unknowns. Tu ventana de veto sigue abierta.</li>
-    <li><b>Lee el borrador de publicación</b> — <code>docs/README-publication-draft.md</code>: la base técnica en inglés para GitHub. Cada afirmación es verificable con grep.</li>
-    <li><b>Cuando quieras publicar</b>: pega <code>docs/prompt-para-claude-portafolio.md</code> a tu Claude del portafolio — él producirá el README final en tu voz + la card de Hugging Face + posts de anuncio. Falta una decisión tuya ahí: <b>la licencia</b> (MIT es lo usual para esto).</li>
-    <li><b>Responde el quiz de abajo</b> (ritual U4) antes de pedirme el push.</li>
+    <li><b>Los textos de publicación en tu voz</b> — un agente está leyendo tu Portfolio y tu Substack para reescribir el README (que no te encantó) en tu prosa, más la card de Hugging Face y los posts de anuncio. Los dejará en <code>Documents/Portfolio/publicacion-harness/</code> para que los revises. <b>Decisión tuya pendiente:</b> la licencia (MIT es lo usual para algo así).</li>
+    <li><b>Revisa tu quiz calificado</b> abajo (ritual U4) — ya lo contestaste por chat; el push queda a un "sí" tuyo.</li>
   </ul>
 </section>
 
@@ -90,18 +164,38 @@ npm test</pre></li>
   antes del primer <code>git push</code>, el sistema te entrega un explainer y 3 preguntas.
   El explainer completo vive en <a href="harness-explainer.html">harness-explainer.html</a>
   (12 secciones). Si puedes responder estas tres sin abrirlo, estás listo para publicar:</p>
-  <div class="gate box">
-    <b>1.</b> Cuando un agente intenta marcar como <code>done</code> su propia tarea, ¿qué pasa
-    exactamente y por qué? ¿Y qué tiene que ocurrir para que un <code>done</code> sea aceptado?<br><br>
-    <b>2.</b> Si mañana migras el harness a un proyecto tuyo con
-    <code>migracion_proyecto.py</code>, ¿cuáles son los 3 errores típicos que la sección 10 del
-    explainer te advierte, y cuál de ellos te dejaría sin el guardián de locks?<br><br>
-    <b>3.</b> ¿Qué operaciones requieren SIEMPRE tu aprobación sin importar cuánta autonomía
-    tengan los agentes (son 4), y dónde viven definidas?
-  </div>
-  <p class="muted">Cuando me des tus respuestas (o me digas "hazme el quiz por chat"), y decidas
-  licencia + destino (GitHub/HF), el push es un solo comando tuyo de aprobación. Hasta entonces,
-  todo vive en 30+ commits locales, HEAD limpio, reversible.</p>
+  <p><b>Ya contestaste el quiz por chat. Calificación honesta (el ritual está para eso):</b></p>
+
+  <div class="ok box"><b>1 · Autocalificación → APROBADO (con un matiz)</b><br>
+  Tu respuesta fue correcta en el corazón: un agente marca "done" cuando cree que terminó, y para
+  aceptarse tiene que revisarlo alguien distinto. El matiz: <b>no es una "línea de jueces" (plural)
+  por tarea</b> — es UN verificador, pero nunca el que hizo el trabajo (productor ≠ aprobador), y
+  ese verificador <b>re-ejecuta la evidencia</b>, no confía en las notas. La "línea de jueces" sí
+  existe, pero a otro nivel: en decisiones grandes rotamos verificadores distintos para que ningún
+  punto ciego se propague.</div>
+
+  <div class="warn box"><b>2 · Migración → BIEN ENCAMINADO, corrección</b><br>
+  Nombraste 3 riesgos reales del sistema (hooks que no frenen, jueces que no revisen, mapeo de
+  unknowns) — buena intuición. Pero la pregunta era concreta: los <b>3 errores al migrar a otro
+  repo</b>. La respuesta: <b>(1) abrir la sesión de Claude Code en la carpeta equivocada</b> — ese
+  te deja sin el guardián de locks, porque los hooks solo viven donde está la raíz de la sesión;
+  (2) copiar el tablero viejo con tareas de otro proyecto; (3) olvidar fusionar CLAUDE.md.</div>
+
+  <div class="warn box"><b>3 · Gates humanos → 2 de 4</b><br>
+  Acertaste <b>git push</b> ✅ y <b>borrar archivos fuera de scratch</b> ✅. Te faltaron los dos más
+  sutiles y peligrosos: <b>activar notificaciones remotas (webhooks) por primera vez</b> (mandar
+  datos tuyos afuera) y <b>mutar las constituciones de los agentes</b> (<code>claude.md</code> /
+  <code>gemini.md</code>). Nota: <i>git pull</i> NO es gate (no publica nada) y "git bash" es una
+  terminal, no una operación. Viven definidos en <code>state.json → human_gates</code>.</div>
+
+  <div class="gate box"><b>Veredicto del ritual:</b> 1 de 3 al 100%, los otros dos encaminados con
+  correcciones. El punto no es reprobarte — es que ahora <b>sí</b> tienes el mapa completo antes de
+  publicar (los 4 gates, los 3 errores de migración, y cómo funciona la aceptación). Con eso, el
+  ritual U4 se da por cumplido. El push queda a un "sí" tuyo <b>en cuanto decidas licencia +
+  destino</b> (GitHub/HF) y el agente del portafolio entregue los textos en tu voz.</div>
+
+  <p class="muted">Todo vive en 30+ commits locales, HEAD limpio, reversible. Nada sale de tu disco
+  sin tu orden.</p>
 </section>
 
 <section>
