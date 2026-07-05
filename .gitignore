@@ -21,3 +21,6 @@ agentic-harness-engineering-reference/
 
 # Session-holder registry (runtime session state, coordinator-managed)
 .harness/session_holders.json
+
+# Personal, not published (operator-only quickstart)
+COMO-LO-USO-YO.md

@@ -10,7 +10,7 @@ table{border-collapse:collapse;margin:1rem 0;width:100%}th,td{border:1px solid #
 th{background:#f6f8fa}tr:nth-child(even) td{background:#f6f8fa}li{margin:.3em 0}a{color:#0969da}
 .note{background:#fff8e6;border:1px solid #e0c96a;border-radius:6px;padding:.7rem 1rem;font-size:.88rem;color:#6b5900;margin-bottom:1.2rem}
 </style></head><body>
-<div class="note"><b>Vista previa del README</b> &mdash; forks (no PRs), fuentes con links (los [LINK: ...] son los que t&uacute; pegas: podcast de Tom&aacute;šev y Co-Scientist), licencia MIT. Verifica cada link arXiv antes de publicar.</div>
+<div class="note"><b>Vista previa del README (renderizado corregido)</b> &mdash; el formato anidado ya se ve bien. Recuerda: los <code>[LINK: ...]</code> y el handle de X/Twitter son marcadores que t&uacute; llenas; los arXiv verif&iacute;calos antes de publicar.</div>
 <div class="ghbar"><b>README.md</b> &middot; Universal Agent Harness</div>
 <div class="frame"><h1>Universal Agent Harness</h1>
 
@@ -120,7 +120,7 @@ python3 .harness/bin/blackboard.py status
 <li><strong>Intelligent AI delegation</strong> — <a href="https://doi.org/10.48550/arXiv.2602.11865">arXiv:2602.11865</a> — <em>why:</em> capability contracts (which agent is trusted with which work) and the producer ≠ approver rule that no one grades their own homework.</li>
 <li><strong>ReContext</strong> — <a href="https://doi.org/10.48550/arXiv.2607.02509">arXiv:2607.02509</a> — <em>why:</em> evidence replay. Verifiers don&#x27;t trust notes; they re-run the hand-off commands themselves. <code>recontext.py</code> and the &quot;replay, don&#x27;t trust&quot; invariant come from here.</li>
 <li><strong>Agentic harness engineering</strong> — <a href="https://doi.org/10.48550/arXiv.2604.25850">arXiv:2604.25850</a> — <em>why:</em> the general grounding for &quot;improve the harness, not the weights&quot; — the observability pillars and the evolution loop that turns logs into the next generation.</li>
-<li>**Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — <a href="https://the-decoder.com/anthropic-developer-shares-prompting-tips-for-fable-5-that-focus-on-finding-your-own-blind-spots-first/">the-decoder.com coverage</a> · <a href="https://x.com/trq212/status/2056415973125796184">prompt post</a> — <em>why:</em> this is what lets me place a context-wise questionnaire into the harness for the user <em>before</em> the agents start working. The planner runs a four-quadrant blindspot pass and asks the human the questions only the human can answer, instead of guessing and discovering the mistake halfway through.</li>
+<li><strong>Thariq Shihipar&#x27;s <em>unknowns</em> framework</strong> (known/unknown × knowns/unknowns) — <a href="https://the-decoder.com/anthropic-developer-shares-prompting-tips-for-fable-5-that-focus-on-finding-your-own-blind-spots-first/">the-decoder.com coverage</a> · <a href="https://x.com/trq212/status/2056415973125796184">prompt post</a> — <em>why:</em> this is what lets me place a context-wise questionnaire into the harness for the user <em>before</em> the agents start working. The planner runs a four-quadrant blindspot pass and asks the human the questions only the human can answer, instead of guessing and discovering the mistake halfway through.</li>
 </ul>
 
 <p>Frictions become audit inputs; audits become generations. The tool that coordinates the work is itself work the tool coordinated.</p>
@@ -129,6 +129,8 @@ python3 .harness/bin/blackboard.py status
 
 <p><strong>MIT License</strong> — do what you want with this, just keep the copyright notice. (See <code>LICENSE</code>.)</p>
 
-<p><strong>This is built to be forked, not PR&#x27;d.</strong> Don&#x27;t send pull requests — <strong>fork it and make it yours.</strong> The whole point is that you drop it into your own repo and let it evolve under <em>your</em> goals; a shared upstream would defeat that. If you build something interesting on top of it or find a real flaw, open an issue so others can find it — but the expected path is: fork, transplant, adapt.</p>
+<p><strong>This is built to be forked, not PR&#x27;d.</strong> Don&#x27;t send pull requests — <strong>fork it and make it yours.</strong> The whole point is that you drop it into your own repo and let it evolve under <em>your</em> goals; a shared upstream would defeat that. The expected path is: fork, transplant, adapt.</p>
+
+<p>That said — I&#x27;d genuinely like to hear what you build with it. Comments, messages, and suggestions are always welcome. Reach me on <a href="https://www.linkedin.com/in/mario-casanova/">LinkedIn</a>, [X/Twitter]([X/TWITTER — Mario: paste your handle URL]), or <a href="https://moneda391.substack.com/">Substack (Moneda 391)</a>.</p>
 
 <p>Internally, the repo is maintained <em>using itself</em>: any change to the harness runs through its own §5A evolution loop — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p></div></body></html>
