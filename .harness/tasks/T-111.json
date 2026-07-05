@@ -1,0 +1,19 @@
+{
+  "id": "T-111",
+  "title": "scratch probe T-111",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T03:13:51Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: r"
+    },
+    {
+      "ts": "2026-07-05T03:15:23Z",
+      "agent": "verifier-b",
+      "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    }
+  ]
+}

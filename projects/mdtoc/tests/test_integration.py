@@ -20,6 +20,7 @@ All commands run against a throwaway copy of ``tests/fixtures/sample.md``;
 the checked-in fixture itself is never mutated.
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -33,12 +34,20 @@ FIXTURE = os.path.join(_TESTS_DIR, "fixtures", "sample.md")
 TOC_START = "<!-- toc -->"
 TOC_STOP = "<!-- tocstop -->"
 
+# T-038/P-012: the real `generate` now writes the start marker with a
+# `max-depth=N` parameter (`<!-- toc max-depth=2 -->`), so locating it here
+# needs the same tolerant pattern `mdtoc.cli` uses internally (this test
+# shells out to the real CLI rather than importing it, so the pattern is
+# duplicated rather than shared -- kept in sync manually, same as the two
+# marker literals above already were).
+_MARKER_START_RE = re.compile(r"<!-- toc(?: max-depth=(?:\d+))? -->")
+
 
 def _between_markers(text):
-    start = text.find(TOC_START)
-    if start == -1:
+    match = _MARKER_START_RE.search(text)
+    if match is None:
         return None
-    start += len(TOC_START)
+    start = match.end()
     stop = text.find(TOC_STOP, start)
     if stop == -1:
         return None

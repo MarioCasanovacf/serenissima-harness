@@ -24,25 +24,49 @@ Commands
     (``--in-place`` has no effect in that case, and a warning is emitted on
     stderr if it was passed).
 
-``python3 -m mdtoc check FILE``
-    Recomputes the TOC (at the default ``--max-depth`` of 3) and compares it
-    against what is currently between the markers. Exits 0 if the file is
-    already fresh (regenerating would be a no-op), exits 1 if it is stale or
-    if the markers are missing entirely.
+    The depth used is always recorded on the start marker itself, as an
+    HTML-comment parameter (T-038/P-012): ``<!-- toc max-depth=N -->``. This
+    is written EXPLICITLY every time, including at the default depth of 3
+    (``<!-- toc max-depth=3 -->``), rather than left parameterless -- see
+    ``_marker_with_depth`` for the rationale. This is what lets ``check``
+    (below) recompute at the depth the file was actually generated with,
+    instead of hardcoding a depth and reporting false-stale.
+
+``python3 -m mdtoc check FILE [--max-depth N]``
+    Recomputes the TOC and compares it against what is currently between the
+    markers. The depth used, in priority order, is: (1) ``--max-depth`` if
+    given explicitly on the command line, (2) the ``max-depth=N`` parameter
+    already recorded on the file's start marker, (3) the legacy default of 3
+    if the marker carries no parameter at all (pre-T-038 files / fixtures
+    that still use the bare ``<!-- toc -->`` marker). Exits 0 if the file is
+    already fresh (regenerating at that same resolved depth would be a
+    no-op), exits 1 if it is stale or if the markers are missing entirely.
 
 Both commands read/write files with ``newline=""`` so line endings already
 present in the file are preserved verbatim rather than translated by
 Python's universal-newlines layer -- this is what makes two consecutive
-``generate --in-place`` runs byte-for-byte idempotent.
+``generate --in-place`` runs (with the same ``--max-depth``) byte-for-byte
+idempotent, including the recorded ``max-depth=N`` marker parameter.
 """
 import argparse
+import re
 import sys
 
-from mdtoc.inserter import insert_toc, render_toc
+from mdtoc.inserter import TOC_START_MARKER, insert_toc, render_toc
 from mdtoc.parser import parse_headings
 from mdtoc.slugger import slugify
 
 DEFAULT_MAX_DEPTH = 3
+
+# Matches the TOC start marker with an OPTIONAL "max-depth=N" parameter:
+#   <!-- toc -->                  (legacy / parameterless -> group("depth") is None)
+#   <!-- toc max-depth=2 -->      (T-038 parameterized form)
+# `TOC_START_MARKER` ("<!-- toc -->") is imported from inserter.py rather
+# than re-declared, so the literal stays a single source of truth even
+# though inserter.py itself is not ours to modify.
+_MARKER_START_RE = re.compile(
+    r"<!-- toc(?: max-depth=(?P<depth>\d+))? -->"
+)
 
 
 def _read_text(path):
@@ -55,6 +79,57 @@ def _write_text(path, text):
     """Write `text` to `path` verbatim (no newline translation)."""
     with open(path, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
+
+
+def _marker_with_depth(max_depth):
+    """Render the start marker with its max-depth parameter embedded.
+
+    DECISION (T-038/P-012): the parameter is written EXPLICITLY on every
+    ``generate``, even at the default depth of 3, rather than only writing
+    it when it differs from the default. A parameterless marker is
+    ambiguous (does the file predate this feature, or was it generated at
+    the default on purpose?), whereas an explicit ``max-depth=3`` is
+    self-documenting and makes `check`'s "legacy fallback to 3" path apply
+    ONLY to genuinely pre-T-038 files, never to freshly generated ones.
+    """
+    return "<!-- toc max-depth={} -->".format(max_depth)
+
+
+def _normalize_start_marker(text):
+    """Rewrite the start marker (with or without a max-depth param) back to
+    the bare ``TOC_START_MARKER`` literal that ``inserter.insert_toc`` (not
+    ours to modify) searches for verbatim, and report the depth that was
+    parsed off of it (``None`` if the marker was absent or parameterless).
+
+    Returns
+    -------
+    (normalized_text, existing_depth, original_marker_text) :
+    (str, int | None, str | None)
+        ``normalized_text`` is byte-identical to ``text`` everywhere except
+        the start-marker span itself, so ``insert_toc`` continues to locate
+        the surrounding document text (before/after the markers) untouched.
+        ``original_marker_text`` is the exact marker substring as found on
+        disk (``None`` if no start marker was present at all) -- callers
+        that need to compare against the ORIGINAL bytes (``check``) restore
+        this verbatim rather than fabricating a new parameter value.
+    """
+    match = _MARKER_START_RE.search(text)
+    if match is None:
+        return text, None, None
+    existing_depth = int(match.group("depth")) if match.group("depth") else None
+    original_marker_text = match.group(0)
+    normalized = text[: match.start()] + TOC_START_MARKER + text[match.end() :]
+    return normalized, existing_depth, original_marker_text
+
+
+def _rewrite_marker_param(text, max_depth):
+    """Replace the (bare, post-`insert_toc`) start marker with the
+    parameterized form recording `max_depth`. Only the FIRST occurrence is
+    replaced -- that is always the start marker, since `TOC_STOP_MARKER`
+    ("<!-- tocstop -->") is never a substring match for `TOC_START_MARKER`
+    ("<!-- toc -->", note the space before "-->").
+    """
+    return text.replace(TOC_START_MARKER, _marker_with_depth(max_depth), 1)
 
 
 def _render(text, max_depth):
@@ -70,11 +145,19 @@ def _cmd_generate(args):
         print("mdtoc: error: {}".format(exc), file=sys.stderr)
         return 2
 
-    toc = _render(text, args.max_depth)
-    updated = insert_toc(text, toc)
+    # Normalize any existing (bare or already-parameterized) start marker
+    # back to the literal `insert_toc` searches for, so re-generating a
+    # file that already carries a `max-depth=N` param from a prior run
+    # still locates the markers (T-038: `insert_toc` itself is not ours to
+    # change, and it only ever looks for the bare marker literal).
+    normalized_text, _existing_depth, _original_marker = _normalize_start_marker(text)
+
+    toc = _render(normalized_text, args.max_depth)
+    updated = insert_toc(normalized_text, toc)
 
     if updated is None:
-        # No markers to splice into: print just the rendered TOC.
+        # No markers to splice into: print just the rendered TOC. There is
+        # nowhere to record a max-depth parameter in this mode.
         if args.in_place:
             print(
                 "mdtoc: warning: no {} / {} markers found in {!r}; "
@@ -85,6 +168,8 @@ def _cmd_generate(args):
             )
         print(toc)
         return 0
+
+    updated = _rewrite_marker_param(updated, args.max_depth)
 
     if args.in_place:
         try:
@@ -105,8 +190,20 @@ def _cmd_check(args):
         print("mdtoc: error: {}".format(exc), file=sys.stderr)
         return 2
 
-    toc = _render(text, DEFAULT_MAX_DEPTH)
-    updated = insert_toc(text, toc)
+    normalized_text, existing_depth, original_marker = _normalize_start_marker(text)
+
+    # Depth resolution priority (T-038/P-012): explicit --max-depth override
+    # > the max-depth recorded on the file's own marker > legacy default 3
+    # (bare/parameterless marker, e.g. pre-T-038 files and fixtures).
+    if args.max_depth is not None:
+        depth = args.max_depth
+    elif existing_depth is not None:
+        depth = existing_depth
+    else:
+        depth = DEFAULT_MAX_DEPTH
+
+    toc = _render(normalized_text, depth)
+    updated = insert_toc(normalized_text, toc)
 
     if updated is None:
         print(
@@ -117,13 +214,25 @@ def _cmd_check(args):
         )
         return 1
 
+    # `check` never PERSISTS a new max-depth parameter (only `generate`
+    # does) -- it restores the marker EXACTLY as found on disk (bare or
+    # parameterized, whatever `original_marker` was) before comparing, so
+    # freshness is judged purely on the TOC body content at the resolved
+    # `depth`, never on rewriting the marker's recorded parameter. This is
+    # what lets a legacy parameterless marker whose body already matches a
+    # depth-3 render report fresh (exit 0) rather than false-stale merely
+    # because `check` would otherwise "helpfully" add a parameter that
+    # wasn't there before.
+    updated = updated.replace(TOC_START_MARKER, original_marker, 1)
+
     if updated == text:
-        print("{}: TOC is up to date".format(args.file))
+        print("{}: TOC is up to date (max-depth={})".format(args.file, depth))
         return 0
 
     print(
-        "{}: TOC is stale (run `python3 -m mdtoc generate --in-place {}` to update)".format(
-            args.file, args.file
+        "{}: TOC is stale at max-depth={} (run `python3 -m mdtoc generate "
+        "--max-depth {} --in-place {}` to update)".format(
+            args.file, depth, depth, args.file
         )
     )
     return 1
@@ -171,6 +280,19 @@ def build_parser():
         ),
     )
     check.add_argument("file", metavar="FILE", help="Path to the Markdown file.")
+    check.add_argument(
+        "--max-depth",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Override the max-depth used to recompute the TOC; wins over "
+            "the max-depth recorded on the file's own marker (default: use "
+            "the marker's max-depth, or {} if the marker carries none).".format(
+                DEFAULT_MAX_DEPTH
+            )
+        ),
+    )
     check.set_defaults(func=_cmd_check)
 
     return parser

@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
-  "generation": 2,
-  "updated_at": "2026-07-05T02:52:04Z",
-  "updated_by": "verifier-b",
+  "generation": 3,
+  "updated_at": "2026-07-05T03:34:48Z",
+  "updated_by": "fable-5-coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -24,6 +24,11 @@
       "ts": "2026-07-04T08:06:40Z",
       "by": "fable-5-coordinator",
       "text": "Generation 2 + READY FOR USAGE: hooks proven live (T-011); gen-2 audit applied (P-005..P-008 via T-013/014/015, all verified); first tournament completed (T-023..T-027, candidate B promoted); external real-use proof shipped (projects/mdtoc, T-020..T-029, 62 tests); USAGE.md at repo root (T-030). Gen-3 audit inputs: 12 items in state.json evolution.next_audit_inputs."
+    },
+    {
+      "ts": "2026-07-05T03:34:48Z",
+      "by": "fable-5-coordinator",
+      "text": "Generation 3: de-Fable (P-010, human-gated) - the harness is model-agnostic; authorship-first done-guard (P-011) - producer!=approver is mechanical AND frictionless for legit verifiers; Thariq unknowns U1-U4 normative (planner Unknowns section + blindspot interview, ORCHESTRATION note taxonomy + pre-gate ritual); verifier rotation (F6) in force; mdtoc depth round-trip + collision-safe dedup (github parity). Readiness criteria in state.json evolution.readiness_criteria; pending joins: multi-session swarm smoke + second external project."
     }
   ],
   "epics": {
@@ -1078,18 +1083,500 @@
     "T-035": {
       "epic": "gen-3",
       "title": "Generation-3 evolution audit: process ALL next_audit_inputs (18 items incl. U1-U4 unknowns, P-009 frictions, F-series, active_role NLAH)",
-      "status": "in_progress",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
-      "claimed_by": "evolution-analyst",
-      "claim_expires_at": "2026-07-05T03:50:29Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-035.json",
+      "artifacts": [
+        ".harness/logs/audit_gen3.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "evolution-analyst",
+        "note": "Audit at .harness/logs/audit_gen3.md; every claim cites events.jsonl:<line> or source <file>:<line>. Replay: grep -c lock_busy events.jsonl=3; 15 producer_check_refused/4 overridden; ev604+617 show agent!=producer (the two P-010 false refusals); grep -c active_role claude.md=2, gemini.md=0. 8 accepted (P-010..P-017), 1 gated (P-017, pre-approved 2026-07-05), 6 no-action/declined. Partition GA-GF disjoint; GE/GF depend on T-034 done.",
+        "ts": "2026-07-05T02:58:22Z"
+      },
+      "created_at": "2026-07-05T02:49:31Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:03:04Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-036": {
+      "epic": "gen-3",
+      "title": "GA/P-011: authorship-first done-guard in blackboard.py (kills the false-refusal override friction)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-036.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "P-011 authorship-first done-guard implemented in .harness/bin/blackboard.py cmd_update (~lines 279-315 relocated to ~281-313). Restructured: refusal now fires ONLY when (a) t['handoff'] is None (no review ever happened) or (b) args.agent == handoff['from'] (producer of record) -- previous_status no longer gates. Replay (all against fresh scratch task, dispose --status failed after; use distinct agent ids to avoid clashing with mine):\n  python3 .harness/bin/blackboard.py add-task --id T-0XX --title probe --role worker --engine any --priority 9 --epic scratch --agent verifier-id\n  P1 self-done-no-handoff -> REFUSED: claim T-0XX(x); update T-0XX --status in_progress(x); update T-0XX --status done(x) => exit 1 'no handoff record exists'. OBSERVED (my run, agent probe-agent-x): exit 1, message exactly that.\n  P2 handoff+self-done -> REFUSED: handoff T-0XX --to-role verifier(x); update T-0XX --status done(x) => exit 1 'was handed off by ... the producer cannot verdict'. OBSERVED: exit 1 as expected.\n  P3 [P-011 measurable] handoff by X, CLAIM by Y (status becomes 'claimed', NOT review), done by Y => exit 0, NO override needed. OBSERVED: claim T-0XX(y) then update T-0XX --status done(y) -> exit 0, no WARNING line, task done. THIS is the fix: old code would have refused here since previous_status='claimed'!='review'.\n  P4 handoff by X, Y claims + in_progress, done by Y => exit 0. OBSERVED: exit 0.\n  P5 override without --note => exit 1 'requires --note'; with --note => exit 0 + WARNING + producer_check_overridden event. OBSERVED both.\n  P6 regression: python3 -m py_compile .harness/bin/blackboard.py => 0 output (clean); status/show/next output format unchanged (spot-checked); failed-path stays ungated (claim -> straight to failed, no handoff, exit 0); one full normal open->claim->in_progress->handoff->claim(other)->in_progress(other)->done(other) cycle => exit 0 throughout.\n  P7 historical board untouched:  before/after shows T-000..T-035 all still 'done' with unchanged fields; only T-036 (mine, in_progress) and sibling-owned T-037/T-038 (concurrent, unrelated) plus disposed T-099 changed.\n  grep -E 'producer_check_(refused|overridden)' .harness/logs/events.jsonl | tail -5  -- confirms explicit agent field on every refusal/override, including probes 1/2/5.\nScratch T-099 used for the above, disposed --status failed with closure note (see .harness/tasks/T-099.json). Diff is additive/restructuring only inside cmd_update's done-status branch plus 3 comment/docstring blocks describing the new semantics; no other command touched. NOTE FOR YOU (the verifier): this task's own handoff record has from=substrate-worker-1 -- you should be able to claim T-036, optionally set in_progress, and then run `update T-036 --status done` directly with NO --override-producer-check needed, since you are a different agent than the producer of record. If that requires an override for you, the fix has NOT met its own acceptance bar -- flag it.",
+        "ts": "2026-07-05T03:09:45Z"
+      },
+      "created_at": "2026-07-05T03:06:37Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:15:44Z",
+      "completed_by": "verifier-b"
+    },
+    "T-037": {
+      "epic": "gen-3",
+      "title": "GB/P-014+P-015+P-016: planner upgrade - bootstrap ownership, Unknowns section (U1), blindspot interview (U3)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-037.json",
+      "artifacts": [
+        ".claude/agents/orchestration-planner.md",
+        ".harness/plan.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "Replay: 1) git diff --stat .claude/agents/orchestration-planner.md .harness/plan.md -> expect '27 +++' / '39 +++' with 0 deletions (2 files, 66 insertions(+)). 2) git diff .claude/agents/orchestration-planner.md .harness/plan.md | grep '^-' | grep -v '^---' -> expect EMPTY (no real removals, only the standard diff file-header '---' lines matched by the raw grep). 3) grep -n 'Bootstrap/infra ownership (F1)\\|Blindspot interview (U3)\\|Unknowns section (U1)' .claude/agents/orchestration-planner.md -> 3 hits (new steps 5,6 in Protocol + new bullet in Decomposition rules). 4) grep -n '^## TEMPLATE' .harness/plan.md -> plan.md:124. 5) grep -c known-unknown .harness/plan.md -> 3. 6) Read both files end-to-end to confirm original Protocol steps 1-4, Decomposition rules (parallel-by-default, verifier join, task size, fan-out, engine routing, high-uncertainty/tournament), and Hard constraints (no source edits, no LLM APIs, thinking tags) are byte-identical to pre-change (only new content appended within/after existing lists). NOTE for verifier: task's own description numbers the proposals (a) P-014/F1 (b) P-015/U1 (c) P-016/U3, one off from audit_gen3.md's canonical P-013/F1, P-014/U1, P-015/U3 (P-016 there = separate ORCHESTRATION.md item, routed elsewhere as T-040/GE). I implemented per the CONTENT specified in T-037's own description (F1 bootstrap rule + U1 Unknowns quadrants + U3 blindspot interview), which is unambiguous regardless of the label offset -- please confirm this reading is acceptable or flag for renumbering.",
+        "ts": "2026-07-05T03:10:07Z"
+      },
+      "created_at": "2026-07-05T03:06:38Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:13:57Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-038": {
+      "epic": "gen-3",
+      "title": "GC/P-012: mdtoc depth round-trip - generate records max-depth in the marker, check honors it",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-038.json",
+      "artifacts": [
+        "projects/mdtoc/mdtoc/cli.py",
+        "projects/mdtoc/tests/test_cli.py",
+        "projects/mdtoc/tests/test_integration.py",
+        "projects/mdtoc/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: (1) full suite: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v -> expect 'Ran 71 tests ... OK'. (2) py_compile: python3 -m py_compile projects/mdtoc/mdtoc/cli.py projects/mdtoc/tests/test_cli.py projects/mdtoc/tests/test_integration.py -> expect clean/no output. (3) acceptance repro (the exact false-stale bug): cp projects/mdtoc/tests/fixtures/sample.md /tmp/a.md; PYTHONPATH=projects/mdtoc python3 -m mdtoc generate /tmp/a.md --max-depth 2 --in-place (expect exit 0); PYTHONPATH=projects/mdtoc python3 -m mdtoc check /tmp/a.md (expect exit 0, was exit 1 pre-fix). (4) depth matrix: for d in 1 2 3 4; do cp fixture to /tmp/d$d.md; generate --max-depth $d --in-place (expect 0); check (expect 0); done. (5) legacy fallback: generate --max-depth 3 --in-place, then string-replace '<!-- toc max-depth=3 -->' back to '<!-- toc -->' in the file, then check (expect exit 0, proving legacy parameterless files still default to 3). (6) override wins: generate --max-depth 3 --in-place, then check --max-depth 2 (expect exit 1, stale) and check --max-depth 3 (expect exit 0). (7) idempotency: generate --max-depth 2 --in-place twice in a row, cmp the two byte-for-byte (expect identical, byte comparison includes the '<!-- toc max-depth=2 -->' marker text). Owned files touched: projects/mdtoc/mdtoc/cli.py, projects/mdtoc/tests/test_cli.py, projects/mdtoc/README.md. DEVIATION flagged for review: also touched projects/mdtoc/tests/test_integration.py (outside the stated owned-file list) solely to fix its private _between_markers() test helper, which hardcoded the old bare '<!-- toc -->' literal and started returning None once generate began writing the parameterized marker -- no parser/inserter/slugger production code or tests were touched, consistent with the T-039 gate. See T-038 notes for the full DECISION rationale and round-trip table.",
+        "ts": "2026-07-05T03:15:12Z"
+      },
+      "created_at": "2026-07-05T03:06:38Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:20:49Z",
+      "completed_by": "verifier-c"
+    },
+    "T-039": {
+      "epic": "gen-3",
+      "title": "GD/P-013: slugger dedup collision fix (github-style produced-slug registration) + doc uplift",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-038"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-039.json",
+      "artifacts": [
+        "projects/mdtoc/mdtoc/slugger.py",
+        "projects/mdtoc/tests/test_slugger.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: (1) python3 -m py_compile projects/mdtoc/mdtoc/slugger.py projects/mdtoc/tests/test_slugger.py -> expect clean/no output. (2) cd projects/mdtoc && python3 -c \"import sys; sys.path.insert(0,'.'); sys.path.insert(0,'candidates'); import vectors; from mdtoc.slugger import slugify; print(vectors.run_against(slugify)[:2])\" -> expect (24, 24). (3) python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc -v -> expect 72 tests, OK (was 71; net +1: 1 pinned-collision test rewritten in place is a rename not a delta, +1 new stress test). (4) Collision regression: cd projects/mdtoc && python3 -c \"import sys; sys.path.insert(0,'.'); from mdtoc.slugger import slugify; seen={}; out=[slugify(x,seen) for x in ['Foo','Foo','Foo-1']]; print(out, len(set(out))==len(out))\" -> expect (['foo','foo-1','foo-1-1'], True). Verify: (a) golden 24/24 preserved (F4 fix is additive-only, confirmed no golden vector hits a produced-slug collision); (b) tab/U+3000/NFD tournament pins in test_slugger.py are byte-for-byte untouched (only TestDedupCollisionContract was edited); (c) the inverted pin's docstring states EXPECTED (naive collision) vs ACTUAL (collision-safe) per P-013/F4 and cites T-039; (d) seen-dict shape unchanged (still str->int, mutated in place -- diff mdtoc/slugger.py's slugify() signature is untouched, only its body + docstring changed); (e) doc uplift: module docstring's DEDUP RULE TABLE cites github-slugger's slugger.prototype.slug occurrences re-registration, mirrors candidates/slugger_c.py's cited-rule-table style, and the historical T-027 SCORE SUMMARY dedup bullet was appended-to (not rewritten) to preserve the tournament record. Only owned files touched: projects/mdtoc/mdtoc/slugger.py, projects/mdtoc/tests/test_slugger.py.",
+        "ts": "2026-07-05T03:24:50Z"
+      },
+      "created_at": "2026-07-05T03:06:38Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:33:34Z",
+      "completed_by": "verifier-c"
+    },
+    "T-040": {
+      "epic": "gen-3",
+      "title": "GE/P-017: ORCHESTRATION.md - note taxonomy (U2), pre-gate explainer+quiz (U4), verifier rotation (F6)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-040.json",
+      "artifacts": [
+        "ORCHESTRATION.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: (1) grep -c OPEN-QUESTION ORCHESTRATION.md -> 2 (>0, taxonomy table + prose reference both hit); (2) grep -n 'U2)|U4)|F6)' ORCHESTRATION.md -> lines 58,84,98 confirm all three rules present verbatim; (3) grep -n '^## ' ORCHESTRATION.md -> sections 1..7 unchanged, no renumbering; (4) git diff --stat ORCHESTRATION.md -> 1 file changed, 28 insertions(+), 0 deletions(-) -- pure additions, existing tables/prose byte-identical (git diff ORCHESTRATION.md shows only '+' hunks); (5) markdown structure verified by Read -- new content is bold-lead paragraphs + one new 2-col table (U2), inserted directly after the table/paragraph each rule extends, matching doc voice (tight, mechanism-first, table for enumerable taxonomy). Placement: U2 -> end of §2 The lifecycle (after the Step/Command table, line 58); U4 -> end of §3 Invariants (after the invariants table, line 84); F6 -> §4 Roles and engines (after Roles/Coordinator paragraph, before 'The bench', line 98). Evidence anchors cited inline exactly as instructed: audit_gen3.md §5.7 + state.json:356/358/352 for U2/U4/F6 respectively; docs/harness-explainer.html §11 for U4's worked example; events.jsonl:585 (verifier-b rotation precedent) and events.jsonl:312-481 (harness-verifier sole-approver of all 9 mdtoc producer tasks T-021..T-029, the monoculture counter-example) for F6. Taxonomy note style used in this very handoff/update: see DECISION:/OPEN-QUESTION: prefixes in the T-040 update note.",
+        "ts": "2026-07-05T03:19:43Z"
+      },
+      "created_at": "2026-07-05T03:06:38Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:29:52Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-041": {
+      "epic": "gen-3",
+      "title": "GF/P-018 [HUMAN GATE - PRE-APPROVED 2026-07-05]: remove dead active_role refs from claude.md + README; TTL bracket nit",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-041.json",
+      "artifacts": [
+        "claude.md",
+        ".harness/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: (1) grep -c active_role claude.md -> 0 (was 2). (2) grep -c active_role .harness/README.md -> 0 (was 1, entry spanned 2 physical lines). (3) git diff gemini.md -> empty (untouched, confirmed no active_role reference existed there either). (4) git diff claude.md .harness/README.md -> exactly 4 line-level changes, nothing else.\n\nBEFORE/AFTER quotes:\nclaude.md L34 (sec 2B intro) BEFORE: \"Depending on the instruction written in `.harness/active_role`, adopt one of the following personas:\" AFTER: \"Adopt one of the following personas as assigned by the coordinator's dispatch and the task's `--role` flag on `blackboard.py` (e.g., `blackboard.py next --role <r>`), not by reading a local file:\" Persona lines 35-37 (Thinker/Worker/Verifier) VERBATIM unchanged - confirmed via diff (no +/- on those lines).\n\nclaude.md sec4 tree: BEFORE included line \"      ├── active_role        <- Contains current role (Thinker/Worker/Verifier)\" immediately after \"└── .harness/\". AFTER: that line is removed; tree now starts directly with \"├── blackboard.json ...\". Fence markers and remaining tree lines unchanged.\n\n.harness/README.md directory map: BEFORE (L14-15): \" ├── active_role            Current persona for a solo Claude runner (thinker|worker|verifier).\" + \" │                          Default: thinker (safest — no source changes).\" AFTER: both lines removed; map now goes directly from \".harness/\" to \" ├── blackboard.json  ...\".\n\n.harness/README.md Locks section bracket nit BEFORE: \"lock lifetime is `[ttl, ttl+1)` seconds\" AFTER: \"lock lifetime is `(ttl, ttl+1]` seconds\" (open-lower/closed-upper, matching T-013's mechanically-exact interval per task description).\n\nAcceptance checklist (all PASS):\n- grep -c active_role claude.md = 0 (verified)\n- grep -c active_role .harness/README.md = 0 (verified)\n- git diff gemini.md = empty (verified, gemini.md never had an active_role reference)\n- Four human gates in state.json human_gates.require_human_approval_for verbatim/untouched (state.json not touched this task - confirmed via no Edit/Write calls against it; independently diffed and shows only pre-existing changes from other in-flight tasks, not from T-041)\n- Three persona definitions (Thinker/Worker/Verifier, claude.md L35-37) verbatim - confirmed via diff context lines\n- Diff scope: `git diff --stat claude.md .harness/README.md` shows 3 and 4 changed lines respectively, matching exactly the 4 listed edits (2 in claude.md: reworded intro line + removed tree line; 2 in README.md: removed 2-line active_role entry + 1-line bracket swap)\n- Markdown renders: both code fences (claude.md sec4 tree, README.md directory map) verified intact via Read - no broken fence markers, tree connectors (├──/└──/│) consistent\n\nDEVIATION / FYI for coordinator: the .harness/active_role FILE itself still EXISTS on disk (8 bytes, content \"thinker\\n\", last modified before this session). Per task scope and per state.json human_gates (\"deleting files outside .harness/ scratch areas\" requires explicit human approval), I did NOT delete it - this task was scoped to removing the dead REFERENCES in claude.md/README.md only. Coordinator/human should decide separately whether to delete the now-fully-orphaned file (it is referenced nowhere in claude.md, gemini.md, or .harness/README.md after this change - independently re-verified twice per task instructions: no CLI in .harness/bin/ reads it, no hook reads it, migracion_proyecto.py does not seed it).\n\nExact replay commands for verifier:\n  grep -c active_role \"/Users/mariocasanova10pa/Documents/Universal Harness/claude.md\"\n  grep -c active_role \"/Users/mariocasanova10pa/Documents/Universal Harness/.harness/README.md\"\n  git diff gemini.md\n  git diff claude.md .harness/README.md\n  test -f \"/Users/mariocasanova10pa/Documents/Universal Harness/.harness/active_role\" && echo EXISTS",
+        "ts": "2026-07-05T03:19:45Z"
+      },
+      "created_at": "2026-07-05T03:06:38Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T03:24:55Z",
+      "completed_by": "verifier-b"
+    },
+    "T-099": {
+      "epic": "scratch",
+      "title": "SCRATCH-P011: authorship-first done-guard probe (disposable, T-036)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-099.json",
       "artifacts": [],
       "handoff": null,
-      "created_at": "2026-07-05T02:49:31Z",
-      "created_by": "fable-5-coordinator"
+      "created_at": "2026-07-05T03:07:53Z",
+      "created_by": "substrate-worker-1",
+      "completed_at": "2026-07-05T03:09:02Z",
+      "completed_by": "substrate-worker-1"
+    },
+    "T-100": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-100",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-100.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-101": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-101",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-101.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "review pls",
+        "ts": "2026-07-05T03:13:33Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-102": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-102",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-102.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "review pls",
+        "ts": "2026-07-05T03:13:34Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-103": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-103",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-103.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "r",
+        "ts": "2026-07-05T03:13:34Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-104": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-104",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-104.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "r",
+        "ts": "2026-07-05T03:13:34Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-105": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-105",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-105.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-106": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-106",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-106.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-107": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-107",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-107.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-108": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-108",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-108.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "r2",
+        "ts": "2026-07-05T03:14:30Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-109": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-109",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-109.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "prod-x",
+        "note": "r",
+        "ts": "2026-07-05T03:14:31Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-110": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-110",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-110.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "ver-y",
+        "note": "r2",
+        "ts": "2026-07-05T03:14:31Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-111": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-111",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-111.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "r",
+        "ts": "2026-07-05T03:13:51Z"
+      },
+      "created_at": "2026-07-05T03:13:20Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-112": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-112",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-112.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "",
+        "note": "r",
+        "ts": "2026-07-05T03:14:31Z"
+      },
+      "created_at": "2026-07-05T03:14:11Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
+    },
+    "T-113": {
+      "epic": "scratch-guardrail-v2",
+      "title": "scratch probe T-113",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-113.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T03:14:11Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-05T03:15:23Z",
+      "completed_by": "verifier-b"
     }
   }
 }

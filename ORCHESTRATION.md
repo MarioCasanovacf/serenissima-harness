@@ -55,6 +55,19 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 | Verdict (verifier only) | `blackboard.py update <T-ID> --status done` or `--status open --note "REJECTED: ..."` |
 | Release locks | `python3 .harness/bin/lock.py release <path> --holder <you>` |
 
+**Note taxonomy (U2)**: task notes SHOULD be prefixed with one of four tags so evolution
+audits can `grep` them mechanically instead of re-reading prose:
+
+| Prefix | Use for |
+|---|---|
+| `DECISION:` | A choice was made where more than one valid option existed |
+| `DEVIATION:` | Work diverged from the plan/spec (disclose it, don't hide it) |
+| `TRADEOFF:` | A benefit was traded for a cost (perf vs. simplicity, coverage vs. speed, …) |
+| `OPEN-QUESTION:` | An unresolved ambiguity for the join or the next audit to chase |
+
+Evolution audits (§6) count and chase every `OPEN-QUESTION:` note to closure before a
+generation is declared clean (`audit_gen3.md` §5.7, input U2 — `state.json:356`).
+
 ## 3. Invariants and the risks they neutralize
 
 | Invariant | Mechanism | Risk neutralized (digest §3A) |
@@ -68,6 +81,12 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 | Bounded everything | `state.json limits` (steps, retries, timeouts, fan-out) | Runaway loops, rate-limit burn |
 | Hook-fed logging | PostToolUse hook appends tool calls to `transcript.jsonl` in sessions rooted in this repo; `events.jsonl` (CLI-written) is the engine-agnostic floor | Unobservable trajectories (no evolution evidence) |
 
+**Pre-gate ritual (U4)**: before any heavyweight human gate fires (first `git push`, first
+messenger/notify activation), the epic join MUST produce an explainer artifact plus exactly
+3 comprehension questions for the human, and the gate request cites them — "no publicar lo
+que no se entiende" (`audit_gen3.md` §5.7, input U4 — `state.json:358`; worked example:
+`docs/harness-explainer.html` §11 "Unknowns").
+
 ## 4. Roles and engines
 
 **Roles** (claude.md §2B): `thinker` (plans, decomposes, audits — no source edits),
@@ -75,6 +94,15 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 **Coordinator** (main session, strongest available model): decomposes goals into the DAG (or delegates that to the
 planner), dispatches the frontier, synthesizes at joins, governs evolution. The
 coordinator does not hog worker tasks on multi-task builds.
+
+**Verifier rotation (F6)**: no single reviewer identity may be the sole approver of an
+entire epic. Epic joins and guardrail changes require a reviewer distinct from every
+producer in the epic — rotate identities or bring in a second reviewer with a different
+lens. Precedent this codifies: T-031's guardrail was verdicted by a rotated `verifier-b`
+(`events.jsonl:585`) and T-032/T-033 rotated in `verifier-c`. Counter-example this rule
+forecloses: the mdtoc epic (T-021..T-029), where a single `harness-verifier` identity
+claimed and approved all 9 producer tasks (`events.jsonl:312-481`) — exactly the
+monoculture risk the §5A loop flagged (`audit_gen3.md` §4 row F6, input `state.json:352`).
 
 **The bench** (`.claude/agents/` — mesa de internos): `orchestration-planner` (thinker),
 `substrate-worker` (worker), `harness-verifier` (verifier), `evolution-analyst`

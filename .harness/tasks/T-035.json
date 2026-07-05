@@ -4,5 +4,21 @@
   "description": "claude.md 5A audit. Scope: every item in state.json evolution.next_audit_inputs PLUS fresh trajectory sweep of events.jsonl/transcript.jsonl covering the T-031..T-034 traffic (guardrail rollout, migration script, de-Fable mutation). Standing human decisions to honor, not re-litigate: (1) U1-U4 (Thariq unknowns pre-phase) are PRE-APPROVED for implementation - convert them into concrete falsifiable task specs, do not debate their worth; (2) the active_role NLAH removal is PRE-APPROVED by the operator (2026-07-05, 'avienta a agentes a hacer los 18 insumos') - spec the minimal CLAUDE.md diff and bundle it with any other NLAH-gated wording fixes into ONE gated task; (3) de-Fable is being applied in T-034 concurrently - do not duplicate it, but verify its inputs are consistent with your proposals. Deliverable: .harness/logs/audit_gen3.md with quoted evidence, ranked falsifiable proposals each with measurable gain, split code-level vs NLAH-gated, and a worker partition with STRICTLY disjoint file ownership sized for max 3 parallel workers (multiple waves allowed - state the wave plan). PROPOSE ONLY - never apply.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-05T02:58:22Z",
+      "agent": "evolution-analyst",
+      "note": "Gen-3 audit written: 18 inputs dispositioned, 8 accepted proposals P-010..P-017 (rank1 P-010 = P-009 review-status false-refusal, HIGH, proven twice ev604/605 + ev617/618), 6 no-action/declined with reasons, 3-wave disjoint partition (GA-GF), P-017 is the ONE gated item (active_role, pre-approved 2026-07-05), production-readiness = 7 falsifiable join criteria. GE/GF sequence after T-034."
+    },
+    {
+      "ts": "2026-07-05T02:58:22Z",
+      "agent": "evolution-analyst",
+      "note": "HANDOFF -> verifier: Audit at .harness/logs/audit_gen3.md; every claim cites events.jsonl:<line> or source <file>:<line>. Replay: grep -c lock_busy events.jsonl=3; 15 producer_check_refused/4 overridden; ev604+617 show agent!=producer (the two P-010 false refusals); grep -c active_role claude.md=2, gemini.md=0. 8 accepted (P-010..P-017), 1 gated (P-017, pre-approved 2026-07-05), 6 no-action/declined. Partition GA-GF disjoint; GE/GF depend on T-034 done."
+    },
+    {
+      "ts": "2026-07-05T03:03:04Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (gen-3 audit, replayed independently, cognitive-diversity via live source-read + fresh mdtoc reproductions): COUNTS: producer_check_refused=15, producer_check_overridden=4, lock_busy=3, active_role claude.md=2/README.md=1/gemini.md=0 -- all match. P-010 RANK1: ev604(refused,verifier-c,prev=in_progress,producer=substrate-worker-2)+ev605(override) T-032; ev617(refused,verifier-c,prev=claimed,producer=main)+ev618(override) T-033 -- both agent!=producer legit cross-agent overrides. overrides where agent!=producer=2 (605,618); the other 2 (523,539) are probe-x self-overrides (agent==producer). Source diagnosis EXACT: blackboard.py:288 'if previous_status!=\"review\"' fires BEFORE authorship elif at :296; :242 permits claiming review then overwrites marker. P-011 F2/F8 REPRODUCED: generate --max-depth 2 exit0, check (hardcoded DEFAULT_MAX_DEPTH cli.py:108, no --max-depth flag) exit1 false-stale. P-012 F4 REPRODUCED: slugify(['Foo','Foo','Foo-1'])=['foo','foo-1','foo-1'] COLLISION. Declined checks hold: #3 both artifact shapes exist (ev14 str/ev433 list); #11 F7 done-events ev585/606/619 carry explicit agent; #12(i) ev547 T-094 prev=done correctly refused. Partition disjoint: 9 files, 1 task each, GE(ORCHESTRATION.md)/GF(claude.md+README.md) mutually disjoint and disjoint from waves1-2. T-034=done so GE/GF dep satisfied. Discipline: artifact registered ev649, handoff-to-verifier ev651 (not self-done), lock released (0 active). Readiness criteria 1-6 falsifiable (runnable/grep pass-fail); #7 softest (future severity classification) but has checkable core. Minor non-blocking: audit-prompt said T-033 producer=substrate-worker-2 but event field=main (audit body correctly says main); §2.1 'all 15 correct' is mechanically-true but 2 (604/617) are the P-010 false-refusals -- internally consistent. ACCEPT."
+    }
+  ]
 }

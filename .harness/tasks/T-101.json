@@ -1,0 +1,19 @@
+{
+  "id": "T-101",
+  "title": "scratch probe T-101",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T03:13:33Z",
+      "agent": "prod-x",
+      "note": "HANDOFF -> verifier: review pls"
+    },
+    {
+      "ts": "2026-07-05T03:15:23Z",
+      "agent": "verifier-b",
+      "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    }
+  ]
+}

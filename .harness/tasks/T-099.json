@@ -1,0 +1,104 @@
+{
+  "id": "T-099",
+  "title": "SCRATCH-P011: authorship-first done-guard probe (disposable, T-036)",
+  "description": "Disposable probe task for T-036 P-011 acceptance criteria. Dispose with --status failed and closure note after use.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T03:07:58Z",
+      "agent": "probe-agent-x",
+      "note": "probe1: working"
+    },
+    {
+      "ts": "2026-07-05T03:08:02Z",
+      "agent": "probe-agent-x",
+      "note": "HANDOFF -> verifier: probe2: handing off to verifier"
+    },
+    {
+      "ts": "2026-07-05T03:08:12Z",
+      "agent": "probe-agent-y",
+      "note": "probe3: verdict accepted, no override used"
+    },
+    {
+      "ts": "2026-07-05T03:08:24Z",
+      "agent": "probe-agent-x",
+      "note": "reset for probe4"
+    },
+    {
+      "ts": "2026-07-05T03:08:24Z",
+      "agent": "probe-agent-x",
+      "note": "HANDOFF -> verifier: probe4: handing off"
+    },
+    {
+      "ts": "2026-07-05T03:08:24Z",
+      "agent": "probe-agent-y",
+      "note": "probe4: y reviewing"
+    },
+    {
+      "ts": "2026-07-05T03:08:24Z",
+      "agent": "probe-agent-y",
+      "note": "probe4: verdict accepted"
+    },
+    {
+      "ts": "2026-07-05T03:08:30Z",
+      "agent": "probe-agent-x",
+      "note": "reset for probe5"
+    },
+    {
+      "ts": "2026-07-05T03:08:30Z",
+      "agent": "probe-agent-x",
+      "note": "HANDOFF -> verifier: probe5: handing off"
+    },
+    {
+      "ts": "2026-07-05T03:08:30Z",
+      "agent": "probe-agent-x",
+      "note": "probe5b: emergency override, self-approving because X"
+    },
+    {
+      "ts": "2026-07-05T03:08:45Z",
+      "agent": "probe-agent-x",
+      "note": "reset for failed-path check"
+    },
+    {
+      "ts": "2026-07-05T03:08:45Z",
+      "agent": "probe-agent-z",
+      "note": "probe6: failed stays ungated"
+    },
+    {
+      "ts": "2026-07-05T03:08:45Z",
+      "agent": "probe-agent-x",
+      "note": "reset for full-cycle regression"
+    },
+    {
+      "ts": "2026-07-05T03:08:46Z",
+      "agent": "probe-agent-x",
+      "note": "working"
+    },
+    {
+      "ts": "2026-07-05T03:08:46Z",
+      "agent": "probe-agent-x",
+      "note": "HANDOFF -> verifier: ready for review"
+    },
+    {
+      "ts": "2026-07-05T03:08:46Z",
+      "agent": "probe-agent-y",
+      "note": "reviewing"
+    },
+    {
+      "ts": "2026-07-05T03:08:46Z",
+      "agent": "probe-agent-y",
+      "note": "full-cycle: accepted"
+    },
+    {
+      "ts": "2026-07-05T03:09:02Z",
+      "agent": "substrate-worker-1",
+      "note": "closing scratch probe"
+    },
+    {
+      "ts": "2026-07-05T03:09:02Z",
+      "agent": "substrate-worker-1",
+      "note": "CLOSURE: disposable scratch probe for T-036/P-011 acceptance criteria. All 7 probes (self-done-no-handoff refused, handoff+self-done refused, handoff+claim-by-Y+done accepted-no-override [P-011 measurable], handoff+Y-claims+in_progress+done accepted, override-with/without-note, regression incl. failed-stays-ungated + full normal cycle, historical-board-untouched) passed against the restructured cmd_update done-guard in .harness/bin/blackboard.py. Disposing per protocol -- no further action needed on T-099."
+    }
+  ]
+}

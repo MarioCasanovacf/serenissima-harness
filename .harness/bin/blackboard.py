@@ -13,11 +13,14 @@ This tool mechanically encodes the delegation topology (see ORCHESTRATION.md):
     the DAG frontier.
   - PRODUCER != APPROVER: workers hand off to reviewers (status=review);
     only a different agent should mark a task done. This is now MECHANICAL,
-    not just cultural: `update --status done` is refused unless the task's
-    current status is 'review' AND the acting --agent differs from
-    handoff.from. Escape hatch: --override-producer-check (requires --note);
-    every refusal and override is logged to events.jsonl with the acting
-    agent recorded explicitly.
+    not just cultural: `update --status done` is refused unless (a) a
+    handoff record exists (the task was actually reviewed by someone) AND
+    (b) the acting --agent differs from handoff.from. AUTHORSHIP governs,
+    not current status (P-011) -- a verifier who claimed/in_progress'd the
+    review task may verdict done with no extra friction; only the original
+    producer of record is blocked. Escape hatch: --override-producer-check
+    (requires --note); every refusal and override is logged to events.jsonl
+    with the acting agent recorded explicitly.
 
 Usage examples:
   python3 .harness/bin/blackboard.py status
@@ -28,9 +31,10 @@ Usage examples:
   python3 .harness/bin/blackboard.py update T-003 --artifact .harness/bin/ast_index.py
   python3 .harness/bin/blackboard.py handoff T-003 --to-role verifier --note "tests green: <cmds>"
   python3 .harness/bin/blackboard.py update T-003 --status done --note "verified by replaying cmds"
-  # producer!=approver is mechanical: --status done is refused unless the task
-  # is 'review' AND --agent != the handoff's from_agent. Escape hatch (rare,
-  # audited): --override-producer-check --note "why this is safe"
+  # producer!=approver is mechanical: --status done is refused unless a handoff
+  # record exists AND --agent != the handoff's from_agent (current status is
+  # irrelevant -- P-011). Escape hatch (rare, audited): --override-producer-check
+  # --note "why this is safe"
   python3 .harness/bin/blackboard.py add-task --id T-010 --title "..." --role worker \
       --engine any --depends-on T-001,T-003 --priority 2 --description "..."
 """
@@ -277,29 +281,35 @@ def cmd_update(args):
         previous_status = t.get("status")
         override_used = False
         if args.status == "done":
-            # MECHANICAL producer != approver guardrail (closes the T-091/T-030
-            # slip class: an --agent-less `update --status done` could jump a
-            # claimed/in_progress task straight to done). Both conditions must
-            # hold: (a) the task went through review, (b) the acting agent is
-            # not the one who produced the handoff.
-            handoff = t.get("handoff") or {}
-            handoff_producer = handoff.get("from")
+            # MECHANICAL producer != approver guardrail -- AUTHORSHIP-FIRST (P-011).
+            # Originally this gated on previous_status == 'review' BEFORE checking
+            # authorship, which false-refused legitimate cross-agent verifiers who
+            # had claimed the review task and moved it to claimed/in_progress
+            # themselves (ev604/605, ev617/618) -- forcing honest actors into the
+            # override path. Current status no longer matters: what matters is (a)
+            # a handoff record exists at all (the task was actually reviewed by
+            # someone), and (b) the acting agent differs from that handoff's
+            # producer. A verifier who claimed/in_progress'd the review task may
+            # verdict done with zero friction; only the original producer of
+            # record is blocked.
+            handoff = t.get("handoff")
+            handoff_producer = handoff.get("from") if handoff else None
             refusal = None
-            if previous_status != "review":
+            if not handoff:
                 refusal = (
-                    "refused: {tid} cannot go straight to 'done' from '{prev}'. Mechanical "
-                    "guardrail (producer != approver): a task must be handed off for review "
-                    "first -- `blackboard.py handoff {tid} --to-role verifier --note \"...\"` -- "
-                    "before it can be marked done. Pass --override-producer-check together with "
-                    "--note to force it."
+                    "refused: {tid} cannot go to 'done' -- no handoff record exists (current "
+                    "status '{prev}'). Mechanical guardrail (producer != approver): a task must "
+                    "be handed off for review first -- `blackboard.py handoff {tid} --to-role "
+                    "verifier --note \"...\"` -- before it can be marked done. Pass "
+                    "--override-producer-check together with --note to force it."
                 ).format(tid=args.task_id, prev=previous_status)
-            elif handoff_producer is not None and args.agent == handoff_producer:
+            elif args.agent == handoff_producer:
                 refusal = (
                     "refused: {tid} was handed off by '{producer}' -- the producer cannot "
-                    "verdict their own work (producer != approver). A different agent must mark "
-                    "it done, or pass --override-producer-check together with --note explaining "
-                    "why."
-                ).format(tid=args.task_id, producer=handoff_producer)
+                    "verdict their own work (producer != approver), regardless of current status "
+                    "('{prev}'). A different agent must mark it done, or pass "
+                    "--override-producer-check together with --note explaining why."
+                ).format(tid=args.task_id, producer=handoff_producer, prev=previous_status)
             if refusal:
                 if args.override_producer_check:
                     override_used = True

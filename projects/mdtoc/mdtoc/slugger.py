@@ -24,9 +24,19 @@ SCORE SUMMARY (full table + rationale recorded in the T-027 notes):
         them via str.isspace() (matching GitHub's whitespace handling); A and C
         (literal-U+0020-only) drop them. B faithful; A, C not.
     B is the ONLY candidate faithful to GitHub on BOTH axes, so B wins.
-  * Dedup-collision probe (['Foo','Foo','Foo-1']): all three agree with the
-    pinned naive base->count contract (-> ['foo','foo-1','foo-1'], a genuine
-    output collision that the contract mandates); non-discriminating.
+  * Dedup-collision probe (['Foo','Foo','Foo-1']): all three agreed at
+    tournament time with the then-pinned naive base->count contract
+    (-> ['foo','foo-1','foo-1'], a genuine output collision); non-
+    discriminating for the T-027 verdict.
+    UPDATED by T-039/P-013 (post-tournament hardening, see DEDUP RULE
+    TABLE below): the naive contract's output collision was accepted as
+    a known flaw, not a feature, so this module now implements
+    github-slugger's richer produced-slug registration instead. The
+    probe's expected output changed from ['foo','foo-1','foo-1'] to
+    ['foo','foo-1','foo-1-1'] (no collision). This does not reopen the
+    B-vs-A-vs-C tournament verdict above, which stands on the NFD/
+    whitespace axes; it only replaces the naive dedup tail-piece every
+    candidate shared.
   * Ranking: 1st B; 2nd C (best documentation / cited rule table, but drops
     tab & U+3000 whitespace); 3rd A (most compact, but silently strips NFD
     combining marks -- a real-data hazard for decomposed input).
@@ -43,11 +53,58 @@ INTERFACE CONTRACT (authoritative statement in vectors.py):
 
     slugify(text: str, seen: dict) -> str
 
-`seen` maps base-slug -> count of PRIOR uses of that base slug within the current
-document and is mutated in place to thread dedup state: the first heading whose
-base slug is "foo" returns "foo" and sets seen["foo"] = 1; the next heading with
-the same base returns "foo-1" and sets seen["foo"] = 2; and so on. Callers reset
-dedup with a fresh `seen = {}` per document.
+`seen` is mutated in place to thread dedup state across a document; callers
+reset dedup with a fresh `seen = {}` per document. Its SHAPE is unchanged by
+T-039/P-013 (still a plain str -> int dict, mutated in place by `slugify`) --
+only WHAT gets registered into it changed, per the rule table below.
+
+-----------------------------------------------------------------------
+DEDUP RULE TABLE (github-slugger produced-slug registration, T-039/P-013)
+-----------------------------------------------------------------------
+Cited upstream source: the npm package `github-slugger`'s
+`slugger.prototype.slug` (its JS `BananaSlug.prototype.slug`), which keeps
+a per-document `this.occurrences` map and re-registers into it as follows
+(paraphrased from the upstream implementation):
+
+    slug = originalSlug = <computed base slug>
+    while (originalSlug in occurrences):
+        occurrences[originalSlug] += 1
+        slug = originalSlug + '-' + occurrences[originalSlug]
+    occurrences[slug] = 0
+    return slug
+
+RULE 1 -- BUMP the base slug's own counter on every repeat.
+    Cited: upstream keeps one integer counter per distinct BASE string
+    (`occurrences[originalSlug]`), incremented each time that same base
+    is seen again, and uses the post-increment value as the numeric
+    suffix. Vector: ["Setup","Setup","Setup"] -> ["setup","setup-1",
+    "setup-2"] (DEDUP_SEQUENCES[0] in vectors.py).
+
+RULE 2 -- RE-REGISTER the FINAL, PRODUCED slug too, not just the base.
+    Cited: upstream's last line, `occurrences[slug] = 0`, registers the
+    (possibly already-suffixed) string it is about to RETURN as its own
+    key -- not merely the original base. This is the fix this module
+    adopts under T-039/P-013: previously only the base was registered
+    (a "naive base->count" scheme -- see candidates/slugger_c.py's
+    divergence note #2, which documents that naive scheme and the exact
+    collision it produces). Registering the produced slug closes that
+    gap: a LATER heading whose base happens to equal an EARLIER
+    PRODUCED slug is detected as already-taken (via RULE 1's bump loop)
+    instead of silently colliding.
+    Regression vector (T-039/P-013, projects/mdtoc/tests/test_slugger.py):
+    ["Foo", "Foo", "Foo-1"] -- naive base-counting (the pre-T-039
+    behavior) emits ["foo", "foo-1", "foo-1"], a genuine anchor
+    collision (the second "Foo" and the literal "Foo-1" heading both
+    produce "foo-1"). With RULE 2 applied, the third call's base
+    "foo-1" is found already registered (by the second call's RULE-2
+    registration), so it is bumped again to "foo-1-1":
+    ["foo", "foo-1", "foo-1-1"] -- unique.
+
+RULE 3 -- the golden vectors in vectors.py (DEDUP_SEQUENCES) contain NO
+    produced-slug collisions, so RULE 1 alone fully explains their
+    expected outputs; RULE 2 is purely additive and does not change any
+    golden-vector result (verified: vectors.run_against stays 24/24
+    before and after this change).
 
 Python 3.9+, stdlib only (unicodedata).
 """
@@ -102,14 +159,22 @@ def _slug_base(text: str) -> str:
 def slugify(text: str, seen: dict) -> str:
     """Return a GitHub-style anchor slug for `text`, deduped against `seen`.
 
-    `seen` is mutated in place per the contract in vectors.py: it maps a
-    base slug to the count of prior uses of that base slug. The Nth
-    occurrence (N >= 2) of a given base slug returns "base-(N-1)".
+    Implements the DEDUP RULE TABLE in this module's docstring (T-039/P-013,
+    porting github-slugger's `slugger.prototype.slug` occurrence bookkeeping):
+    compute the base slug, then while that candidate string is already a key
+    in `seen` (RULE 1: base collisions; RULE 2: PRODUCED-slug collisions --
+    `seen` holds both), bump the base's counter and retry with the next
+    numeric suffix. Once a free candidate is found, register it too (RULE 2)
+    before returning it, so a LATER base equal to an EARLIER produced slug
+    is caught instead of silently colliding.
+
+    `seen` is mutated in place; its shape is unchanged from before T-039
+    (still a plain str -> int dict) -- only what gets registered changed.
     """
     base = _slug_base(text)
-    prior_uses = seen.get(base, 0)
-    if prior_uses == 0:
-        seen[base] = 1
-        return base
-    seen[base] = prior_uses + 1
-    return f"{base}-{prior_uses}"
+    slug = base
+    while slug in seen:
+        seen[base] = seen.get(base, 0) + 1
+        slug = f"{base}-{seen[base]}"
+    seen[slug] = 0
+    return slug

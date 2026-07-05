@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "harness_generation": 2,
+  "harness_generation": 3,
   "created_at": "2026-07-03T00:00:00Z",
   "created_by": "fable-5-coordinator (Claude Code session, generation-0 bootstrap)",
   "run": {
@@ -115,19 +115,19 @@
         "last_outcome_at": "2026-07-04T01:40:52Z"
       },
       "substrate-worker-1": {
-        "tasks_done": 7,
-        "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T00:56:50Z"
+        "tasks_done": 8,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T03:15:44Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 10,
+        "tasks_done": 11,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T02:04:01Z"
+        "last_outcome_at": "2026-07-05T03:13:57Z"
       },
       "evolution-analyst": {
-        "tasks_done": 2,
+        "tasks_done": 3,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T06:43:29Z"
+        "last_outcome_at": "2026-07-05T03:03:04Z"
       },
       "fable-5-coordinator": {
         "tasks_done": 2,
@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-04T07:29:54Z"
       },
       "main": {
-        "tasks_done": 3,
-        "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T02:52:04Z"
+        "tasks_done": 7,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T03:33:34Z"
       },
       "tournament-judge": {
         "tasks_done": 1,
@@ -186,14 +186,44 @@
       },
       "verifier-b": {
         "tasks_done": 0,
+        "tasks_failed": 4,
+        "last_outcome_at": "2026-07-05T03:15:23Z"
+      },
+      "probe-agent-x": {
+        "tasks_done": 4,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-05T03:08:46Z"
+      },
+      "probe-agent-z": {
+        "tasks_done": 0,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-05T00:56:36Z"
+        "last_outcome_at": "2026-07-05T03:08:45Z"
+      },
+      "prod-x": {
+        "tasks_done": 6,
+        "tasks_failed": 8,
+        "last_outcome_at": "2026-07-05T03:15:23Z"
+      },
+      "ver-y": {
+        "tasks_done": 1,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-07-05T03:15:23Z"
+      },
+      "realagent": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-05T03:14:31Z"
+      },
+      "sneaky": {
+        "tasks_done": 0,
+        "tasks_failed": 2,
+        "last_outcome_at": "2026-07-05T03:15:23Z"
       }
     }
   },
   "evolution": {
-    "generation": 2,
-    "last_audit_at": "2026-07-04T07:12:00Z",
+    "generation": 3,
+    "last_audit_at": "2026-07-05T03:40:00Z",
     "pending_proposals": [],
     "accepted_mutations": [
       {
@@ -350,32 +380,144 @@
         "gate": "NLAH mutation - human gate SATISFIED by direct operator instruction 2026-07-05",
         "applied_note": "applied in T-034 (substrate-worker-1), verified by verifier-b (hunk-by-hunk drift hunt: zero semantic changes; active_role correctly left for the gen-3 bundle)",
         "applied_at": "2026-07-05T03:15:00Z"
+      },
+      {
+        "id": "P-011",
+        "source": "audit_gen3 rank 1 (doc P-010)",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Done-guard keyed on status fires before authorship: legit cross-agent verifiers who claim a review task get false-refused and forced into --override-producer-check. Fix: authorship governs - done allowed whenever a handoff exists AND agent != handoff.from, regardless of current status; refuse when no handoff or agent == producer.",
+        "measurable_gain": "producer_check_overridden where agent != producer -> 0 (today 2: ev605,ev618); handoff->other-agent-claim->done exits 0 with NO override; self-done and never-reviewed still exit 1",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-036, verified done by verifier-b (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-012",
+        "source": "audit_gen3 rank 2 (doc P-011, F2+F8)",
+        "target": [
+          "projects/mdtoc/mdtoc/cli.py",
+          "projects/mdtoc/tests/test_cli.py",
+          "projects/mdtoc/README.md"
+        ],
+        "summary": "check hardcodes depth 3 and generate persists no depth -> structural false-stale. Fix: generate --in-place records depth in the toc marker; check reads it (default 3 for legacy) and gains --max-depth override.",
+        "measurable_gain": "generate --max-depth 2; check -> exit 0 (today exit 1); depth round-trips 1..4; legacy markers still default 3",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-038, verified done by verifier-c (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-013",
+        "source": "audit_gen3 rank 3 (doc P-012, F4+F5)",
+        "target": [
+          "projects/mdtoc/mdtoc/slugger.py",
+          "projects/mdtoc/tests/test_slugger.py"
+        ],
+        "summary": "Naive base->count dedup emits duplicate anchors on ['Foo','Foo','Foo-1']. Fix: register produced slugs too (github-slugger collision handling); golden 24/24 unaffected (no produced-slug collisions in the golden set). Fold in C-style doc uplift.",
+        "measurable_gain": "len(set(slugs))==len(slugs) always; new collision regression test passes; suite green",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-039, verified done by verifier-c (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-014",
+        "source": "audit_gen3 rank 4 (doc P-013, F1)",
+        "target": [
+          ".claude/agents/orchestration-planner.md",
+          ".harness/plan.md"
+        ],
+        "summary": "Planner checklist: enumerate shared bootstrap files (test package markers, fixtures dirs) as owned artifacts of a specific task.",
+        "measurable_gain": "next plan lists tests/__init__.py-class files with an owner; 0 'created shared bootstrap' deviation notes",
+        "status": "applied",
+        "gate": "code-level",
+        "applied_note": "applied in T-037, verified done by harness-verifier (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-015",
+        "source": "audit_gen3 rank 5 (doc P-014, U1 pre-approved)",
+        "target": [
+          ".claude/agents/orchestration-planner.md",
+          ".harness/plan.md"
+        ],
+        "summary": "Unknowns section (4 quadrants) mandatory per epic in plan.md; blocking known-unknowns become spike tasks or human questions BEFORE the DAG publishes.",
+        "measurable_gain": "next plan.md has populated Unknowns; every blocking known-unknown -> spike task or human decision pre-DAG",
+        "status": "applied",
+        "gate": "code-level (U1 pre-approved by operator)",
+        "applied_note": "applied in T-037, verified done by harness-verifier (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-016",
+        "source": "audit_gen3 rank 6 (doc P-015, U3 pre-approved)",
+        "target": [
+          ".claude/agents/orchestration-planner.md"
+        ],
+        "summary": "Blindspot-interview step: planner writes explicit candidate assumptions (unknown-knowns) for the coordinator to confirm with the human pre-DAG; confirmations recorded in plan.md.",
+        "measurable_gain": ">=1 human-confirmed assumption recorded pre-DAG per epic",
+        "status": "applied",
+        "gate": "code-level (U3 pre-approved)",
+        "applied_note": "applied in T-037, verified done by harness-verifier (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-017",
+        "source": "audit_gen3 rank 7 (doc P-016, U4+U2+F6)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Add: note taxonomy DECISION/DEVIATION/TRADEOFF/OPEN-QUESTION (audits count OPEN-QUESTION); heavyweight human gates preceded by explainer + 3 comprehension questions; verifier-rotation rule (no sole approver across an epic).",
+        "measurable_gain": "grep -c OPEN-QUESTION ORCHESTRATION.md > 0; rotation + pre-gate rules present",
+        "status": "applied",
+        "gate": "code-level (U2/U4 pre-approved)",
+        "applied_note": "applied in T-040, verified done by harness-verifier (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
+      },
+      {
+        "id": "P-018",
+        "source": "audit_gen3 rank 8 (doc P-017, active_role)",
+        "target": [
+          "claude.md",
+          ".harness/README.md"
+        ],
+        "summary": "Remove dead active_role references (claude.md L34/L66, README L14): nothing reads the file, migration does not seed it. Bundle: README TTL bracket nit [ttl,ttl+1) -> (ttl,ttl+1].",
+        "measurable_gain": "grep -c active_role claude.md = 0 and README = 0; four human gates verbatim; gemini.md untouched",
+        "status": "applied",
+        "gate": "NLAH HUMAN GATE - PRE-APPROVED by operator 2026-07-05 ('avienta a agentes a hacer los 18 insumos')",
+        "applied_note": "applied in T-041, verified done by verifier-b (rotated reviewers across the epic per the new F6 rule)",
+        "applied_at": "2026-07-05T04:05:00Z"
       }
     ],
     "audit_artifacts": [
       ".harness/logs/audit_gen1.md",
-      ".harness/logs/audit_gen2.md"
+      ".harness/logs/audit_gen2.md",
+      ".harness/logs/audit_gen3.md"
     ],
-    "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append).",
+    "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append). Generation 3 closed 2026-07-05T04:05Z: P-010 (human-directed de-Fable) + P-011..P-018 (audit_gen3, one gated pre-approved) applied across two 3-worker waves with rotated verifiers (harness-verifier, verifier-b, verifier-c - no sole approver, F6 honored in its own rollout). Unknowns framework U1-U4 now normative (planner + ORCHESTRATION).",
     "next_audit_inputs": [
-      "mdtoc friction: tests/__init__.py needed by py3.9 unittest discover was unowned by the T-020 plan; two workers hit it, worker-2 created it as disclosed shared bootstrap. Planner checklist candidate: enumerate shared bootstrap files (test package markers, conftest-like infra) as owned artifacts.",
-      "Nit (T-013 verify): mechanically-exact TTL interval is (ttl, ttl+1], README says [ttl, ttl+1) - prose is correct, bracket notation imprecise at measure-zero boundaries",
-      "Shape change (T-015): task_updated events now log artifact as a list (was string) - downstream log parsers must handle both",
-      "Race (fix-verify session): verifier's claim-refusal probe on T-027 accidentally SUCCEEDED when deps went done mid-test; it self-healed by releasing. Candidate guardrail: a probe-claim convention (claim with --dry-run?) or use permanently-gated scratch tasks for refusal probes",
-      "F1 (T-021/T-022): tests/__init__.py unowned bootstrap - py3.9 unittest discover needs it when -s != -t (bpo-23882). Planner checklist: enumerate shared bootstrap files as owned artifacts",
-      "F2+F8 (T-028): check hardcodes DEFAULT_MAX_DEPTH=3, no --max-depth flag, and generate persists no depth record -> structural false-stale when generated at non-default depth. Fix needs stored config/frontmatter or a check flag",
-      "F3 (T-027): double-claim race - verifier probe-claim on a live open task succeeded when deps went done mid-test; claim != safe read. Guardrail candidate: --dry-run claim or permanently-gated scratch tasks for refusal probes",
-      "F4 (T-027): naive base->count dedup contract mandates output collision ['foo','foo-1','foo-1'] vs real github-slugger recursion - contract revision + new golden vectors is a real gen-3 item",
-      "F5 (T-027): slugger_c's cited rule-table doc style is an uplift candidate for the promoted slugger_b",
-      "F6 (epic mdtoc): verdict-layer monoculture - harness-verifier was sole approver of all 9 producer tasks and authored the join; consider verifier rotation or second reviewer on epic joins",
-      "F7 (events.jsonl): task_updated status=done events carry NO actor field; top-level agent is uniformly the ambient session id - producer!=approver auditing is reconstruction-dependent. Add explicit actor to verdict events",
-      "P-009 follow-ups: (i) done-on-done now refused (idempotence loss, coherent but note it); (ii) F7 remains open for events other than task_updated; (iii) consider lifetime-authorship mode if producer-of-record proves too lax in practice",
-      "U1 (Thariq unknowns, pre): planner contract - plan.md must carry an Unknowns section per epic (4 quadrants); blocking known-unknowns resolved with the human or converted to spike tasks BEFORE publishing the DAG. Target: .claude/agents/orchestration-planner.md + plan.md template (code-level, no NLAH gate)",
-      "U2 (Thariq unknowns, during): note taxonomy DECISION/DEVIATION/TRADEOFF/OPEN-QUESTION as a convention (optionally blackboard.py --note-kind flag) so audits can count and chase OPEN-QUESTIONs mechanically",
-      "U3 (Thariq unknowns, pre): blindspot-pass step - before dispatching a new epic, a thinker interviews the human with concrete assumptions to surface unknown-knowns (interview pattern); coordinator uses AskUserQuestion",
-      "U4 (Thariq unknowns, post): before heavyweight human gates (first git push), the epic join must produce an explainer + 3 comprehension questions for the human - aligns with operator rule 'no publicar lo que no se entiende' (2026-07-04)",
-      "NLAH-GATED (needs human approval): CLAUDE.md 2B instructs agents to read .harness/active_role, but no CLI/hook reads it and migration does not seed it (verifier-c T-032). Reconcile: drop the stale reference or seed a template. Awaiting operator decision",
-      "P-009 friction (confirmed twice, T-032+T-033 verifies): ANY verifier action that moves a review task off 'review' (claiming it, or setting in_progress) locks the verifier out of the done path and forces --override-producer-check even when actor != producer. Refinement: allow done whenever a handoff exists and actor != handoff.from regardless of current status, or make claim preserve review status for verifier-role claims"
-    ]
+      "gen-4 backlog seed: audit_gen3 declined items are dispositioned in the audit doc (TTL bracket cosmetics folded into P-018; F3 dry-run claim declined; F7 residuals closed/no-action). Fresh frictions from the gen-3 waves land here.",
+      "GEN-4 (T-036 verify, LOW): done-on-done now re-accepts and failed->done resurrects when a handoff exists + actor != producer - coherence oddities of authorship-first, not bypasses; consider a terminal-state rule",
+      "GEN-4 (coordinator observation, MED): T-037's worker held locks as substrate-worker-2 WITHOUT a live session registration (unregistered after T-033) yet its Edit-tool writes landed - investigate: check_lock fail-open? bash-dodge writes? hook not firing for subagents? The P-002 mechanism needs a liveness test for in-session subagents",
+      "GEN-4 (T-040 verify, OPEN-QUESTION): normative docs cite volatile state.json line numbers that drift (352/356/358 -> stale within hours); rule candidate: cite stable section anchors only for mutable files",
+      "GEN-4 (T-039 verify, doc nit): slugger.py DEDUP RULE TABLE pseudocode 'while (originalSlug in occurrences)' should read 'slug' - 1-token fix; algorithm itself is github-parity",
+      "GEN-4 (T-040 verify, prose nit): F6 rule says mdtoc 'all 9 producer tasks' - loose phrasing, T-027/T-029 were verifier-role; substance holds",
+      "GEN-4 (T-041, human decision pending): physical .harness/active_role file (8 bytes, 'thinker') still on disk; nothing reads it; deleting is arguably outside the scratch-area exemption - operator call"
+    ],
+    "readiness_criteria": {
+      "_source": "audit_gen3.md section on production readiness, falsifiability confirmed by harness-verifier (criterion 7 flagged borderline)",
+      "criteria": [
+        "1 guardrail-trust: cross-agent done needs no override; overridden-where-agent!=producer = 0 (P-011)",
+        "2 swarm smoke: >=2 concurrent real sessions (distinct session_ids) on one DAG; busy-refusals/task < 1; 0 false producer refusals",
+        "3 second external project: migracion_proyecto.py bootstraps a NEW (ideally non-Python) repo; full epic end-to-end; source untouched",
+        "4 U1-U4 exercised on a real epic (Unknowns populated, OPEN-QUESTION chased, interview recorded, pre-push explainer+quiz)",
+        "5 mdtoc correctness closed (P-012+P-013, suite green under joint verifier)",
+        "6 active_role reconciled + de-Fable done; push stays human-gated",
+        "7 clean gen-4 audit (backlog only document-only/UNTESTED; checkable core, partly judgment)"
+      ]
+    }
   }
 }

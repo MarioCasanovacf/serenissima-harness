@@ -120,3 +120,42 @@ nothing is bridged to Gemini for this epic.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).
 3. Task size ≤ `state.json limits.max_steps_per_task`; otherwise decompose further.
 4. High-uncertainty nodes may use tournament mode: N parallel candidates, one verifier verdict (Co-Scientist pattern).
+
+## TEMPLATE — Unknowns (4 quadrants) [copy this block into every new epic, per orchestration-planner.md steps 5-6 (U3 blindspot interview, U1 Unknowns section)]
+
+> Populate this section for a NEW epic BEFORE its DAG is published. Every BLOCKING
+> known-unknown must be closed (spike task id OR recorded human answer) before any worker
+> task in the epic is claimable — an unresolved BLOCKING known-unknown means: do not publish
+> the DAG yet.
+
+### Epic: `<epic-name>` (example below is a worked illustration, not a live epic)
+
+**Known knowns** (facts already verified in this repo/session):
+- e.g. "`projects/mdtoc/` is pure-stdlib Python 3.9+, no third-party dependencies."
+
+**Known unknowns** (questions we know we don't have answers to; classify each
+BLOCKING or NON-BLOCKING):
+- `[BLOCKING]` "Does the target test runner discover `tests/` via `unittest discover` or
+  `pytest`, and does that require a `tests/__init__.py` package marker?"
+  → **Resolution**: converted to spike task **T-0XX-spike** ("probe test-discovery
+    mechanism, report which bootstrap files are required and who owns them"); every worker
+    task that writes into `tests/` lists `depends_on: [T-0XX-spike]`. The DAG is NOT
+    published until T-0XX-spike reports back and the bootstrap file gets an explicit owner
+    (see the F1 decomposition rule in `orchestration-planner.md`).
+- `[NON-BLOCKING]` "Will we eventually want a `--json` output mode?" → deferred; does not
+  gate DAG publication, noted for a future epic.
+
+**Unknown knowns** (things the human/operator knows but hasn't told the planner — the
+candidate assumptions surfaced in the U3 blindspot interview):
+- Assumption: "The operator wants re-runs to be idempotent (only replace content between
+  the tool's own markers), not to blindly overwrite the whole file on every run."
+  → **Human confirmation**: CONFIRMED 2026-0X-XX by operator — "yes, idempotent re-run,
+    only replace content between the TOC markers." Recorded here per U3; the confirmed
+    assumption becomes a known-known for every downstream task in this epic.
+
+**Unknown unknowns** (acknowledged blind spot — no candidate list; this quadrant exists so
+the planner does not pretend the first three quadrants are exhaustive):
+- None identified yet for this epic. If one surfaces mid-execution (a worker hits friction
+  the plan never anticipated), it does NOT get silently patched around — it is logged as a
+  new known-unknown in the NEXT epic's Unknowns section (worked precedent: the mdtoc
+  `tests/__init__.py` bootstrap-file friction, `.harness/logs/audit_gen3.md` P-013/F1).

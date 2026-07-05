@@ -11,8 +11,6 @@ this file is the substrate reference.
 
 ```
 .harness/
- ├── active_role            Current persona for a solo Claude runner (thinker|worker|verifier).
- │                          Default: thinker (safest — no source changes).
  ├── blackboard.json        Shared task index + DAG topology. NEVER hand-edit;
  │                          mutate only via bin/blackboard.py (guarded, atomic).
  ├── state.json             Execution limits, human gates, agent capability
@@ -94,7 +92,7 @@ who executed the command.
   voluntarily — the contract is engine-agnostic, the hook is Claude-side sugar.
 - TTL precision is whole seconds (`ISO_FMT` has no sub-second field); `lock_is_expired`
   floors both the acquired-at and now-side timestamps before comparing, so effective
-  lock lifetime is `[ttl, ttl+1)` seconds — never shorter than the requested TTL (P-005).
+  lock lifetime is `(ttl, ttl+1]` seconds — never shorter than the requested TTL (P-005).
 
 ### Observability pillars → concrete files
 | Pillar (AHE) | Implementation here |

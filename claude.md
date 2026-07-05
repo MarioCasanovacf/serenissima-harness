@@ -31,7 +31,7 @@ Claude is optimized for XML structures and structured system instructions.
   - Limit sequential tool calls to prevent rate-limit caps on your subscription.
 
 ### B. Role Assignment (Multi-Agent Strategies)
-Depending on the instruction written in `.harness/active_role`, adopt one of the following personas:
+Adopt one of the following personas as assigned by the coordinator's dispatch and the task's `--role` flag on `blackboard.py` (e.g., `blackboard.py next --role <r>`), not by reading a local file:
 1. **Thinker**: Focus on reading specifications, drafting plans in `.harness/plan.md`, and detailing architectural options. Do NOT make source code changes.
 2. **Worker**: Execute the plan detailed in `.harness/plan.md` in parallel with other workers. Create, edit, and refactor files.
 3. **Verifier**: Run tests, review diffs, and validate that the worker's changes match the goals.
@@ -63,7 +63,6 @@ Since this harness operates without an API middleware, the local file system act
 ```
 Workspace Directory
  └── .harness/
-      ├── active_role        <- Contains current role (Thinker/Worker/Verifier)
       ├── blackboard.json    <- Shared task state for parallel agents
       ├── locks/             <- Write lock files to prevent edit conflicts
       ├── logs/

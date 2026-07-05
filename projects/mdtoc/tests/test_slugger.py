@@ -13,13 +13,18 @@ Coverage:
   2. TIE-BREAKER PINS that were decisive in the T-027 verdict, so a future
      regression (e.g. someone "simplifying" the winner back toward a losing
      candidate's behavior) surfaces immediately:
-       (a) dedup-collision NAIVE contract (['Foo','Foo','Foo-1']
-           -> ['foo','foo-1','foo-1']);
-       (b) winner B's WHITESPACE handling: tab and ideographic space U+3000
+       (a) winner B's WHITESPACE handling: tab and ideographic space U+3000
            become hyphens (str.isspace()), unlike losing candidates A/C which
            drop non-U+0020 whitespace;
-       (c) winner B's COMBINING-MARK handling: an NFD "cafe"+U+0301 keeps the
+       (b) winner B's COMBINING-MARK handling: an NFD "cafe"+U+0301 keeps the
            mark, unlike losing candidate A which strips it.
+  3. DEDUP-COLLISION contract (T-039/P-013, see mdtoc/slugger.py's DEDUP RULE
+     TABLE): github-slugger-style produced-slug registration is pinned so
+     ['Foo','Foo','Foo-1'] no longer collides (-> ['foo','foo-1','foo-1-1']),
+     plus a stress regression over a longer chain of colliding bases.
+     NOTE: this INVERTS a prior pin in this file that asserted the naive
+     base->count contract's collision (['foo','foo-1','foo-1']) as correct;
+     see TestDedupCollisionContract below for the full rationale.
 Run: python3 -m unittest discover -s projects/mdtoc/tests -t projects/mdtoc
 """
 import os
@@ -58,18 +63,52 @@ class TestPromotedSluggerGoldenVectors(unittest.TestCase):
 
 
 class TestDedupCollisionContract(unittest.TestCase):
-    """Pins the NAIVE base->count dedup contract (a decisive tournament probe).
+    """Pins the COLLISION-SAFE github-slugger-style dedup contract.
 
-    All three candidates agreed here; the promoted winner must keep agreeing:
-    the third input, a literal 'Foo-1', collides with the second's 'foo-1'
-    output -- the pinned contract mandates that collision rather than the
-    richer real-github-slugger bump to 'foo-1-1'.
+    DECISION (T-039/P-013, inverting a prior pin in this file): this class
+    used to assert the NAIVE base->count contract's output -- ['Foo','Foo',
+    'Foo-1'] -> ['foo','foo-1','foo-1'] -- as a CORRECT, tournament-agreed
+    behavior. It was not correct; it was a known, verified (3x) real anchor
+    collision (F4 in the generation-3 audit, P-013): 'Foo-1' is a plausible
+    literal heading, and colliding with the auto-numbered second 'Foo' means
+    two different headings resolve to the same in-page anchor.
+
+    EXPECTED (before T-039): naive base->count dedup -> ['foo','foo-1','foo-1']
+    (collision; len(set(out)) == 2 != len(out) == 3).
+    ACTUAL (after T-039): mdtoc/slugger.py now also registers each PRODUCED
+    slug into `seen` (github-slugger's `slugger.prototype.slug` occurrence
+    re-registration -- see the DEDUP RULE TABLE in slugger.py's docstring),
+    so the third call's base 'foo-1' is recognized as already taken (by the
+    second call's produced-slug registration) and is bumped again ->
+    ['foo','foo-1','foo-1-1'] (unique; len(set(out)) == len(out) == 3).
+
+    This test now pins the NEW collision-safe outcome. Every OTHER
+    tournament-decisive pin in this file (whitespace, combining marks) is
+    untouched by T-039 and is preserved verbatim below.
     """
 
-    def test_foo_foo_foo1_produces_contract_collision(self):
+    def test_foo_foo_foo1_no_longer_collides(self):
         seen = {}
         out = [slugify(x, seen) for x in ["Foo", "Foo", "Foo-1"]]
-        self.assertEqual(out, ["foo", "foo-1", "foo-1"])
+        self.assertEqual(out, ["foo", "foo-1", "foo-1-1"])
+        self.assertEqual(len(set(out)), len(out), "produced anchors must be unique")
+
+    def test_stress_list_of_colliding_bases_all_unique(self):
+        # A longer chain where each produced slug is itself reused as a
+        # LATER heading's literal base slug, exercising RULE 2's re-
+        # registration repeatedly (not just once, as in the 3-item case
+        # above). If produced slugs were not registered, "Item-1" (the 4th
+        # input) would collide with the 2nd input's produced "item-1", and
+        # "Item-2" (the 6th input) would collide with the 3rd input's
+        # produced "item-2".
+        inputs = ["Item", "Item", "Item", "Item-1", "Item-1", "Item-2"]
+        seen = {}
+        out = [slugify(x, seen) for x in inputs]
+        self.assertEqual(len(set(out)), len(out), "stress list produced a duplicate anchor: %r" % (out,))
+        self.assertEqual(
+            out,
+            ["item", "item-1", "item-2", "item-1-1", "item-1-2", "item-2-1"],
+        )
 
 
 class TestWinnerWhitespaceBehavior(unittest.TestCase):

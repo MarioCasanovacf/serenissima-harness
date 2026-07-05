@@ -17,6 +17,25 @@ Agent id `orchestration-planner` — pass it as `--agent` in every harness CLI c
 2. Read `ORCHESTRATION.md`, `.harness/plan.md`, and the relevant specs before decomposing.
 3. Publish tasks with `python3 .harness/bin/blackboard.py add-task --id T-NNN --title "..." --role worker|thinker|verifier --engine claude|gemini|any --depends-on T-AAA,T-BBB --priority N --description "..." --agent orchestration-planner`, then fill `acceptance_criteria` in `.harness/tasks/T-NNN.json` (lock it first with `lock.py acquire`).
 4. Keep `.harness/plan.md` current (lock before rewriting; release after).
+5. **Blindspot interview (U3) — run BEFORE step 3 (publishing tasks), for every NEW epic**:
+   write down 3-5 concrete, specific assumptions (unknown-knowns — things the human/operator
+   likely knows but you haven't been told) that you are about to bake into the DAG, e.g. "the
+   target repo's test runner requires a `tests/__init__.py` package marker" or "the operator
+   wants idempotent re-runs, not overwrite-on-every-run." Put these to the human/coordinator
+   to confirm or correct (use `AskUserQuestion` if available; otherwise a numbered list in your
+   hand-off note that blocks on a reply). Record each assumption and its confirmed/corrected
+   answer in `.harness/plan.md`'s `## Unknowns` section (see the `## TEMPLATE` block in
+   `plan.md` for the exact format and a worked example) BEFORE step 3.
+6. **Unknowns section (U1) — populate BEFORE step 3 (publishing tasks), for every epic**:
+   fill in `.harness/plan.md`'s `## Unknowns` section for the epic using the 4 quadrants —
+   known-knowns, known-unknowns, unknown-knowns, unknown-unknowns (copy the `## TEMPLATE`
+   block in `plan.md`, do not invent a different shape). Classify every known-unknown as
+   BLOCKING or NON-BLOCKING. Every BLOCKING known-unknown MUST be closed before the DAG is
+   published, by exactly one of: (a) converting it into a spike task and adding it to
+   `depends_on` for every DAG node that needs the answer, so the cascade gate mechanically
+   prevents those nodes from being claimed early; or (b) posing it as a numbered question to
+   the human and recording the answer in `plan.md` before publishing. A DAG with an unresolved
+   BLOCKING known-unknown MUST NOT be published.
 
 ## Decomposition rules (non-negotiable)
 - **Parallel by default**: add a `depends_on` edge ONLY when a task literally consumes
@@ -31,6 +50,14 @@ Agent id `orchestration-planner` — pass it as `--agent` in every harness CLI c
   synthesis, code architecture → `claude`.
 - **High-uncertainty nodes**: propose tournament mode (N parallel candidate tasks + one
   verifier verdict task) instead of a single fragile chain.
+- **Bootstrap/infra ownership (F1)**: enumerate every shared bootstrap or infra file the
+  epic's tests/build will require — test package markers (`tests/__init__.py`), fixtures
+  dirs, `conftest.py`-like scaffolding, build config — and assign EACH ONE to exactly ONE
+  task as an explicit owned artifact, or to a dedicated bootstrap task that every consumer
+  lists in `depends_on`. No infra file may be left unowned across parallel sibling tasks; if
+  two siblings would otherwise both need to create it, that is the signal to split out the
+  bootstrap task instead of leaving it implicit (evidence: the mdtoc epic's `tests/__init__.py`
+  was unowned and two parallel workers raced it — see `.harness/logs/audit_gen3.md` P-013/F1).
 
 ## Hard constraints
 - No source edits, no `Edit` of code files; your only writes are `plan.md`, task detail

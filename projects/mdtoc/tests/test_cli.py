@@ -31,11 +31,18 @@ TOC_STOP = "<!-- tocstop -->"
 
 
 def _between_markers(text):
-    """Return the substring strictly between the TOC markers, or None."""
-    start = text.find(TOC_START)
-    if start == -1:
+    """Return the substring strictly between the TOC markers, or None.
+
+    T-038: the start marker may now carry a ``max-depth=N`` parameter
+    (``<!-- toc max-depth=2 -->``), so this locates it with the same regex
+    ``cli.py`` itself uses (``cli._MARKER_START_RE``) rather than a bare
+    literal search, while still falling back correctly for the legacy
+    parameterless ``<!-- toc -->`` form.
+    """
+    match = cli._MARKER_START_RE.search(text)
+    if match is None:
         return None
-    start += len(TOC_START)
+    start = match.end()
     stop = text.find(TOC_STOP, start)
     if stop == -1:
         return None
@@ -172,6 +179,97 @@ class TestCheck(CliTestCase):
             fh.write("# Title\n\n## Section\n")
         rc = cli.main(["check", no_markers_path])
         self.assertEqual(rc, 1)
+
+
+class TestMarkerMaxDepthParameter(CliTestCase):
+    """T-038/P-012: generate records the depth in the marker; check honors
+    it (with a legacy fallback to 3 and an explicit --max-depth override).
+    """
+
+    def test_generate_records_max_depth_in_marker(self):
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "2"])
+        updated = self.read_target()
+        self.assertIn("<!-- toc max-depth=2 -->", updated)
+
+    def test_generate_records_default_depth_explicitly_too(self):
+        # DECISION: even the default (3) is written explicitly, never left
+        # parameterless, so freshly-generated files are unambiguous.
+        cli.main(["generate", self.target, "--in-place"])
+        updated = self.read_target()
+        self.assertIn("<!-- toc max-depth=3 -->", updated)
+
+    def test_round_trip_generate_then_check_at_each_depth(self):
+        # This is the exact scenario that used to false-stale: `generate
+        # --max-depth 2 --in-place` followed by `check` (which used to
+        # hardcode depth 3) must now exit 0 at every depth.
+        for depth in (1, 2, 3, 4):
+            with self.subTest(depth=depth):
+                rc_gen = cli.main(
+                    ["generate", self.target, "--in-place", "--max-depth", str(depth)]
+                )
+                self.assertEqual(rc_gen, 0)
+                rc_check = cli.main(["check", self.target])
+                self.assertEqual(rc_check, 0)
+
+    def test_generate_twice_same_depth_is_byte_identical(self):
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "2"])
+        first = self.read_target()
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "2"])
+        second = self.read_target()
+        self.assertEqual(first, second)
+
+    def test_regenerating_over_an_existing_parameterized_marker_still_finds_it(self):
+        # Second generate call must still locate the markers even though
+        # the first call already rewrote the start marker to carry a param
+        # (insert_toc itself only ever searches for the bare literal).
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "2"])
+        rc = cli.main(["generate", self.target, "--in-place", "--max-depth", "4"])
+        self.assertEqual(rc, 0)
+        updated = self.read_target()
+        self.assertIn("<!-- toc max-depth=4 -->", updated)
+        toc = _between_markers(updated)
+        self.assertIn("Nested Section", toc)  # level 3, included at depth 4
+
+    def test_legacy_parameterless_marker_defaults_to_three(self):
+        # Simulate a pre-T-038 file: content matches a depth-3 render, but
+        # the marker itself carries no max-depth parameter at all.
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "3"])
+        legacy = self.read_target().replace(
+            "<!-- toc max-depth=3 -->", "<!-- toc -->"
+        )
+        self.write_target(legacy)
+        rc = cli.main(["check", self.target])
+        self.assertEqual(rc, 0)
+
+    def test_legacy_parameterless_marker_with_non_default_content_is_stale(self):
+        # Content was generated at depth 2, but the marker is stripped back
+        # to the bare (parameterless) legacy form -- check must fall back
+        # to the legacy default of 3, which disagrees with the depth-2
+        # content, so it correctly reports stale rather than false-fresh.
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "2"])
+        legacy = self.read_target().replace(
+            "<!-- toc max-depth=2 -->", "<!-- toc -->"
+        )
+        self.write_target(legacy)
+        rc = cli.main(["check", self.target])
+        self.assertEqual(rc, 1)
+
+    def test_check_max_depth_override_wins_over_marker(self):
+        cli.main(["generate", self.target, "--in-place", "--max-depth", "3"])
+        # The marker says max-depth=3; overriding to 2 must recompute at 2
+        # and therefore disagree with the depth-3 content on disk.
+        rc_override = cli.main(["check", self.target, "--max-depth", "2"])
+        self.assertEqual(rc_override, 1)
+        # Overriding back to the marker's own depth is fresh again.
+        rc_matching = cli.main(["check", self.target, "--max-depth", "3"])
+        self.assertEqual(rc_matching, 0)
+
+    def test_check_help_documents_max_depth_override(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            with self.assertRaises(SystemExit):
+                cli.main(["check", "--help"])
+        self.assertIn("--max-depth", buf.getvalue())
 
 
 class TestArgparseHelp(unittest.TestCase):

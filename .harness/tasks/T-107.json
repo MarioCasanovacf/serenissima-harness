@@ -1,0 +1,14 @@
+{
+  "id": "T-107",
+  "title": "scratch probe T-107",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T03:15:23Z",
+      "agent": "verifier-b",
+      "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    }
+  ]
+}

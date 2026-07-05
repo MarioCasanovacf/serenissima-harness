@@ -1,0 +1,24 @@
+{
+  "id": "T-110",
+  "title": "scratch probe T-110",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T03:14:31Z",
+      "agent": "prod-x",
+      "note": "HANDOFF -> verifier: r1"
+    },
+    {
+      "ts": "2026-07-05T03:14:31Z",
+      "agent": "ver-y",
+      "note": "HANDOFF -> verifier: r2"
+    },
+    {
+      "ts": "2026-07-05T03:15:23Z",
+      "agent": "verifier-b",
+      "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    }
+  ]
+}

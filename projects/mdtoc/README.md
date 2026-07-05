@@ -68,8 +68,8 @@ somewhere in the file:
 ```
 
 **If the markers are present**, the content strictly between them is
-replaced (idempotently — running `generate` twice in a row produces a
-byte-identical result):
+replaced (idempotently — running `generate` twice in a row with the same
+`--max-depth` produces a byte-identical result):
 
 ```bash
 # Preview to stdout, file untouched:
@@ -81,6 +81,14 @@ PYTHONPATH=projects/mdtoc python3 -m mdtoc generate README_with_markers.md --in-
 # Only include H1/H2 in the TOC:
 PYTHONPATH=projects/mdtoc python3 -m mdtoc generate README_with_markers.md --max-depth 2 --in-place
 ```
+
+**The depth is recorded on the start marker itself** (T-038/P-012), as an
+HTML-comment parameter: `generate` always rewrites the start marker to
+`<!-- toc max-depth=N -->`, explicitly, even at the default depth of 3
+(`<!-- toc max-depth=3 -->`) — never left parameterless. This is what lets
+`check` (below) recompute the TOC at the depth the file was *actually*
+generated with, instead of assuming a fixed depth and reporting a false
+"stale" result for files generated at a non-default `--max-depth`.
 
 **If the markers are absent**, there is nothing to splice into, so just the
 rendered TOC body is printed to stdout (handy for copy-pasting into a new
@@ -97,20 +105,39 @@ PYTHONPATH=projects/mdtoc python3 -m mdtoc generate some_doc_without_markers.md
 ### `check` — verify the TOC is up to date
 
 ```
-python3 -m mdtoc check FILE
+python3 -m mdtoc check FILE [--max-depth N]
 ```
 
-Recomputes the TOC (at the default `--max-depth 3`) and compares it against
-what is currently between the markers:
+Recomputes the TOC and compares it against what is currently between the
+markers. The depth used to recompute is resolved in this priority order
+(T-038/P-012):
 
-- **Exit 0** — the TOC is fresh (regenerating would be a no-op). Useful as a
-  CI / pre-commit gate: `mdtoc check docs/README.md || exit 1`.
-- **Exit 1** — the TOC is stale (someone edited headings without
-  regenerating), or the markers are missing entirely.
+1. `--max-depth N` on the command line, if given — always wins.
+2. The `max-depth=N` parameter already recorded on the file's own start
+   marker (see the `generate` section above), if present.
+3. The legacy default of `3`, if the start marker carries no parameter at
+   all — this is the fallback for pre-T-038 files (checked-in fixtures or
+   real files in the wild that predate this feature and still use the bare
+   `<!-- toc -->` marker), so they keep working unmodified.
+
+`check` never rewrites the marker's recorded parameter itself (only
+`generate` does that) — it only judges whether the TOC *body* is fresh at
+the resolved depth.
+
+- **Exit 0** — the TOC is fresh (regenerating at the resolved depth would be
+  a no-op). Useful as a CI / pre-commit gate: `mdtoc check docs/README.md ||
+  exit 1`.
+- **Exit 1** — the TOC is stale (someone edited headings, or the resolved
+  depth disagrees with what's on disk, without regenerating), or the
+  markers are missing entirely.
 
 ```bash
 PYTHONPATH=projects/mdtoc python3 -m mdtoc check README_with_markers.md
 echo "exit code: $?"
+
+# Override the depth check recomputes at, regardless of the marker's own
+# recorded max-depth or the legacy default:
+PYTHONPATH=projects/mdtoc python3 -m mdtoc check README_with_markers.md --max-depth 2
 ```
 
 ### `--help`
@@ -139,7 +166,7 @@ PYTHONPATH=projects/mdtoc python3 -m mdtoc check /tmp/sample.md   # -> exit 0
 produces a TOC block equivalent to:
 
 ```markdown
-<!-- toc -->
+<!-- toc max-depth=3 -->
 - [Sample Document](#sample-document)
   - [Introduction](#introduction)
   - [Café](#café)
@@ -149,6 +176,9 @@ produces a TOC block equivalent to:
   - [Conclusion](#conclusion)
 <!-- tocstop -->
 ```
+
+Notice the start marker now carries `max-depth=3` explicitly (T-038/P-012)
+— that's what `check` reads back to recompute at the right depth.
 
 Notice:
 - The `#` lines inside the fenced code block and the HTML comment never
