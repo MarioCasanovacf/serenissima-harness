@@ -125,9 +125,9 @@
         "last_outcome_at": "2026-07-05T05:35:38Z"
       },
       "evolution-analyst": {
-        "tasks_done": 4,
+        "tasks_done": 5,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T04:20:49Z"
+        "last_outcome_at": "2026-07-05T06:37:19Z"
       },
       "fable-5-coordinator": {
         "tasks_done": 2,
@@ -248,8 +248,64 @@
   },
   "evolution": {
     "generation": 3,
-    "last_audit_at": "2026-07-05T03:40:00Z",
-    "pending_proposals": [],
+    "last_audit_at": "2026-07-05T07:15:00Z",
+    "pending_proposals": [
+      {
+        "id": "P-021",
+        "source": "audit_gen4 rank 1 (MED)",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Note corruption: backticks/$() in --note get shell-substituted (4+ incidents). Add --note-file <path> and --note-stdin support to update/handoff; document the no-backticks convention in the CLI help.",
+        "measurable_gain": "a note containing backticks survives byte-exact via --note-file; incident count drops to 0",
+        "status": "accepted_by_verifier (T-055), dispatched as T-056",
+        "gate": "code-level"
+      },
+      {
+        "id": "P-022",
+        "source": "audit_gen4 rank 2 (MED)",
+        "target": [
+          ".harness/bin/blackboard.py"
+        ],
+        "summary": "Verifier-execute owns-nothing joins (T-052/T-054 class) force --override-producer-check because no handoff exists though producer!=approver is satisfied. Model them: allow done without handoff when the task role is verifier AND the actor != created_by (the producer of record for verifier-execute tasks), logged as verifier_execute_done.",
+        "measurable_gain": "a verifier-role task created by X and done by Y!=X exits 0 without override; self-done by X still refused; worker-role tasks unchanged (still need handoff)",
+        "status": "accepted_by_verifier (T-055), dispatched as T-056",
+        "gate": "code-level"
+      },
+      {
+        "id": "P-024",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Proportional-verification tiering (P-020 rule 2 formalized): verification effort scales with blast radius; verifier tier defaults sonnet, opus per-dispatch for NLAH/guardrail/join/tournament verdicts.",
+        "measurable_gain": "rule greppable in ORCHESTRATION; dispatch prompts cite it",
+        "status": "accepted_by_verifier (T-055), dispatched as T-057",
+        "gate": "code-level (contract text)"
+      },
+      {
+        "id": "P-025",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Test-discovery precision rule: acceptance criteria must carry the exact layout-matching test command AND verifiers must assert a NONZERO test count (kills the bare-node--test false-green class).",
+        "measurable_gain": "rule greppable; future criteria carry exact commands",
+        "status": "accepted_by_verifier (T-055), dispatched as T-057",
+        "gate": "code-level (contract text)"
+      },
+      {
+        "id": "P-026",
+        "source": "audit_gen4 (process rules)",
+        "target": [
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Define 'verbatim promotion': algorithm byte-verbatim + legitimate decoupling (candidate-identifying strings renamed, candidate self-test blocks stripped, zero runtime deps on candidates/).",
+        "measurable_gain": "definition greppable in the tournament pattern section",
+        "status": "accepted_by_verifier (T-055), dispatched as T-057",
+        "gate": "code-level (contract text)"
+      }
+    ],
     "accepted_mutations": [
       {
         "id": "P-001",
@@ -548,21 +604,12 @@
     "audit_artifacts": [
       ".harness/logs/audit_gen1.md",
       ".harness/logs/audit_gen2.md",
-      ".harness/logs/audit_gen3.md"
+      ".harness/logs/audit_gen3.md",
+      ".harness/logs/audit_gen4.md"
     ],
     "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append). Generation 3 closed 2026-07-05T04:05Z: P-010 (human-directed de-Fable) + P-011..P-018 (audit_gen3, one gated pre-approved) applied across two 3-worker waves with rotated verifiers (harness-verifier, verifier-b, verifier-c - no sole approver, F6 honored in its own rollout). Unknowns framework U1-U4 now normative (planner + ORCHESTRATION).",
     "next_audit_inputs": [
-      "gen-4 backlog seed: audit_gen3 declined items are dispositioned in the audit doc (TTL bracket cosmetics folded into P-018; F3 dry-run claim declined; F7 residuals closed/no-action). Fresh frictions from the gen-3 waves land here.",
-      "GEN-4 (T-036 verify, LOW): done-on-done now re-accepts and failed->done resurrects when a handoff exists + actor != producer - coherence oddities of authorship-first, not bypasses; consider a terminal-state rule",
-      "GEN-4 (coordinator observation, MED): T-037's worker held locks as substrate-worker-2 WITHOUT a live session registration (unregistered after T-033) yet its Edit-tool writes landed - investigate: check_lock fail-open? bash-dodge writes? hook not firing for subagents? The P-002 mechanism needs a liveness test for in-session subagents",
-      "GEN-4 (T-040 verify, OPEN-QUESTION): normative docs cite volatile state.json line numbers that drift (352/356/358 -> stale within hours); rule candidate: cite stable section anchors only for mutable files",
-      "GEN-4 (T-039 verify, doc nit): slugger.py DEDUP RULE TABLE pseudocode 'while (originalSlug in occurrences)' should read 'slug' - 1-token fix; algorithm itself is github-parity",
-      "GEN-4 (T-040 verify, prose nit): F6 rule says mdtoc 'all 9 producer tasks' - loose phrasing, T-027/T-029 were verifier-role; substance holds",
-      "GEN-4 (T-041, human decision pending): physical .harness/active_role file (8 bytes, 'thinker') still on disk; nothing reads it; deleting is arguably outside the scratch-area exemption - operator call",
-      "P-020 follow-up (gen-4): assess whether sonnet-tier verifier verdicts (T-051 onward) maintain the quality bar of the opus-tier ones (compare rejection rates, evidence depth); formalize the proportional-verification rule into ORCHESTRATION.md if it proves out",
-      "GEN-4 (T-052 join): T-052's own acceptance criterion prescribed bare 'node --test' which false-greens (0 tests, exit 0) on the tests/test_*.js layout - a literal-minded verifier would have passed the epic running nothing. Rule: criteria must carry the exact layout-matching command AND verifiers must assert nonzero test counts",
-      "GEN-4 (recurring, 4+ incidents): backtick/$() in blackboard.py --note text gets shell-substituted, corrupting notes. Rule candidates: note-from-file/stdin support in the CLI, or a documented no-backticks convention (now in several worker prompts ad hoc)",
-      "GEN-4 (T-049/T-052): 'verbatim promotion' is imprecise - correct promotions legitimately rename candidate-identifying strings and strip candidate self-test blocks. Define: algorithm verbatim + decoupled identifiers/self-tests, so byte-diff checks neither false-fail nor false-pass"
+      "gen-5 backlog: P-023 terminal-state --reopen rule (LOW, latent); doc-only nits (volatile line citations, slugger pseudocode 1-token, F6 prose); audit_gen4 note - T-032/T-033-class no-handoff overrides still possible by design (logged escape hatch), watch for misuse"
     ],
     "readiness_criteria": {
       "_source": "audit_gen3.md section on production readiness, falsifiability confirmed by harness-verifier (criterion 7 flagged borderline)",
