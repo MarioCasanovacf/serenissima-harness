@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 7,
+        "tasks_done": 8,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-05T03:33:34Z"
+        "last_outcome_at": "2026-07-05T06:16:50Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T08:05:24Z"
+        "last_outcome_at": "2026-07-05T06:21:39Z"
       },
       "probe-x": {
         "tasks_done": 4,
@@ -559,7 +559,10 @@
       "GEN-4 (T-039 verify, doc nit): slugger.py DEDUP RULE TABLE pseudocode 'while (originalSlug in occurrences)' should read 'slug' - 1-token fix; algorithm itself is github-parity",
       "GEN-4 (T-040 verify, prose nit): F6 rule says mdtoc 'all 9 producer tasks' - loose phrasing, T-027/T-029 were verifier-role; substance holds",
       "GEN-4 (T-041, human decision pending): physical .harness/active_role file (8 bytes, 'thinker') still on disk; nothing reads it; deleting is arguably outside the scratch-area exemption - operator call",
-      "P-020 follow-up (gen-4): assess whether sonnet-tier verifier verdicts (T-051 onward) maintain the quality bar of the opus-tier ones (compare rejection rates, evidence depth); formalize the proportional-verification rule into ORCHESTRATION.md if it proves out"
+      "P-020 follow-up (gen-4): assess whether sonnet-tier verifier verdicts (T-051 onward) maintain the quality bar of the opus-tier ones (compare rejection rates, evidence depth); formalize the proportional-verification rule into ORCHESTRATION.md if it proves out",
+      "GEN-4 (T-052 join): T-052's own acceptance criterion prescribed bare 'node --test' which false-greens (0 tests, exit 0) on the tests/test_*.js layout - a literal-minded verifier would have passed the epic running nothing. Rule: criteria must carry the exact layout-matching command AND verifiers must assert nonzero test counts",
+      "GEN-4 (recurring, 4+ incidents): backtick/$() in blackboard.py --note text gets shell-substituted, corrupting notes. Rule candidates: note-from-file/stdin support in the CLI, or a documented no-backticks convention (now in several worker prompts ad hoc)",
+      "GEN-4 (T-049/T-052): 'verbatim promotion' is imprecise - correct promotions legitimately rename candidate-identifying strings and strip candidate self-test blocks. Define: algorithm verbatim + decoupled identifiers/self-tests, so byte-diff checks neither false-fail nor false-pass"
     ],
     "readiness_criteria": {
       "_source": "audit_gen3.md section on production readiness, falsifiability confirmed by harness-verifier (criterion 7 flagged borderline)",

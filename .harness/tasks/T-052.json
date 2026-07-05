@@ -11,6 +11,14 @@
     "VERDICT: mark the epic done ONLY if all the above hold; otherwise re-open the offending task with a specific REJECTED note (replayable). Record the OPEN-QUESTION taxonomy note for any residual friction to feed the gen-4 audit.",
     "SHARED CONVENTIONS: CommonJS, zero deps, UTC. Run from projects/cronsplain/."
   ],
-  "context_files": [".harness/plan.md"],
-  "notes": []
+  "context_files": [
+    ".harness/plan.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-07-05T06:21:39Z",
+      "agent": "harness-verifier",
+      "note": "EPIC ACCEPTED (independent replay; owns-nothing coordinator join, override used, no separate producer, harness-verifier authored no cronsplain source). Suite via node --test tests/*.js and npm test: 93 pass 0 fail. E2E hand-verified: DOM/DOW-OR union, leap 2028/2032/2036, exclusivity next-minute, invalid expr clean exit1 no stack. Zero deps, CommonJS, git clean, candidates intact, promotion algorithm verbatim. F6 rotation all producer!=approver, 4 distinct approvers, join approver distinct from all producers and from T-049 approver verifier-d. MILESTONE: first non-Python artifact shipped end to end (Node CommonJS). Gen-4 new frictions: (1) node --test false-green: bare node --test finds 0 tests exit 0 due to tests/ + test_ layout vs node default discovery; criterion command imprecise. (2) backtick-in-note shell corruption recurring; use single-quote/backtick-free notes. (3) promotion-verbatim imprecise: promotion severs candidate self-test/vectors dep and renames prefix. Full evidence in verifier report."
+    }
+  ]
 }

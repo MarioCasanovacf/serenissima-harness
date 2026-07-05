@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T06:10:18Z",
-  "updated_by": "main",
+  "updated_at": "2026-07-05T06:21:39Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1824,7 +1824,7 @@
     "T-051": {
       "epic": "cronsplain",
       "title": "cronsplain CLI + integration + README: bin/cronsplain.js + lib/cli.js + tests/test_cli.js + tests/test_integration.js + README.md",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1850,12 +1850,14 @@
         "ts": "2026-07-05T06:10:18Z"
       },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T06:16:50Z",
+      "completed_by": "harness-verifier"
     },
     "T-052": {
       "epic": "cronsplain",
       "title": "cronsplain epic FINAL JOIN: replay full node --test suite + e2e explain/next; verdict the epic",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -1871,7 +1873,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T06:21:39Z",
+      "completed_by": "harness-verifier"
     },
     "T-053": {
       "epic": "gen-4",
