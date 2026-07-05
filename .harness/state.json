@@ -120,9 +120,9 @@
         "last_outcome_at": "2026-07-05T00:56:50Z"
       },
       "substrate-worker-2": {
-        "tasks_done": 9,
+        "tasks_done": 10,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T08:05:24Z"
+        "last_outcome_at": "2026-07-05T02:04:01Z"
       },
       "evolution-analyst": {
         "tasks_done": 2,
@@ -351,7 +351,11 @@
       "F5 (T-027): slugger_c's cited rule-table doc style is an uplift candidate for the promoted slugger_b",
       "F6 (epic mdtoc): verdict-layer monoculture - harness-verifier was sole approver of all 9 producer tasks and authored the join; consider verifier rotation or second reviewer on epic joins",
       "F7 (events.jsonl): task_updated status=done events carry NO actor field; top-level agent is uniformly the ambient session id - producer!=approver auditing is reconstruction-dependent. Add explicit actor to verdict events",
-      "P-009 follow-ups: (i) done-on-done now refused (idempotence loss, coherent but note it); (ii) F7 remains open for events other than task_updated; (iii) consider lifetime-authorship mode if producer-of-record proves too lax in practice"
+      "P-009 follow-ups: (i) done-on-done now refused (idempotence loss, coherent but note it); (ii) F7 remains open for events other than task_updated; (iii) consider lifetime-authorship mode if producer-of-record proves too lax in practice",
+      "U1 (Thariq unknowns, pre): planner contract - plan.md must carry an Unknowns section per epic (4 quadrants); blocking known-unknowns resolved with the human or converted to spike tasks BEFORE publishing the DAG. Target: .claude/agents/orchestration-planner.md + plan.md template (code-level, no NLAH gate)",
+      "U2 (Thariq unknowns, during): note taxonomy DECISION/DEVIATION/TRADEOFF/OPEN-QUESTION as a convention (optionally blackboard.py --note-kind flag) so audits can count and chase OPEN-QUESTIONs mechanically",
+      "U3 (Thariq unknowns, pre): blindspot-pass step - before dispatching a new epic, a thinker interviews the human with concrete assumptions to surface unknown-knowns (interview pattern); coordinator uses AskUserQuestion",
+      "U4 (Thariq unknowns, post): before heavyweight human gates (first git push), the epic join must produce an explainer + 3 comprehension questions for the human - aligns with operator rule 'no publicar lo que no se entiende' (2026-07-04)"
     ]
   }
 }

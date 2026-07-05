@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 2,
-  "updated_at": "2026-07-05T00:56:50Z",
-  "updated_by": "verifier-b",
+  "updated_at": "2026-07-05T02:04:01Z",
+  "updated_by": "verifier-c",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -995,6 +995,31 @@
       "created_by": "verifier-b",
       "completed_at": "2026-07-05T00:56:36Z",
       "completed_by": "verifier-b"
+    },
+    "T-032": {
+      "epic": "gen-3-early",
+      "title": "migracion_proyecto.py: one-command harness migration to another repo (HTML explainer section 10 as code)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-032.json",
+      "artifacts": [
+        ".harness/bin/migracion_proyecto.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "Replay: (1) python3 -m py_compile .harness/bin/migracion_proyecto.py -> clean. (2) mkdir a fresh git-init'd scratch dir with a dummy CLAUDE.md + one source file (outside this repo, e.g. under the session scratchpad or /tmp). (3) touch a marker file, sleep 1, run 'python3 .harness/bin/migracion_proyecto.py <scratch> --dry-run' from THIS repo root -> expect exit 0, full action plan printed, and 'find <scratch> -newer <marker>' empty (zero writes), git status in scratch stays clean. (4) run 'python3 .harness/bin/migracion_proyecto.py <scratch>' (no flags) -> exit 0; then cd <scratch> and run: blackboard.py status (expect empty gen-N board matching this repo's state.json harness_generation, 1 migration announcement citing this repo's path+generation+date), add-task --id T-001 ... --agent x, claim T-001 --agent x, lock.py acquire/release <a file> --holder x --task T-001, update --status in_progress --note ..., handoff --to-role verifier, session.py register/list/unregister -- all should succeed and <scratch>/.harness/logs/events.jsonl should show the events (proves the copied bin/ resolves ROOT to the NEW repo, not the source). Verify .claude/settings.json+agents/+skills/harness-status/SKILL.md exist in <scratch>; CLAUDE.md ends with '<!-- END UNIVERSAL-HARNESS -->' and the dummy content above it is untouched; .gitignore has the 5 new lock/log ignore lines; <scratch>/.harness/bin/migracion_proyecto.py exists (self-propagation). (5) re-run 'migracion_proyecto.py <scratch>' without --force -> expect exit 1 refusal, .harness untouched. Re-run with --force -> expect exit 0, <scratch>/.harness.bak-1 created via rename (verify its tasks/T-001.json and logs/events.jsonl survive, i.e. nothing was deleted), fresh .harness written, and the CLAUDE.md/.gitignore steps report SKIP (idempotent, markers/lines already present) on this second pass. (6) In THIS repo run 'git status --short' -> expect only .harness/blackboard.json, .harness/state.json (normal CLI churn from claim/update/handoff) and the new .harness/tasks/T-032.json + .harness/bin/migracion_proyecto.py as changes; docs/harness-explainer.html shows a PRE-EXISTING uncommitted diff unrelated to this task (predates my claim, not touched by me -- verify via 'git log -1 --format=%cd -- docs/harness-explainer.html' vs this task's claim timestamp). All 5 acceptance probes (a-e) from T-032.json observed passing; see task notes for the full transcript.",
+        "ts": "2026-07-05T01:57:48Z"
+      },
+      "created_at": "2026-07-05T01:50:40Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T02:04:01Z",
+      "completed_by": "verifier-c"
     }
   }
 }

@@ -79,6 +79,7 @@
   <a href="#gates">8 · Gates y límites</a>
   <a href="#evolucion">9 · Evolución</a>
   <a href="#migrar">10 · Llevarlo a otro repo</a>
+  <a href="#unknowns">11 · Unknowns (Thariq)</a>
   <a href="#glosario">Glosario</a>
 </nav>
 
@@ -226,10 +227,21 @@ python3 .harness/bin/session.py unregister substrate-worker-1   # al cerrar</cod
   "hay 4 paths absolutos en el log". El verificador contó: eran 9, y 4 venían de otro programa.
   RECHAZADA → el analista re-diagnosticó (el fix correcto era más amplio) → re-entregó → aceptada.
   Sin este gate, habríamos aplicado un fix que no arreglaba el problema.</div>
-  <div class="box rule"><b>Caso 2 — el desliz que enseñó</b> Un worker, por omitir un flag, marcó
-  su propia tarea como <code>done</code>. Lo divulgó y revirtió — pero probó que la regla era
-  social, no física. <b>Hoy mismo se está corrigiendo (T-031)</b>: el CLI rechazará
-  <code>done</code> si la tarea no pasó por <code>review</code> o si quien lo pide es el productor.</div>
+  <div class="box rule"><b>Caso 2 — el desliz que enseñó (y ya está corregido: P-009)</b> Un worker,
+  por omitir un flag, marcó su propia tarea como <code>done</code>. Lo divulgó y revirtió — pero
+  probó que la regla era social, no física. <b>Corregido y verificado (T-031)</b>: el CLI ahora
+  rechaza <code>done</code> si la tarea no pasó por <code>review</code> o si quien lo pide es el
+  productor de registro; el escape (<code>--override-producer-check</code>) exige nota y queda
+  logueado. Un segundo revisor independiente (<code>verifier-b</code>) lo atacó con 14 intentos de
+  bypass — incluido el vector exacto del desliz original — y todos fueron rechazados.</div>
+  <h3>Contra la monocultura de veredicto (hallazgo F6)</h3>
+  <p>Que un solo par de ojos apruebe todo un proyecto propaga sus puntos ciegos a todo lo aprobado
+  — como un paper revisado por un solo árbitro. Cada verificador que se lanza ya es una instancia
+  fresca sin memoria compartida, pero todos nacen de la misma definición de rol, y ahí vive el
+  riesgo. La práctica adoptada: <b>en veredictos grandes (joins de epic, guardrails), rotar al
+  revisor</b> — una identidad distinta con un lente distinto (correctitud vs reproducibilidad vs
+  hostilidad hacia el propio mecanismo). Estreno real: el veredicto de T-031 lo dio
+  <code>verifier-b</code>, no el verificador que aprobó todo lo anterior.</p>
 </section>
 
 <section id="torneo">
@@ -276,6 +288,11 @@ python3 .harness/bin/session.py unregister substrate-worker-1   # al cerrar</cod
   y pegas la respuesta de vuelta. Tu intuición es correcta: automatizarlo requeriría una API;
   por eso el eslabón eres tú, y el harness lo trata como un motor más que simplemente tarda lo
   que tú tardes.</div>
+  <div class="box care"><b>Sobre el punto 6.4 (publicación)</b> Decisión vigente del operador:
+  <b>nada se sube a GitHub</b> hasta tener algo útil, comprobable, aplicable a proyectos varios
+  — y hasta que tú mismo lo entiendas lo bastante para defenderlo. El gate de <code>git push</code>
+  sigue cerrado; todo vive en commits locales (revertibles). Este explicador y USAGE.md existen
+  precisamente para cerrar esa brecha de entendimiento antes de publicar.</div>
 </section>
 
 <section id="evolucion">
@@ -340,6 +357,42 @@ cat "$H/CLAUDE.md" &gt;&gt; CLAUDE.md   # y edita para fusionar con criterio
   1) Abrir la sesión en otra carpeta — los hooks no cargan y pierdes el guardián de locks.
   2) Copiar el tablero viejo con tareas de otro proyecto — confunde al despachador.
   3) Olvidar fusionar CLAUDE.md — los agentes pierden sus reglas de comportamiento.</div>
+</section>
+
+<section id="unknowns">
+  <p class="kicker">Componente 11 · próxima incorporación (gen-3)</p>
+  <h2>El framework de "unknowns" de Thariq (equipo Claude Code) y cómo encaja aquí</h2>
+  <p>Thariq Shihipar sostiene que con Fable 5 la calidad del resultado ya no la limita el modelo,
+  sino <b>la capacidad del usuario de aclarar sus propios "unknowns"</b> antes, durante y después
+  del trabajo. Su matriz de cuatro cuadrantes:</p>
+  <table>
+    <tr><th>Cuadrante</th><th>Qué es</th><th>Dónde vive (o vivirá) en el harness</th></tr>
+    <tr><td><b>Known knowns</b></td><td>Lo que declaraste explícitamente en el prompt/spec</td>
+        <td>Ya cubierto: descripciones y criterios de aceptación de cada tarea del tablero.</td></tr>
+    <tr><td><b>Known unknowns</b></td><td>Preguntas que sabes que no has respondido</td>
+        <td>Gen-3 (U1): el planner deberá listarlas por epic y convertir cada una en pregunta al humano o en tarea-spike explícita antes de despachar.</td></tr>
+    <tr><td><b>Unknown knowns</b></td><td>Lo tan obvio para ti que jamás lo escribirías — pero lo reconoces al verlo</td>
+        <td>Gen-3 (U3): "pase de puntos ciegos" pre-vuelo — un thinker entrevista al humano con supuestos concretos para confirmar/refutar (el patrón interview de Thariq).</td></tr>
+    <tr><td><b>Unknown unknowns</b></td><td>Lo que ni siquiera consideraste</td>
+        <td>Ya cubierto en parte: es exactamente lo que caza el bucle evolutivo (fricciones → next_audit_inputs → auditoría). Gen-3 lo formaliza en las 3 fases de Thariq (abajo).</td></tr>
+  </table>
+  <h3>Las tres fases de Thariq, mapeadas al ciclo del harness</h3>
+  <table>
+    <tr><th>Fase</th><th>Técnica de Thariq</th><th>Traducción al harness</th></tr>
+    <tr><td><b>Pre</b></td><td>"Blindspot pass": pídele a Claude que identifique tus unknowns antes de implementar</td>
+        <td>Paso nuevo del planner (U1/U3): sección "Unknowns" obligatoria en <code>plan.md</code> por epic, con los 4 cuadrantes; las known-unknowns bloqueantes se resuelven con el humano ANTES de publicar el DAG.</td></tr>
+    <tr><td><b>Durante</b></td><td>Mantener <code>implementation-notes.md</code> con decisiones, desviaciones, tradeoffs y preguntas abiertas</td>
+        <td><b>Ya existe</b> — es el pilar de observabilidad de decisión: las notas de tarea "esperaba X, pasó Y" y las desviaciones divulgadas (lo viste con <code>tests/__init__.py</code> y el filo de <code>check</code>). Gen-3 (U2) lo estandariza con taxonomía: <code>DECISION / DEVIATION / TRADEOFF / OPEN-QUESTION</code> en las notas, para que las auditorías puedan contarlas y perseguir las abiertas.</td></tr>
+    <tr><td><b>Post</b></td><td>"Pitches, explainers y quizzes" para verificar tu entendimiento antes del merge</td>
+        <td>Este documento ES la fase post (un explainer). Gen-3 (U4): antes de cada gate humano de peso (p. ej. el primer <code>git push</code>), el join produce explainer + 3 preguntas de comprensión — alineado con tu regla 6.4: no se publica lo que no se entiende.</td></tr>
+  </table>
+  <p class="why">Por qué encaja tan bien: el harness ya operaba las fases "durante" (notas de
+  decisión) y "post" (veredictos adversariales + explainers) sin saber que tenían nombre. Lo que
+  falta de verdad es la fase "pre" — hoy el planner descompone sin declarar formalmente qué no
+  sabe. U1–U4 quedaron registradas en <code>state.json → evolution.next_audit_inputs</code> y
+  seguirán el camino normal: auditoría gen-3 → propuestas falsificables → verificación → aplicación.
+  Fuentes: el post de X que citaste (resumido por The Decoder, 2026) y el sitio acompañante de
+  Thariq (<code>thariqs.github.io/html-effectiveness/unknowns</code>).</p>
 </section>
 
 <section id="glosario">
