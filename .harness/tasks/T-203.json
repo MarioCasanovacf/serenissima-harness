@@ -1,0 +1,24 @@
+{
+  "id": "T-203",
+  "title": "SCRATCH swarm smoke 203 (disposable)",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T05:27:23Z",
+      "agent": "swarm-a",
+      "note": "swarm swarm-a working T-203"
+    },
+    {
+      "ts": "2026-07-05T05:27:23Z",
+      "agent": "swarm-a",
+      "note": "HANDOFF -> verifier: swarm swarm-a finished T-203; trivial scratch work"
+    },
+    {
+      "ts": "2026-07-05T05:27:23Z",
+      "agent": "fable-5-coordinator",
+      "note": "SCRATCH swarm-smoke disposal: task was disposable concurrency-test fodder"
+    }
+  ]
+}

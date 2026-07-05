@@ -1,0 +1,24 @@
+{
+  "id": "T-211",
+  "title": "SCRATCH swarm smoke 211 (disposable, T-054 replay)",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T05:31:45Z",
+      "agent": "swarm-d-worker",
+      "note": "swarm swarm-d-worker working T-211"
+    },
+    {
+      "ts": "2026-07-05T05:31:45Z",
+      "agent": "swarm-d-worker",
+      "note": "HANDOFF -> verifier: swarm swarm-d-worker finished T-211 (scratch)"
+    },
+    {
+      "ts": "2026-07-05T05:33:05Z",
+      "agent": "verifier-d",
+      "note": "SCRATCH swarm-smoke disposal (T-054 replay): disposable concurrency-test fodder"
+    }
+  ]
+}

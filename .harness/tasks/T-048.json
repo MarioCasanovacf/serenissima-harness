@@ -12,6 +12,29 @@
     "SHARED CONVENTIONS: CommonJS, zero deps (node core only), UTC everywhere. vectors.js INTERFACE_DOC is authoritative.",
     "SWARM-SMOKE NOTE: T-047 and T-048 share no file and both depend only on T-046 — claim concurrently from two different sessions (one may be headless `claude -p`)."
   ],
-  "context_files": ["projects/cronsplain/candidates/vectors.js"],
-  "notes": []
+  "context_files": [
+    "projects/cronsplain/candidates/vectors.js"
+  ],
+  "notes": [
+    {
+      "ts": "2026-07-05T05:26:20Z",
+      "agent": "substrate-worker-2",
+      "note": "plan: implement field-cascade carry-increment nextOccurrences in schedule_b.js (minute-then-hour-then-day carry with DOM/DOW OR at day level, safety cap on day-carries), self-check against vectors.js before handoff"
+    },
+    {
+      "ts": "2026-07-05T05:29:33Z",
+      "agent": "substrate-worker-2",
+      "note": "implementation complete. self-check: from projects/cronsplain/candidates run node -e \"const {runAgainst}=require('./vectors'); console.log(runAgainst(require('./schedule_b').nextOccurrences))\" -> { passed: 11, total: 11, failures: [] }. also ran the harness-provided repo-root replay command with identical passed=11 total=11 exit 0. extra sanity (not part of vectors): impossible schedule 0 0 30 2 * throws a documented error within the day-carry safety cap instead of hanging; centurial leap-year gap 1896-02-29 -> 1904-02-29 (8yr gap, 1900 not leap) resolves correctly, well inside SAFETY_CAP_DAYS=3660."
+    },
+    {
+      "ts": "2026-07-05T05:29:42Z",
+      "agent": "substrate-worker-2",
+      "note": "HANDOFF -> verifier: candidate B (field-cascade carry) done. Owns only projects/cronsplain/candidates/schedule_b.js; requires ./vectors only inside the require.main self-check guard; did not read or touch schedule_a.js. Replay: cd 'projects/cronsplain/candidates' then node -e \"const {runAgainst}=require('./vectors'); console.log(runAgainst(require('./schedule_b').nextOccurrences))\" -> observed { passed: 11, total: 11, failures: [] }. Also replayed the repo-root one-liner from the task brief with identical result and exit 0. Method: field-cascade carry increment (next valid minute in-hour via Set search; else next valid hour in-day via Set search; else carry day-by-day via calendar-correct addOneDay/daysInMonth, testing month+DOM/DOW-OR at each day, up to SAFETY_CAP_DAYS=3660 (~10yr, covers the worst-case 8yr centurial leap-Feb29 gap e.g. 1896->1904) before throwing on an impossible schedule such as 0 0 30 2 *. Verified: impossible schedule throws promptly instead of hanging; 1896-02-29->1904-02-29 gap resolves correctly. No changes to vectors.js or lib/parser.js."
+    },
+    {
+      "ts": "2026-07-05T05:35:38Z",
+      "agent": "verifier-c",
+      "note": "VERIFIED (verifier-c, CONFORMANCE only; not ranked - T-049 judges). (1) Self-check replayed: runAgainst(schedule_b.nextOccurrences)={passed:11,total:11,failures:[]}. (2) Interface conformance harness OK on 4 cases: sec=0,ms=0,strictly-after(exclusive),ascending,exactly count,.000Z. Exclusivity probed from==match instant x3 (*/20 */6 from 00:00->00:20; 0 12 * * 0 from Sun12:00->next Sun; 0 0 28 from exact->Aug28) all correctly skip. (3) Method authenticity: code CASCADES - findTimeInDay uses Set lookups (smallestAtLeast/smallestGreaterThan over sorted Sets), month gaps use day-carry loop (nextValidDayAfter/addOneDay), NO minute scan; require('./vectors') only inside require.main guard (line 264); no schedule_a import (grep NONE). Timing corroboration: B=0.37ms vs A minute-tick=95ms on Feb29 5yr gap = 256x faster, identical output -> genuine cascade. (4) Novel exprs match my OWN hand-computed truth: 0 0 29 2 * from2023->2024/2028-02-29; 30 8 15 * 1->union Mon+15th(7/6,13,15,20,27,8/3)@08:30; 0 12 * * 0->Sun 7/5,12,19,26; 59 23 31 12 *->2026/2027-12-31T23:59; */20 */6->min-inner/hr-outer cross-product correct. (5) CROSS-CANDIDATE A-vs-B DIFF: 50 inputs(count=5)=50 identical/0 diverge; big sweep 400 satisfiable inputs across counts{1,2,3,5,8} x10 from-dates(incl non-leap centurial 2100 & leap boundaries)=400 identical/0 diverge. Total 450 inputs, ZERO divergence. Impossible schedules excluded by design (A returns partial/0, B throws; both terminate). (6) Safety cap: '0 0 30 2 *' throws documented Error in 0.70ms; SAFETY_CAP_DAYS=3660 documented (covers 8yr centurial leap gap). (7) Discipline: owns only schedule_b.js; lock.py status=no active locks (clean); handoff clean. HOUSEKEEPING: lock.py status shows no active lock files; sweep intentionally NOT run per task instruction (swarm replay live)."
+    }
+  ]
 }

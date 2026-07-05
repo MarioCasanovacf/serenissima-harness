@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T04:54:47Z",
-  "updated_by": "substrate-worker-2",
+  "updated_at": "2026-07-05T05:35:38Z",
+  "updated_by": "verifier-c",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1657,7 +1657,7 @@
     "T-045": {
       "epic": "cronsplain",
       "title": "cronsplain parser: lib/parser.js + tests/test_parser.js (5-field cron -> normalized parse-result shape)",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1678,12 +1678,14 @@
         "ts": "2026-07-05T04:54:00Z"
       },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T04:59:24Z",
+      "completed_by": "harness-verifier"
     },
     "T-046": {
       "epic": "cronsplain",
       "title": "cronsplain schedule golden vectors: candidates/vectors.js (candidate-agnostic interface + ground truth)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1693,15 +1695,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-046.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/candidates/vectors.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "HANDOFF -> verifier. OWNS EXACTLY projects/cronsplain/candidates/vectors.js (git status confirms no other file in the repo touched by this task). INTERFACE PINNED (module docstring + INTERFACE_DOC export): nextOccurrences(parsed, fromDate, count) -> Date[] ; returns exactly count UTC Dates (Date.UTC-built, seconds=0 ms=0), each STRICTLY AFTER fromDate (exclusive boundary), ascending, matching parsed.fields.{minute,hour,month} via plain Set membership and applying DOM/DOW coupling: both restricted -> union (dayOfMonth OR dayOfWeek); exactly one restricted -> only that field constrains; neither restricted -> every day matches. VECTOR INVENTORY (11 cases, 38 total expected occurrences, all categories from the T-046 acceptance criteria covered): (a) simple step */15 * * * * [1]; (b) daily 0 0 * * * + exclusivity-at-from [1]; (c) month rollover 0 0 28 * * (day-28 safe from short-month edge, from lands on match to also reinforce exclusivity) [1]; (d) year rollover 0 0 1 1 * Dec31->Jan1 [1]; (e) leap Feb29 0 0 29 2 * (2023->2024 leap->2028 leap, skips non-leap 2025/2026/2027) [1]; (f) DOM/DOW OR quirk: 0 0 13 * 5 (13th-or-Friday, July2026: Fri 3/10/17/24/31 plus 13th which IS a Monday proving union pulls in a dom-only day) [1] and 0 0 1 * 1 (1st-or-Monday, from lands exactly on July1 which matches via DOM only so exclusivity+OR both exercised together; Mon 6/13/20/27 plus Aug1 which is a Saturday proving union again) [1]; (g) one-field-* both directions: 0 0 15 * * dom-restricted/dow=* [1] and 0 9 * * 1-5 dow-restricted/dom=* weekend-skip [1]; bonus end-of-month skip 0 0 31 * * (Feb/Apr have no 31st, skipped entirely, from lands on match) [1]; bonus step-across-range 0 9-17/4 * * * hours {9,13,17} with daily rollover after last slot [1]. Every weekday used in comments (2026-07-01=Wed .. 2026-08-01=Sat) is derived from the closed-form dow=(3+dayOfYear) mod 7 anchored on 2026-01-01=Thursday (itself derived from 2024-01-01=Monday via +366 then +365 day mod-7 shifts), cited inline in the module docstring. SELF-CHECK DISCLOSURE (per task instructions, NOT shipped): wrote a throwaway independent brute-force reference nextOccurrences (plain minute-tick scan using only Date.UTC/getUTC* getters and the same domRestricted/dowRestricted OR-rule, written WITHOUT reusing any of the hand day-of-week arithmetic used to author the vectors) at /private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/15636cc2-22dd-4ee8-8047-516cb2b65a41/scratchpad/scratch_reference.js, ran it via runAgainst(nextOccurrences) against every VECTOR: result = 11/11 passed, 0 failures (observed output: 'scratch-reference cross-check: 11/11 vectors passed' / 'ALL VECTORS CONFIRMED against independent brute-force reference', exit 0). REPLAY COMMANDS (from projects/cronsplain/): (1) node candidates/vectors.js -> observed: 'cronsplain schedule golden vectors (T-046) -- self-check OK', VECTORS=11, expected occurrences total=38, exit 0. (2) node -e \"const v=require('./candidates/vectors'); console.log(typeof v.runAgainst, Array.isArray(v.VECTORS), v.VECTORS.length)\" -> observed: 'function true 11' (matches the acceptance item's required pattern, N=11>=10). (3) to replay the scratch cross-check yourself, the reference script is disposable/not part of the deliverable; a verifier can write an equivalent brute-force nextOccurrences and call require('./candidates/vectors').runAgainst(fn) directly, or trust the disclosed 11/11 result above. CRITERIA CHECKLIST: OWNS-EXACTLY(candidates/vectors.js only, no candidate import) OK; INTERFACE documented in docstring+INTERFACE_DOC export OK; VECTORS array shape {expr,from,count,expected} OK; all 8 required categories (a-h) present OK; runAgainst(fn)->{passed,total,failures:[{expr,expected,got}]} imports no candidate OK; >=10 vectors with hand-computed+cited expected values OK (11 provided); CommonJS/zero-deps/UTC OK; standalone runnable node candidates/vectors.js prints count and exits 0 OK; importable via require OK. DEVIATIONS: none from the T-046.json acceptance criteria; added 2 bonus vectors (end-of-month short-month skip, step-across-range) beyond the minimum for extra tournament robustness — flagged here as ADDITIVE, not a substitution for any required category. Locks released after this handoff.",
+        "ts": "2026-07-05T05:04:25Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T05:08:16Z",
+      "completed_by": "harness-verifier"
     },
     "T-047": {
       "epic": "cronsplain",
       "title": "[HEADLESS-OK] cronsplain schedule candidate A (brute-force minute-tick): candidates/schedule_a.js",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1711,15 +1722,24 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-047.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/candidates/schedule_a.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-1",
+        "note": "Candidate A (brute-force minute-tick) implemented in projects/cronsplain/candidates/schedule_a.js. Owns exactly that file; no other file touched. Method: start at fromDate+1min (minute-aligned, seconds=0/ms=0), then advance strictly one minute at a time via cursor=new Date(cursor.getTime()+60000), testing each visited minute against parsed.fields Sets (minute/hour/month via .has, month compared as getUTCMonth()+1) plus a dayMatches() helper implementing the DOM/DOW OR-coupling exactly per the interface doc (both restricted -> union; one restricted -> that field only; neither -> any day). Collects matches in visit order (already ascending) until count reached. SAFETY CAP: MAX_MINUTES_TO_SCAN=6,000,000 (~11.4 years of minutes), documented in the file's header comment and inline at the constant; chosen with >2x margin over the widest golden-vector gap (the leap Feb-29 vector spans ~5.16 years = 2,714,400 minutes, 2023-01-01 to 2028-02-29); an impossible schedule like 0 0 30 2 * still terminates deterministically instead of looping forever, returning whatever matches (fewer than count) were found before the cap. Deviation note: acceptance criteria's example cap (~4yr/2,100,000) was too small to cover the Feb-29 vector (needs ~5.16yr) so I raised the cap to 6,000,000 (~11.4yr) -- still a hard bound, just large enough that every golden vector resolves comfortably inside it. SELF-CHECK replay command (run from projects/cronsplain/candidates/): node -e \"const {runAgainst}=require('./vectors'); console.log(runAgainst(require('./schedule_a').nextOccurrences));\" -- observed output: { passed: 11, total: 11, failures: [] }. Also verified via the repo-root variant: node -e \"const v=require('./projects/cronsplain/candidates/vectors.js'); const s=require('./projects/cronsplain/candidates/schedule_a.js'); const r=v.runAgainst(s.nextOccurrences); console.log('passed='+r.passed+' total='+r.total); process.exit(r.passed===r.total?0:1);\" -- exit code 0, passed=11 total=11. module.exports = { nextOccurrences } confirmed. Did not read or touch candidates/schedule_b.js (T-048, concurrent sibling task by a different agent -- confirmed via git diff that only that task's own note was appended by its own worker, not by me).",
+        "ts": "2026-07-05T05:27:23Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T05:31:56Z",
+      "completed_by": "harness-verifier"
     },
     "T-048": {
       "epic": "cronsplain",
       "title": "[HEADLESS-OK] cronsplain schedule candidate B (field-cascade carry): candidates/schedule_b.js",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1729,10 +1749,19 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-048.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/candidates/schedule_b.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-2",
+        "note": "candidate B (field-cascade carry) done. Owns only projects/cronsplain/candidates/schedule_b.js; requires ./vectors only inside the require.main self-check guard; did not read or touch schedule_a.js. Replay: cd 'projects/cronsplain/candidates' then node -e \"const {runAgainst}=require('./vectors'); console.log(runAgainst(require('./schedule_b').nextOccurrences))\" -> observed { passed: 11, total: 11, failures: [] }. Also replayed the repo-root one-liner from the task brief with identical result and exit 0. Method: field-cascade carry increment (next valid minute in-hour via Set search; else next valid hour in-day via Set search; else carry day-by-day via calendar-correct addOneDay/daysInMonth, testing month+DOM/DOW-OR at each day, up to SAFETY_CAP_DAYS=3660 (~10yr, covers the worst-case 8yr centurial leap-Feb29 gap e.g. 1896->1904) before throwing on an impossible schedule such as 0 0 30 2 *. Verified: impossible schedule throws promptly instead of hanging; 1896-02-29->1904-02-29 gap resolves correctly. No changes to vectors.js or lib/parser.js.",
+        "ts": "2026-07-05T05:29:42Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T05:35:38Z",
+      "completed_by": "verifier-c"
     },
     "T-049": {
       "epic": "cronsplain",
@@ -1757,7 +1786,7 @@
     "T-050": {
       "epic": "cronsplain",
       "title": "cronsplain explain: lib/explain.js + tests/test_explain.js (parsed cron -> deterministic English)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1767,10 +1796,20 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-050.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/lib/explain.js",
+        "projects/cronsplain/tests/test_explain.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker-3",
+        "note": "WORKER DONE, replay to verify. Files owned/touched: projects/cronsplain/lib/explain.js (new), projects/cronsplain/tests/test_explain.js (new). No other file touched.\nREPLAY: cd projects/cronsplain then run: node --test tests/test_explain.js  -> EXPECTED/OBSERVED: tests 19, pass 19, fail 0. Also ran full suite node --test tests/*.js -> tests 57, pass 57, fail 0 (no regression vs T-044/T-045 tests).\nVERIFY command from acceptance criteria: node -e \"console.log(require(./lib/explain).explain(*/15 * * * *))\" (fill in real quotes when replaying) -> OBSERVED stdout: Every 15 minutes, every day.\nSample outputs (expr -> explain(expr)), all asserted exactly in tests/test_explain.js:\n* * * * *  ->  Every minute.\n*/15 * * * *  ->  Every 15 minutes, every day.\n0 0 * * *  ->  At 00:00, every day.\n0 9-17 * * 1-5  ->  At minute 0 past every hour from 9 through 17, on Monday through Friday.\n0 0 13 * 5 (OR)  ->  At 00:00, on the 13th of the month or on Friday.\n*/15 0 * * *  ->  Every 15 minutes during hour 0, every day.\n0 9 * * 1-5  ->  At 09:00, on Monday through Friday.\n30 9 1 * *  ->  At 09:30, on the 1st of the month.\n0 0 1 * 1 (OR)  ->  At 00:00, on the 1st of the month or on Monday.\n0,30 * * * *  ->  At minutes 0 and 30 past every hour, every day.\n0 0 1 1,6 *  ->  At 00:00, on the 1st of the month, in January and June.\nInvalid: explain(@daily) throws CronParseError (expression=@daily); explain(60 0 * * *) throws CronParseError with field=minute.\nDESIGN/DEVIATION notes for review:\n1. explain(expr) = explainParsed(parse(expr)); explainParsed(parsed) also exported for pre-parsed input, per the OPTIONAL clause in the acceptance criteria.\n2. Error handling choice: CronParseError propagates UNCHANGED, undocumented-wrapping rejected by design (documented in the module docblock) -- matches criteria bullet 4 wording \"either...or\", chose propagate.\n3. Field-shape classification (every/single/range/step/rangeStep/list) is inferred from the Set numeric shape, not raw cron text (parser does not retain per-field raw text except the two *Restricted booleans) -- documented at top of lib/explain.js. This means e.g. */15 and the equivalent explicit list 0,15,30,45 render identically (intentional, same schedule).\n4. A 2-point uniform-diff Set (e.g. from */30) renders as an explicit list (minutes 0 and 30) rather than every 30 minutes -- this reproduces the delegators own pinned example wording exactly and avoids overclaiming step semantics from only 2 data points.\n5. OR-coupling wording uses lowercase or (on X or on Y) rather than AND, since the coupling is semantically a union/OR per parser.js docblock and the acceptance criteria own example itself says OR.\n6. Sentence omits a month clause entirely when month is unrestricted (no filler every month); when literally every field is unrestricted the whole sentence collapses to the fixed Every minute. per the pinned acceptance example (no redundant every day suffix in that one case only).\nAcceptance-criteria checklist:\n- OWNS EXACTLY explain.js + test_explain.js, no other file touched: YES (git status confirms only these two new files; T-045.json/T-046.json diffs in repo are from a concurrent T-046 worker, not this task).\n- EXPORT explain(expr)->string via parser.parse, deterministic: YES, plus explainParsed documented.\n- Field rendering (wildcard/step/list/range, month+dow names via MONTH_DISPLAY/DOW_DISPLAY): YES, covered by dedicated tests.\n- Both-restricted OR coupling expressed in prose: YES (0 0 13 * 5 and 0 0 1 * 1 cases).\n- Errors: CronParseError propagates cleanly, no stack trace from explain.js itself: YES, documented + tested.\n- tests/test_explain.js covers required exprs (*/15 * * * *, 0 0 * * *, 0 9-17 * * 1-5, both-restricted OR, invalid throw): YES, all present plus extra branch coverage (19 tests total).\n- CommonJS, zero deps, deterministic, run from projects/cronsplain: YES.\nNo blockers, no deviations requiring a decision from the verifier beyond reviewing the sentence-wording choices above.",
+        "ts": "2026-07-05T05:09:07Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T05:16:11Z",
+      "completed_by": "verifier-b"
     },
     "T-051": {
       "epic": "cronsplain",
@@ -1838,6 +1877,300 @@
       "created_by": "fable-5-coordinator",
       "completed_at": "2026-07-05T04:36:11Z",
       "completed_by": "verifier-b"
+    },
+    "T-200": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 200 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-200.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-b",
+        "note": "swarm swarm-b finished T-200; trivial scratch work",
+        "ts": "2026-07-05T05:27:22Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-201": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 201 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-201.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-a",
+        "note": "swarm swarm-a finished T-201; trivial scratch work",
+        "ts": "2026-07-05T05:27:22Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-202": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 202 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-202.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-b",
+        "note": "swarm swarm-b finished T-202; trivial scratch work",
+        "ts": "2026-07-05T05:27:22Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-203": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 203 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-203.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-a",
+        "note": "swarm swarm-a finished T-203; trivial scratch work",
+        "ts": "2026-07-05T05:27:23Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-204": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 204 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-204.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-b",
+        "note": "swarm swarm-b finished T-204; trivial scratch work",
+        "ts": "2026-07-05T05:27:23Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-205": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 205 (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-205.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-a",
+        "note": "swarm swarm-a finished T-205; trivial scratch work",
+        "ts": "2026-07-05T05:27:23Z"
+      },
+      "created_at": "2026-07-05T05:27:22Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:27:23Z",
+      "completed_by": "fable-5-coordinator"
+    },
+    "T-054": {
+      "epic": "gen-4",
+      "title": "Swarm coordination smoke (criterion 2): independently replay the multi-process concurrent claim/lock race",
+      "status": "done",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-054.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-05T05:28:06Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T05:34:27Z",
+      "completed_by": "verifier-d"
+    },
+    "T-206": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 206 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-206.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-c",
+        "note": "swarm swarm-c finished T-206 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
+    },
+    "T-207": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 207 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-207.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-d-worker",
+        "note": "swarm swarm-d-worker finished T-207 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
+    },
+    "T-208": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 208 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-208.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-c",
+        "note": "swarm swarm-c finished T-208 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
+    },
+    "T-209": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 209 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-209.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-d-worker",
+        "note": "swarm swarm-d-worker finished T-209 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
+    },
+    "T-210": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 210 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-210.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-c",
+        "note": "swarm swarm-c finished T-210 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
+    },
+    "T-211": {
+      "epic": "scratch-swarm",
+      "title": "SCRATCH swarm smoke 211 (disposable, T-054 replay)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-211.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "swarm-d-worker",
+        "note": "swarm swarm-d-worker finished T-211 (scratch)",
+        "ts": "2026-07-05T05:31:45Z"
+      },
+      "created_at": "2026-07-05T05:31:44Z",
+      "created_by": "verifier-d",
+      "completed_at": "2026-07-05T05:33:05Z",
+      "completed_by": "verifier-d"
     }
   }
 }

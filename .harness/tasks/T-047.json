@@ -12,6 +12,24 @@
     "SHARED CONVENTIONS: CommonJS, zero deps (node core only), UTC everywhere. See vectors.js INTERFACE_DOC for the authoritative interface.",
     "SWARM-SMOKE NOTE: T-047 and T-048 share no file and both depend only on T-046 — claim them concurrently from two different sessions (one may be headless `claude -p`)."
   ],
-  "context_files": ["projects/cronsplain/candidates/vectors.js"],
-  "notes": []
+  "context_files": [
+    "projects/cronsplain/candidates/vectors.js"
+  ],
+  "notes": [
+    {
+      "ts": "2026-07-05T05:25:54Z",
+      "agent": "main",
+      "note": "plan: brute-force minute-tick nextOccurrences in candidates/schedule_a.js, step 1 minute at a time testing parsed Sets with DOM/DOW OR rule, safety cap ~4yr minutes, self-check against vectors.js"
+    },
+    {
+      "ts": "2026-07-05T05:27:23Z",
+      "agent": "substrate-worker-1",
+      "note": "HANDOFF -> verifier: Candidate A (brute-force minute-tick) implemented in projects/cronsplain/candidates/schedule_a.js. Owns exactly that file; no other file touched. Method: start at fromDate+1min (minute-aligned, seconds=0/ms=0), then advance strictly one minute at a time via cursor=new Date(cursor.getTime()+60000), testing each visited minute against parsed.fields Sets (minute/hour/month via .has, month compared as getUTCMonth()+1) plus a dayMatches() helper implementing the DOM/DOW OR-coupling exactly per the interface doc (both restricted -> union; one restricted -> that field only; neither -> any day). Collects matches in visit order (already ascending) until count reached. SAFETY CAP: MAX_MINUTES_TO_SCAN=6,000,000 (~11.4 years of minutes), documented in the file's header comment and inline at the constant; chosen with >2x margin over the widest golden-vector gap (the leap Feb-29 vector spans ~5.16 years = 2,714,400 minutes, 2023-01-01 to 2028-02-29); an impossible schedule like 0 0 30 2 * still terminates deterministically instead of looping forever, returning whatever matches (fewer than count) were found before the cap. Deviation note: acceptance criteria's example cap (~4yr/2,100,000) was too small to cover the Feb-29 vector (needs ~5.16yr) so I raised the cap to 6,000,000 (~11.4yr) -- still a hard bound, just large enough that every golden vector resolves comfortably inside it. SELF-CHECK replay command (run from projects/cronsplain/candidates/): node -e \"const {runAgainst}=require('./vectors'); console.log(runAgainst(require('./schedule_a').nextOccurrences));\" -- observed output: { passed: 11, total: 11, failures: [] }. Also verified via the repo-root variant: node -e \"const v=require('./projects/cronsplain/candidates/vectors.js'); const s=require('./projects/cronsplain/candidates/schedule_a.js'); const r=v.runAgainst(s.nextOccurrences); console.log('passed='+r.passed+' total='+r.total); process.exit(r.passed===r.total?0:1);\" -- exit code 0, passed=11 total=11. module.exports = { nextOccurrences } confirmed. Did not read or touch candidates/schedule_b.js (T-048, concurrent sibling task by a different agent -- confirmed via git diff that only that task's own note was appended by its own worker, not by me)."
+    },
+    {
+      "ts": "2026-07-05T05:31:56Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (conformance only, not tournament rank): self-check replayed 11/11, exit 0, failures=[] via node runAgainst(schedule_a.nextOccurrences). Method authenticity: genuine brute-force minute-tick (cursor+=60000ms per step, minuteMatches per minute; NO cascade/jump-ahead); ZERO require() in file except a doc-comment mention of ../lib/parser; does NOT import ./schedule_b. Interface conformance probed independently: exclusivity (5 0 * * * from 00:05 match -> first result 07-05T00:05, from-minute skipped), sec>0 boundary (*/15 from 00:14:30 -> 00:15), count=20 > vector sizes -> exactly 20 ascending UTC sec/ms-zeroed. Novel-expr correctness (my computed truth == candidate): 0 0 29 2 * from 2023 -> 2024-02-29,2028-02-29 (leap) MATCH; 0 0 31 * * -> Jan31,Mar31,May31,Jul31,Aug31 (30-day months skipped) MATCH; 30 8 15 * 1 -> Jul6/13(Mon),Jul15(15th/Wed dom-only),Jul20/27(Mon),Aug3(Mon) DOM/DOW OR union MATCH; 0 12 * * 0 -> Jul5,12,19,26 Sundays MATCH. Safety cap MAX_MINUTES_TO_SCAN=6000000 present+documented (header+inline); impossible 0 0 30 2 * returns [] (0<3) in 210ms, terminates; ~11.4y bound is >2x the widest golden gap (~5.16y leap), reasonable. Discipline: git diff HEAD touches only CLI-managed .harness state; schedule_a.js standalone; schedule_a lock released by producer (only schedule_b held, by substrate-worker-2/T-048). Accept as valid disciplined tournament entry."
+    }
+  ]
 }

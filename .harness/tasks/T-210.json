@@ -1,0 +1,24 @@
+{
+  "id": "T-210",
+  "title": "SCRATCH swarm smoke 210 (disposable, T-054 replay)",
+  "description": "",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-05T05:31:45Z",
+      "agent": "swarm-c",
+      "note": "swarm swarm-c working T-210"
+    },
+    {
+      "ts": "2026-07-05T05:31:45Z",
+      "agent": "swarm-c",
+      "note": "HANDOFF -> verifier: swarm swarm-c finished T-210 (scratch)"
+    },
+    {
+      "ts": "2026-07-05T05:33:05Z",
+      "agent": "verifier-d",
+      "note": "SCRATCH swarm-smoke disposal (T-054 replay): disposable concurrency-test fodder"
+    }
+  ]
+}
