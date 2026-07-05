@@ -26,7 +26,13 @@ Examples:
 What it does (see docs/harness-explainer.html#migrar for the prose version):
   1. COPY MACHINERY -- .harness/bin/ (all CLIs, including this one), .harness/README.md,
                         .claude/settings.json, .claude/agents/, .claude/skills/harness-status,
-                        ORCHESTRATION.md, USAGE.md.
+                        ORCHESTRATION.md, USAGE.md. Target-owned files with these SAME NAMES
+                        are never silently clobbered (see SAFETY below): the .harness/bin and
+                        .harness/README.md items are covered by the whole-.harness backup gate
+                        (they only ever land on a freshly-emptied .harness/), but
+                        .claude/settings.json, ORCHESTRATION.md, USAGE.md, and any
+                        colliding-name file under .claude/agents/ or
+                        .claude/skills/harness-status get their own per-file guard.
   2. RESET STATE    -- fresh blackboard.json (tasks={}, generation carried over from the
                         source, one migration announcement); fresh state.json (schema/
                         limits/human_gates/agents.registry kept verbatim, reputation
@@ -44,9 +50,20 @@ What it does (see docs/harness-explainer.html#migrar for the prose version):
 
 SAFETY:
   - Refuses if <target-dir> does not exist.
+  - Refuses if <target-dir> exists but is not a directory (says "is not a
+    directory", not "does not exist").
   - Refuses if <target-dir>/.harness already exists, unless --force.
   - --force backs up (renames, NEVER deletes) the existing .harness to
     .harness.bak-<n> (first free n) before writing the fresh one.
+  - Target-owned .claude/settings.json, ORCHESTRATION.md, USAGE.md, and any
+    colliding-name file under .claude/agents/ or .claude/skills/harness-status
+    are NEVER silently overwritten: without --force each collision is
+    reported as [SKIP-EXISTS] and the target's own file is left byte-for-byte
+    intact (diff manually if you want to reconcile); with --force each
+    colliding file is individually backed up by RENAME to <name>.bak-<n>
+    (first free n, never deleted) before the new copy lands, reported as
+    [BACKUP] followed by [COPY]. Non-colliding files in those same
+    directories are copied normally regardless of --force.
   - --dry-run prints the full action plan and writes NOTHING (verify with
     `find <target-dir> -newer <marker-file>` -- see T-032 acceptance probe a).
   - Never modifies the SOURCE repo: every write targets <target-dir>.
@@ -95,10 +112,11 @@ GITIGNORE_ENTRIES = [
 # helpers
 # --------------------------------------------------------------------------
 
-def _next_backup_path(dst_harness):
+def _next_backup_path(path):
+    """First free '<path>.bak-<n>' sibling of path (works for files or dirs)."""
     n = 1
     while True:
-        candidate = dst_harness.parent / ".harness.bak-{}".format(n)
+        candidate = path.parent / "{}.bak-{}".format(path.name, n)
         if not candidate.exists():
             return candidate
         n += 1
@@ -141,17 +159,54 @@ def _task_json_template(now):
 # step 1: copy machinery
 # --------------------------------------------------------------------------
 
-def _copy_machinery(target, note, dry):
-    items = [
+def _copy_guarded_file(src, dst, note, dry, force):
+    """Copy a single file, never silently clobbering a pre-existing target file.
+
+    Without --force: if dst already exists, [SKIP-EXISTS] and leave it
+    byte-for-byte intact. With --force: [BACKUP] the existing dst by RENAME
+    to <name>.bak-<n> (first free n, never deleted), then [COPY] the new
+    file in. If dst does not exist yet, plain [COPY].
+    """
+    if dst.exists():
+        if not force:
+            note("SKIP-EXISTS", "{} already exists -- left intact (target-owned; diff "
+                                 "manually against {} if you want to reconcile)".format(dst, src))
+            return
+        backup = _next_backup_path(dst)
+        note("BACKUP", "{} -> {} (rename, no delete)".format(dst, backup))
+        if not dry:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.rename(backup)
+    note("COPY", "{} -> {}".format(src, dst))
+    if not dry:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def _copy_guarded_dir(src, dst_root, note, dry, force):
+    """Copy a directory tree file-by-file, guarding each colliding filename
+    individually (non-colliding files in the same tree are always copied)."""
+    if not src.exists():
+        note("SKIP", "source {} not found -- nothing to copy".format(src))
+        return
+    for src_file in sorted(src.rglob("*")):
+        if src_file.is_dir():
+            continue
+        rel = src_file.relative_to(src)
+        _copy_guarded_file(src_file, dst_root / rel, note, dry, force)
+
+
+def _copy_machinery(target, note, dry, force):
+    # These two live entirely under .harness/, which is guarded as a whole
+    # (refuse-unless-force + whole-dir backup-by-rename) before this function
+    # ever runs -- by the time we get here the destination .harness/ is
+    # always freshly empty, so a bulk copytree/copy2 here can never clobber
+    # target-owned content. Left exactly as before (T-032 behavior).
+    bulk_items = [
         (SRC_HARNESS_BIN, target / ".harness" / "bin", "dir"),
         (SRC_HARNESS_README, target / ".harness" / "README.md", "file"),
-        (SRC_CLAUDE_SETTINGS, target / ".claude" / "settings.json", "file"),
-        (SRC_CLAUDE_AGENTS, target / ".claude" / "agents", "dir"),
-        (SRC_CLAUDE_SKILL, target / ".claude" / "skills" / "harness-status", "dir"),
-        (SRC_ORCHESTRATION, target / "ORCHESTRATION.md", "file"),
-        (SRC_USAGE, target / "USAGE.md", "file"),
     ]
-    for src, dst, kind in items:
+    for src, dst, kind in bulk_items:
         if not src.exists():
             note("SKIP", "source {} not found -- nothing to copy".format(src))
             continue
@@ -162,6 +217,27 @@ def _copy_machinery(target, note, dry):
                 shutil.copytree(src, dst, dirs_exist_ok=True)
             else:
                 shutil.copy2(src, dst)
+
+    # These live outside .harness/ -- the target may already own a version
+    # of any of them (its own hooks/permissions, its own docs, its own
+    # agents/skill). Guard each one individually: never silently overwrite.
+    guarded_files = [
+        (SRC_CLAUDE_SETTINGS, target / ".claude" / "settings.json"),
+        (SRC_ORCHESTRATION, target / "ORCHESTRATION.md"),
+        (SRC_USAGE, target / "USAGE.md"),
+    ]
+    for src, dst in guarded_files:
+        if not src.exists():
+            note("SKIP", "source {} not found -- nothing to copy".format(src))
+            continue
+        _copy_guarded_file(src, dst, note, dry, force)
+
+    guarded_dirs = [
+        (SRC_CLAUDE_AGENTS, target / ".claude" / "agents"),
+        (SRC_CLAUDE_SKILL, target / ".claude" / "skills" / "harness-status"),
+    ]
+    for src, dst in guarded_dirs:
+        _copy_guarded_dir(src, dst, note, dry, force)
 
 
 # --------------------------------------------------------------------------
@@ -307,7 +383,7 @@ def _render_report(target, dry, report):
         "ACTION PLAN (dry-run -- nothing written)" if dry else "MIGRATION REPORT", target)]
     lines.append("source: {}".format(SRC_ROOT))
     for tag, text in report:
-        lines.append("  [{:<7}] {}".format(tag, text))
+        lines.append("  [{:<11}] {}".format(tag, text))
     return "\n".join(lines)
 
 
@@ -344,8 +420,11 @@ def main(argv):
     target = Path(args.target_dir).expanduser().resolve()
     dry = args.dry_run
 
-    if not target.is_dir():
+    if not target.exists():
         print("refused: target directory does not exist: {}".format(target), file=sys.stderr)
+        return 1
+    if not target.is_dir():
+        print("refused: {} is not a directory".format(target), file=sys.stderr)
         return 1
 
     dst_harness = target / ".harness"
@@ -368,7 +447,7 @@ def main(argv):
         if not dry:
             dst_harness.rename(backup_dst)
 
-    _copy_machinery(target, note, dry)
+    _copy_machinery(target, note, dry, args.force)
 
     now = hc.now_iso()
     source_state = hc.read_json(SRC_STATE, default={}) or {}

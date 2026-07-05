@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 2,
-  "updated_at": "2026-07-05T02:04:01Z",
+  "updated_at": "2026-07-05T02:15:19Z",
   "updated_by": "verifier-c",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -1019,6 +1019,31 @@
       "created_at": "2026-07-05T01:50:40Z",
       "created_by": "fable-5-coordinator",
       "completed_at": "2026-07-05T02:04:01Z",
+      "completed_by": "verifier-c"
+    },
+    "T-033": {
+      "epic": "gen-3-early",
+      "title": "Harden migracion_proyecto.py: never silently overwrite target-owned files (verifier-c finding)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-033.json",
+      "artifacts": [
+        ".harness/bin/migracion_proyecto.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay for verifier (produce fresh scratch git repos under the session scratchpad -- NEVER point at a real/this repo): (1) py_compile: python3 -m py_compile .harness/bin/migracion_proyecto.py -> expect clean. (2) probe a/b/c: mkdir SCRATCH, git init, mkdir -p .claude/agents .claude/skills/harness-status; seed .claude/settings.json with custom JSON, ORCHESTRATION.md + USAGE.md with custom text, .claude/agents/substrate-worker.md with custom text (colliding name -- matches a real source agent), .claude/agents/my-own-agent.md with custom text (non-colliding), .claude/skills/harness-status/SKILL.md with custom text; git add -A && git commit. Run 'python3 .harness/bin/migracion_proyecto.py SCRATCH' (no flags) from THIS repo root -> expect [SKIP-EXISTS] lines for all 5 colliding files + [COPY] for my-own-agent.md and the other 4 source agents; verify via shasum the 5 colliding files are byte-identical to what you seeded (untouched). Run again with --force -> expect [BACKUP]+[COPY] pairs for every file that now exists in target (all agents, since run 1 populated them), .bak-1 files hold the ORIGINAL seeded content (cat and diff), my-own-agent.md untouched with no .bak. Run --force a third time -> expect .bak-2 created (not clobbering .bak-1); cat .claude/settings.json.bak-1 to confirm it is still the very first custom content. (3) probe d: run against a path that is a plain file -> expect stderr 'refused: <path> is not a directory' exit 1, file untouched; run against a nonexistent path -> expect 'refused: target directory does not exist: <path>' exit 1 (message unchanged). (4) probe e (regression): fresh CLEAN scratch (git init, dummy CLAUDE.md + one src file, NO pre-existing .claude/ or docs) -- replay all of T-032's original probes a-e verbatim (dry-run zero-writes via find -newer + git status clean; real run then full CLI lifecycle INSIDE the target -- blackboard.py status/add-task/claim, lock.py acquire+release, blackboard.py update+handoff, session.py register/list/unregister -- all succeed and target's own .harness/logs/events.jsonl records them; hooks+agents+skill+ORCHESTRATION.md+USAGE.md present; CLAUDE.md dummy content preserved above the merged END marker; .gitignore appended; refuse w/o --force then --force backs up .harness to .harness.bak-1 by rename with tasks/T-001.json + events.jsonl surviving inside it, fresh .harness written, CLAUDE.md/.gitignore SKIP as idempotent; py_compile clean; self-propagation into target/.harness/bin/) -- confirm no regression vs the T-032 handoff transcript. (5) Source-repo hygiene: git status --short in THIS repo should show only .harness/bin/migracion_proyecto.py, .harness/blackboard.json, .harness/state.json, .harness/tasks/T-033.json as changes (normal CLI churn + my owned file) -- verify nothing else was touched. All probes a-f from T-033.json observed passing by the producer; see task notes for the full transcript including exact scratch paths, seeded content, and comparison hashes used.",
+        "ts": "2026-07-05T02:10:58Z"
+      },
+      "created_at": "2026-07-05T02:05:32Z",
+      "created_by": "fable-5-coordinator",
+      "completed_at": "2026-07-05T02:15:19Z",
       "completed_by": "verifier-c"
     }
   }

@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-04T07:29:54Z"
       },
       "main": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T07:29:27Z"
+        "last_outcome_at": "2026-07-05T02:15:19Z"
       },
       "tournament-judge": {
         "tasks_done": 1,
@@ -355,7 +355,9 @@
       "U1 (Thariq unknowns, pre): planner contract - plan.md must carry an Unknowns section per epic (4 quadrants); blocking known-unknowns resolved with the human or converted to spike tasks BEFORE publishing the DAG. Target: .claude/agents/orchestration-planner.md + plan.md template (code-level, no NLAH gate)",
       "U2 (Thariq unknowns, during): note taxonomy DECISION/DEVIATION/TRADEOFF/OPEN-QUESTION as a convention (optionally blackboard.py --note-kind flag) so audits can count and chase OPEN-QUESTIONs mechanically",
       "U3 (Thariq unknowns, pre): blindspot-pass step - before dispatching a new epic, a thinker interviews the human with concrete assumptions to surface unknown-knowns (interview pattern); coordinator uses AskUserQuestion",
-      "U4 (Thariq unknowns, post): before heavyweight human gates (first git push), the epic join must produce an explainer + 3 comprehension questions for the human - aligns with operator rule 'no publicar lo que no se entiende' (2026-07-04)"
+      "U4 (Thariq unknowns, post): before heavyweight human gates (first git push), the epic join must produce an explainer + 3 comprehension questions for the human - aligns with operator rule 'no publicar lo que no se entiende' (2026-07-04)",
+      "NLAH-GATED (needs human approval): CLAUDE.md 2B instructs agents to read .harness/active_role, but no CLI/hook reads it and migration does not seed it (verifier-c T-032). Reconcile: drop the stale reference or seed a template. Awaiting operator decision",
+      "P-009 friction (confirmed twice, T-032+T-033 verifies): ANY verifier action that moves a review task off 'review' (claiming it, or setting in_progress) locks the verifier out of the done path and forces --override-producer-check even when actor != producer. Refinement: allow done whenever a handoff exists and actor != handoff.from regardless of current status, or make claim preserve review status for verifier-role claims"
     ]
   }
 }
