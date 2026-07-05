@@ -269,7 +269,40 @@
   "evolution": {
     "generation": 4,
     "last_audit_at": "2026-07-05T07:15:00Z",
-    "pending_proposals": [],
+    "pending_proposals": [
+      {
+        "id": "P-027",
+        "source": "audit_gen5.md (gen-5 intake, external candidate: Shepherd, shepherd-agents/shepherd)",
+        "target": [
+          ".harness/bin/goal_mode.py"
+        ],
+        "summary": "Git-as-checkpoint for goal_mode: auto-commit working tree on verified checkpoint (exit 0), optional revert-to-last-good on abandonment (exit 3) / reset, instead of retrying over contaminated state.",
+        "status": "rejected-no-adoption",
+        "verdict": "DESCARTAR (evolution-analyst, 2026-07-05)",
+        "evidence": "0 non-synthetic goal_abandoned events in events.jsonl (only DEMO/VER1 smoke tests running sys.exit(1), no files touched); all real runs reached goal_reached in 1-2 iterations; goal_mode_state.json empty.",
+        "cost_assessment": "integration HIGH (blind git checkout can destroy a parallel worker's edits; clashes with §4A git-rollback + human_gate), lines MEDIUM (~40-70 in goal_mode.py), recurring tokens LOW-MEDIUM, gen-4 risk HIGH if default",
+        "revisit_trigger": "reopen if >=1 non-synthetic goal_abandoned event appears whose command edited files (grep events.jsonl for goal_abandoned excluding DEMO/VER1)",
+        "decided_at": "2026-07-05T09:30:00Z",
+        "decided_by": "operator (token/complexity bar for gen-5 intake) on evolution-analyst audit"
+      },
+      {
+        "id": "P-028",
+        "source": "audit_gen5.md (gen-5 intake, external candidate: Opik/Ollie pattern, comet-ml/opik)",
+        "target": [
+          ".harness/bin/goal_mode.py",
+          ".harness/bin/blackboard.py",
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Automatic resolved-failure -> permanent regression test capture (mechanical part of the Opik self-correcting-harness loop; Ollie-as-LLM disqualified upfront by §3 no-external-LLM constraint).",
+        "status": "rejected-no-adoption",
+        "verdict": "DESCARTAR (evolution-analyst, 2026-07-05)",
+        "evidence": "0 regression signatures (no command went fail->fix->fail-again); the useful core already exists as gen-4 convention: golden vectors, verifier replay on epic-joins, §5A loop; audit_gen3.md:235,240 documents a bug converted to regression vector.",
+        "cost_assessment": "lines HIGH (new regression runner + capture + de-dup + new blackboard verb), integration HIGH (no single failure chokepoint; interacts with claims/leases and producer!=approver), recurring tokens MEDIUM-HIGH (against active cost_policy P-020 cut), gen-4 risk MEDIUM (self-filling suite gating verdicts can stall the DAG)",
+        "revisit_trigger": "at most a one-line doc-only note in ORCHESTRATION.md documenting the existing golden-vector/replay convention; reopen automation only if a real fail->fix->fail-again signature appears in events.jsonl",
+        "decided_at": "2026-07-05T09:30:00Z",
+        "decided_by": "operator (token/complexity bar for gen-5 intake) on evolution-analyst audit"
+      }
+    ],
     "accepted_mutations": [
       {
         "id": "P-001",
@@ -634,7 +667,14 @@
       ".harness/logs/audit_gen1.md",
       ".harness/logs/audit_gen2.md",
       ".harness/logs/audit_gen3.md",
-      ".harness/logs/audit_gen4.md"
+      ".harness/logs/audit_gen4.md",
+      {
+        "path": ".harness/logs/audit_gen5.md",
+        "generation_scope": "gen-5 intake (pre-audit external-candidate evaluation)",
+        "written_by": "evolution-analyst",
+        "written_at": "2026-07-05",
+        "outcome": "both external candidates rejected (P-027 Shepherd, P-028 Opik) — problems theoretical here, cost against active cost_policy"
+      }
     ],
     "notes": "Gen-2 audit (T-012) accepted on rev-2 after one REJECTED round (P-008 evidence error, self-disclosed in audit 2.4 - producer!=approver worked). Worker partition: WA=T-013 (P-005: harness_common.py+T-010.json+README.md), WB=T-014 (P-006+P-008a: lock.py+recontext.py+notify.py), WC=T-015 (P-007: blackboard.py). Disjoint; option (b) shared helper rejected to preserve the split. NO NLAH mutation this generation - no human gate required (verified twice). Generation 2 closed 2026-07-04T07:35Z: P-005..P-008 applied via T-013/T-014/T-015, all verified. No NLAH edit => no human gate, but generation bumped because the control plane semantics changed (TTL floor, lock_busy events, path normalization, artifact append). Generation 3 closed 2026-07-05T04:05Z: P-010 (human-directed de-Fable) + P-011..P-018 (audit_gen3, one gated pre-approved) applied across two 3-worker waves with rotated verifiers (harness-verifier, verifier-b, verifier-c - no sole approver, F6 honored in its own rollout). Unknowns framework U1-U4 now normative (planner + ORCHESTRATION). Generation 4 closed 2026-07-05T07:50Z: audit_gen4 certified PRODUCTION-READY (yes-with-notes, opus-verified); P-021/P-022 (blackboard ergonomics+coherence) and P-024/025/026 (process rules) applied. All 7 readiness criteria MET (2 with honest caveats, U4 pending its gate). Cost policy P-020 in force.",
     "next_audit_inputs": [
