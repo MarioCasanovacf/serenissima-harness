@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T05:49:33Z",
-  "updated_by": "verifier-d",
+  "updated_at": "2026-07-05T06:10:18Z",
+  "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1824,7 +1824,7 @@
     "T-051": {
       "epic": "cronsplain",
       "title": "cronsplain CLI + integration + README: bin/cronsplain.js + lib/cli.js + tests/test_cli.js + tests/test_integration.js + README.md",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -1836,8 +1836,19 @@
       "claim_expires_at": null,
       "priority": 4,
       "detail_file": ".harness/tasks/T-051.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/bin/cronsplain.js",
+        "projects/cronsplain/lib/cli.js",
+        "projects/cronsplain/tests/test_cli.js",
+        "projects/cronsplain/tests/test_integration.js",
+        "projects/cronsplain/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay from projects/cronsplain/: (1) node --test tests/*.js -> tests 93, pass 93, fail 0. (2) node bin/cronsplain.js explain '*/15 * * * *' -> 'Every 15 minutes, every day.' exit 0. (3) node bin/cronsplain.js next '0 0 * * *' --from 2026-01-01T00:00:00Z --count 3 -> 3 ISO-Z lines exit 0. (4) node bin/cronsplain.js explain 'bad' -> stderr-only one-line 'cronsplain: Expected 5 whitespace-separated fields, got 1' exit 1, no stack trace. (5) node bin/cronsplain.js next '0 0 30 2 *' --from 2026-01-01T00:00:00Z -> stderr-only one-line clean error exit 1, ~28ms (no hang), no stack trace. Full transcript + acceptance-criteria checklist + deviations recorded in the task note. Owns exactly bin/cronsplain.js, lib/cli.js, tests/test_cli.js, tests/test_integration.js, README.md - git status confirms no other file touched. next requires the PROMOTED ../lib/schedule.js exclusively (never a candidate).",
+        "ts": "2026-07-05T06:10:18Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
       "created_by": "orchestration-planner"
     },

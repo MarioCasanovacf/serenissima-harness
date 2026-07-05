@@ -63,7 +63,7 @@
       },
       "harness-verifier": {
         "engine": "claude",
-        "tier": "opus",
+        "tier": "sonnet (opus per-dispatch for high-stakes verdicts)",
         "role": "verifier",
         "capabilities": [
           "adversarial replay of hand-off evidence",
@@ -530,6 +530,19 @@
         "gate": "code-level, no human gate",
         "applied_note": "applied in T-053 (substrate-worker-1), verified done by verifier-b re-running its own T-042 bypass repro: register-refusal EXIT 1 + check_lock EXIT 2 at every step; T-037 flow preserved; fail-closed under 5 malformed-state cases; --by laundering impossible. Doc finding: empty-string ambient refuses (fail-closed) while unset -> main allows - documented",
         "applied_at": "2026-07-05T04:45:00Z"
+      },
+      {
+        "id": "P-020",
+        "source": "HUMAN-DIRECTED (operator 2026-07-05): usage report showed 95% subagent-heavy / 79% 8h+ sessions; operator ordered cost reduction",
+        "target": [
+          ".claude/agents/harness-verifier.md",
+          ".harness/state.json"
+        ],
+        "summary": "Cost policy: harness-verifier default tier opus->sonnet (verifiers dominate spawn volume; opus reserved for per-dispatch high-stakes overrides); cost_policy block with 5 rules (proportional verification, spawn consolidation, session hygiene, model floor).",
+        "measurable_gain": "per-verdict token cost drops to sonnet rates for routine replays; remaining epic work consolidated (T-051 verdict + T-052 execution = 1 spawn instead of 2)",
+        "status": "applied",
+        "gate": "operator-directed config change; applied inline by coordinator; verification of continued verdict quality falls to the gen-4 audit",
+        "applied_at": "2026-07-05T06:20:00Z"
       }
     ],
     "audit_artifacts": [
@@ -545,7 +558,8 @@
       "GEN-4 (T-040 verify, OPEN-QUESTION): normative docs cite volatile state.json line numbers that drift (352/356/358 -> stale within hours); rule candidate: cite stable section anchors only for mutable files",
       "GEN-4 (T-039 verify, doc nit): slugger.py DEDUP RULE TABLE pseudocode 'while (originalSlug in occurrences)' should read 'slug' - 1-token fix; algorithm itself is github-parity",
       "GEN-4 (T-040 verify, prose nit): F6 rule says mdtoc 'all 9 producer tasks' - loose phrasing, T-027/T-029 were verifier-role; substance holds",
-      "GEN-4 (T-041, human decision pending): physical .harness/active_role file (8 bytes, 'thinker') still on disk; nothing reads it; deleting is arguably outside the scratch-area exemption - operator call"
+      "GEN-4 (T-041, human decision pending): physical .harness/active_role file (8 bytes, 'thinker') still on disk; nothing reads it; deleting is arguably outside the scratch-area exemption - operator call",
+      "P-020 follow-up (gen-4): assess whether sonnet-tier verifier verdicts (T-051 onward) maintain the quality bar of the opus-tier ones (compare rejection rates, evidence depth); formalize the proportional-verification rule into ORCHESTRATION.md if it proves out"
     ],
     "readiness_criteria": {
       "_source": "audit_gen3.md section on production readiness, falsifiability confirmed by harness-verifier (criterion 7 flagged borderline)",
@@ -559,5 +573,15 @@
         "7 clean gen-4 audit (backlog only document-only/UNTESTED; checkable core, partly judgment)"
       ]
     }
+  },
+  "cost_policy": {
+    "_source": "operator directive 2026-07-05 ('Soluciona esto' - 95% usage from subagent-heavy sessions, 79% from 8h+ sessions)",
+    "rules": [
+      "1 VERIFIER TIER: harness-verifier defaults to sonnet; coordinator overrides to opus per-dispatch ONLY for high-stakes verdicts (NLAH mutations, guardrail changes, epic joins, tournament promotions)",
+      "2 PROPORTIONAL VERIFICATION: verification effort scales with blast radius - doc/scratch tasks get a brief replay, control-plane/contract tasks get full adversarial replay; do not spend 20 tool calls verifying a README",
+      "3 CONSOLIDATE SPAWNS: batch sibling verdicts into one verifier run; resume existing agents (SendMessage) instead of fresh spawns when context helps; a verdict + a dependent execute-task can share one agent run when roles permit",
+      "4 SESSION HYGIENE: the substrate is resumable by design - close coordination sessions when the mission pauses instead of keeping 8h+ sessions alive; a fresh session picks up the board cold via ORCHESTRATION.md + blackboard.py status",
+      "5 MODEL FLOOR: workers stay sonnet for code; trivial mechanical tasks (file moves, greps, disposals) may be dispatched at haiku per-call; planners/analysts stay opus but run rarely"
+    ]
   }
 }
