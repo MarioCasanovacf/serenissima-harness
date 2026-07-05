@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 3,
-  "updated_at": "2026-07-05T05:35:38Z",
-  "updated_by": "verifier-c",
+  "updated_at": "2026-07-05T05:49:33Z",
+  "updated_by": "verifier-d",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -1766,7 +1766,7 @@
     "T-049": {
       "epic": "cronsplain",
       "title": "cronsplain schedule tournament VERDICT: score A/B via vectors, promote winner to lib/schedule.js + tests/test_schedule.js",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -1778,10 +1778,20 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-049.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "projects/cronsplain/lib/schedule.js",
+        "projects/cronsplain/tests/test_schedule.js"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "tournament-judge",
+        "note": "TOURNAMENT VERDICT T-049 (cronsplain schedule). WINNER = candidate B (field-cascade carry, candidates/schedule_b.js / T-048) promoted VERBATIM to projects/cronsplain/lib/schedule.js. LOSER = candidate A (brute-force minute tick, T-047). SCORE TABLE (re-run by tournament-judge from projects/cronsplain): (1) golden runAgainst: A 11/11, B 11/11, zero failures both. (2) impossible schedule 0 0 30 2 wildcard: A returns empty array silently (len 0), B THROWS documented Error naming the cause -- B better for a user-facing next command. (3) safety-cap semantics: A caps TOTAL minutes scanned (MAX_MINUTES_TO_SCAN=6,000,000 min, ~11.4 yr) so on a LEGIT sparse schedule 0 0 1 1 wildcard count 20 A silently truncates to 11; B caps day-carries BETWEEN hits (SAFETY_CAP_DAYS=3660) and returns all 20 -- B correct. (4) performance sparse leap 0 0 29 2 wildcard from 2023 count 2 (200 iters): A ~91ms vs B ~0.095ms = ~960x. (5) exclusivity/dense-1000/mid-hour-seam probes: A and B agree and are both correct. RATIONALE: outputs are equivalence-proven on satisfiable within-horizon inputs so the verdict turned on out-of-overlap behavior; B fails loudly on impossible schedules where A returns a silent partial, B's cap bounds the inter-occurrence gap (the right semantic) where A's total-horizon cap silently truncates legitimate long sparse sequences (reproduced 0 0 1 1 wildcard count 20 -> A 11 / B 20), and B is ~960x faster on sparse schedules; both are 11/11 conformance-clean so B wins decisively with no blending. LOSER STRENGTHS (gen-4): candidate A is simpler and obviously-correct (tick-and-test on plain UTC getters, no carry-logic edge cases) -- an ideal independent oracle for future cross-diff of this module. PROMOTION FIDELITY: lib/schedule.js body byte-identical to schedule_b except two error strings renamed schedule_b: -> schedule:; zero runtime require of candidates/ (grep: only comment mentions); module.exports = { nextOccurrences }; self-check guard dropped. TESTS: tests/test_schedule.js (node:test, 6 tests) = golden 11/11 via candidates/vectors.runAgainst against ../lib/schedule, plus hand-written DOM/DOW-OR (0 0 13 wildcard 5), exclusivity (next-minute), leap (0 0 29 2 wildcard), impossible-throws, long-horizon-sparse. REPLAY from projects/cronsplain: node candidates/schedule_b.js (self-check 11/11); node --test tests/test_schedule.js (6 pass); node --test tests/*.js (63 pass 0 fail = 57 prior + 6). F6: producer=tournament-judge; a verifier whose identity differs from tournament-judge and every T-044..T-051 producer must verdict.",
+        "ts": "2026-07-05T05:43:05Z"
+      },
       "created_at": "2026-07-05T04:19:31Z",
-      "created_by": "orchestration-planner"
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-05T05:49:33Z",
+      "completed_by": "verifier-d"
     },
     "T-050": {
       "epic": "cronsplain",
