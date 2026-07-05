@@ -1,34 +1,24 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>README preview — Universal Agent Harness</title>
-<style>
-body{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 6rem;background:#fff;color:#1f2328;
-font:16px/1.6 -apple-system,"Segoe UI",system-ui,sans-serif}
-.ghbar{background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px 8px 0 0;padding:.6rem 1rem;
-font-size:.85rem;color:#57606a;margin-bottom:0}
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>README preview</title><style>
+body{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 6rem;background:#fff;color:#1f2328;font:16px/1.6 -apple-system,"Segoe UI",system-ui,sans-serif}
+.frame{border:1px solid #d0d7de;border-radius:8px;padding:1.5rem 2rem;margin-top:0}
+.ghbar{background:#f6f8fa;border:1px solid #d0d7de;border-bottom:none;border-radius:8px 8px 0 0;padding:.6rem 1rem;font-size:.85rem;color:#57606a}
 .ghbar b{color:#1f2328}
-.frame{border:1px solid #d0d7de;border-top:none;border-radius:0 0 8px 8px;padding:1.5rem 2rem}
+.frame{border-radius:0 0 8px 8px;border-top:none}
 h1{font-size:2rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:0}
-h2{font-size:1.5rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:1.8em}
+h2{font-size:1.4rem;border-bottom:1px solid #d8dee4;padding-bottom:.3em;margin-top:1.8em;line-height:1.3}
 code{background:#eff1f3;border-radius:6px;padding:.15em .4em;font:13px ui-monospace,Menlo,monospace}
-pre{background:#f6f8fa;border-radius:6px;padding:1rem;overflow-x:auto}
-pre code{background:none;padding:0;font-size:12.5px;line-height:1.45}
-table{border-collapse:collapse;margin:1rem 0;width:100%}
-th,td{border:1px solid #d0d7de;padding:.5rem .8rem;text-align:left;vertical-align:top;font-size:.93rem}
-th{background:#f6f8fa}
-tr:nth-child(even) td{background:#f6f8fa}
-li{margin:.3em 0}
+pre{background:#f6f8fa;border-radius:6px;padding:1rem;overflow-x:auto}pre code{background:none;padding:0;font-size:12.5px;line-height:1.45}
+table{border-collapse:collapse;margin:1rem 0;width:100%}th,td{border:1px solid #d0d7de;padding:.5rem .8rem;text-align:left;vertical-align:top;font-size:.93rem}
+th{background:#f6f8fa}tr:nth-child(even) td{background:#f6f8fa}li{margin:.3em 0}
 .note{background:#fff8e6;border:1px solid #e0c96a;border-radius:6px;padding:.7rem 1rem;font-size:.88rem;color:#6b5900;margin-bottom:1.2rem}
 </style></head><body>
-<div class="note"><b>Vista previa</b> — así se vería el README renderizado en GitHub. Texto en tu voz
-(vía tu Substack), sin emojis, números verificados. El único pendiente marcado adentro es la licencia.</div>
-<div class="ghbar"><b>README.md</b> · Universal Agent Harness</div>
-<div class="frame">
-<h1>Universal Agent Harness</h1>
+<div class="note"><b>Vista previa del README</b> — con tus correcciones aplicadas, licencia MIT, inspiraciones listadas con su porqu&eacute;, sin emojis. As&iacute; se ver&iacute;a publicado en GitHub.</div>
+<div class="ghbar"><b>README.md</b> &middot; Universal Agent Harness</div>
+<div class="frame"><h1>Universal Agent Harness</h1>
 
 <p>A file-based coordination substrate that lets several AI agents work on one real codebase in parallel — without stepping on each other, without approving their own work, and leaving an auditable trail behind every decision.</p>
 
-<p>No database. No external APIs. No framework to buy into. Plain files, nine stdlib-only Python CLIs, and a set of rules that are <strong>programs, not promises</strong> — an agent can&#x27;t claim a blocked task or edit a file someone else is holding because the command refuses it, not because it agreed to behave.</p>
+<p>No database. No external APIs. No framework to buy into. Plain files, nine stdlib-only Python CLIs, and a set of rules that are <strong>programs for agents to really work</strong> — an agent can&#x27;t claim a blocked task or edit a file someone else is holding because the command refuses it and not because it agreed to behave.</p>
 
 <p>It was built for Claude Code, but nothing in the contract is Claude-specific. Any agent — or human — that can run a CLI can join the board. The enforcement hooks are Claude-side convenience; the coordination rules are universal.</p>
 
@@ -39,10 +29,10 @@ li{margin:.3em 0}
 <ul>
 <li><strong>It is not an agent framework.</strong> It doesn&#x27;t give you agents, prompts, memory, or a runtime. You bring those.</li>
 <li><strong>It is not a replacement for Claude Code.</strong> It sits <em>on top of</em> Claude Code (or any CLI-capable agent) and gives a group of them a shared task board, file locking, and a hand-off protocol.</li>
-<li><strong>It is not a headless multi-LLM swarm.</strong> That was the original ambition — several different models running unattended against one board. The file substrate genuinely supports it, and there&#x27;s a documented prompt-bridge for a second engine (Gemini), but a fully autonomous cross-model swarm was left out of <em>proven</em> scope: I have not exercised it end-to-end enough to claim it works, so I don&#x27;t. The mechanics are there; the receipts are not.</li>
+<li><strong>It is not a headless multi-LLM swarm.</strong> That was the original ambition — several different models running unattended against one board. The file substrate genuinely supports it, and there&#x27;s a documented prompt-bridge for a second engine (Gemini), but a fully autonomous cross-model swarm was left out of <em>proven</em> scope: I have not exercised it end-to-end enough to claim it works, so I don&#x27;t. The mechanics are there, so in the future it will maybe be changed.</li>
 </ul>
 
-<p>What it <em>is</em>: the boring, load-bearing layer underneath multi-agent work — the part that decides who does what, who&#x27;s allowed to say it&#x27;s done, and how you&#x27;d ever reconstruct what happened.</p>
+<p>What it <em>is</em>: the boring, load-bearing layer underneath multi-agent work that actually gets the job done — this is the part that decides who does what, who&#x27;s allowed to say it&#x27;s done, and how you&#x27;d ever reconstruct what happened.</p>
 
 <h2>Why it exists</h2>
 
@@ -53,7 +43,7 @@ li{margin:.3em 0}
 <li><strong>The giant cascade.</strong> The tempting fix — one long chain A→B→C→…→N. It trades chaos for fragility: every hop loses context, and one stalled link freezes the whole pipeline.</li>
 </ul>
 
-<p>The resolution is a single idea: <strong>delegation is a property of the task graph, not the org chart.</strong> Work is a dependency-DAG on a shared blackboard. A cascade exists <em>exactly</em> where one task literally consumes another&#x27;s artifact — and nowhere else. Everything else runs in parallel under leased claims and TTL write-locks, so nothing collides and nothing can stall the board forever.</p>
+<p>The resolution I propose is a very simple idea: <strong>delegation is a property of the task graph.</strong> It is not necessarily how the org chart should be established within an agentic framework. That&#x27;s why work is a dependency-DAG on a shared blackboard. A cascade exists <em>exactly</em> where one task literally consumes another&#x27;s artifact and nowhere else. Everything else runs in parallel under leased claims and TTL write-locks, so nothing collides and nothing can stall the board forever.</p>
 
 <h2>The rules, and what enforces them</h2>
 
@@ -70,7 +60,7 @@ li{margin:.3em 0}
 <tr><td>No silent self-modification</td><td>The harness changes itself only through an audit loop: logs → evidence-cited proposals → adversarial verification → gated apply → generation bump (git is the undo button)</td></tr>
 </table>
 
-<h2>What&#x27;s in the box</h2>
+<h2>I saw you with the box! What&#x27;s in the box? What&#x27;s in the box? What&#x27;s in the freaking box?</h2>
 
 <pre><code>
 .harness/               The runtime substrate
@@ -87,9 +77,9 @@ USAGE.md                Operator guide — start here
 projects/               Proof of work: two real projects built BY the harness
 </code></pre>
 
-<h2>Proof it works (the dogfood record)</h2>
+<h2>Proof it works (the track record)</h2>
 
-<p>I didn&#x27;t want to write a README full of adjectives, so here&#x27;s the part you can check with <code>grep</code>. This harness built itself, evolved itself across <strong>four generations</strong>, and shipped two real projects under its own rules — every task with producer ≠ approver, every verdict adversarially replayed. Across the whole record, <strong>55 tasks passed through the producer ≠ approver hand-off</strong>.</p>
+<p>I didn&#x27;t want to write a README full of adjectives, so here&#x27;s the part you can check with <code>grep</code>. This harness helped build itself, and with low supervision evolved itself across <strong>four generations</strong>, and shipped two real projects under its own rules — every task with producer ≠ approver, every verdict adversarially replayed. Across the whole record, <strong>55 tasks passed through the producer ≠ approver hand-off</strong>.</p>
 
 <ul>
 <li><strong>mdtoc</strong> (Python) — a Markdown table-of-contents generator, and the harness&#x27;s first <em>tournament</em>: three independent slugger implementations written with deliberately different methods, judged on real-input fidelity, and the winner promoted verbatim. <strong>62 tests</strong> (<strong>63</strong> after a later fix).</li>
@@ -99,7 +89,7 @@ projects/               Proof of work: two real projects built BY the harness
 <li><strong>A swarm smoke test</strong>: two concurrent OS processes racing one board — zero double-claims, cross-identity locks held.</li>
 </ul>
 
-<p>The full evidence trail — task files, verdicts, event logs, audits — ships in the repo. Nothing here is claimed that the logs can&#x27;t confirm.</p>
+<p>The full evidence trail (task files, verdicts, event logs, audits) ships in the repo. Nothing here is claimed that the logs can&#x27;t confirm.</p>
 
 <h2>Quickstart</h2>
 
@@ -118,13 +108,25 @@ python3 .harness/bin/blackboard.py status
 
 <p>Requirements: Python ≥ 3.9 (stdlib only), git, and any Claude Code plan. The coordinator is a <em>role</em>, not a model — it runs the same on Opus or Sonnet.</p>
 
-<h2>Design lineage</h2>
+<h2>Design lineage — what inspired this, and why</h2>
 
-<p>This stands on the blackboard-architecture tradition, on Anthropic&#x27;s published multi-agent patterns, and on **Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — his pre-flight blindspot pass is now a mandatory planner step here. Frictions become audit inputs; audits become generations. The tool that coordinates the work is itself work the tool coordinated.</p>
+<p>This isn&#x27;t a from-scratch invention; it&#x27;s a synthesis. Each of these shaped a specific part of the harness:</p>
+
+<ul>
+<li><strong>The blackboard-architecture tradition</strong> — <em>why:</em> it&#x27;s the oldest good answer to &quot;how do independent workers share state without a central brain.&quot; The shared <code>blackboard.json</code> task board is a direct descendant.</li>
+<li><strong>The CAR decomposition &amp; Natural-Language Agent Harnesses (NLAHs)</strong> — <em>why:</em> it gave me the three-layer split the whole repo is organized around — Control (the rules/personas), Agency (the CLI tools), Runtime (the file substrate) — and the idea that an agent&#x27;s &quot;constitution&quot; is a plain document you can version and mutate.</li>
+<li><strong>Nenad Tomašev&#x27;s &quot;society of agents&quot; &amp; the serial-stagnation critique</strong> — <em>why:</em> this is the argument against the giant cascade. It&#x27;s the reason delegation here is a dependency-DAG (parallel where possible, cascade only where an artifact is truly consumed) instead of one long fragile chain.</li>
+<li><strong>DeepMind&#x27;s AI Co-Scientist</strong> — <em>why:</em> the tournament/consensus pattern. When a task has more than one reasonable solution, the harness spawns N candidates with deliberately different methods and has a judge pick — that&#x27;s straight from Co-Scientist, and it&#x27;s how both <code>mdtoc</code> and <code>cronsplain</code> chose their winning implementations.</li>
+<li><strong>&quot;Don&#x27;t train the model, evolve the harness&quot; (Joel Niklaus)</strong> — <em>why:</em> the entire generations mechanism. The system improves by auditing its own logs and mutating its own rules under a human gate, not by touching model weights.</li>
+<li><strong>The intelligent-AI-delegation literature</strong> — <em>why:</em> capability contracts — the registry of which agent can be trusted with which kind of work, and the producer ≠ approver rule that no one grades their own homework.</li>
+<li><strong>ReContext</strong> — <em>why:</em> evidence replay. Verifiers don&#x27;t trust notes; they re-run the hand-off commands themselves. <code>recontext.py</code> and the &quot;replay, don&#x27;t trust&quot; invariant come from here.</li>
+<li>**Thariq Shihipar&#x27;s <em>unknowns</em> framework** (known/unknown × knowns/unknowns) — <em>why:</em> this is what lets me place a context-wise questionnaire into the harness for the user <em>before</em> the agents start working. The planner now runs a four-quadrant blindspot pass and asks the human the questions only the human can answer, instead of guessing and discovering the mistake halfway through.</li>
+</ul>
+
+<p>Frictions become audit inputs; audits become generations. The tool that coordinates the work is itself work the tool coordinated.</p>
 
 <h2>License &amp; contributions</h2>
 
-<p><strong>[Mario to decide the license — I&#x27;m not picking one for you.]</strong></p>
+<p><strong>MIT License.</strong> Do what you want with this — just keep the copyright notice. (See <code>LICENSE</code>.)</p>
 
-<p>Issues and PRs are welcome, but read <code>ORCHESTRATION.md</code> first. This repo eats its own dogfood: a proposal against the harness follows the same §5A evolution loop as everything else — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p>
-</div></body></html>
+<p>Issues and PRs are welcome, but read <code>ORCHESTRATION.md</code> first. This repo is built and maintained <em>using itself</em>: a proposal against the harness runs through the same §5A evolution loop as everything else — evidence, adversarial verification, a human gate, and a generation bump if it survives.</p></div></body></html>
