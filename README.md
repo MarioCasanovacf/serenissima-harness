@@ -24,12 +24,7 @@ This workspace contains the foundational specifications, research digests, refer
     *   `distributional_agi_safety.pdf` (arXiv:2512.16856)
     *   `intelligent_ai_delegation.pdf` (arXiv:2602.11865)
     *   `virtual_agent_economies.pdf` (arXiv:2509.10147)
-*   **[fetched_docs/](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/fetched_docs/)**: Synthesized web content, podcast summaries, and restricted preprints:
-    *   `deepmind_podcast_when_millions_meet.md` (Tomašev's DeepMind podcast summary)
-    *   `deepmind_co_scientist.md` (Google DeepMind's Co-Scientist multi-agent system)
-    *   `gemini_for_science_io2026.md` (Gemini for Science Google I/O 2026 features)
-    *   `zcode_features.md` (ZCode GLM-5.2 agentic environment tool requirements)
-    *   `harness_engineering_preprints_abstract.md` (Abstract and metadata of the Akamai-blocked preprints paper)
+*   `fetched_docs/` (operator-local, not tracked): synthesized web content and podcast summaries that ground the research-librarian agent.
 
 ### 3. Reference Repositories
 We have fetched and cloned the reference source code repositories for key frameworks:
@@ -42,7 +37,7 @@ We have fetched and cloned the reference source code repositories for key framew
 *   **[ORCHESTRATION.md](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/ORCHESTRATION.md)**: The delegation topology contract — dependency-DAG delegation (cascade where a real artifact dependency exists, parallel everywhere else), claims with leases, TTL write locks, producer ≠ approver, engine routing, and the seeded task DAG.
 *   **[.harness/](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/.harness/)**: The Runtime layer (R): guarded `blackboard.json`, `state.json` (limits, capability contracts, human gates, evolution queue), `tasks/` detail files, `locks/`, `logs/` (JSONL observability), and the deterministic control plane in `bin/` (`blackboard.py`, `lock.py`, hook scripts). See `.harness/README.md`.
 *   **[.claude/](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/.claude/)**: Claude Code integration — the agent bench (orchestration-planner, substrate-worker, harness-verifier, evolution-analyst, research-librarian), observability + lock-enforcement hooks in `settings.json`, and the `harness-status` skill.
-*   **[gemini-prompts/](gemini-prompts/)**: The Gemini prompt bridge — numbered, self-contained hand-off prompts (`1.md`, `2.md`, …) written by the coordinator for the human to paste into Antigravity; outputs return to the blackboard. For Gemini CLI users there is also a native command bridge in `.gemini/commands/`.
+*   **[.gemini/commands/](.gemini/commands/)**: The native Gemini CLI bridge — TOML commands (`harness-status`, `claim-next`) that let a Gemini-engine agent join the board directly. For Antigravity, the coordinator writes numbered, self-contained hand-off prompts in an operator-local `gemini-prompts/` folder (not tracked); outputs return to the blackboard.
 
 ---
 

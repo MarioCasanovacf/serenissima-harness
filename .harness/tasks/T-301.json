@@ -1,0 +1,8 @@
+{
+  "id": "T-301",
+  "title": "Bench-sync decision: three diverging copies of the bench (Harness/Portfolio/Curriculums)",
+  "description": "The fleet inventory (docs/flota-de-agentes.md, operator-local) found the 5-agent bench + harness-status + hooks copied into Portfolio and Curriculums with no sync mechanism. Produce a recommendation with trade-offs: (a) re-transplant via migrate_project.py on each generation bump, (b) deliberate per-project divergence, (c) a sync manifest. Recommendation only; no code.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

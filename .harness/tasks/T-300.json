@@ -1,0 +1,8 @@
+{
+  "id": "T-300",
+  "title": "Verify migrate_project.py rename end-to-end (dry-run transplant against a scratch repo)",
+  "description": "The public-English sweep renamed migracion_proyecto.py -> migrate_project.py and translated its live quickstart template. Syntax was checked but the transplant flow was NOT exercised. Run: python3 .harness/bin/migrate_project.py <scratch-target> --dry-run, then a real transplant into a throwaway dir; confirm seeded files reference migrate_project.py and no stale migracion_ references remain in live (non-evidence) code/docs. Hand off with the replayable commands.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

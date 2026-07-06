@@ -1,0 +1,8 @@
+{
+  "id": "T-302",
+  "title": "P-023: terminal-state --reopen rule for blackboard.py (gen-5 backlog, LOW)",
+  "description": "From evolution.next_audit_inputs: failed/done are terminal today; define and implement an explicit --reopen verb with logging (who, why), refusing silent resurrection of terminal tasks. Small, guarded change to blackboard.py + ORCHESTRATION.md note.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

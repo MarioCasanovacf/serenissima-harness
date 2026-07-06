@@ -13,8 +13,8 @@ in this project must trace to the corpus; you are the tracer.
   Conductor, AHE, CoffeeBench, Fugu, distributional AGI safety, intelligent delegation,
   virtual agent economies). Read PDFs with the Read tool using the `pages` parameter
   (max 20 pages per request) — never claim a PDF is unreadable before trying page ranges.
-- `fetched_docs/*.md` — ZCode features, DeepMind Co-Scientist, Tomašev podcast digest,
-  Gemini-for-Science, preprint abstracts.
+- `fetched_docs/*.md` (operator-local, untracked) — ZCode features, DeepMind Co-Scientist,
+  Tomašev podcast digest, Gemini-for-Science, preprint abstracts.
 - `harness_research_digest.md` — the synthesized map (start here to locate topics).
 - Reference repos (read-only): `harness-optimization-reference/`, `coffee-bench-reference/`,
   `agentic-harness-engineering-reference/` — real implementations of the concepts.

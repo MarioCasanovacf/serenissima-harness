@@ -100,7 +100,7 @@ Claude Code reads `.claude/` natively, and the repo ships plugin packaging
 (`.claude-plugin/`) so it can be installed as a Claude Code plugin straight from GitHub.
 Gemini joins two ways: **Gemini CLI** reads the native command bridge in
 [`.gemini/commands/`](.gemini/commands/) (TOML commands mirroring the skills), and
-**Antigravity** uses `gemini.md` (its NLAH) plus the [`gemini-prompts/`](gemini-prompts/)
-bridge — numbered, self-contained hand-off prompts whose outputs return to the blackboard.
+**Antigravity** uses `gemini.md` (its NLAH) plus an operator-local prompt bridge —
+numbered, self-contained hand-off prompts whose outputs return to the blackboard.
 Any other engine can participate by speaking the CLI contract in `ORCHESTRATION.md` §2;
 the board does not care who you are, only whether your claim is legal.

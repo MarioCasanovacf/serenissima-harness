@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-07-05T06:52:10Z",
-  "updated_by": "fable-5-coordinator",
+  "updated_at": "2026-07-06T15:50:53Z",
+  "updated_by": "coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -2435,6 +2435,70 @@
       "created_by": "lc-producer",
       "completed_at": "2026-07-05T06:49:15Z",
       "completed_by": "verifier-b"
+    },
+    "T-300": {
+      "epic": "gen-5",
+      "title": "Verify migrate_project.py rename end-to-end (dry-run transplant against a scratch repo)",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-300.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T15:50:53Z",
+      "created_by": "coordinator"
+    },
+    "T-301": {
+      "epic": "gen-5",
+      "title": "Bench-sync decision: three diverging copies of the bench (Harness/Portfolio/Curriculums)",
+      "status": "open",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-301.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T15:50:53Z",
+      "created_by": "coordinator"
+    },
+    "T-302": {
+      "epic": "gen-5",
+      "title": "P-023: terminal-state --reopen rule for blackboard.py (gen-5 backlog, LOW)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-302.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T15:50:53Z",
+      "created_by": "coordinator"
+    },
+    "T-303": {
+      "epic": "gen-5",
+      "title": "Intake: generic protected-paths guardrail (from Portfolio's data/real PreToolUse hook)",
+      "status": "open",
+      "role": "thinker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-303.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T15:50:53Z",
+      "created_by": "coordinator"
     }
   }
 }

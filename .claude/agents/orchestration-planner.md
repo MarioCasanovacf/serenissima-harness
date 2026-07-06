@@ -46,7 +46,7 @@ Agent id `orchestration-planner` — pass it as `--agent` in every harness CLI c
 - **Task size**: completable within `state.json limits.max_steps_per_task`; otherwise split.
 - **Fan-out cap**: at most `limits.max_parallel_workers` sibling worker tasks per join.
 - **Engine routing**: long-context digestion, heavy Python math, plotting → `--engine gemini`
-  (the coordinator writes the numbered bridge prompt in `gemini-prompts/`); judgment,
+  (via `.gemini/commands/claim-next` or a coordinator-written bridge prompt); judgment,
   synthesis, code architecture → `claude`.
 - **High-uncertainty nodes**: propose tournament mode (N parallel candidate tasks + one
   verifier verdict task) instead of a single fragile chain.

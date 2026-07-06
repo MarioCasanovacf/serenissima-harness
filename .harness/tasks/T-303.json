@@ -1,0 +1,8 @@
+{
+  "id": "T-303",
+  "title": "Intake: generic protected-paths guardrail (from Portfolio's data/real PreToolUse hook)",
+  "description": "Portfolio ships a PreToolUse[Bash] regex hook blocking rm/mv/shred/truncate and redirects against data/real. Evaluate promoting a generic, configurable protected-paths guardrail into the public harness (state.json-configured glob list + hook). Falsifiable proposal with cost table, same bar as the gen-5 intake that rejected Shepherd/Opik (P-027/P-028).",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}
