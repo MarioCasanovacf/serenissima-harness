@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-07-06T16:21:38Z",
-  "updated_by": "verifier-c",
+  "updated_at": "2026-07-06T16:44:08Z",
+  "updated_by": "verifier-b",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -2594,6 +2594,33 @@
       "created_at": "2026-07-06T16:19:19Z",
       "created_by": "verifier-b",
       "completed_at": "2026-07-06T16:20:05Z",
+      "completed_by": "verifier-b"
+    },
+    "T-310": {
+      "epic": "gen-5",
+      "title": "Apply P-029: protected-paths guardrail (guard_paths.py + PreToolUse[Bash] hook + state.json key)",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-310.json",
+      "artifacts": [
+        ".harness/bin/guard_paths.py",
+        ".claude/settings.json",
+        ".harness/state.json"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "FIX for verifier-b's REJECTED bug: _target_matches() in guard_paths.py now also protects the bare directory a `<prefix>/**` glob was written for (deleting the whole tree, the worst case), not just files strictly inside it.\n\nCHANGE (guard_paths.py, _target_matches only):\n- Candidates are normalized by stripping a trailing slash (c.rstrip(\"/\") or c) before matching, so \"dir\" and \"dir/\" behave alike.\n- In addition to the existing fnmatch(cand, glob) check, added: if glob.endswith(\"/**\") and cand == glob[:-len(\"/**\")]: match. This covers the bare-prefix case that fnmatch alone cannot express (fnmatch(\"dir\", \"dir/**\") is False by design — the pattern requires >=1 segment after the slash).\n- Existing inside-the-tree matching (fnmatch against resolved+relative-to-root candidates) is untouched.\n\nEXPECTED vs ACTUAL: expected the verifier's exact failing command to now deny; observed exit 2 + protected_path_blocked event on first replay, confirmed below.\n\nREPLAY (all run as worker-c, this session, in order):\n1. Baseline snapshot before any test mutation:\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (matches verifier-b's recorded pre-test snapshot); protected_paths == [] confirmed via python3 -c \"import json;print(json.load(open('.harness/state.json')).get('protected_paths'))\".\n\n2. Set test glob (same locked guarded()+atomic_write_json pattern as original impl, lock.py held on state.json throughout):\n   protected_paths = [\".harness/tests_protected_wc/**\"]\n   mkdir -p .harness/tests_protected_wc && touch .harness/tests_protected_wc/dummy.txt\n   mkdir -p /private/tmp/guard_paths_test_wc && touch /private/tmp/guard_paths_test_wc/scratch.txt\n\n3. Mechanical proof suite (synthetic stdin JSON payloads written to scratchpad files via the Write tool, then fed to guard_paths.py via `python3 .harness/bin/guard_paths.py < payload.json`, to avoid the outer dcg guard tripping on literal \"rm -rf\" text in an inline echo/heredoc):\n\n   a. relative file: {\"command\":\"rm -f .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2, event target=\".harness/tests_protected_wc/dummy.txt\" glob=\".harness/tests_protected_wc/**\" (pre-existing behavior, still works)\n\n   b. VERIFIER'S EXACT BYPASS CASE (bare directory, no trailing segment): {\"command\":\"rm -rf .harness/tests_protected_wc\"}\n      -> exit 2 (was exit 0 before this fix). stderr: \"HARNESS PROTECTED PATH: command targets '.harness/tests_protected_wc', which matches protected glob '.harness/tests_protected_wc/**' ...\". events.jsonl gained {\"event\":\"protected_path_blocked\",\"target\":\".harness/tests_protected_wc\",\"glob\":\".harness/tests_protected_wc/**\"}.\n\n   c. trailing-slash form: {\"command\":\"rm -rf .harness/tests_protected_wc/\"}\n      -> exit 2, target normalized to \".harness/tests_protected_wc/\" in the log but matched via the rstrip(\"/\") candidate.\n\n   d. redirect form: {\"command\":\"echo hi >> .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   e. quoted absolute path with space (repo dir name has a space): {\"command\":\"rm -f \\\"/Users/.../Universal Harness/.harness/tests_protected_wc/dummy.txt\\\"\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   f. /private/tmp scratch, glob still active (selectivity / no false positive): {\"command\":\"rm -f /private/tmp/guard_paths_test_wc/scratch.txt\"}\n      -> exit 0.\n\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 after (a)-(e); one extra event beyond the 5 expected from (a,b,c,d,e) was logged at 16:39:10Z with a truncated command containing my own literal test-setup shell text — this is the SAME live-hook side effect the original worker noted (my own real Bash tool call got intercepted by the now-live guard because its literal command text matched the active test glob); it is additional corroboration the wiring is live, not a bug.\n\n4. Restore + re-prove no-op (same guarded()+atomic_write_json pattern, standalone, not chained with any rm so the outer dcg guard doesn't intervene):\n   protected_paths = []\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (byte-identical to step 1's baseline)\n   Re-ran ALL SIX payloads (a)-(f) above against the restored empty state:\n   -> ALL six: exit 0.\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 (unchanged from step 3 -- confirms zero new denies during the no-op re-proof).\n\n5. Cleanup: rm -f .harness/tests_protected_wc/dummy.txt && rmdir .harness/tests_protected_wc; rm -f /private/tmp/guard_paths_test_wc/scratch.txt && rmdir /private/tmp/guard_paths_test_wc. Both test dirs confirmed gone (ls -> No such file or directory).\n\n6. Diff scope check vs git HEAD (unchanged from original impl, still additive-only):\n   git diff HEAD -- .harness/state.json -> single new top-level key \"protected_paths\": [] added, nothing else touched.\n   git diff HEAD -- .claude/settings.json -> single new PreToolUse \"Bash\" matcher block appended after the existing Edit|Write|... block, no existing hooks touched.\n   guard_paths.py is untracked (new file), diff is the _target_matches fix described above (git diff not meaningful since untracked; full current file content is the artifact).\n\nCLAUDE.md: not touched (still out of scope per task text).\n\nLocks: acquired+released on .harness/bin/guard_paths.py and .harness/state.json for this session (lock.py acquire/release, holder worker-c). No lock files left behind.\n\nVerifier replay tip: to reproduce step 3(b) directly, set protected_paths=[\".harness/tests_protected_wc/**\"] (or any dir/** glob), mkdir the dir, then feed {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf <dir>\"}} to guard_paths.py via stdin -- expect exit 2 and a protected_path_blocked event with target==<dir> (bare, no trailing slash). Restore protected_paths=[] afterward; md5 of state.json should return to 3c6b1610c6d6e0f390e533fe69daf662.",
+        "ts": "2026-07-06T16:41:00Z"
+      },
+      "created_at": "2026-07-06T16:25:11Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-07-06T16:44:08Z",
       "completed_by": "verifier-b"
     }
   }

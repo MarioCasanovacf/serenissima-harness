@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 9,
+        "tasks_done": 10,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-06T15:55:04Z"
+        "last_outcome_at": "2026-07-06T16:44:08Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -316,25 +316,6 @@
         "revisit_trigger": "at most a one-line doc-only note in ORCHESTRATION.md documenting the existing golden-vector/replay convention; reopen automation only if a real fail->fix->fail-again signature appears in events.jsonl",
         "decided_at": "2026-07-05T09:30:00Z",
         "decided_by": "operator (token/complexity bar for gen-5 intake) on evolution-analyst audit"
-      },
-      {
-        "id": "P-029",
-        "source": "audit_t303_protected_paths.md (T-303, analyst-a; verdicted done by verifier-c)",
-        "target": [
-          ".harness/bin/guard_paths.py (new)",
-          ".claude/settings.json",
-          ".harness/state.json (protected_paths key)",
-          "CLAUDE.md §3A"
-        ],
-        "summary": "Generic protected-paths guardrail: PreToolUse[Bash] hook blocking destructive commands (remove/move/shred/truncate and shell redirects) against a state.json-configured glob list. Default [] (strict no-op), opt-in only. Adds protected_path_blocked event so blocks become observable (outer-guard denies are invisible to our logs today).",
-        "status": "pending",
-        "verdict_of_intake": "SIMPLIFY-AND-ADOPT (analyst-a); evidence replayed clean by verifier-c",
-        "evidence": "0/12 destructive commands in transcript.jsonl were accidental protected-file loss; a dcg-blocked 'rm -rf' is invisible in events.jsonl (PreToolUse deny suppresses PostToolUse); .claude/settings.json ships an empty PreToolUse[Bash] slot that migrate_project.py propagates to adopters who may lack an outer guard. Live corroboration 2026-07-06: dcg false-positived on the mere TEXT of this proposal (pattern match inside a heredoc string), evidence for P-029's glob-scoped design over broad regex matching.",
-        "cost_assessment": "lines low-medium; hook integration medium; recurring tokens low; gen-4 risk low if default-empty/opt-in",
-        "kill_triggers": "downgrade to REJECT if the default cannot be kept a strict no-op (any new deny of legitimate scratch removals), or if the operator confirms dcg is universally inherited by every migration target",
-        "gate": "NLAH/control-plane mutation — human gate REQUIRED before apply (state.human_gates)",
-        "recorded_at": "2026-07-06T18:40:00Z",
-        "recorded_by": "coordinator (post-verdict administrative registration)"
       }
     ],
     "accepted_mutations": [
@@ -695,6 +676,27 @@
         "gate": "code-level (contract text)",
         "applied_note": "applied in T-057, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
         "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-029",
+        "source": "audit_t303_protected_paths.md (T-303, analyst-a; verdicted done by verifier-c)",
+        "target": [
+          ".harness/bin/guard_paths.py (new)",
+          ".claude/settings.json",
+          ".harness/state.json (protected_paths key)",
+          "CLAUDE.md §3A"
+        ],
+        "summary": "Generic protected-paths guardrail: PreToolUse[Bash] hook blocking destructive commands (remove/move/shred/truncate and shell redirects) against a state.json-configured glob list. Default [] (strict no-op), opt-in only. Adds protected_path_blocked event so blocks become observable (outer-guard denies are invisible to our logs today).",
+        "status": "applied",
+        "verdict_of_intake": "SIMPLIFY-AND-ADOPT (analyst-a); evidence replayed clean by verifier-c",
+        "evidence": "0/12 destructive commands in transcript.jsonl were accidental protected-file loss; a dcg-blocked 'rm -rf' is invisible in events.jsonl (PreToolUse deny suppresses PostToolUse); .claude/settings.json ships an empty PreToolUse[Bash] slot that migrate_project.py propagates to adopters who may lack an outer guard. Live corroboration 2026-07-06: dcg false-positived on the mere TEXT of this proposal (pattern match inside a heredoc string), evidence for P-029's glob-scoped design over broad regex matching.",
+        "cost_assessment": "lines low-medium; hook integration medium; recurring tokens low; gen-4 risk low if default-empty/opt-in",
+        "kill_triggers": "downgrade to REJECT if the default cannot be kept a strict no-op (any new deny of legitimate scratch removals), or if the operator confirms dcg is universally inherited by every migration target",
+        "gate": "NLAH/control-plane mutation — human gate REQUIRED before apply (state.human_gates)",
+        "recorded_at": "2026-07-06T18:40:00Z",
+        "recorded_by": "coordinator (post-verdict administrative registration)",
+        "applied_note": "applied in T-310 (guard_paths.py + PreToolUse[Bash] wiring + protected_paths:[] key). First round REJECTED by verifier-b (bare-directory glob bypass: fnmatch('dir','dir/**') is False); worker-c fixed _target_matches (trailing-slash normalization + exact bare-prefix branch); second round verdicted done by the same rejector, near-miss names verified unaffected. Human gate: operator approved 2026-07-06 via coordinator session.",
+        "applied_at": "2026-07-06T19:55:00Z"
       }
     ],
     "audit_artifacts": [
@@ -739,5 +741,6 @@
       "4 SESSION HYGIENE: the substrate is resumable by design - close coordination sessions when the mission pauses instead of keeping 8h+ sessions alive; a fresh session picks up the board cold via ORCHESTRATION.md + blackboard.py status",
       "5 MODEL FLOOR: workers stay sonnet for code; trivial mechanical tasks (file moves, greps, disposals) may be dispatched at haiku per-call; planners/analysts stay opus but run rarely"
     ]
-  }
+  },
+  "protected_paths": []
 }
