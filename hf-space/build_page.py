@@ -89,20 +89,33 @@ def topology_svg():
 
 
 def lifecycle_svg():
-    xs = [8, 156, 304, 452, 600]
+    # Boxes 104px wide with 55px gaps so the arrow labels fit BETWEEN boxes;
+    # labels ride above the arrow line, clear of every box.
+    xs = [8, 167, 326, 485, 644]
+    W, Y, H = 104, 40, 40
     labels = ["open", "claimed", "in_progress", "review", "done"]
     b = ""
     for x, lab in zip(xs, labels):
-        b += _box(x, 28, 120, 42, [(lab, False)], accent=(lab == "done"))
+        b += _box(x, Y, W, H, [(lab, False)], accent=(lab == "done"))
     arrow_labels = ["claim", "update", "handoff", "verdict"]
     for i, al in enumerate(arrow_labels):
-        b += _arrow(xs[i] + 120, 49, xs[i + 1], 49, al)
-    # return path: rejected / lease expiry back to the pool
-    b += _arrow(xs[3] + 60, 70, xs[0] + 60, 94, dashed=True)
-    b += (f'<text x="300" y="112" text-anchor="middle" font-family=\'{SANS}\' '
-          f'font-size="11" fill="{INK_3}">lease expiry / rejected  →  back to the pool</text>')
-    b += (f'<text x="530" y="140" text-anchor="middle" font-family=\'{SANS}\' '
-          f'font-size="11" fill="{OXBLOOD}">verdict given by a different agent  ·  producer ≠ approver</text>')
+        x1, x2 = xs[i] + W, xs[i + 1]
+        mid = (x1 + x2) / 2
+        b += (f'<line x1="{x1}" y1="{Y + H / 2}" x2="{x2}" y2="{Y + H / 2}" '
+              f'stroke="{INK}" stroke-width="1" marker-end="url(#ah)"/>')
+        b += (f'<text x="{mid}" y="{Y - 8}" text-anchor="middle" '
+              f'font-family=\'{SANS}\' font-size="10" fill="{INK_3}">{al}</text>')
+    # return path: rejected / lease expiry back to the pool — clean arc below
+    b += (f'<path d="M {xs[3] + W / 2} {Y + H} C {xs[3] + W / 2} {Y + H + 46}, '
+          f'{xs[0] + W / 2} {Y + H + 46}, {xs[0] + W / 2} {Y + H + 6}" '
+          f'fill="none" stroke="{INK}" stroke-width="1" stroke-dasharray="4 3" '
+          f'marker-end="url(#ah)"/>')
+    b += (f'<text x="{(xs[0] + xs[3]) / 2 + W / 2}" y="{Y + H + 42}" text-anchor="middle" '
+          f'font-family=\'{SANS}\' font-size="11" fill="{INK_3}">lease expiry / rejected'
+          f'&#160;&#160;returns to the pool</text>')
+    b += (f'<text x="{(xs[3] + xs[4]) / 2 + W / 2}" y="{Y + H + 66}" text-anchor="end" '
+          f'font-family=\'{SANS}\' font-size="11" fill="{OXBLOOD}">verdict given by a '
+          f'different agent&#160;&#160;·&#160;&#160;producer ≠ approver</text>')
     return _svg(760, 156, b)
 
 
