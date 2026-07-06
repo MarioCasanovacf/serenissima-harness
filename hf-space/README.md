@@ -1,11 +1,12 @@
 ---
 title: Serenissima Harness
-colorFrom: green
+colorFrom: red
 colorTo: gray
 sdk: static
 pinned: false
 license: mit
 short_description: A society of agents, coordinated like the Venetian Republic
+thumbnail: https://huggingface.co/spaces/MarioCasanovaCF/serenissima-harness/resolve/main/thumbnail.png
 ---
 
 # Serenissima Harness
