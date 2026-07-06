@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-07-06T15:50:53Z",
-  "updated_by": "coordinator",
+  "updated_at": "2026-07-06T15:55:16Z",
+  "updated_by": "verifier-a",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -2439,7 +2439,7 @@
     "T-300": {
       "epic": "gen-5",
       "title": "Verify migrate_project.py rename end-to-end (dry-run transplant against a scratch repo)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -2447,10 +2447,21 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-300.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "/private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/8b5794bc-d02f-4611-9aca-832a0a08a610/scratchpad/t300_dryrun_output.txt",
+        "/private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/8b5794bc-d02f-4611-9aca-832a0a08a610/scratchpad/t300_real_output.txt",
+        "/private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/8b5794bc-d02f-4611-9aca-832a0a08a610/scratchpad/t300-target"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "EXPECTED: dry-run writes nothing, real transplant seeds migrate_project.py (not migracion_proyecto.py) with an English quickstart template and zero stale 'migracion' refs. ACTUAL: matched exactly.\n\nReplay commands (agent worker-a, scratch target only -- never touches source repo):\n  SCRATCH=/private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/8b5794bc-d02f-4611-9aca-832a0a08a610/scratchpad/t300-target-replay\n  mkdir -p $SCRATCH\n  touch $SCRATCH/.marker\n  python3 .harness/bin/migrate_project.py $SCRATCH --dry-run   # -> exit 0, prints action plan only\n  find $SCRATCH -newer $SCRATCH/.marker -not -name .marker      # -> empty (dry-run wrote NOTHING)\n  rm $SCRATCH/.marker\n  python3 .harness/bin/migrate_project.py $SCRATCH              # -> exit 0, real transplant\n  find $SCRATCH/.harness/bin -iname '*migracion*'                # -> empty, only migrate_project.py present\n  grep -ril migracion $SCRATCH                                   # -> exit 1 (no matches) = no stale refs\n  grep -A6 'Next steps for the human' <(python3 .harness/bin/migrate_project.py $SCRATCH --force)  # English quickstart ('Pose the goal, e.g.:' / 'Planner: decompose...')\n\nObserved (this run, target=.../scratchpad/t300-target):\n  - dry-run: exit 0, action plan printed 21 lines ([COPY]/[RESET]/[SKIP]), find -newer showed zero written files (only the pre-existing marker).\n  - real run: exit 0, same 21-line plan executed for real; verified via 'find $SCRATCH -mindepth 1' listing every seeded file.\n  - .harness/bin/migrate_project.py IS present in the seeded target; no migracion_proyecto.py anywhere (find -iname '*migracion*' empty).\n  - grep -ril 'migracion' over the entire seeded tree: zero matches (exit 1).\n  - Seeded _next_steps_text output (the 'live quickstart template' called out in commit c04d554) is in English: 'Next steps for the human: ... 4. Pose the goal, e.g.: \"Read ORCHESTRATION.md and USAGE.md. ... Planner: decompose the remaining work onto the board and dispatch.\"' -- traced to migrate_project.py:_next_steps_text (git show c04d554 confirms this is the function the commit message calls 'live quickstart template translated').\n  - plan.md provenance note correctly cites source repo path + generation 4 + real timestamp.\n  - No source-repo files modified; no locks required since only migrate_project.py was invoked (read-only against source) and all writes targeted the scratch dir. Full raw outputs saved as artifacts (t300_dryrun_output.txt, t300_real_output.txt) plus the seeded tree itself (t300-target) for direct inspection.",
+        "ts": "2026-07-06T15:53:18Z"
+      },
       "created_at": "2026-07-06T15:50:53Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-07-06T15:55:04Z",
+      "completed_by": "verifier-a"
     },
     "T-301": {
       "epic": "gen-5",

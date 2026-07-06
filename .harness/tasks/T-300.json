@@ -4,5 +4,26 @@
   "description": "The public-English sweep renamed migracion_proyecto.py -> migrate_project.py and translated its live quickstart template. Syntax was checked but the transplant flow was NOT exercised. Run: python3 .harness/bin/migrate_project.py <scratch-target> --dry-run, then a real transplant into a throwaway dir; confirm seeded files reference migrate_project.py and no stale migracion_ references remain in live (non-evidence) code/docs. Hand off with the replayable commands.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-06T15:51:51Z",
+      "agent": "main",
+      "note": "plan: run migrate_project.py --dry-run then real transplant into scratchpad/t300-target; grep seeded output for stale migracion_proyecto refs and English quickstart template"
+    },
+    {
+      "ts": "2026-07-06T15:53:18Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: EXPECTED: dry-run writes nothing, real transplant seeds migrate_project.py (not migracion_proyecto.py) with an English quickstart template and zero stale 'migracion' refs. ACTUAL: matched exactly.\n\nReplay commands (agent worker-a, scratch target only -- never touches source repo):\n  SCRATCH=/private/tmp/claude-501/-Users-mariocasanova10pa-Documents-Universal-Harness/8b5794bc-d02f-4611-9aca-832a0a08a610/scratchpad/t300-target-replay\n  mkdir -p $SCRATCH\n  touch $SCRATCH/.marker\n  python3 .harness/bin/migrate_project.py $SCRATCH --dry-run   # -> exit 0, prints action plan only\n  find $SCRATCH -newer $SCRATCH/.marker -not -name .marker      # -> empty (dry-run wrote NOTHING)\n  rm $SCRATCH/.marker\n  python3 .harness/bin/migrate_project.py $SCRATCH              # -> exit 0, real transplant\n  find $SCRATCH/.harness/bin -iname '*migracion*'                # -> empty, only migrate_project.py present\n  grep -ril migracion $SCRATCH                                   # -> exit 1 (no matches) = no stale refs\n  grep -A6 'Next steps for the human' <(python3 .harness/bin/migrate_project.py $SCRATCH --force)  # English quickstart ('Pose the goal, e.g.:' / 'Planner: decompose...')\n\nObserved (this run, target=.../scratchpad/t300-target):\n  - dry-run: exit 0, action plan printed 21 lines ([COPY]/[RESET]/[SKIP]), find -newer showed zero written files (only the pre-existing marker).\n  - real run: exit 0, same 21-line plan executed for real; verified via 'find $SCRATCH -mindepth 1' listing every seeded file.\n  - .harness/bin/migrate_project.py IS present in the seeded target; no migracion_proyecto.py anywhere (find -iname '*migracion*' empty).\n  - grep -ril 'migracion' over the entire seeded tree: zero matches (exit 1).\n  - Seeded _next_steps_text output (the 'live quickstart template' called out in commit c04d554) is in English: 'Next steps for the human: ... 4. Pose the goal, e.g.: \"Read ORCHESTRATION.md and USAGE.md. ... Planner: decompose the remaining work onto the board and dispatch.\"' -- traced to migrate_project.py:_next_steps_text (git show c04d554 confirms this is the function the commit message calls 'live quickstart template translated').\n  - plan.md provenance note correctly cites source repo path + generation 4 + real timestamp.\n  - No source-repo files modified; no locks required since only migrate_project.py was invoked (read-only against source) and all writes targeted the scratch dir. Full raw outputs saved as artifacts (t300_dryrun_output.txt, t300_real_output.txt) plus the seeded tree itself (t300-target) for direct inspection."
+    },
+    {
+      "ts": "2026-07-06T15:55:04Z",
+      "agent": "verifier-a",
+      "note": "test"
+    },
+    {
+      "ts": "2026-07-06T15:55:16Z",
+      "agent": "verifier-a",
+      "note": "VERIFIED (verifier-a, independent replay + fresh transplant in a NEW scratch dir t300-verify, distinct from worker's target/replay dirs): (1) dry-run: python3 .harness/bin/migrate_project.py $FRESH --dry-run -> exit 0, action-plan-only output, find $FRESH -newer marker -not -name .marker showed zero written files inside the dir. (2) real transplant: python3 .harness/bin/migrate_project.py $FRESH -> exit 0, full seed report, ends with English 'Next steps for the human' quickstart ('Pose the goal, e.g.: ... Planner: decompose the remaining work onto the board and dispatch.'), traced to migrate_project.py:_next_steps_text (def at line 390, 'Pose the goal' at line 396) confirming live function. (3) stale-name greps on BOTH trees: find $FRESH -iname '*migracion*' -> empty; grep -ril migracion $FRESH -> exit 1 (no match); find worker's t300-target -iname '*migracion*' -> empty; grep -ril migracion t300-target -> exit 1 (no match). migrate_project.py present at .harness/bin/migrate_project.py in fresh seed; no migracion_proyecto.py anywhere. (4) source-repo integrity: git status --short shows only blackboard.json/task.json churn from my own claim/update actions -- migrate_project.py made zero writes to source tree. Cognitive diversity vs producer: regenerated transplant independently into a brand-new dir never touched by worker-a, ruling out reliance on a pre-seeded/falsified artifact. All acceptance criteria (dry-run no-op, English quickstart, zero stale migracion refs, correct new filename) hold on replay."
+    }
+  ]
 }
