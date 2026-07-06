@@ -511,7 +511,7 @@ footer p {{ font-family:var(--font-sans); font-size:13px; line-height:20px; colo
 
 <footer class="col">
   <p>Source, full spec, and evidence trail on
-  <a href="https://github.com/MarioCasanovacf/serenissima-harness">GitHub</a>. MIT &mdash;
+  <a href="https://github.com/MarioCasanovacf/serenissima-harness" target="_blank" rel="noopener">GitHub</a>. MIT &mdash;
   built to be forked, not PR&rsquo;d: drop it into your own repo and let it evolve under your
   goals. Reach me on LinkedIn, X, or Substack (Moneda 391).</p>
 </footer>

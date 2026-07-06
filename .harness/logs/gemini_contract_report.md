@@ -1,5 +1,13 @@
 # Gemini Contract Report (T-002)
 
+> **Editorial note (English):** this is a verbatim evidence artifact, written in Spanish by
+> the Gemini (Antigravity) agent that executed T-002. Evidence files are never rewritten —
+> translating it would break the "nothing is claimed that the logs can't confirm" guarantee.
+> Summary: the Gemini agent completed the full claim→lock→work→handoff lifecycle against the
+> blackboard CLI contract, and reported two frictions (lock-file path encoding readability,
+> planning-block redundancy with Antigravity's own plan files) plus a proposed `recontext.py
+> add` improvement — later adopted.
+
 Reporte de conformidad con el protocolo del harness (NLAH) para agentes basados en Gemini (Antigravity).
 
 ## Checklist de Protocolo

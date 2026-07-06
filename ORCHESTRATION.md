@@ -1,10 +1,10 @@
 # ORCHESTRATION.md — Delegation Topology of the Universal Agent Harness
 
-> **Resumen en español**: ni paralelismo caótico ni una cascada gigante. La delegación se
-> modela como un **grafo de dependencias (DAG)**: la cascada existe exactamente donde hay
-> una dependencia real de artefactos (el claim se rechaza si los `depends_on` no están
-> `done`), y todo lo demás corre en paralelo bajo locks con TTL y claims con lease, para
-> que ningún agente atascado detenga al resto. Productor ≠ aprobador, siempre.
+> **Summary**: neither chaotic parallelism nor one giant cascade. Delegation is modeled as
+> a **dependency-DAG**: a cascade exists exactly where a real artifact dependency exists
+> (the claim is refused while its `depends_on` aren't `done`), and everything else runs in
+> parallel under TTL locks and leased claims, so no stuck agent ever stalls the rest.
+> Producer ≠ approver, always.
 
 This document is the shared topology contract for every engine (Claude, Gemini, human).
 The NLAHs (`claude.md`, `gemini.md`) define *how each engine behaves*; this file defines
