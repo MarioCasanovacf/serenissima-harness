@@ -4,5 +4,26 @@
   "description": "Portfolio ships a PreToolUse[Bash] regex hook blocking rm/mv/shred/truncate and redirects against data/real. Evaluate promoting a generic, configurable protected-paths guardrail into the public harness (state.json-configured glob list + hook). Falsifiable proposal with cost table, same bar as the gen-5 intake that rejected Shepherd/Opik (P-027/P-028).",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-06T16:16:12Z",
+      "agent": "analyst-a",
+      "note": "Intake T-303 protected-paths guardrail: evidence gathered from events.jsonl(1321)/transcript.jsonl(2668). Writing audit_t303_protected_paths.md under lock."
+    },
+    {
+      "ts": "2026-07-06T16:19:12Z",
+      "agent": "analyst-a",
+      "note": "T-303 audit written. Verdict SIMPLIFY-AND-ADOPT (proposed P-029): generic default-empty opt-in protected_paths mechanism; reject Portfolio data/real literal + any default-on/broad-glob form. Evidence: 0/12 destructive cmds were accidental protected-file loss; data/real absent here; dcg-blocked rm -rf invisible to logs (PreToolUse deny -> no PostToolUse -> no transcript line); repo's own PreToolUse[Bash] slot empty. Honest counter-verdict REJECT-with-revisit recorded for coordinator. Register-only; no JSON/claude.md hand-edited."
+    },
+    {
+      "ts": "2026-07-06T16:19:12Z",
+      "agent": "analyst-a",
+      "note": "HANDOFF -> verifier: audit at .harness/logs/audit_t303_protected_paths.md; every claim cites events.jsonl/transcript.jsonl lines. Verify: (1) grep -rl data/real -> only task text; (2) the 12 rm/mv hits categorization in A.2; (3) grep -c 'rm -rf' events.jsonl = 0 (dcg block invisible, A.3); (4) settings.json PreToolUse[Bash] slot empty; (5) proposal is register-only, no JSON/claude.md mutated. Verdict SIMPLIFY-AND-ADOPT w/ recorded REJECT-with-revisit alternative."
+    },
+    {
+      "ts": "2026-07-06T16:21:38Z",
+      "agent": "verifier-c",
+      "note": "VERIFIED (verifier-c, independent replay, different-method: JSON-decoded command extraction vs analyst's raw grep). (1) data/real: grep -rl 'data/real' across repo returns only self-referential audit/task files (T-303.json, T-301.json, blackboard.json, the two audit .md files) -- no literal path exists, confirmed. (2) 12-hit count reproduced exactly: python3 JSON-decode scan of tool_input.command for rm|mv|shred|truncate restricted to transcript.jsonl lines <=2668 (the corpus size at audit-write time) yields exactly 12 hits: 421,511,673,1427,1585,2088,2490,2546,2592,2616,2635,2668. Manually inspected the 3 not explicitly cited in the audit (2088 cronsplain /tmp_stdout cleanup, 2616/2635 T-300 scratchpad marker rm) -- all harmless scratch, 0/12 accidental protected-file loss confirmed, matching A.2s classification (scratch cleanup / gate-approved 1427 / git rm --cached 2546+2592 non-destructive (docs/ verified still on disk by ls in same transcript entry) / T-090 payload-not-command / hf-space intentional rm -f app.py+requirements.txt at 2490). (3) grep -c rm -rf events.jsonl = 0, reproduced exactly -- dcg-invisibility claim holds mechanically (PreToolUse deny -> no PostToolUse -> no transcript/event line). (4) .claude/settings.json PreToolUse block (read in full) has only one matcher: Edit|Write|MultiEdit|NotebookEdit -> check_lock.py; there is no Bash matcher anywhere in the hooks tree -- empty-Bash-slot claim confirmed by direct read, not just line-range grep. Internal consistency: cost table's 4-file scope (guard_paths.py + settings.json block + state.json key + CLAUDE.md note) matches the mutation section verbatim; kill triggers are falsifiable (trigger 1 by regression grep count of protected_path_blocked, trigger 2 by operator confirmation) -- not vacuous. Intake-bar honesty: the strict occurrence-only REJECT reading is stated in full in the dedicated 'Honest counter-verdict' section with the analyst's own reasoning for why they land on ADOPT anyway rather than being buried or strawmanned -- fair recording confirmed. Register-only compliance verified: P-029 is absent from state.json evolution.pending_proposals (checked directly), consistent with the audit's claim that it did not hand-edit shared JSON. Housekeeping: lock.py status = no active lock files, sweep = 0 expired; session.py list shows only coordinator and worker-b, both unexpired (checked against current time) -- nothing to unregister."
+    }
+  ]
 }

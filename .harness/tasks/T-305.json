@@ -1,0 +1,44 @@
+{
+  "id": "T-305",
+  "title": "SCRATCH-verifierb: reopen probe",
+  "description": "verifier-b adversarial reopen probe for T-302",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-06T16:18:44Z",
+      "agent": "verifier-b",
+      "note": "driving to failed for reopen probe"
+    },
+    {
+      "ts": "2026-07-06T16:19:07Z",
+      "agent": "verifier-b",
+      "note": "REOPEN (was failed): verifier-b adversarial replay of P-023 reopen success path"
+    },
+    {
+      "ts": "2026-07-06T16:19:34Z",
+      "agent": "verifier-b",
+      "note": "drive to failed (terminal) for cascade test"
+    },
+    {
+      "ts": "2026-07-06T16:19:41Z",
+      "agent": "verifier-b",
+      "note": "HANDOFF -> verifier: handoff for done-cascade test"
+    },
+    {
+      "ts": "2026-07-06T16:19:41Z",
+      "agent": "verifier-c",
+      "note": "mark done by different agent"
+    },
+    {
+      "ts": "2026-07-06T16:19:52Z",
+      "agent": "verifier-b",
+      "note": "REOPEN (was done): reopen done->open to verify cascade gate re-evaluates depends_on"
+    },
+    {
+      "ts": "2026-07-06T16:20:05Z",
+      "agent": "verifier-b",
+      "note": "scratch probe complete (T-302 verification by verifier-b); leaving in terminal failed state as disposable artifact"
+    }
+  ]
+}

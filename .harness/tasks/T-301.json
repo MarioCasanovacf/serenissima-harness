@@ -4,5 +4,21 @@
   "description": "The fleet inventory (docs/flota-de-agentes.md, operator-local) found the 5-agent bench + harness-status + hooks copied into Portfolio and Curriculums with no sync mechanism. Produce a recommendation with trade-offs: (a) re-transplant via migrate_project.py on each generation bump, (b) deliberate per-project divergence, (c) a sync manifest. Recommendation only; no code.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-07-06T16:14:32Z",
+      "agent": "thinker-a",
+      "note": "plan: diff 5 bench agents + harness-status SKILL + hook wirings (settings.json) across Harness/Portfolio/Curriculums (read-only siblings); score real divergence; produce recommendation doc with 3 options + 1 pick."
+    },
+    {
+      "ts": "2026-07-06T16:19:18Z",
+      "agent": "thinker-a",
+      "note": "HANDOFF -> verifier: DECISION: recommend option (c) sync manifest + read-only bench_sync.py check (no auto-apply, no --force). Artifact: .harness/logs/bench_sync_recommendation.md. Replay to verify (read-only on siblings): (1) bench agent diffs — loop diff of the 5 bench files Harness vs Portfolio vs Curriculums: only orchestration-planner.md (1 line: Gemini bridge path) and research-librarian.md (2 lines: operator-local annotation) differ; worker/verifier/evolution-analyst identical. (2) skill diff: harness-status/SKILL.md siblings add Spanish trigger 'qué está pasando' (1 line). (3) hook wirings: normalized-JSON diff of settings.json .hooks — 4 core wirings (log_event x3 + check_lock x1) byte-identical all three; Portfolio ADDS 2 (NotebookEdit reminder + data/real Bash guard); Curriculums fully identical. (4) migrate_project.py L162-240: per-file guard = SKIP-EXISTS without --force (no-op) / whole-file backup+overwrite with --force (destructive, no merge). (5) scar: Portfolio .claude/settings.json.bak-1 (2026-07-04) proves --force already clobbered a customized settings and hooks were manually re-added. Exact commands in artifact §5. Producer=thinker-a; needs a verifier != thinker-a per F6."
+    },
+    {
+      "ts": "2026-07-06T16:21:24Z",
+      "agent": "verifier-a",
+      "note": "VERIFIED (verifier-a, replayed independently, cognitive diversity: recomputed diffs myself + read migrate_project.py source directly rather than trusting note prose). (1) Agent-file diffs replayed exactly: orchestration-planner.md L49 (Gemini bridge path) and research-librarian.md L16-17 (operator-local annotation) differ H-vs-siblings, identical P-vs-C; substrate-worker/harness-verifier/evolution-analyst byte-identical across all three (diff exit 0 on all 9 pairs). (2) SKILL.md: siblings add 'qué está pasando' trigger, 1-line diff H-vs-siblings, P-C identical -- confirmed. (3) Hook wirings: normalized-JSON diff shows 4 core hooks (SessionStart log_event, PreToolUse check_lock on Edit/Write/MultiEdit/NotebookEdit, PostToolUse log_event, Stop log_event) present identically in all three; Portfolio's settings.json additionally has NotebookEdit reminder + Bash data/real guard (2 extra hook entries), Curriculums has zero diff vs Harness -- confirmed. (4) Portfolio/.claude/settings.json.bak-1 exists (Jul 4 00:25, 1188 bytes) containing ONLY the two custom hooks (no permissions block, no core log_event/check_lock hooks) -- consistent with being the pre-force-overwrite state; live settings.json (Jul 5 02:43) has both the 4 core hooks AND the 2 custom hooks re-added -- consistent with claim's clobber-then-manual-recovery narrative. (5) Read migrate_project.py L162-240 directly: _copy_guarded_file confirmed SKIP-EXISTS no-op without --force, whole-file rename-to-.bak-N then wholesale shutil.copy2 overwrite with --force -- no field-level merge exists anywhere in the function. All 4 replay points match the artifact's claims verbatim; no discrepancy found. Recommendation internally consistent: (a) rejected on the no-op/destructive dichotomy + bak-1 scar (evidence, not vibes); (b) rejected on forward-looking trajectory argument (no signal/noise separation, no reverse channel) which is reasoned not asserted; (c) directly addresses the measured bidirectional-mostly-intentional pattern via CORE/PROJECT-LOCAL classification + read-only checker + named reverse-flow candidate. Housekeeping: lock.py status = no active locks; lock.py sweep = 0 expired leases swept."
+    }
+  ]
 }

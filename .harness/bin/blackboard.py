@@ -55,6 +55,12 @@ Usage examples:
   printf '%s' 'note with `backticks` and $(danger)' > /tmp/note.txt
   python3 .harness/bin/blackboard.py update T-003 --note-file /tmp/note.txt
   echo 'note with `backticks`' | python3 .harness/bin/blackboard.py update T-003 --note-stdin
+  # P-023: 'done'/'failed' are terminal -- nothing above can move a task off
+  # them (by design). The only sanctioned way back is `reopen`, which only
+  # acts on terminal tasks, MANDATES --note (no note = refused, no silent
+  # resurrection), and logs task_reopened (who/why) to events.jsonl:
+  python3 .harness/bin/blackboard.py reopen T-090 --agent worker-b \
+      --note "re-running the scratch probe under the new goal_mode bound"
 """
 import argparse
 import datetime as dt
@@ -461,6 +467,59 @@ def cmd_handoff(args):
     return 0
 
 
+def cmd_reopen(args):
+    """P-023: terminal-state resurrection, done properly instead of by hand-editing JSON.
+
+    'done' and 'failed' are terminal today -- nothing in this CLI can move a task
+    off them, so the only way back was hand-editing blackboard.json, which the
+    harness explicitly forbids (claude.md Agency layer, ORCHESTRATION.md
+    invariant table: blackboard.py is the ONLY sanctioned writer). This verb
+    provides a narrow, audited escape hatch instead:
+      (1) only acts on tasks whose status is currently 'done' or 'failed'
+          (open/claimed/in_progress/blocked/review are refused -- reopen is not
+          a generic status-setter, use `update` for those);
+      (2) --note is MANDATORY -- no note is a silent resurrection and is
+          refused outright, before any state is touched;
+      (3) logs a `task_reopened` event to events.jsonl recording who (--agent)
+          and why (the note), plus the previous terminal status;
+      (4) resets the task to 'open', clearing claim/handoff/completion state
+          the same way `update --status open` already does, so the task
+          re-enters the claimable frontier cleanly (cascade gate re-evaluates
+          depends_on normally on the next claim attempt).
+    """
+    note = resolve_note(args)
+    if not note:
+        sys.exit("refused: reopen requires --note (or --note-file/--note-stdin) explaining "
+                  "why this terminal task is being resurrected -- no note means no reopen "
+                  "(P-023: refuses silent resurrection)")
+    with hc.guarded():
+        bb = load_bb()
+        released = expire_claims(bb)
+        t = bb.get("tasks", {}).get(args.task_id)
+        if t is None:
+            sys.exit("unknown task {}".format(args.task_id))
+        previous_status = t.get("status")
+        if previous_status not in ("done", "failed"):
+            sys.exit(
+                "refused: {tid} is '{prev}', not terminal -- reopen only acts on 'done' or "
+                "'failed' tasks (use `update {tid} --status ...` for non-terminal transitions)."
+                .format(tid=args.task_id, prev=previous_status))
+        t["status"] = "open"
+        t["claimed_by"] = None
+        t["claim_expires_at"] = None
+        t["handoff"] = None
+        t["completed_at"] = None
+        t["completed_by"] = None
+        save_bb(bb, args.agent)
+        append_note(args.task_id, args.agent, "REOPEN (was {}): {}".format(previous_status, note))
+    report_expirations(released)
+    hc.log_event("task_reopened", task=args.task_id, agent=args.agent,
+                 previous_status=previous_status, note=note)
+    print("reopened {} (was '{}') -> 'open' by {}. Reason logged to events.jsonl and {}.".format(
+        args.task_id, previous_status, args.agent, detail_path(args.task_id)))
+    return 0
+
+
 def cmd_add_task(args):
     if not re.match(r"^T-\d{3}$", args.id):
         sys.exit("invalid --id '{}': expected T-NNN (e.g. T-010)".format(args.id))
@@ -567,6 +626,13 @@ def main(argv):
     p_ho.add_argument("--to-role", required=True)
     add_note_args(p_ho)
     p_ho.set_defaults(func=cmd_handoff)
+
+    p_reopen = sub.add_parser("reopen", parents=[common],
+                              help="P-023: resurrect a terminal ('done'/'failed') task back to 'open' "
+                                   "(--note mandatory, logged as task_reopened)")
+    p_reopen.add_argument("task_id")
+    add_note_args(p_reopen)
+    p_reopen.set_defaults(func=cmd_reopen)
 
     p_add = sub.add_parser("add-task", parents=[common], help="publish a new task on the board")
     p_add.add_argument("--id", required=True)

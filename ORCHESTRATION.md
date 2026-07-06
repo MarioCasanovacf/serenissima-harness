@@ -55,6 +55,17 @@ open ──claim──▶ claimed ──update──▶ in_progress ──handof
 | Verdict (verifier only) | `blackboard.py update <T-ID> --status done` or `--status open --note "REJECTED: ..."` |
 | Release locks | `python3 .harness/bin/lock.py release <path> --holder <you>` |
 
+**Terminal-state reopen (P-023)**: `done` and `failed` are terminal — nothing in the table
+above moves a task off them, by design. The only sanctioned way back is an explicit verb,
+never hand-editing `blackboard.json` (forbidden — `blackboard.py` is the sole writer):
+`python3 .harness/bin/blackboard.py reopen <T-ID> --agent <you> --note "<why>"`. It (1) only
+acts on tasks currently `done`/`failed` (refused otherwise — it is not a generic
+status-setter), (2) mandates `--note`/`--note-file`/`--note-stdin` explaining why — no note
+means no reopen, refusing silent resurrection, (3) logs a `task_reopened` event to
+`events.jsonl` recording who and why, and (4) resets the task to `open`, clearing
+claim/handoff/completion state so it re-enters the claimable frontier cleanly (cascade gate
+re-evaluates `depends_on` normally on the next claim).
+
 **Note taxonomy (U2)**: task notes SHOULD be prefixed with one of four tags so evolution
 audits can `grep` them mechanically instead of re-reading prose:
 

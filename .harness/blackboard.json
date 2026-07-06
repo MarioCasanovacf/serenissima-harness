@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-07-06T15:55:16Z",
-  "updated_by": "verifier-a",
+  "updated_at": "2026-07-06T16:21:38Z",
+  "updated_by": "verifier-c",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -2466,7 +2466,7 @@
     "T-301": {
       "epic": "gen-5",
       "title": "Bench-sync decision: three diverging copies of the bench (Harness/Portfolio/Curriculums)",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
@@ -2474,15 +2474,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-301.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/logs/bench_sync_recommendation.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "thinker-a",
+        "note": "DECISION: recommend option (c) sync manifest + read-only bench_sync.py check (no auto-apply, no --force). Artifact: .harness/logs/bench_sync_recommendation.md. Replay to verify (read-only on siblings): (1) bench agent diffs — loop diff of the 5 bench files Harness vs Portfolio vs Curriculums: only orchestration-planner.md (1 line: Gemini bridge path) and research-librarian.md (2 lines: operator-local annotation) differ; worker/verifier/evolution-analyst identical. (2) skill diff: harness-status/SKILL.md siblings add Spanish trigger 'qué está pasando' (1 line). (3) hook wirings: normalized-JSON diff of settings.json .hooks — 4 core wirings (log_event x3 + check_lock x1) byte-identical all three; Portfolio ADDS 2 (NotebookEdit reminder + data/real Bash guard); Curriculums fully identical. (4) migrate_project.py L162-240: per-file guard = SKIP-EXISTS without --force (no-op) / whole-file backup+overwrite with --force (destructive, no merge). (5) scar: Portfolio .claude/settings.json.bak-1 (2026-07-04) proves --force already clobbered a customized settings and hooks were manually re-added. Exact commands in artifact §5. Producer=thinker-a; needs a verifier != thinker-a per F6.",
+        "ts": "2026-07-06T16:19:18Z"
+      },
       "created_at": "2026-07-06T15:50:53Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-07-06T16:21:24Z",
+      "completed_by": "verifier-a"
     },
     "T-302": {
       "epic": "gen-5",
       "title": "P-023: terminal-state --reopen rule for blackboard.py (gen-5 backlog, LOW)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
@@ -2490,15 +2499,26 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-302.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/blackboard.py",
+        "ORCHESTRATION.md",
+        ".harness/tasks/T-304.json"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-b",
+        "note": "P-023 reopen verb implemented in .harness/bin/blackboard.py (cmd_reopen + 'reopen' subparser, house style: hc.guarded(), resolve_note/append_note, hc.log_event, atomic save_bb, expire_claims). ORCHESTRATION.md lifecycle section (section 2) documents it. REPLAY (all commands run verbatim, exit codes as noted): (1) python3 .harness/bin/blackboard.py add-task --id T-304 --title 'SCRATCH-P023: reopen verb probe (disposable)' --role worker --engine any --priority 9 --description '...' --agent worker-b -> added. (2) claim T-304 --agent worker-b -> claimed. (3) update T-304 --status failed --agent worker-b --note '...' -> status=failed. (4) reopen T-304 --agent worker-b (NO --note) -> exit 1, stderr 'refused: reopen requires --note ... no note means no reopen (P-023: refuses silent resurrection)'; verified via blackboard.json that status stayed 'failed' (no mutation). (5) reopen T-304 --agent worker-b --note '...' -> exit 0, prints \"reopened T-304 (was 'failed') -> 'open' by worker-b...\"; blackboard.json shows status=open, claimed_by=null, claim_expires_at=null, handoff=null, completed_at=null, completed_by=null. (6) grep task_reopened .harness/logs/events.jsonl -> {\"event\": \"task_reopened\", \"agent\": \"worker-b\", \"task\": \"T-304\", \"previous_status\": \"failed\", \"note\": \"...\"}. (7) T-304.json notes[] shows the REOPEN-prefixed note appended. (8) reopen T-304 --agent worker-b --note '...' AGAIN (T-304 now 'open') -> exit 1, refused as non-terminal ('reopen only acts on done or failed'), confirming the guard is status-based not one-shot. T-304 was then re-driven to 'failed' and left as a disposable scratch artifact. All 5 acceptance points verified: (1) terminal-only gate, (2) mandatory --agent (via shared parent parser, consistent with every other verb) + mandatory --note (hard refusal, checked before any state mutation), (3) task_reopened event with who/why, (4) silent resurrection refused, (5) clean reset to open clearing claim/handoff/completion. Verifier: re-run the 8 replay commands above (or your own scratch task) to confirm.",
+        "ts": "2026-07-06T16:17:30Z"
+      },
       "created_at": "2026-07-06T15:50:53Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-07-06T16:20:43Z",
+      "completed_by": "verifier-b"
     },
     "T-303": {
       "epic": "gen-5",
       "title": "Intake: generic protected-paths guardrail (from Portfolio's data/real PreToolUse hook)",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
@@ -2506,10 +2526,75 @@
       "claim_expires_at": null,
       "priority": 3,
       "detail_file": ".harness/tasks/T-303.json",
+      "artifacts": [
+        ".harness/logs/audit_t303_protected_paths.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "analyst-a",
+        "note": "audit at .harness/logs/audit_t303_protected_paths.md; every claim cites events.jsonl/transcript.jsonl lines. Verify: (1) grep -rl data/real -> only task text; (2) the 12 rm/mv hits categorization in A.2; (3) grep -c 'rm -rf' events.jsonl = 0 (dcg block invisible, A.3); (4) settings.json PreToolUse[Bash] slot empty; (5) proposal is register-only, no JSON/claude.md mutated. Verdict SIMPLIFY-AND-ADOPT w/ recorded REJECT-with-revisit alternative.",
+        "ts": "2026-07-06T16:19:12Z"
+      },
+      "created_at": "2026-07-06T15:50:53Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-07-06T16:21:38Z",
+      "completed_by": "verifier-c"
+    },
+    "T-304": {
+      "epic": "E-01",
+      "title": "SCRATCH-P023: reopen verb probe (disposable)",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-304.json",
       "artifacts": [],
       "handoff": null,
-      "created_at": "2026-07-06T15:50:53Z",
-      "created_by": "coordinator"
+      "created_at": "2026-07-06T16:16:20Z",
+      "created_by": "worker-b",
+      "completed_at": "2026-07-06T16:16:55Z",
+      "completed_by": "worker-b"
+    },
+    "T-305": {
+      "epic": "E-01",
+      "title": "SCRATCH-verifierb: reopen probe",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-305.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T16:18:43Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-06T16:20:05Z",
+      "completed_by": "verifier-b"
+    },
+    "T-306": {
+      "epic": "E-01",
+      "title": "SCRATCH-verifierb: dependent of T-305",
+      "status": "failed",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [
+        "T-305"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 9,
+      "detail_file": ".harness/tasks/T-306.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-06T16:19:19Z",
+      "created_by": "verifier-b",
+      "completed_at": "2026-07-06T16:20:05Z",
+      "completed_by": "verifier-b"
     }
   }
 }

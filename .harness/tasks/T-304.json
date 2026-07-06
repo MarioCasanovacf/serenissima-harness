@@ -1,0 +1,24 @@
+{
+  "id": "T-304",
+  "title": "SCRATCH-P023: reopen verb probe (disposable)",
+  "description": "Disposable scratch task to end-to-end test the P-023 reopen verb (T-302).",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-06T16:16:26Z",
+      "agent": "worker-b",
+      "note": "scratch: driving this to failed on purpose to test the P-023 reopen verb"
+    },
+    {
+      "ts": "2026-07-06T16:16:44Z",
+      "agent": "worker-b",
+      "note": "REOPEN (was failed): P-302 verification: resurrecting scratch probe to confirm the reopen verb works end-to-end"
+    },
+    {
+      "ts": "2026-07-06T16:16:55Z",
+      "agent": "worker-b",
+      "note": "scratch probe complete (T-302); leaving in terminal failed state as disposable artifact"
+    }
+  ]
+}

@@ -150,9 +150,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 8,
+        "tasks_done": 9,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-05T06:16:50Z"
+        "last_outcome_at": "2026-07-06T15:55:04Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -185,9 +185,9 @@
         "last_outcome_at": "2026-07-05T00:56:36Z"
       },
       "verifier-b": {
-        "tasks_done": 0,
-        "tasks_failed": 7,
-        "last_outcome_at": "2026-07-05T06:49:15Z"
+        "tasks_done": 1,
+        "tasks_failed": 11,
+        "last_outcome_at": "2026-07-06T16:20:05Z"
       },
       "probe-agent-x": {
         "tasks_done": 4,
@@ -263,6 +263,21 @@
         "tasks_done": 1,
         "tasks_failed": 1,
         "last_outcome_at": "2026-07-05T06:49:15Z"
+      },
+      "worker-b": {
+        "tasks_done": 1,
+        "tasks_failed": 2,
+        "last_outcome_at": "2026-07-06T16:20:43Z"
+      },
+      "thinker-a": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-06T16:21:24Z"
+      },
+      "analyst-a": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-06T16:21:38Z"
       }
     }
   },
@@ -301,6 +316,25 @@
         "revisit_trigger": "at most a one-line doc-only note in ORCHESTRATION.md documenting the existing golden-vector/replay convention; reopen automation only if a real fail->fix->fail-again signature appears in events.jsonl",
         "decided_at": "2026-07-05T09:30:00Z",
         "decided_by": "operator (token/complexity bar for gen-5 intake) on evolution-analyst audit"
+      },
+      {
+        "id": "P-029",
+        "source": "audit_t303_protected_paths.md (T-303, analyst-a; verdicted done by verifier-c)",
+        "target": [
+          ".harness/bin/guard_paths.py (new)",
+          ".claude/settings.json",
+          ".harness/state.json (protected_paths key)",
+          "CLAUDE.md §3A"
+        ],
+        "summary": "Generic protected-paths guardrail: PreToolUse[Bash] hook blocking destructive commands (remove/move/shred/truncate and shell redirects) against a state.json-configured glob list. Default [] (strict no-op), opt-in only. Adds protected_path_blocked event so blocks become observable (outer-guard denies are invisible to our logs today).",
+        "status": "pending",
+        "verdict_of_intake": "SIMPLIFY-AND-ADOPT (analyst-a); evidence replayed clean by verifier-c",
+        "evidence": "0/12 destructive commands in transcript.jsonl were accidental protected-file loss; a dcg-blocked 'rm -rf' is invisible in events.jsonl (PreToolUse deny suppresses PostToolUse); .claude/settings.json ships an empty PreToolUse[Bash] slot that migrate_project.py propagates to adopters who may lack an outer guard. Live corroboration 2026-07-06: dcg false-positived on the mere TEXT of this proposal (pattern match inside a heredoc string), evidence for P-029's glob-scoped design over broad regex matching.",
+        "cost_assessment": "lines low-medium; hook integration medium; recurring tokens low; gen-4 risk low if default-empty/opt-in",
+        "kill_triggers": "downgrade to REJECT if the default cannot be kept a strict no-op (any new deny of legitimate scratch removals), or if the operator confirms dcg is universally inherited by every migration target",
+        "gate": "NLAH/control-plane mutation — human gate REQUIRED before apply (state.human_gates)",
+        "recorded_at": "2026-07-06T18:40:00Z",
+        "recorded_by": "coordinator (post-verdict administrative registration)"
       }
     ],
     "accepted_mutations": [
