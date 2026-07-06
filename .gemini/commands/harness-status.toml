@@ -1,0 +1,13 @@
+description = "Print the live harness board — task DAG, claimable frontier, cascade gates, active write-locks, recent events (all read-only)"
+
+prompt = """
+Print the live Universal Agent Harness status. Run these from the workspace root (all read-only):
+
+1. `python3 .harness/bin/blackboard.py status`
+2. `ls .harness/locks/ | grep -v README | grep -v .guard` (active write-locks)
+3. `tail -5 .harness/logs/events.jsonl` (recent events)
+
+Then summarize: how many tasks per status, what is claimable now, what is cascade-gated
+(and on which dependency), which locks are held and by whom, and anything unusual in the
+recent events. Do not mutate anything — this command is strictly observational.
+"""

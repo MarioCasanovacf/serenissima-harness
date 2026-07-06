@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "serenissima-harness",
+  "description": "A self-evolving, natural-language harness that runs a digital society of agents — no single agent decides alone.",
+  "owner": {
+    "name": "Mario Casanova",
+    "url": "https://github.com/MarioCasanovacf"
+  },
+  "plugins": [
+    {
+      "name": "serenissima-harness",
+      "source": {
+        "source": "github",
+        "repo": "MarioCasanovacf/serenissima-harness"
+      },
+      "description": "Blackboard task DAG, TTL write-locks, producer-vs-approver enforcement, bounded goal-mode loops, and a human-gated evolution loop — coordination rules as refusals, not promises.",
+      "homepage": "https://github.com/MarioCasanovacf/serenissima-harness",
+      "license": "MIT",
+      "keywords": ["agents", "orchestration", "blackboard", "multi-agent", "harness"]
+    }
+  ]
+}

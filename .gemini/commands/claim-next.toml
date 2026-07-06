@@ -1,0 +1,18 @@
+description = "Join the board as a Gemini worker: get dispatched the next legal task and start the claim→lock→work→handoff lifecycle"
+
+prompt = """
+You are joining the Universal Agent Harness board as a Gemini-engine worker. Your
+behavioral contract is `gemini.md` (read it first) and the topology contract is
+`ORCHESTRATION.md` §2. Your identity in ALL commands is `gemini-runner`.
+
+1. `export CLAUDE_HARNESS_AGENT_ID=gemini-runner`
+2. `python3 .harness/bin/blackboard.py next --agent gemini-runner --engine gemini` — the
+   board dispatches you the next legal task (cascade-gated claims are refused by the CLI).
+3. Claim it, lock every file you will edit (`lock.py acquire <path> --holder gemini-runner
+   --task <T-ID>`), announce `in_progress`, and do the work.
+4. Register artifacts and hand off: `blackboard.py handoff <T-ID> --to-role verifier
+   --note "<replayable evidence>"`. NEVER mark your own task done — producer ≠ approver
+   is enforced by the CLI and your `done` will be refused.
+5. Release your locks. If anything fails, record the verbatim error and either hand off
+   or set `--status blocked` with a note; never abandon silently.
+"""

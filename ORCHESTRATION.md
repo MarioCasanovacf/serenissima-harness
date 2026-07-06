@@ -130,7 +130,7 @@ contracts and reputation live in `state.json agents`.
 **Engine routing**: `claude` for judgment, synthesis, architecture; `gemini` for
 million-token digestion, heavy Python math, plotting. Gemini is reached through the
 **prompt bridge**: the coordinator writes a numbered, self-contained prompt in
-`prompts para Gemini/` (`1.md`, `2.md`, …), the human pastes it into Antigravity, and
+`gemini-prompts/` (`1.md`, `2.md`, …), the human pastes it into Antigravity, and
 the outputs come back into the blackboard. The coordinator NEVER simulates Gemini's
 execution. Tasks tagged `--engine gemini` wait for the bridge.
 

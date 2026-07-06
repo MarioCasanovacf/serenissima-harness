@@ -249,7 +249,7 @@ SUBSTRATE = """.harness/
  ├── blackboard.json   the task DAG — only blackboard.py may write it
  ├── bin/              nine stdlib-only CLIs: blackboard, lock, session,
  │                     goal_mode, ast_index, notify, recontext, log hooks,
- │                     and migracion_proyecto.py (one-command transplant)
+ │                     and migrate_project.py (one-command transplant)
  ├── locks/  logs/     TTL write-locks · append-only evidence (events + transcript)
  └── state.json        limits, human gates, agent registry, evolution memory
 .claude/agents/        the bench: planner / worker / verifier / evolution-analyst

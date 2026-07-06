@@ -11,17 +11,17 @@ as a single idempotent, dry-run-able CLI -- the harness_init.py the
 explainer promises for generation 3.
 
 Usage:
-  python3 .harness/bin/migracion_proyecto.py <target-dir> [--dry-run] [--force]
+  python3 .harness/bin/migrate_project.py <target-dir> [--dry-run] [--force]
 
 Examples:
   # Preview the full action plan without touching anything
-  python3 .harness/bin/migracion_proyecto.py ~/Proyectos/mi-app --dry-run
+  python3 .harness/bin/migrate_project.py ~/Projects/my-app --dry-run
 
   # Perform the migration
-  python3 .harness/bin/migracion_proyecto.py ~/Proyectos/mi-app
+  python3 .harness/bin/migrate_project.py ~/Projects/my-app
 
   # Re-run over an already-migrated target (backs up the old .harness first)
-  python3 .harness/bin/migracion_proyecto.py ~/Proyectos/mi-app --force
+  python3 .harness/bin/migrate_project.py ~/Projects/my-app --force
 
 What it does (see docs/harness-explainer.html#migrar for the prose version):
   1. COPY MACHINERY -- .harness/bin/ (all CLIs, including this one), .harness/README.md,
@@ -100,7 +100,7 @@ SRC_STATE = SRC_ROOT / ".harness" / "state.json"
 SRC_BLACKBOARD = SRC_ROOT / ".harness" / "blackboard.json"
 
 GITIGNORE_ENTRIES = [
-    "# Universal Agent Harness (seeded by migracion_proyecto.py) -- ephemeral runtime state",
+    "# Universal Agent Harness (seeded by migrate_project.py) -- ephemeral runtime state",
     ".harness/locks/*.lock",
     ".harness/locks/.guard",
     ".harness/logs/*.jsonl",
@@ -133,7 +133,7 @@ def _plan_template(source_root, source_gen, now):
         "> Rule: this file states WHY and IN WHAT ORDER; the blackboard states WHO and WHAT NOW.\n"
         "> Lock this file (`lock.py acquire .harness/plan.md --holder <you>`) before rewriting it.\n\n"
         "## Migration provenance\n"
-        "This harness substrate was seeded by `migracion_proyecto.py` from\n"
+        "This harness substrate was seeded by `migrate_project.py` from\n"
         "`{source}` (generation {gen}) on {now}. No task history was carried over --\n"
         "the blackboard starts empty (see the migration announcement in blackboard.json).\n\n"
         "Work already in this repo does NOT get migrated as tasks -- it gets\n"
@@ -252,14 +252,14 @@ def _reset_state(target, note, dry, source_state, source_bb, now):
         "schema_version": source_bb.get("schema_version", "0.1.0"),
         "generation": source_gen,
         "updated_at": now,
-        "updated_by": "migracion_proyecto.py",
+        "updated_by": "migrate_project.py",
         "protocol": copy.deepcopy(source_bb.get("protocol", {})),
         "announcements": [
             {
                 "ts": now,
-                "from": "migracion_proyecto.py",
+                "from": "migrate_project.py",
                 "message": "Migrated from {} (generation {}) on {}. Seeded by "
-                           "migracion_proyecto.py.".format(SRC_ROOT, source_gen, now),
+                           "migrate_project.py.".format(SRC_ROOT, source_gen, now),
             }
         ],
         "epics": {},
@@ -277,7 +277,7 @@ def _reset_state(target, note, dry, source_state, source_bb, now):
         "schema_version": source_state.get("schema_version", "0.1.0"),
         "harness_generation": source_gen,
         "created_at": now,
-        "created_by": "migracion_proyecto.py (migrated from {})".format(SRC_ROOT),
+        "created_by": "migrate_project.py (migrated from {})".format(SRC_ROOT),
         "run": {"run_counter": 0, "last_run_id": None, "last_session_start": None},
         "limits": limits,
         "human_gates": human_gates,
@@ -292,7 +292,7 @@ def _reset_state(target, note, dry, source_state, source_bb, now):
             "pending_proposals": [],
             "accepted_mutations": [],
             "audit_artifacts": [],
-            "notes": "Migrated from {} (generation {}) on {} by migracion_proyecto.py. "
+            "notes": "Migrated from {} (generation {}) on {} by migrate_project.py. "
                      "Evolution history prior to this point lives in the source repo's git "
                      "log / state.json; this board starts a fresh evolution loop.".format(
                          SRC_ROOT, source_gen, now),
@@ -379,7 +379,7 @@ def _integrate(target, note, dry):
 # --------------------------------------------------------------------------
 
 def _render_report(target, dry, report):
-    lines = ["=== migracion_proyecto.py: {} for {} ===".format(
+    lines = ["=== migrate_project.py: {} for {} ===".format(
         "ACTION PLAN (dry-run -- nothing written)" if dry else "MIGRATION REPORT", target)]
     lines.append("source: {}".format(SRC_ROOT))
     for tag, text in report:
@@ -389,13 +389,13 @@ def _render_report(target, dry, report):
 
 def _next_steps_text(target):
     return (
-        "\nNext steps for the human (siguientes pasos):\n"
+        "\nNext steps for the human:\n"
         "  1. cd {t}\n"
         "  2. Open Claude Code IN {t} -- hooks only load when the session root is this dir.\n"
         "  3. Read ORCHESTRATION.md and USAGE.md.\n"
         "  4. Pose the goal, e.g.:\n"
-        "     \"Lee ORCHESTRATION.md y USAGE.md. El proyecto esta a medias: [contexto].\n"
-        "      Planner: descompon lo pendiente en el tablero y despacha.\"\n"
+        "     \"Read ORCHESTRATION.md and USAGE.md. The project is mid-flight: [context].\n"
+        "      Planner: decompose the remaining work onto the board and dispatch.\"\n"
     ).format(t=target)
 
 

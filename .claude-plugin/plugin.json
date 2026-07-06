@@ -1,0 +1,12 @@
+{
+  "name": "serenissima-harness",
+  "version": "4.0.0",
+  "description": "A file-based coordination substrate for parallel AI agents: blackboard task DAG, TTL locks, producer-vs-approver enforcement, and a human-gated evolution loop. The version tracks the harness generation.",
+  "author": {
+    "name": "Mario Casanova"
+  },
+  "homepage": "https://github.com/MarioCasanovacf/serenissima-harness",
+  "repository": "https://github.com/MarioCasanovacf/serenissima-harness",
+  "license": "MIT",
+  "keywords": ["agents", "orchestration", "blackboard", "multi-agent", "harness", "locks", "evolution"]
+}

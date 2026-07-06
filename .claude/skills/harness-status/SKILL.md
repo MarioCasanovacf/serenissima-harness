@@ -1,6 +1,6 @@
 ---
 name: harness-status
-description: Print the live Universal Agent Harness status - blackboard task DAG, claimable frontier, cascade gates, active write-locks and recent events. Use when the user asks what the harness is doing, qué está pasando, board status, or before planning new work.
+description: Print the live Universal Agent Harness status - blackboard task DAG, claimable frontier, cascade gates, active write-locks and recent events. Use when the user asks what the harness is doing, board status, or before planning new work.
 ---
 
 # Harness Status

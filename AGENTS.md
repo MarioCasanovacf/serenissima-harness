@@ -39,7 +39,7 @@ Definitions in [`.claude/skills/`](.claude/skills/).
 
 | Skill | Trigger | What it does |
 |---|---|---|
-| [`harness-status`](.claude/skills/harness-status/SKILL.md) | "board status", "what is the harness doing", "qué está pasando" (the Spanish trigger is intentional — the operator speaks both) | Prints the live board: task DAG, claimable frontier, cascade gates, active write-locks, recent events |
+| [`harness-status`](.claude/skills/harness-status/SKILL.md) | "board status", "what is the harness doing" | Prints the live board: task DAG, claimable frontier, cascade gates, active write-locks, recent events |
 
 ## Hooks
 
@@ -96,8 +96,11 @@ one `SKILL.md` per folder).
 
 ## Multi-engine note
 
-Claude Code reads `.claude/` natively. Gemini (Antigravity) joins through `gemini.md`
-(its NLAH) plus the `prompts para Gemini/` bridge — numbered, self-contained hand-off
-prompts whose outputs return to the blackboard. Any other engine can participate by
-speaking the CLI contract in `ORCHESTRATION.md` §2; the board does not care who you are,
-only whether your claim is legal.
+Claude Code reads `.claude/` natively, and the repo ships plugin packaging
+(`.claude-plugin/`) so it can be installed as a Claude Code plugin straight from GitHub.
+Gemini joins two ways: **Gemini CLI** reads the native command bridge in
+[`.gemini/commands/`](.gemini/commands/) (TOML commands mirroring the skills), and
+**Antigravity** uses `gemini.md` (its NLAH) plus the [`gemini-prompts/`](gemini-prompts/)
+bridge — numbered, self-contained hand-off prompts whose outputs return to the blackboard.
+Any other engine can participate by speaking the CLI contract in `ORCHESTRATION.md` §2;
+the board does not care who you are, only whether your claim is legal.
