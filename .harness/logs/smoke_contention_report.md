@@ -3,7 +3,7 @@
 Contention + crash-recovery smoke test exercising every path `audit_gen1` flagged as
 untested (§4). Produced by `substrate-worker-1` (T-010). All commands below were run
 live against the real `.harness/` runtime — no synthetic/mocked output. Working
-directory for every command: `/Users/mariocasanova10pa/Documents/Universal Harness`.
+directory for every command: `.`.
 
 ## Identity attribution note (read this first)
 
@@ -135,7 +135,7 @@ coordinator's explicit instruction. This produces a deterministic, non-racy resu
 
 ```
 $ python3 .harness/bin/blackboard.py add-task --id T-090 --title "SCRATCH smoke artifact (T-010)" --role worker --engine any --priority 9 --epic E-03 --description "disposable lifecycle probe created and terminated by T-010" --agent substrate-worker-1
-added T-090 (role worker, engine any, depends_on: none). Fill acceptance_criteria in /Users/mariocasanova10pa/Documents/Universal Harness/.harness/tasks/T-090.json
+added T-090 (role worker, engine any, depends_on: none). Fill acceptance_criteria in .harness/tasks/T-090.json
 ```
 
 #### 3b. Claim with a 3-second lease
@@ -201,7 +201,7 @@ claimed T-090 for smoke-a (lease 3600s, expires 2026-07-04T05:46:06Z).
 next steps: acquire locks (lock.py acquire <path> --holder smoke-a --task T-090), then `blackboard.py update T-090 --status in_progress --note "<plan>"`
 
 $ python3 .harness/bin/blackboard.py update T-090 --status blocked --note "smoke: simulating a hard blocker" --agent smoke-a
-updated T-090: status=blocked; note appended to /Users/mariocasanova10pa/Documents/Universal Harness/.harness/tasks/T-090.json
+updated T-090: status=blocked; note appended to .harness/tasks/T-090.json
 
 $ python3 .harness/bin/blackboard.py update T-090 --status open --agent smoke-a
 updated T-090: status=open
@@ -244,7 +244,7 @@ claimed T-090 for smoke-a (lease 3600s, expires 2026-07-04T05:46:18Z).
 next steps: acquire locks (lock.py acquire <path> --holder smoke-a --task T-090), then `blackboard.py update T-090 --status in_progress --note "<plan>"`
 
 $ python3 .harness/bin/blackboard.py update T-090 --status failed --note "smoke artifact terminal state (T-010) — intentional" --agent smoke-a
-updated T-090: status=failed; note appended to /Users/mariocasanova10pa/Documents/Universal Harness/.harness/tasks/T-090.json
+updated T-090: status=failed; note appended to .harness/tasks/T-090.json
 ```
 
 ### state.json reputation evidence (verbatim, after the call)

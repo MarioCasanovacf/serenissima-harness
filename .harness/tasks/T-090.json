@@ -28,7 +28,7 @@
     {
       "ts": "2026-07-05T06:43:16Z",
       "agent": "substrate-worker-1",
-      "note": "DECISION: note with `backticks`, $(danger command), and path /Users/mariocasanova10pa/Documents/Universal Harness must survive byte-exact via --note-file (P-021 probe a)"
+      "note": "DECISION: note with `backticks`, $(danger command), and path . must survive byte-exact via --note-file (P-021 probe a)"
     },
     {
       "ts": "2026-07-05T06:44:07Z",
@@ -38,7 +38,7 @@
     {
       "ts": "2026-07-05T06:47:42Z",
       "agent": "verifier-b",
-      "note": "VERIFIER-B PROBE: `backtick-cmd`, $(rm -rf /tmp/nope), \"double quotes\", 'single quotes', path=/Users/mariocasanova10pa/Documents/Universal Harness/weird\\path\nsecond line with trailing tab\tend"
+      "note": "VERIFIER-B PROBE: `backtick-cmd`, $(rm -rf /tmp/nope), \"double quotes\", 'single quotes', path=weird\\path\nsecond line with trailing tab\tend"
     },
     {
       "ts": "2026-07-05T06:48:00Z",

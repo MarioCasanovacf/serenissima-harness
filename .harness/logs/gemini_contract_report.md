@@ -37,7 +37,7 @@ Verification of the requirements in `gemini.md` §2B and §4C:
   - *Evidence*: Command `python3 .harness/bin/blackboard.py update T-002 --status in_progress --note "gemini-runner: ejecutando checklist de contrato" --agent gemini-runner`.
   - *Actual output*:
     ```
-    updated T-002: status=in_progress; note appended to /Users/mariocasanova10pa/Documents/Universal Harness/.harness/tasks/T-002.json
+    updated T-002: status=in_progress; note appended to .harness/tasks/T-002.json
     ```
 - **[OK] Leave ReContext evidence**
   - *Evidence*: Exact code blocks copied into `.harness/recontext_evidence.md` (see the ReContext section below).
@@ -64,6 +64,6 @@ Verification of the requirements in `gemini.md` §2B and §4C:
 
 ## ReContext (gemini.md §4B)
 
-The implementation and execution of this task were guided by the evidence extracted and recorded in [.harness/recontext_evidence.md](file:///Users/mariocasanova10pa/Documents/Universal%20Harness/.harness/recontext_evidence.md):
+The implementation and execution of this task were guided by the evidence extracted and recorded in [.harness/recontext_evidence.md](file://~/Documents/Universal%20Harness/.harness/recontext_evidence.md):
 - **Evidence 1 (gemini.md:62-67)**: The ReContext protocol (Scan → Extract → Replay → Reason) was followed to justify the manual evidence-update steps before drafting this report.
 - **Evidence 2 (.harness/blackboard.json:6-11)**: The blackboard rules that forbid direct manual editing and regulate collision prevention through the CLI and locks.
