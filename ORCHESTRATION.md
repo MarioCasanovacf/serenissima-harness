@@ -6,7 +6,7 @@
 > parallel under TTL locks and leased claims, so no stuck agent ever stalls the rest.
 > Producer ≠ approver, always.
 
-This document is the shared topology contract for every engine (Claude, Gemini, human).
+This document is the shared topology contract for every engine (Claude, Gemini, Codex, human).
 The NLAHs (`claude.md`, `gemini.md`) define *how each engine behaves*; this file defines
 *how work flows between them*. The substrate reference is [.harness/README.md](.harness/README.md).
 
@@ -130,23 +130,72 @@ doc/scratch tasks get a brief replay, control-plane/contract tasks get full adve
 replay; do not spend 20 tool calls verifying a README. Reviewer tier defaults to
 `sonnet`; the coordinator overrides to `opus` per-dispatch ONLY for high-stakes
 categories — NLAH mutations, guardrail changes, epic joins, tournament promotions
-(`state.json cost_policy` rules 1–2, operator directive 2026-07-05: 95% of token usage
+(`state.json cost_policy` rules 3–4, operator directive 2026-07-05: 95% of token usage
 traced to subagent-heavy sessions, 79% to 8h+ sessions).
+
+**Frontier budget (P-030)**: frontier-tier (fable/opus) raw-token share across the
+coordinator session plus all subagent transcripts targets **53–65% per mission window**,
+measured by `python3 .harness/bin/token_share.py` (dedup by `message.id`; exit 2 above
+band; a breach is a mandatory finding at the next §5A audit). Provenance, stated
+honestly: the 2026-07-04..06 corpus measured **~80% raw tokens frontier / 95.1% of
+list-price cost** — the 2026-07-05 "95%" figure above was about subagent-heavy
+*sessions*, never about tokens shifted to cheaper *tiers*; any claim of the latter is
+corrected by this paragraph. The band itself is an operator heuristic (2026-07-11,
+top revised 60%→65% same day), not literature: a full corpus sweep found no canonical
+frontier/cheap split percentage.
+
+The partition that implements the budget is by **verifiability**
+(`intelligent_ai_delegation.pdf` p.2), which coincides with the operator's ontology —
+*the frontier model orchestrates, plans, and directs; the cheap tier executes*:
+**low-verifiability judgment work stays frontier** (goal decomposition, DAG design, join
+synthesis, direction — no adversarial replay can catch a bad decomposition, so
+`orchestration-planner` stays `opus`; the cheap-coordinator pattern in
+`trinity.pdf`/`conductor.pdf`/`sakana_fugu_tech_report.pdf` uses RL-*trained* routers
+and does not transfer to prompted general models). **High-verifiability execution runs
+`sonnet`** (code gated by tests, audits with replayable evidence, page-cited corpus
+reading) — there, quality is protected by producer≠approver adversarial replay, not by
+model tier. The coordinator emits decisions, dispatch prompts, and join syntheses, and
+delegates drafting and bulk analysis to `sonnet` agents. `haiku` only for bounded
+mechanical tasks, never long-horizon or strategic work (`coffee_bench.pdf` pp.6–7:
+Haiku 4.5 idle-drift, −$630 net income).
 
 **The bench** (`.claude/agents/` — mesa de internos): `orchestration-planner` (thinker),
 `substrate-worker` (worker), `harness-verifier` (verifier), `evolution-analyst`
-(thinker, §5A loop), `research-librarian` (thinker, corpus grounding). Capability
+(thinker, §5A loop), `research-librarian` (thinker, corpus grounding), `context-scout`
+(thinker, retrieval + request grilling — runs BEFORE the planner on new epics). Capability
 contracts and reputation live in `state.json agents`.
 
 **Engine routing**: `claude` for judgment, synthesis, architecture; `gemini` for
-million-token digestion, heavy Python math, plotting. Gemini is reached through the
-**prompt bridge**: the coordinator writes a numbered, self-contained prompt in an
-operator-local `gemini-prompts/` folder (`1.md`, `2.md`, …), the human pastes it into
-Antigravity, and
-the outputs come back into the blackboard. The coordinator NEVER simulates Gemini's
-execution. Tasks tagged `--engine gemini` wait for the bridge.
+million-token digestion, heavy Python math, plotting. Gemini's default,
+operator-driven route is the **prompt bridge**: the coordinator writes a numbered,
+self-contained prompt in an operator-local `gemini-prompts/` folder (`1.md`, `2.md`,
+…), the human pastes it into Antigravity, and the outputs come back into the
+blackboard. The coordinator NEVER simulates Gemini's execution. Tasks tagged
+`--engine gemini` wait for the bridge by default.
 
-**Deployment modes** — the substrate is file-based, so both work identically:
+Gemini-native entry points (`.gemini/` agents/commands, `.harness/bin/gemini_headless_runner.py`)
+are a second legitimate route, per `GEMINI_ADAPTER.md`, bounded mechanically by
+`max_turns`/timeouts in `.gemini/settings.json` rather than by a human pasting prompts.
+Hard boundary, identical in `GEMINI_ADAPTER.md` and in `gemini_headless_runner.py`'s
+module docstring: a Claude-coordinated session must never invoke
+`gemini_headless_runner.py` to outsource reasoning to another model — the
+no-external-LLM rule extends to local model subprocesses; engines coordinate through
+the blackboard, not through each other.
+
+`codex` is a native local adapter rather than a prompt bridge. Codex reads `AGENTS.md`, exposes
+the five project roles from `.codex/agents/`, and uses `.agents/skills/` for board status, direct
+claims, or full-frontier orchestration. A coordinator may use the interactive app/CLI, native
+subagents, or `codex exec`; all three speak the same blackboard and lock CLI contract. A Codex
+worker uses a unique identity such as `codex-worker-a`, and a Codex verifier uses a different
+identity such as `codex-verifier`. Plugin installation exposes the reusable skills, while the
+project-scoped agent profiles activate when Codex is opened in this repository.
+
+Engine adapters need not have identical convenience hooks. The portable enforcement floor is
+the guarded blackboard lifecycle plus explicit TTL locks and replayable handoffs. Where an engine
+does not load a pre-edit hook, its worker contract still requires `lock.py acquire` before every
+write; this is auditable protocol discipline, not a claim that the host intercepted every tool.
+
+**Deployment modes** — the substrate is file-based, so all engines share the same lifecycle:
 - *In-session fan-out*: the coordinator spawns bench agents in parallel over the frontier.
 - *Multi-session swarm*: several terminals/machines/engines, each exporting its own
   `CLAUDE_HARNESS_AGENT_ID`. Claude Code sessions get mechanical lock enforcement via

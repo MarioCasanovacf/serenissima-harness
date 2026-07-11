@@ -24,9 +24,11 @@ not a personality: the board (`.harness/blackboard.json`) decides who may do wha
 | [`harness-verifier`](.claude/agents/harness-verifier.md) | Adversarially replay worker evidence on tasks in `review`; verdict `done` or reopen; sweep stale locks/leases | Read-and-run only; never fixes code itself |
 | [`evolution-analyst`](.claude/agents/evolution-analyst.md) | Parse `.harness/logs` trajectories, build a failure taxonomy, write falsifiable mutation proposals (§5A audits) | Proposes only; never applies mutations |
 | [`research-librarian`](.claude/agents/research-librarian.md) | Answer questions about the research corpus (papers, fetched docs, reference repos) with exact file/page citations | Read-only |
+| [`context-scout`](.claude/agents/context-scout.md) | Before planning: map the context a request touches into a cited brief (`.harness/briefs/`) and grill the request — explicit vs assumed, ranked clarifying questions (feeds U3) | Never edits source, never designs the DAG, never guesses human-only answers |
 
 **Intent → agent routing:**
 
+- New epic or ambiguous request, before any planning → `context-scout` (brief first) (Claude bench today; Codex/Gemini ports pending)
 - New goal, no tasks on the board yet → `orchestration-planner`
 - Open tasks on the claimable frontier → `substrate-worker` (one per parallel slot)
 - Any task sitting in `review` → `harness-verifier` (must differ from the producer)
@@ -40,6 +42,34 @@ Definitions in [`.claude/skills/`](.claude/skills/).
 | Skill | Trigger | What it does |
 |---|---|---|
 | [`harness-status`](.claude/skills/harness-status/SKILL.md) | "board status", "what is the harness doing" | Prints the live board: task DAG, claimable frontier, cascade gates, active write-locks, recent events |
+
+## Codex-native adapter
+
+Codex reads this `AGENTS.md` as the durable repository contract. Its native bench lives in
+`.codex/agents/` and mirrors the five harness mandates with Codex project-agent TOML files:
+`orchestration_planner`, `substrate_worker`, `harness_verifier`, `evolution_analyst`, and
+`research_librarian`. These are engine adapters for the same blackboard roles, not a second
+source of task truth.
+
+Reusable Codex workflows live in `.agents/skills/`. `harness-status` is observational,
+`harness-claim-next` runs the legal claim→lock→work→handoff lifecycle, and
+`harness-orchestrate` coordinates a whole frontier through native Codex subagents. The last
+skill explicitly requests delegation, so Codex may fan out independent tasks while respecting
+both `.harness/state.json limits.max_parallel_workers` and `.codex/config.toml agents.max_threads`.
+Every worker instance receives a distinct harness identity; every verdict comes from an identity
+different from the producer.
+
+The repository is also a Codex plugin through `.codex-plugin/plugin.json`. Plugin installation
+exposes the reusable skills; opening the repository additionally activates the project-scoped
+agent profiles and config. Hooks remain optional engine adapters: absence of a Codex hook never
+waives the explicit `lock.py acquire` protocol or the blackboard's mechanical lifecycle gates.
+
+Codex data-loss safety is defense in depth. [`.codex/rules/data-loss.rules`](.codex/rules/data-loss.rules)
+forbids the canonical destructive command families before sandbox escalation; the project and
+plugin `PreToolUse` configurations call `.harness/bin/prevent_data_loss.py` to catch additional
+shell, language-runtime, Git-discard, and patch-deletion forms. Intentional cleanup must use
+`.harness/bin/safe_delete.py quarantine`, which moves paths into `.harness/trash` with an audited
+manifest and supports non-overwriting restoration. The CLI intentionally exposes no purge verb.
 
 ## Hooks
 
@@ -94,13 +124,33 @@ External references that shaped this directory's structure:
 [davidondrej/skills](https://github.com/davidondrej/skills) (category-grouped skills,
 one `SKILL.md` per folder).
 
+## Gemini-native adapter
+
+Gemini CLI loads the existing `gemini.md`, this directory, `ORCHESTRATION.md`, and the scoped
+`GEMINI_ADAPTER.md` interpretation through
+`.gemini/settings.json`; this avoids the `GEMINI.md`/`gemini.md` filename collision on
+case-insensitive filesystems. Five bounded, tool-isolated project agents live in
+`.gemini/agents/`. Namespaced `/harness:*` commands in `.gemini/commands/harness/` provide
+status, claim, orchestration, verification, audit, and research entry points, each with an
+explicit single-agent fallback where preview subagents are unavailable.
+
+Antigravity discovers the reusable workflows in `.agents/workflows/`, including separate
+work-frontier and review-queue contexts so producer ≠ approver survives outside Gemini CLI.
+For unattended execution, `.harness/bin/gemini_headless_runner.py` invokes Gemini CLI with
+`stream-json`, bounded prompts and distinct identities, preserving raw events and exit codes
+without bypassing approvals or mutating the blackboard lifecycle.
+
 ## Multi-engine note
 
 Claude Code reads `.claude/` natively, and the repo ships plugin packaging
 (`.claude-plugin/`) so it can be installed as a Claude Code plugin straight from GitHub.
-Gemini joins two ways: **Gemini CLI** reads the native command bridge in
-[`.gemini/commands/`](.gemini/commands/) (TOML commands mirroring the skills), and
-**Antigravity** uses `gemini.md` (its NLAH) plus an operator-local prompt bridge —
-numbered, self-contained hand-off prompts whose outputs return to the blackboard.
+Gemini joins through the native CLI agents and commands, the Antigravity workflow pack, or the
+headless JSONL runner described above. The numbered operator-local prompt bridge remains a
+fallback when the installed Gemini surface does not expose native subagents or workflows.
 Any other engine can participate by speaking the CLI contract in `ORCHESTRATION.md` §2;
 the board does not care who you are, only whether your claim is legal.
+
+**Codex** reads this file natively, discovers the project agents in `.codex/agents/`, and
+discovers the shared workflows in `.agents/skills/`. A Codex coordinator can operate the board
+interactively, dispatch native subagents over the legal frontier, or run the same substrate from
+`codex exec`; tasks tagged `--engine codex` are reserved for that adapter.

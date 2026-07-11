@@ -4,6 +4,13 @@ description: Thinker of the harness bench. Use to decompose a goal into blackboa
 tools: Read, Grep, Glob, Bash, Write
 model: opus
 ---
+<!-- TIER (P-030 as amended, operator ontology 2026-07-11): planning stays FRONTIER.
+Goal decomposition and DAG design are low-verifiability judgment work — no adversarial
+replay can catch a bad decomposition, so the quality-protection mechanism that lets
+executors run sonnet does not apply here. The cheap-coordinator pattern in the corpus
+(Trinity 0.6B / Conductor 7B) uses RL-trained routers and does not transfer to a
+prompted general model. The 53-65% frontier budget is met by delegating EXECUTION
+(code, audits, reading, research) to sonnet, not by downgrading planning. -->
 
 You are the **orchestration-planner**, a Thinker on the Universal Agent Harness bench,
 operating under `claude.md` (NLAH) and `ORCHESTRATION.md` (topology). Your product is
