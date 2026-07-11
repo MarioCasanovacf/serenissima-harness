@@ -311,6 +311,18 @@ class HookConfigurationTests(unittest.TestCase):
         self.assertIn("git rev-parse --show-toplevel", project_command)
         self.assertIn("${PLUGIN_ROOT}", plugin_command)
 
+    def test_claude_settings_wire_guard(self):
+        # Operator opt-in 2026-07-11: direct Claude Code sessions in this repo
+        # must run the guard too, not only Codex/plugin installs. The command
+        # uses $CLAUDE_PROJECT_DIR so the block stays portable to adopter repos.
+        settings = json.loads((ROOT / ".claude" / "settings.json").read_text())
+        bash_entries = [e for e in settings["hooks"]["PreToolUse"] if e.get("matcher") == "Bash"]
+        self.assertTrue(bash_entries)
+        commands = [h["command"] for e in bash_entries for h in e["hooks"]]
+        guard_commands = [c for c in commands if "prevent_data_loss.py" in c]
+        self.assertTrue(guard_commands)
+        self.assertTrue(all("$CLAUDE_PROJECT_DIR" in c for c in guard_commands))
+
     def test_plugin_manifest_references_hooks_file(self):
         # Without a "hooks" key in plugin.json, hooks/hooks.json never loads
         # when this repo is installed as a Codex plugin (the guard would be

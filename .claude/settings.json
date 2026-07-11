@@ -38,6 +38,11 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/bin/guard_paths.py\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/bin/prevent_data_loss.py\"",
+            "timeout": 10
           }
         ]
       }

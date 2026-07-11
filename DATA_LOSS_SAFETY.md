@@ -13,14 +13,18 @@ edits, direct filesystem deletion tools, common deletion one-liners, and
 `apply_patch` file deletion.
 
 Where this is actually wired today: `.codex/hooks.json` (project-scoped, for Codex
-CLI opened in this repository) and `hooks/hooks.json` referenced by the
-`.codex-plugin/plugin.json` manifest's `hooks` key (installed-plugin path). It is
-**not yet wired** into `.claude/settings.json` for direct Claude Code sessions in
-this repo — that is intentionally pending an operator decision, because
-`prevent_data_loss.py` blocks every `rm` invocation unconditionally, unlike the
-scoped, opt-in `guard_paths.py` hook already active there (`protected_paths`,
-default-empty). Adding the unconditional guard is a workflow change the operator
-must opt into, not something to wire silently.
+CLI opened in this repository), `hooks/hooks.json` referenced by the
+`.codex-plugin/plugin.json` manifest's `hooks` key (installed-plugin path), and —
+since 2026-07-11, by explicit operator opt-in — `.claude/settings.json`
+(`PreToolUse` → `Bash`, alongside the scoped `guard_paths.py`), so direct Claude
+Code sessions in this repo are covered too. Note the behavioral consequence of
+that opt-in: `prevent_data_loss.py` blocks every `rm` invocation unconditionally,
+so intentional cleanup inside agent sessions must go through
+`safe_delete.py quarantine`. The hook command uses `$CLAUDE_PROJECT_DIR`, so the
+same `settings.json` block is portable to any repo that carries
+`.harness/bin/prevent_data_loss.py` (adopters via `migrate_project.py` get both
+pieces automatically; existing adopters can copy the two bin files and add the
+hook block by hand without touching their board state).
 
 The guard is a backstop for recognizable tool input, not a proof that arbitrary
 code is harmless. Encoded, generated, or otherwise indirect deletion can evade
