@@ -1,0 +1,26 @@
+{
+  "name": "serenissima-harness",
+  "version": "4.1.1",
+  "description": "Native Codex workflows for the Universal Agent Harness blackboard, bounded workers, independent verification, and evidence-driven orchestration.",
+  "author": {
+    "name": "Mario Casanova"
+  },
+  "homepage": "https://github.com/MarioCasanovacf/serenissima-harness",
+  "repository": "https://github.com/MarioCasanovacf/serenissima-harness",
+  "license": "MIT",
+  "keywords": ["agents", "orchestration", "blackboard", "multi-agent", "codex"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Serenissima Harness",
+    "shortDescription": "Run the Universal Agent Harness with Codex.",
+    "longDescription": "Adds native Codex workflows for board inspection, legal task claims, parallel frontier dispatch, bounded execution, and independent evidence replay.",
+    "developerName": "Mario Casanova",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Show the harness board status and recommend the next legal dispatch.",
+      "Orchestrate this goal through the harness with independent verification."
+    ]
+  }
+}

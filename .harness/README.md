@@ -2,7 +2,7 @@
 
 The local, file-based **Runtime layer (R)** of the CAR decomposition. No databases,
 no external APIs: plain files + deterministic stdlib-only CLIs. Every agent
-(Claude, Gemini, human) coordinates through this directory.
+(Claude, Gemini, Codex, human) coordinates through this directory.
 
 Read [ORCHESTRATION.md](../ORCHESTRATION.md) first for the delegation topology;
 this file is the substrate reference.

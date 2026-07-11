@@ -72,7 +72,7 @@ import harness_common as hc
 
 VALID_STATUS = ["open", "claimed", "in_progress", "blocked", "review", "done", "failed"]
 VALID_ROLES = ["thinker", "worker", "verifier"]
-VALID_ENGINES = ["claude", "gemini", "any"]
+VALID_ENGINES = ["claude", "gemini", "codex", "any"]
 
 
 # ---------- shared helpers (call only while holding hc.guarded()) ----------

@@ -1,0 +1,13 @@
+description = "Claim and execute one legal Gemini task using an explicit unique worker identity"
+
+prompt = """
+Join the Universal Agent Harness as a Gemini worker. Read `gemini.md`, `ORCHESTRATION.md`,
+and the selected task detail. Treat `{{args}}` as the worker identity; if it is blank, use
+`gemini-worker`. Request work with `blackboard.py next --agent <identity> --role worker
+--engine gemini`, claim only the returned task, acquire a TTL lock for every target file,
+announce `in_progress`, and execute its exact acceptance criteria in bounded goal mode.
+
+Record expected versus actual results and artifacts. Hand off with replayable evidence to
+role `verifier`; never mark your own work done. Release every lock even on failure. This
+main-session flow is the fallback when the preview `substrate-worker` subagent is unavailable.
+"""

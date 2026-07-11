@@ -1,0 +1,60 @@
+# Defense in depth for commands that leave the Codex sandbox.
+# The project PreToolUse hook covers recognized destructive commands before execution;
+# these rules make the most dangerous direct prefixes non-escalatable as well.
+
+prefix_rule(
+    pattern = ["rm"],
+    decision = "forbidden",
+    justification = "Permanent deletion is disabled; use safe_delete.py quarantine instead.",
+    match = ["rm file.txt", "rm -rf project"],
+)
+
+prefix_rule(
+    pattern = ["rmdir"],
+    decision = "forbidden",
+    justification = "Permanent directory deletion is disabled; use reversible quarantine.",
+    match = ["rmdir old-project"],
+)
+
+# Common wrappers otherwise hide the destructive executable from a prefix rule.
+prefix_rule(
+    pattern = [["env", "/usr/bin/env", "nice", "nohup", "command", "sudo"], ["rm", "rmdir", "unlink", "shred"]],
+    decision = "forbidden",
+    justification = "Wrapped permanent deletion is disabled; use safe_delete.py quarantine instead.",
+    match = ["env rm -rf project", "/usr/bin/env rm file", "nice rm -rf cache", "nohup rm file", "command rm file", "sudo rm -rf project"],
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "forbidden",
+    justification = "git clean can permanently remove untracked user work.",
+    match = ["git clean -xfd", "git clean -fd"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset"],
+    decision = "forbidden",
+    justification = "git reset can discard user-produced changes; use non-destructive inspection or ask the human.",
+    match = ["git reset --hard", "git reset HEAD~1"],
+)
+
+prefix_rule(
+    pattern = ["git", "restore"],
+    decision = "forbidden",
+    justification = "git restore can overwrite user-produced changes.",
+    match = ["git restore .", "git restore src/app.py"],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout"],
+    decision = "forbidden",
+    justification = "git checkout can overwrite user-produced changes; branch changes require an explicit safe workflow.",
+    match = ["git checkout -- .", "git checkout main"],
+)
+
+prefix_rule(
+    pattern = ["git", "push", ["--force", "--force-with-lease", "-f"]],
+    decision = "forbidden",
+    justification = "Force-push can destroy remote history and remains a human-gated operation.",
+    match = ["git push --force", "git push --force-with-lease", "git push -f"],
+)

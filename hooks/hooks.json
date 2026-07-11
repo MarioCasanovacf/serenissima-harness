@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "exec_command|apply_patch|Bash|Shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/.harness/bin/prevent_data_loss.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

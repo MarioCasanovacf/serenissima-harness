@@ -1,0 +1,17 @@
+description = "Coordinate a Gemini harness frontier with preview subagents when available and a complete sequential fallback"
+
+prompt = """
+Coordinate this harness goal: {{args}}
+
+Read `gemini.md`, `ORCHESTRATION.md`, `.harness/state.json`, and the live board. If native
+project subagents are enabled, delegate new decomposition to `orchestration-planner`, each
+independent Gemini task to a separate `substrate-worker` with identities
+`gemini-worker-a`, `gemini-worker-b`, and so on, and review to `harness-verifier` using a
+different identity. Never exceed the harness parallel-worker limit.
+
+If subagents are absent or fail, continue in the main session using the exact `/harness:claim`
+and `/harness:verify` protocols one task at a time; do not stop merely because preview
+delegation is unavailable. A fallback verifier must run in a fresh Gemini CLI session or
+separate Antigravity conversation with a new identity. Re-read the board at every join and
+continue until the requested outcome is complete or a genuine human gate blocks progress.
+"""

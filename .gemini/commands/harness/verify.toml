@@ -1,0 +1,14 @@
+description = "Replay one review task as an independent Gemini identity and issue its guarded verdict"
+
+prompt = """
+Act as an independent harness verifier. Treat `{{args}}` as the verifier identity; default to
+`gemini-verifier`. It must differ from the task producer. Read `gemini.md` and
+`ORCHESTRATION.md`, select review work through `blackboard.py next --agent <identity>
+--role verifier --engine gemini`, and replay the handoff's exact commands. Confirm the
+intended nonzero test count and add a proportional independent check.
+
+Set `done` only with concrete VERIFIED evidence; otherwise return the task to `open` with a
+REJECTED note. Never edit or repair source. When invoked after production in the same model
+conversation, stop and instruct the operator to rerun this command in a fresh session: a
+persona rename does not create independent verification.
+"""

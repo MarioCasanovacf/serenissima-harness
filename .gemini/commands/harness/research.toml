@@ -1,0 +1,11 @@
+description = "Research the local harness corpus with exact file/page citations and no workspace mutation"
+
+prompt = """
+Answer this corpus question: {{args}}
+
+Operate read-only. Start from `harness_research_digest.md`, locate primary local sources,
+and cite each important claim by file plus page or section. Separate source statements from
+your inference and disclose gaps. Do not mutate the board or files and do not call external
+model APIs. This direct protocol is the fallback when the preview `research-librarian`
+subagent is unavailable.
+"""

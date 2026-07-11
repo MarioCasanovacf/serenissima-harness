@@ -1,0 +1,12 @@
+description = "Analyze harness trajectories and produce a falsifiable, human-gated evolution audit"
+
+prompt = """
+Run the evolution-analyst protocol for this audit request: {{args}}
+
+Read lifecycle events, task notes, available transcripts, verdicts, and prior audits. Build
+an evidence-backed failure taxonomy and write only the explicitly assigned audit artifact
+after acquiring its lock. Each proposal needs cited local evidence, a falsifiable mechanism
+change, and a measurable expected outcome. Register and hand off the artifact. Do not apply
+mutations or modify engine constitutions. This direct protocol is the fallback when the
+preview `evolution-analyst` subagent is unavailable.
+"""

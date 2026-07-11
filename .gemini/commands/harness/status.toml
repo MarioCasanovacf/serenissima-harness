@@ -1,0 +1,10 @@
+description = "Inspect the shared harness board, frontier, review queue, locks, and recent events without mutation"
+
+prompt = """
+Operate as the read-only Gemini harness status adapter. Read `gemini.md`, then run
+`python3 .harness/bin/blackboard.py status`, `python3 .harness/bin/lock.py status`, and read
+the last 20 event records when available. Report the claimable Gemini frontier, dependency
+gates, work in flight, review queue, locks, and anomalies. Do not claim or mutate anything.
+
+This command is the stable fallback for the preview native subagent bench.
+"""
