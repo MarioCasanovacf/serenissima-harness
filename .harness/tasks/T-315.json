@@ -1,0 +1,69 @@
+{
+  "id": "T-315",
+  "title": "Add cross-engine invariant drift checks",
+  "description": "Add focused substring/semantic cross-checks for producer != approver, lock-before-write, and blackboard-only mutation across Claude, Codex, and Gemini role definitions without forcing byte identity. Keep the canonical expectation in one test table or fixture. Acceptance: python3.12 -m unittest discover -s .harness/tests -p test_*.py -v reports nonzero tests and passes.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:29:50Z",
+      "agent": "codex-worker-invariants",
+      "note": "Implement a centralized semantic invariant table and cross-engine substring checks; read-only assertions against Claude, Codex, and Gemini role definitions."
+    },
+    {
+      "ts": "2026-07-12T01:32:13Z",
+      "agent": "codex-worker-invariants",
+      "note": "EXPECTED: one centralized semantic contract detects drift without byte identity. ACTUAL: focused discovery ran 2 tests and passed across Claude, Codex, and Gemini worker/verifier definitions."
+    },
+    {
+      "ts": "2026-07-12T01:32:13Z",
+      "agent": "codex-worker-invariants",
+      "note": "DEVIATION: full suite first found one brittle translated-research phrase assertion; with coordinator authorization and a free lock, changed it to independent headless and Gemini CLI concept checks."
+    },
+    {
+      "ts": "2026-07-12T01:32:23Z",
+      "agent": "codex-worker-invariants",
+      "note": "HANDOFF -> verifier: Replay: python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v. Observed: Ran 46 tests in 2.471s, OK, so discovery was nonzero. Different angle: python3.12 -m unittest discover -s .harness/tests -p 'test_cross_engine_invariants.py' -v ran 2 tests, OK; git diff --check on both touched test files passed. Review the centralized ROLE_CONTRACTS table for semantic coverage and confirm no Claude adapter file was edited."
+    },
+    {
+      "ts": "2026-07-12T01:33:07Z",
+      "agent": "codex-verifier-c",
+      "note": "VERIFICATION START: replay focused and full Python 3.12 suites, inspect centralized semantic contract and false-positive behavior, verify translated-research assertion, and confirm Claude adapter read-only."
+    },
+    {
+      "ts": "2026-07-12T01:33:56Z",
+      "agent": "codex-verifier-c",
+      "note": "REJECTED: focused invariant suite 2/2 and current-worktree full suite 46/46 pass; centralized ROLE_CONTRACTS semantically covers Claude, Codex and Gemini worker/verifier clauses without byte identity, and no Claude role diff was introduced. However the claimed semantic research-test fix remains non-portable: test_codex_integration.py line 114 unconditionally asserts that GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md exists, while git ls-files returns no entry and git check-ignore confirms .gitignore line 45. A fresh clone cannot contain this operator-local ignored file, so the tracked test suite fails there. Independent no-edit Path.exists absence simulation produced exactly one failure at that assertion. Make the test independent of the ignored artifact (or move durable semantic expectations to tracked adapter docs) and re-handoff."
+    },
+    {
+      "ts": "2026-07-12T01:34:21Z",
+      "agent": "codex-worker-invariants",
+      "note": "REWORK: remove the tracked suite dependency on ignored GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md, then replay with that operator-local file hidden non-destructively."
+    },
+    {
+      "ts": "2026-07-12T01:35:40Z",
+      "agent": "codex-worker-invariants",
+      "note": "REWORK RESULT: removed every dependency on ignored GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md. Replacement coverage reads tracked GEMINI_ADAPTER.md. With the ignored research file moved temporarily under lock and restored by shell trap, the exact full suite ran 46 tests and passed."
+    },
+    {
+      "ts": "2026-07-12T01:35:40Z",
+      "agent": "codex-worker-invariants",
+      "note": "HANDOFF -> verifier: Replay exact: python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v; observed 46 tests OK with GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md temporarily absent and then restored. Focused: test_codex_integration.py ran 6 tests OK; test_cross_engine_invariants.py ran 2 tests OK. Confirm test_codex_integration contains no reference to the ignored research path and its replacement reads tracked GEMINI_ADAPTER.md. git diff --check passed. No Claude adapter edits."
+    },
+    {
+      "ts": "2026-07-12T01:36:15Z",
+      "agent": "codex-worker-invariants",
+      "note": "ADDITIONAL NON-MUTATING EVIDENCE: rsync copied the worktree to /private/tmp/serenissima-t315-cleanclone-0139 while excluding .git and GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md. The excluded path was confirmed absent in the copy; exact full discovery there ran 46 tests in 2.543s, OK. Source workspace was not modified."
+    },
+    {
+      "ts": "2026-07-12T01:36:50Z",
+      "agent": "codex-verifier-c2",
+      "note": "RE-VERIFICATION START: replay focused/full suites and create independent temporary workspace copy excluding ignored research artifact; compare source hash and Git status before/after."
+    },
+    {
+      "ts": "2026-07-12T01:37:25Z",
+      "agent": "codex-verifier-c2",
+      "note": "VERIFIED AFTER REWORK: focused Codex integration 6/6, invariant suite 2/2, and full source-worktree suite 46/46 passed. Independent temporary workspace copy excluded .git and ignored GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md; artifact absence was confirmed and full discovery still ran 46/46 OK. No tracked harness test references the ignored report; replacement coverage reads tracked GEMINI_ADAPTER.md. Central ROLE_CONTRACTS remains semantic, covers the three invariants across Claude/Codex/Gemini worker and verifier roles, and does not require byte identity. Source research SHA-256 and complete git status were identical before/after copy test; scoped diff check passed and Claude role files have no task diff."
+    }
+  ]
+}

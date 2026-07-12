@@ -13,18 +13,27 @@ through each other.
 import argparse
 import datetime as dt
 import json
+import math
 import os
+import queue
 import re
+import signal
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import uuid
 from pathlib import Path
 
 
 TURN_LIMIT_EXIT = 53
+WALL_CLOCK_TIMEOUT_EXIT = 124
+DEFAULT_TIMEOUT_SECONDS = 300
+TERMINATION_GRACE_SECONDS = 2.0
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:@/+\-]{0,127}$")
+STATE_PATH = Path(__file__).resolve().parents[1] / "state.json"
 
 
 def utc_now():
@@ -59,6 +68,28 @@ def path_component(value):
     return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._-") or "unknown"
 
 
+def default_timeout_seconds():
+    """Read the shared command bound, with goal_mode.py's fallback."""
+    try:
+        state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        value = int((state.get("limits") or {}).get("max_seconds_per_command"))
+        if value > 0:
+            return value
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return DEFAULT_TIMEOUT_SECONDS
+
+
+def positive_float(value):
+    try:
+        parsed = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("must be a positive number")
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a finite number greater than zero")
+    return parsed
+
+
 def compose_prompt(prompt, agent_id, task_id):
     return (
         "[UNIVERSAL HARNESS EXECUTION CONTEXT]\n"
@@ -84,7 +115,7 @@ def atomic_json(path, value):
             os.unlink(temporary)
 
 
-def new_summary(agent_id, task_id, run_id, argv_display, raw_path, stderr_path):
+def new_summary(agent_id, task_id, run_id, argv_display, raw_path, stderr_path, timeout_seconds):
     return {
         "schema_version": 1,
         "runner": "gemini-cli-headless",
@@ -99,6 +130,7 @@ def new_summary(agent_id, task_id, run_id, argv_display, raw_path, stderr_path):
         "stderr_log": str(stderr_path),
         "event_counts": {},
         "invalid_jsonl_lines": 0,
+        "wall_clock_timeout_seconds": timeout_seconds,
     }
 
 
@@ -144,6 +176,12 @@ def build_parser():
         help="Gemini executable name/path (default: GEMINI_BIN or gemini)",
     )
     parser.add_argument("--model", help="optional Gemini model name")
+    parser.add_argument(
+        "--timeout-seconds",
+        type=positive_float,
+        default=None,
+        help="positive wall-clock bound (default: limits.max_seconds_per_command)",
+    )
     parser.add_argument("--cwd", type=Path, default=Path.cwd(), help="workspace passed to Gemini")
     parser.add_argument(
         "--logs-root",
@@ -160,8 +198,52 @@ def discovery_payload(candidate):
     return {"candidate": candidate, "available": resolved is not None, "resolved": resolved}
 
 
+def pump_stdout(stream, messages):
+    """Read bytes off the child pipe without blocking the deadline owner."""
+    try:
+        for line in iter(stream.readline, b""):
+            messages.put(line)
+    finally:
+        stream.close()
+        messages.put(None)
+
+
+def terminate_process_group(process):
+    """Terminate, then force-kill, the isolated child process group and reap it."""
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    elif process.poll() is None:
+        process.terminate()
+
+    try:
+        process.wait(timeout=TERMINATION_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        pass
+
+    # The leader may have exited while descendants retained its stdout pipe, so
+    # target the group even when process.poll() is no longer None.
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    elif process.poll() is None:
+        process.kill()
+    try:
+        process.wait(timeout=TERMINATION_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    timeout_seconds = args.timeout_seconds
+    if timeout_seconds is None:
+        timeout_seconds = default_timeout_seconds()
     dependency = discovery_payload(args.gemini_bin)
     if args.discover and args.prompt_file is None:
         print(json.dumps(dependency, sort_keys=True))
@@ -210,6 +292,7 @@ def main(argv=None):
         "command": display,
         "uses_shell": False,
         "yolo": False,
+        "wall_clock_timeout_seconds": timeout_seconds,
     }
     if args.dry_run:
         print(json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True))
@@ -229,8 +312,12 @@ def main(argv=None):
     raw_path = run_dir / "events.jsonl"
     stderr_path = run_dir / "stderr.log"
     summary_path = run_dir / "summary.json"
-    summary = new_summary(agent_id, task_id, run_id, display, raw_path, stderr_path)
+    summary = new_summary(
+        agent_id, task_id, run_id, display, raw_path, stderr_path, timeout_seconds
+    )
 
+    started = time.monotonic()
+    timed_out = False
     try:
         with raw_path.open("wb") as raw_log, stderr_path.open("wb") as stderr_log:
             process = subprocess.Popen(
@@ -240,16 +327,58 @@ def main(argv=None):
                 stdout=subprocess.PIPE,
                 stderr=stderr_log,
                 shell=False,
+                start_new_session=(os.name == "posix"),
             )
             assert process.stdout is not None
-            for raw_line in iter(process.stdout.readline, b""):
+            messages = queue.Queue()
+            reader = threading.Thread(
+                target=pump_stdout, args=(process.stdout, messages), daemon=True
+            )
+            reader.start()
+            deadline = started + timeout_seconds
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                try:
+                    raw_line = messages.get(timeout=min(0.1, remaining))
+                except queue.Empty:
+                    continue
+                if raw_line is None:
+                    break
                 raw_log.write(raw_line)
                 raw_log.flush()
                 sys.stdout.buffer.write(raw_line)
                 sys.stdout.buffer.flush()
                 observe_event(summary, raw_line)
-            process.stdout.close()
-            exit_code = process.wait()
+            if timed_out:
+                terminate_process_group(process)
+            else:
+                # EOF implies the child has closed stdout; this bounded wait is
+                # still covered by the same deadline for unusual CLI behavior.
+                remaining = max(0.0, deadline - time.monotonic())
+                try:
+                    process.wait(timeout=remaining)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    terminate_process_group(process)
+            reader.join(timeout=TERMINATION_GRACE_SECONDS)
+            # Preserve any complete events the reader queued just before group
+            # termination; a timeout must not silently discard available evidence.
+            while True:
+                try:
+                    raw_line = messages.get_nowait()
+                except queue.Empty:
+                    break
+                if raw_line is None:
+                    continue
+                raw_log.write(raw_line)
+                raw_log.flush()
+                sys.stdout.buffer.write(raw_line)
+                sys.stdout.buffer.flush()
+                observe_event(summary, raw_line)
+            exit_code = process.returncode
     except OSError as exc:
         summary.update(
             status="launch_error",
@@ -261,14 +390,25 @@ def main(argv=None):
         print("Gemini CLI launch failed; summary: %s" % summary_path, file=sys.stderr)
         return 127
 
-    if exit_code == 0:
+    elapsed_seconds = round(time.monotonic() - started, 3)
+    if timed_out:
+        status = "blocked"
+        summary["blocked_reason"] = "wall_clock_timeout"
+        summary["child_exit_code"] = exit_code
+        exit_code = WALL_CLOCK_TIMEOUT_EXIT
+    elif exit_code == 0:
         status = "succeeded"
     elif exit_code == TURN_LIMIT_EXIT:
         status = "blocked"
         summary["blocked_reason"] = "turn_limit_exceeded"
     else:
         status = "failed"
-    summary.update(status=status, exit_code=exit_code, finished_at=iso_now())
+    summary.update(
+        status=status,
+        exit_code=exit_code,
+        finished_at=iso_now(),
+        elapsed_seconds=elapsed_seconds,
+    )
     atomic_json(summary_path, summary)
     print("Gemini headless run %s; summary: %s" % (status, summary_path), file=sys.stderr)
     return exit_code if exit_code >= 0 else 128 + abs(exit_code)

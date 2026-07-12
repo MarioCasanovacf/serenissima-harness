@@ -1,0 +1,39 @@
+{
+  "id": "T-311",
+  "title": "Bound Gemini headless execution by wall clock",
+  "description": "Own only .harness/bin/gemini_headless_runner.py, .harness/tests/test_gemini_headless_runner.py, and GEMINI_HEADLESS.md. Add a configurable positive wall-clock timeout with a documented default derived from the harness command bound. The bound must still fire when stdout is silent, terminate and reap the child process group, emit a deterministic nonzero runner exit, and persist summary status blocked with reason wall_clock_timeout and elapsed/bound evidence. Preserve exit 53 semantics and no-yolo behavior. Acceptance commands: python3 -m unittest discover -s .harness/tests -p test_gemini_headless_runner.py -v ; PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile .harness/bin/gemini_headless_runner.py. Tests must include a synthetic silent hanging child and assert finite completion plus summary fields.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:24:00Z",
+      "agent": "main",
+      "note": "DECISION: add positive configurable wall-clock timeout around process-group execution; timeout must terminate/reap a silent child and persist blocked/wall_clock_timeout evidence while preserving exit 53 and approval policy."
+    },
+    {
+      "ts": "2026-07-12T01:26:22Z",
+      "agent": "main",
+      "note": "DECISION: deterministic wall-clock timeout exit is 124; Gemini-native turn exhaustion remains 53. Default is limits.max_seconds_per_command with goal_mode's 300s fallback."
+    },
+    {
+      "ts": "2026-07-12T01:26:22Z",
+      "agent": "main",
+      "note": "expected: silent child and descendant terminate within finite bound, summary blocked_reason=wall_clock_timeout with elapsed/bound evidence; actual: 8 tests ran OK in 1.235s, silent 60s process group ended under 5s at a 0.35s bound, exit 124, descendant absent; exact py_compile passed; git diff --check passed."
+    },
+    {
+      "ts": "2026-07-12T01:26:22Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: Replay: python3 -m unittest discover -s .harness/tests -p test_gemini_headless_runner.py -v (must report Ran 8 tests, including silent process-group reap); PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile .harness/bin/gemini_headless_runner.py; git diff --check -- .harness/bin/gemini_headless_runner.py .harness/tests/test_gemini_headless_runner.py GEMINI_HEADLESS.md. Inspect summary assertions for exit 124, blocked/wall_clock_timeout, elapsed_seconds and wall_clock_timeout_seconds; verify exit 53/no-yolo regressions remain covered."
+    },
+    {
+      "ts": "2026-07-12T01:27:44Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFICATION START: replay exact handoff plus adversarial timeout process-tree cleanup and regression inspection; no file edits."
+    },
+    {
+      "ts": "2026-07-12T01:28:15Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFIED: replayed 8-test headless suite (8/8 OK, including silent child plus descendant process-group reap under 5s at 0.35s bound); summary assertions cover exit 124, blocked wall_clock_timeout, elapsed and configured bound. Exit 53, no-yolo, dry-run, input and non-turn exits remain covered. Python compile passed with sandbox-local pycache; exact default cache path was sandbox-denied only. Scoped git diff check passed. Independent code inspection confirms start_new_session, deadline polling independent of stdout, TERM/KILL group cleanup and child reap."
+    }
+  ]
+}

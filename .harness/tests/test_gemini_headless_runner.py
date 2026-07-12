@@ -1,8 +1,10 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 import unittest
 from pathlib import Path
 
@@ -48,7 +50,31 @@ class GeminiHeadlessRunnerTests(unittest.TestCase):
         executable.chmod(0o755)
         return executable
 
-    def invoke(self, binary, *extra):
+    def silent_hanging_gemini(self):
+        executable = self.workspace / "fake-gemini-silent-hang"
+        executable.write_text(
+            textwrap.dedent(
+                """\
+                #!{python}
+                import os
+                import subprocess
+                import sys
+                import time
+
+                pid_file = os.environ.get("FAKE_GEMINI_DESCENDANT_PID")
+                child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+                if pid_file:
+                    with open(pid_file, "w", encoding="utf-8") as handle:
+                        handle.write(str(child.pid))
+                time.sleep(60)
+                """
+            ).format(python=sys.executable),
+            encoding="utf-8",
+        )
+        executable.chmod(0o755)
+        return executable
+
+    def invoke(self, binary, *extra, env=None):
         return subprocess.run(
             [
                 sys.executable,
@@ -67,6 +93,8 @@ class GeminiHeadlessRunnerTests(unittest.TestCase):
             ],
             text=True,
             capture_output=True,
+            env=env,
+            timeout=10,
         )
 
     def only_summary(self):
@@ -97,6 +125,31 @@ class GeminiHeadlessRunnerTests(unittest.TestCase):
         self.assertEqual(summary["blocked_reason"], "turn_limit_exceeded")
         self.assertEqual(summary["exit_code"], 53)
 
+    @unittest.skipUnless(os.name == "posix", "process-group assertion requires POSIX")
+    def test_wall_clock_timeout_bounds_silent_child_and_reaps_process_group(self):
+        pid_file = self.workspace / "descendant.pid"
+        env = os.environ.copy()
+        env["FAKE_GEMINI_DESCENDANT_PID"] = str(pid_file)
+        started = time.monotonic()
+        result = self.invoke(
+            self.silent_hanging_gemini(), "--timeout-seconds", "0.35", env=env
+        )
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(result.returncode, 124, result.stderr)
+        self.assertLess(elapsed, 5)
+        _, summary = self.only_summary()
+        self.assertEqual(summary["status"], "blocked")
+        self.assertEqual(summary["blocked_reason"], "wall_clock_timeout")
+        self.assertEqual(summary["exit_code"], 124)
+        self.assertEqual(summary["wall_clock_timeout_seconds"], 0.35)
+        self.assertGreaterEqual(summary["elapsed_seconds"], 0.3)
+        self.assertLess(summary["elapsed_seconds"], 5)
+
+        descendant = int(pid_file.read_text(encoding="utf-8"))
+        with self.assertRaises(ProcessLookupError):
+            os.kill(descendant, 0)
+
     def test_non_turn_limit_exit_code_is_preserved(self):
         result = self.invoke(self.fake_gemini(42))
         self.assertEqual(result.returncode, 42)
@@ -113,6 +166,11 @@ class GeminiHeadlessRunnerTests(unittest.TestCase):
         self.assertFalse(plan["dependency"]["available"])
         self.assertFalse(plan["uses_shell"])
         self.assertFalse(plan["yolo"])
+        state = json.loads((ROOT / ".harness" / "state.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            plan["wall_clock_timeout_seconds"],
+            state["limits"]["max_seconds_per_command"],
+        )
         self.assertNotIn("touch /tmp/nope", result.stdout)
         self.assertFalse((self.workspace / ".harness" / "logs" / "gemini").exists())
 
@@ -146,6 +204,15 @@ class GeminiHeadlessRunnerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 42)
         self.assertIn("input error", result.stderr)
+
+    def test_timeout_must_be_positive(self):
+        result = self.invoke(self.fake_gemini(), "--timeout-seconds", "0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("must be a finite number greater than zero", result.stderr)
+
+        result = self.invoke(self.fake_gemini(), "--timeout-seconds", "nan")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("must be a finite number greater than zero", result.stderr)
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ not a personality: the board (`.harness/blackboard.json`) decides who may do wha
 
 **Intent → agent routing:**
 
-- New epic or ambiguous request, before any planning → `context-scout` (brief first) (Claude bench today; Codex/Gemini ports pending)
+- New epic or ambiguous request, before any planning → `context-scout` (brief first)
 - New goal, no tasks on the board yet → `orchestration-planner`
 - Open tasks on the claimable frontier → `substrate-worker` (one per parallel slot)
 - Any task sitting in `review` → `harness-verifier` (must differ from the producer)
@@ -46,10 +46,10 @@ Definitions in [`.claude/skills/`](.claude/skills/).
 ## Codex-native adapter
 
 Codex reads this `AGENTS.md` as the durable repository contract. Its native bench lives in
-`.codex/agents/` and mirrors the five harness mandates with Codex project-agent TOML files:
+`.codex/agents/` and mirrors all six harness mandates with Codex project-agent TOML files:
 `orchestration_planner`, `substrate_worker`, `harness_verifier`, `evolution_analyst`, and
-`research_librarian`. These are engine adapters for the same blackboard roles, not a second
-source of task truth.
+`research_librarian`, plus the pre-planning `context_scout`. These are engine adapters for the
+same blackboard roles, not a second source of task truth.
 
 Reusable Codex workflows live in `.agents/skills/`. `harness-status` is observational,
 `harness-claim-next` runs the legal claim→lock→work→handoff lifecycle, and
@@ -129,7 +129,7 @@ one `SKILL.md` per folder).
 Gemini CLI loads the existing `gemini.md`, this directory, `ORCHESTRATION.md`, and the scoped
 `GEMINI_ADAPTER.md` interpretation through
 `.gemini/settings.json`; this avoids the `GEMINI.md`/`gemini.md` filename collision on
-case-insensitive filesystems. Five bounded, tool-isolated project agents live in
+case-insensitive filesystems. Six bounded, tool-isolated project agents live in
 `.gemini/agents/`. Namespaced `/harness:*` commands in `.gemini/commands/harness/` provide
 status, claim, orchestration, verification, audit, and research entry points, each with an
 explicit single-agent fallback where preview subagents are unavailable.

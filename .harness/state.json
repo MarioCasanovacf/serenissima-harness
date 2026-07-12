@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 10,
+        "tasks_done": 13,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-06T16:44:08Z"
+        "last_outcome_at": "2026-07-12T01:29:17Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -288,6 +288,21 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-06T16:21:38Z"
+      },
+      "codex-worker-translate": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-12T01:32:01Z"
+      },
+      "codex-worker-invariants": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-12T01:37:25Z"
+      },
+      "codex-verifier-join": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-12T01:40:17Z"
       }
     }
   },
@@ -766,10 +781,19 @@
   "cost_policy": {
     "_source": "operator directive 2026-07-05 ('Soluciona esto' - 95% usage from subagent-heavy sessions, 79% from 8h+ sessions) + operator directive 2026-07-11 (P-030): measured token corpus 2026-07-04..06 (3 coordinator sessions + 88 subagent transcripts, 2354 assistant messages deduped by message.id) showed ~80% of raw tokens on the frontier tier (fable-5 + opus-4-8), 95.1% of list-price cost, 86.6% of output tokens; sonnet ~20%, haiku 0. Operator set a frontier-share band of 53-60% raw tokens",
     "frontier_budget": {
-      "target_band_frontier_share_raw_tokens": [0.53, 0.65],
+      "target_band_frontier_share_raw_tokens": [
+        0.53,
+        0.65
+      ],
       "band_note": "top revised 0.60 -> 0.65 by operator 2026-07-11 (same directive session): band is operator heuristic and 0.65 is the number the operator can defend; lower bound 0.53 kept as the do-not-chase floor",
-      "frontier_tier": ["fable", "opus"],
-      "cheap_tier": ["sonnet", "haiku"],
+      "frontier_tier": [
+        "fable",
+        "opus"
+      ],
+      "cheap_tier": [
+        "sonnet",
+        "haiku"
+      ],
       "baseline_2026_07_11": 0.8,
       "measurement": "python3 .harness/bin/token_share.py — raw tokens all-included over coordinator sessions + subagent transcripts, deduped by message.id; exit 2 when above band",
       "provenance": "the 53-60% band is an OPERATOR HEURISTIC, not literature-derived. Corpus sweep 2026-07-11 (research-librarian, all 12 papers + fetched_docs + 3 reference repos) found NO canonical frontier/cheap split percentage anywhere; the operator's remembered '53% max frontier' rule is not traceable to the corpus. The corpus-backed levers are the mechanisms in the rules below, not the number"

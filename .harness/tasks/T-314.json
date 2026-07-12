@@ -1,0 +1,19 @@
+{
+  "id": "T-314",
+  "title": "Verify real Gemini headless approval behavior without yolo",
+  "description": "After T-311, use an official installed Gemini or Antigravity CLI binary to run a harmless prompt whose tool call requires approval, under the new wall-clock timeout and without --yolo. Record whether headless auto-denies, exits, or waits; document exact binary/version/auth/method and result in GEMINI_HEADLESS.md. Never enable yolo. If installation/auth is unavailable after safe attempts, mark blocked with exact evidence rather than simulating.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:29:28Z",
+      "agent": "main",
+      "note": "plan: install official stable Gemini CLI under /private/tmp, record version, run T-311 runner without --yolo under its wall-clock bound on a harmless pwd tool request, document exact observed approval behavior"
+    },
+    {
+      "ts": "2026-07-12T01:31:57Z",
+      "agent": "codex-worker-gemini-real",
+      "note": "BLOCKED: Official stable @google/gemini-cli 0.50.0 was installed only under /private/tmp and invoked through gemini_headless_runner.py without --yolo or any approval override. Expected: Gemini reaches a run_shell_command tool request for harmless pwd, allowing observation of auto-deny versus wait/timeout. Actual: exit 41 after 0.826 seconds, zero JSONL events, stderr says an Auth method or supported auth environment variable is required. Safe checks found no GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA, configured auth type, preinstalled gemini/antigravity, or gcloud. No credentials were exposed and no OAuth flow was initiated. GEMINI_HEADLESS.md now records that approval behavior remains unestablished and must not be inferred. Replay: python3 -m unittest discover -s .harness/tests -p 'test_gemini_headless_runner.py' -v (8 tests passed); inspect the registered summary and stderr artifacts.\n"
+    }
+  ]
+}

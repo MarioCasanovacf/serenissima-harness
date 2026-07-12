@@ -1,0 +1,39 @@
+{
+  "id": "T-316",
+  "title": "Translate Gemini integration research to English",
+  "description": "Translate GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md fully to English, preserve links and technical meaning, and keep it untracked. Do not stage or commit it. Acceptance: no Spanish section prose remains by manual review; rg for common Spanish headings/phrases returns no matches; git status still shows the file untracked.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:27:21Z",
+      "agent": "codex-worker-translate",
+      "note": "DECISION: translate the complete untracked research report to English in place, preserving headings, claims, citations, URLs, commands, file paths, and recommendation meaning; no Git staging or other file edits."
+    },
+    {
+      "ts": "2026-07-12T01:30:20Z",
+      "agent": "codex-worker-translate",
+      "note": "expected: full English translation with technical meaning and URLs preserved; actual: manual review confirms 201 lines, 14 English sections, 21 URLs/20 unique, UTF-8 final newline; rg common Spanish headings/prose and accented Spanish characters returned no matches; git diff --check passed."
+    },
+    {
+      "ts": "2026-07-12T01:30:20Z",
+      "agent": "codex-worker-translate",
+      "note": "DEVIATION: acceptance says git status should show ??, but .gitignore:45 already ignores this exact file, so status intentionally omits it. Verified equivalent and stronger non-tracking evidence: git ls-files has no entry and git check-ignore identifies the exact rule. Did not alter .gitignore or stage the report."
+    },
+    {
+      "ts": "2026-07-12T01:30:20Z",
+      "agent": "codex-worker-translate",
+      "note": "HANDOFF -> verifier: Replay: (1) manually read GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md; headings must all be English and technical claims/paths unchanged; (2) rg -n -i '\\b(conclusión|contexto|subagentes|compartidas|comandos|arquitecturas|secuencia|recomendada|fuente|fuentes|ejecución|herramientas|prueba|tareas|veredicto|cambios|archivos|entorno|identidad|resultados|límites|revisión|interfaz|debe|puede|aunque|porque|cuando|donde|desde|hacia|entre|sobre|también|después|ningún|ninguna)\\b|[áéíóúñ¿¡]' GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md must return no matches; (3) URL count must be 21/20 unique and headings 14; (4) git ls-files -- file must be empty and git check-ignore -v must cite .gitignore:45. Do not stage/commit it."
+    },
+    {
+      "ts": "2026-07-12T01:31:07Z",
+      "agent": "codex-verifier-b",
+      "note": "VERIFICATION START: manual full-file English/meaning review, Spanish residue scan, URL and heading counts, and Git ignored/untracked evidence; no edits."
+    },
+    {
+      "ts": "2026-07-12T01:32:01Z",
+      "agent": "codex-verifier-b",
+      "note": "VERIFIED: manual review of all 201 lines confirms complete English prose, 14 English H2 sections, preserved technical structure and citations, 21 URLs with 20 unique, UTF-8 final newline, and no matches in both requested and broader Spanish-word/accent scans. Git ls-files is empty; git check-ignore identifies .gitignore line 45; scoped status is empty because the exact file is intentionally ignored, so it remains unstaged and untracked. Non-blocking observation: preserved source text still says five agents in four places, while concurrent T-312 has since expanded the live benches to six; this is post-source factual drift, not a translation loss, and should be synchronized by a separately authorized documentation task."
+    }
+  ]
+}

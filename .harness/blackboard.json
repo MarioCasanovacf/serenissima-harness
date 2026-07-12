@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-07-06T16:44:08Z",
-  "updated_by": "verifier-b",
+  "updated_at": "2026-07-12T01:40:17Z",
+  "updated_by": "codex-verifier-join",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -2622,6 +2622,189 @@
       "created_by": "coordinator",
       "completed_at": "2026-07-06T16:44:08Z",
       "completed_by": "verifier-b"
+    },
+    "T-311": {
+      "epic": "multi-engine-homologation-followup",
+      "title": "Bound Gemini headless execution by wall clock",
+      "status": "done",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-311.json",
+      "artifacts": [
+        ".harness/bin/gemini_headless_runner.py",
+        ".harness/tests/test_gemini_headless_runner.py",
+        "GEMINI_HEADLESS.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: python3 -m unittest discover -s .harness/tests -p test_gemini_headless_runner.py -v (must report Ran 8 tests, including silent process-group reap); PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile .harness/bin/gemini_headless_runner.py; git diff --check -- .harness/bin/gemini_headless_runner.py .harness/tests/test_gemini_headless_runner.py GEMINI_HEADLESS.md. Inspect summary assertions for exit 124, blocked/wall_clock_timeout, elapsed_seconds and wall_clock_timeout_seconds; verify exit 53/no-yolo regressions remain covered.",
+        "ts": "2026-07-12T01:26:22Z"
+      },
+      "created_at": "2026-07-12T01:22:29Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-12T01:28:15Z",
+      "completed_by": "codex-verifier-a"
+    },
+    "T-312": {
+      "epic": "multi-engine-homologation-followup",
+      "title": "Port context-scout to Codex and Gemini benches",
+      "status": "done",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-312.json",
+      "artifacts": [
+        ".codex/agents/context_scout.toml",
+        ".gemini/agents/context-scout.md",
+        "AGENTS.md",
+        ".harness/tests/test_context_scout_parity.py",
+        ".harness/tests/test_gemini_integration.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: python3.12 -m unittest discover -s .harness/tests -p test_context_scout_parity.py -v (4/4); python3.12 -m unittest discover -s .harness/tests -p test_gemini_integration.py -v (6/6); python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v (44/44); python3.12 -c import-tomllib parse context_scout.toml; git diff --check on five artifacts. Inspect immutable .claude/agents/context-scout.md against both ports: brief-only retrieval plus grill, cited claims, explicit vs assumed, ranked human questions, no source edits, no DAG, no external AI/web. System python3 is 3.9.6 so use python3.12 for non-skipped TOML assertions. Producer codex-worker-scout requests independent verdict.",
+        "ts": "2026-07-12T01:27:42Z"
+      },
+      "created_at": "2026-07-12T01:22:29Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-12T01:29:17Z",
+      "completed_by": "codex-verifier-a"
+    },
+    "T-313": {
+      "epic": "multi-engine-homologation-followup",
+      "title": "Restore harness-status skill synchronization",
+      "status": "done",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-313.json",
+      "artifacts": [
+        ".agents/skills/harness-status/SKILL.md",
+        "skills/harness-status/SKILL.md",
+        ".harness/tests/test_codex_integration.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: python3 -m unittest discover -s .harness/tests -p test_codex_integration.py -v => 6 tests, OK (2 TOML skips under Python 3.9); python3.12 same command => 6 tests, all OK. shasum -a 256 .claude/skills/harness-status/SKILL.md .agents/skills/harness-status/SKILL.md skills/harness-status/SKILL.md => identical c6d697ba94bae8127545bd550c5ea2ffaeef4051dcab457738bdae34ea4bff7f. git diff --check on owned files => clean. Claude canonical was read-only; no .claude file changed. Verify the byte-diff assertion fails if either downstream copy is perturbed, then restore it without editing Claude.",
+        "ts": "2026-07-12T01:26:58Z"
+      },
+      "created_at": "2026-07-12T01:22:29Z",
+      "created_by": "orchestration-planner",
+      "completed_at": "2026-07-12T01:28:44Z",
+      "completed_by": "codex-verifier-a"
+    },
+    "T-314": {
+      "epic": "multi-engine-followup",
+      "title": "Verify real Gemini headless approval behavior without yolo",
+      "status": "blocked",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [
+        "T-311"
+      ],
+      "claimed_by": "codex-worker-gemini-real",
+      "claim_expires_at": "2026-07-12T02:29:28Z",
+      "priority": 4,
+      "detail_file": ".harness/tasks/T-314.json",
+      "artifacts": [
+        "GEMINI_HEADLESS.md",
+        ".harness/logs/gemini/T-314/20260712T013044Z-d0bfe186d6/summary.json",
+        ".harness/logs/gemini/T-314/20260712T013044Z-d0bfe186d6/stderr.log"
+      ],
+      "handoff": null,
+      "created_at": "2026-07-12T01:23:31Z",
+      "created_by": "main"
+    },
+    "T-315": {
+      "epic": "multi-engine-followup",
+      "title": "Add cross-engine invariant drift checks",
+      "status": "done",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [
+        "T-312",
+        "T-313"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-315.json",
+      "artifacts": [
+        ".harness/tests/test_cross_engine_invariants.py",
+        ".harness/tests/test_codex_integration.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "codex-worker-invariants",
+        "note": "Replay exact: python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v; observed 46 tests OK with GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md temporarily absent and then restored. Focused: test_codex_integration.py ran 6 tests OK; test_cross_engine_invariants.py ran 2 tests OK. Confirm test_codex_integration contains no reference to the ignored research path and its replacement reads tracked GEMINI_ADAPTER.md. git diff --check passed. No Claude adapter edits.",
+        "ts": "2026-07-12T01:35:40Z"
+      },
+      "created_at": "2026-07-12T01:23:31Z",
+      "created_by": "main",
+      "completed_at": "2026-07-12T01:37:25Z",
+      "completed_by": "codex-verifier-c2"
+    },
+    "T-316": {
+      "epic": "multi-engine-followup",
+      "title": "Translate Gemini integration research to English",
+      "status": "done",
+      "role": "worker",
+      "engine": "codex",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 6,
+      "detail_file": ".harness/tasks/T-316.json",
+      "artifacts": [
+        "GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "codex-worker-translate",
+        "note": "Replay: (1) manually read GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md; headings must all be English and technical claims/paths unchanged; (2) rg -n -i '\\b(conclusión|contexto|subagentes|compartidas|comandos|arquitecturas|secuencia|recomendada|fuente|fuentes|ejecución|herramientas|prueba|tareas|veredicto|cambios|archivos|entorno|identidad|resultados|límites|revisión|interfaz|debe|puede|aunque|porque|cuando|donde|desde|hacia|entre|sobre|también|después|ningún|ninguna)\\b|[áéíóúñ¿¡]' GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md must return no matches; (3) URL count must be 21/20 unique and headings 14; (4) git ls-files -- file must be empty and git check-ignore -v must cite .gitignore:45. Do not stage/commit it.",
+        "ts": "2026-07-12T01:30:20Z"
+      },
+      "created_at": "2026-07-12T01:23:31Z",
+      "created_by": "main",
+      "completed_at": "2026-07-12T01:32:01Z",
+      "completed_by": "codex-verifier-b"
+    },
+    "T-317": {
+      "epic": "multi-engine-followup",
+      "title": "Adversarial join for multi-engine follow-up",
+      "status": "done",
+      "role": "verifier",
+      "engine": "codex",
+      "depends_on": [
+        "T-311",
+        "T-312",
+        "T-313",
+        "T-315",
+        "T-316"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 7,
+      "detail_file": ".harness/tasks/T-317.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-07-12T01:23:31Z",
+      "created_by": "main",
+      "completed_at": "2026-07-12T01:40:17Z",
+      "completed_by": "codex-verifier-join"
     }
   }
 }

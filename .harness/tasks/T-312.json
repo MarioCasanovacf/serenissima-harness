@@ -1,0 +1,34 @@
+{
+  "id": "T-312",
+  "title": "Port context-scout to Codex and Gemini benches",
+  "description": "Read .claude/agents/context-scout.md as the immutable specification. Own .codex/agents/context_scout.toml, .gemini/agents/context-scout.md, AGENTS.md, and .harness/tests/test_context_scout_parity.py. Implement equivalent retrieval-plus-grill behavior, cited briefs under .harness/briefs, strict read-only source behavior, no DAG design, bounded native agent settings, and engine-appropriate tools. Update both adapter counts to six and remove the pending-ports caveat. Do not edit any .claude file. Acceptance commands: python3 -m unittest discover -s .harness/tests -p test_context_scout_parity.py -v ; python3 -c \"import tomllib; tomllib.load(open(\\\".codex/agents/context_scout.toml\\\", \\\"rb\\\"))\". The test must assert all three surfaces carry the context-scout mandate and hard limits.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:24:14Z",
+      "agent": "main",
+      "note": "plan: port immutable Claude context-scout mandate to bounded Codex/Gemini native profiles, update bench parity wording, add cross-surface tests, and replay acceptance commands"
+    },
+    {
+      "ts": "2026-07-12T01:27:34Z",
+      "agent": "main",
+      "note": "DEVIATION: the literal python3 tomllib acceptance command cannot run because system python3 is 3.9.6; replayed with installed python3.12. Actual results: context-scout parity 4 tests passed with zero skips; Gemini integration 6 passed; full harness discovery 44 passed; TOML parse and git diff check passed."
+    },
+    {
+      "ts": "2026-07-12T01:27:42Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: Replay: python3.12 -m unittest discover -s .harness/tests -p test_context_scout_parity.py -v (4/4); python3.12 -m unittest discover -s .harness/tests -p test_gemini_integration.py -v (6/6); python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v (44/44); python3.12 -c import-tomllib parse context_scout.toml; git diff --check on five artifacts. Inspect immutable .claude/agents/context-scout.md against both ports: brief-only retrieval plus grill, cited claims, explicit vs assumed, ranked human questions, no source edits, no DAG, no external AI/web. System python3 is 3.9.6 so use python3.12 for non-skipped TOML assertions. Producer codex-worker-scout requests independent verdict."
+    },
+    {
+      "ts": "2026-07-12T01:28:55Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFICATION START: replay parity, Gemini and full suites under Python 3.12; parse TOML; inspect immutable Claude specification against Codex/Gemini tool isolation and brief-only mandate."
+    },
+    {
+      "ts": "2026-07-12T01:29:17Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFIED: immutable Claude context-scout specification has no diff. Python 3.12 parity suite 4/4, Gemini suite 6/6 and full harness suite 44/44 all passed; Codex TOML parsed and scoped diff check passed. Independent inspection confirms both ports produce only cited briefs, separate explicit needs from assumptions, rank 3-7 human questions, forbid source edits, blackboard task mutation, DAG design, web and external AI. Gemini omits replace and is bounded to 18 turns/12 minutes; shell plus write remain necessary for status, AST, locks and brief creation, so path restriction is behavioral rather than a filesystem allowlist, consistent with immutable source profile."
+    }
+  ]
+}

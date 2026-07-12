@@ -1,0 +1,24 @@
+{
+  "id": "T-317",
+  "title": "Adversarial join for multi-engine follow-up",
+  "description": "Independently replay all acceptance commands for T-311,T-312,T-313,T-315,T-316, inspect timeout cleanup, role parity, sync decision, invariant cross-checks, English-only research, and confirm universal_harness_architecture.jpg remains uncommitted. This verifier task is the final join; do not fix findings yourself.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:33:15Z",
+      "agent": "main",
+      "note": "JOIN SCOPE ADDENDUM: also inspect T-314's real Gemini CLI 0.50.0 auth-blocked evidence and GEMINI_HEADLESS.md wording; confirm it does not overclaim approval auto-deny vs hang. T-314 is intentionally not a done dependency because missing operator credentials makes it blocked."
+    },
+    {
+      "ts": "2026-07-12T01:38:10Z",
+      "agent": "codex-verifier-join",
+      "note": "Read-only adversarial replay of T-311 through T-316 handoffs and addendum; no file locks required because no repository edits will be made."
+    },
+    {
+      "ts": "2026-07-12T01:40:17Z",
+      "agent": "codex-verifier-join",
+      "note": "VERIFIED JOIN: Python 3.12 full discovery ran 46 tests and passed; focused suites passed 8 headless, 4 context scout, 6 Codex, 2 cross-engine invariants, and 6 Gemini. Python compilation, full diff check, 15 TOML parses, and 16 frontmatter checks passed. Code inspection and the silent child test confirm stdout-independent deadline enforcement, process-group TERM/KILL cleanup, descendant removal, deterministic exit 124, and blocked timeout evidence while preserving exit 53. Claude, Codex, and Gemini have six role profiles with context-scout mandate parity. All three harness-status skill hashes are identical. T-314 used real Gemini CLI 0.50.0 and produced authentication exit 41 after 0.826 seconds with zero events; GEMINI_HEADLESS.md correctly says approval auto-deny versus wait remains unknown and does not overclaim. Research report has English prose, 14 H2 headings, 21 URLs, is ignored and untracked; architecture JPG is also ignored and untracked. Git index is empty, HEAD and origin/main remain 3c826e5, and no commit or push occurred."
+    }
+  ]
+}

@@ -54,13 +54,14 @@ class GeminiIntegrationTests(unittest.TestCase):
         self.assertRegex(adapter, r"(?i)Gemini CLI or Antigravity may act as the\s+coordinator")
         self.assertRegex(adapter, r"(?i)external side effect\s+are disabled unless the human operator explicitly opts in")
 
-    def test_five_native_agents_are_bounded_and_tool_isolated(self):
+    def test_six_native_agents_are_bounded_and_tool_isolated(self):
         expected = {
             "orchestration-planner",
             "substrate-worker",
             "harness-verifier",
             "evolution-analyst",
             "research-librarian",
+            "context-scout",
         }
         paths = list((ROOT / ".gemini/agents").glob("*.md"))
         parsed = {frontmatter(path)["name"]: frontmatter(path) for path in paths}
@@ -77,6 +78,7 @@ class GeminiIntegrationTests(unittest.TestCase):
             self.assertNotIn("write_file", parsed[name]["tools"])
             self.assertNotIn("replace", parsed[name]["tools"])
         self.assertNotIn("run_shell_command", parsed["research-librarian"]["tools"])
+        self.assertNotIn("replace", parsed["context-scout"]["tools"])
 
     def test_namespaced_commands_are_valid_toml_and_have_fallbacks(self):
         command_dir = ROOT / ".gemini/commands/harness"

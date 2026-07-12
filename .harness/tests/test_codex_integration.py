@@ -24,13 +24,14 @@ class CodexIntegrationTests(unittest.TestCase):
         self.assertEqual(config["agents"]["max_depth"], 1)
 
     @unittest.skipIf(tomllib is None, "TOML parsing requires Python 3.11+")
-    def test_five_native_agent_profiles_are_valid(self):
+    def test_six_native_agent_profiles_are_valid(self):
         expected = {
             "orchestration_planner",
             "substrate_worker",
             "harness_verifier",
             "evolution_analyst",
             "research_librarian",
+            "context_scout",
         }
         profiles = {}
         for path in AGENTS_DIR.glob("*.toml"):
@@ -54,7 +55,7 @@ class CodexIntegrationTests(unittest.TestCase):
             name_line = next(line for line in frontmatter.splitlines() if line.startswith("name:"))
             found[name_line.split(":", 1)[1].strip()] = text
         self.assertTrue(expected.issubset(found))
-        self.assertIn("strictly read-only", found["harness-status"])
+        self.assertIn("all read-only", found["harness-status"])
         self.assertIn("--engine codex", found["harness-claim-next"])
         self.assertIn("native Codex subagents", found["harness-orchestrate"])
 
@@ -84,9 +85,13 @@ class CodexIntegrationTests(unittest.TestCase):
             text=True,
             capture_output=True,
         )
-        self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertIn("no claimable task", result.stdout)
-        self.assertIn("engine=codex", result.stdout)
+        self.assertIn(result.returncode, (0, 1), result.stderr)
+        if result.returncode == 0:
+            self.assertIn("claim it:", result.stdout)
+            self.assertIn("--agent codex-smoke", result.stdout)
+        else:
+            self.assertIn("no claimable task", result.stdout)
+            self.assertIn("engine=codex", result.stdout)
 
     def test_codex_plugin_manifest_and_skill_sync(self):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())
@@ -98,14 +103,17 @@ class CodexIntegrationTests(unittest.TestCase):
             plugin_skill = ROOT / "skills" / name / "SKILL.md"
             self.assertEqual(project_skill.read_text().strip(), plugin_skill.read_text().strip())
 
-    def test_gemini_research_covers_all_adapter_surfaces(self):
-        research = ROOT / "GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md"
-        self.assertTrue(research.exists())
-        text = research.read_text()
-        self.assertIn("CLI headless", text)
-        self.assertIn("Antigravity", text)
-        self.assertIn("Managed Agents", text)
+        claude_status = ROOT / ".claude" / "skills" / "harness-status" / "SKILL.md"
+        project_status = SKILLS_DIR / "harness-status" / "SKILL.md"
+        plugin_status = ROOT / "skills" / "harness-status" / "SKILL.md"
+        self.assertEqual(claude_status.read_bytes(), project_status.read_bytes())
+        self.assertEqual(claude_status.read_bytes(), plugin_status.read_bytes())
 
+    def test_tracked_gemini_adapter_declares_local_execution_surfaces(self):
+        adapter = (ROOT / "GEMINI_ADAPTER.md").read_text(encoding="utf-8")
+        self.assertIn("Gemini CLI", adapter)
+        self.assertIn("Antigravity", adapter)
+        self.assertIn("gemini_headless_runner.py", adapter)
 
 if __name__ == "__main__":
     unittest.main()

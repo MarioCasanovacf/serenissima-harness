@@ -1,0 +1,54 @@
+{
+  "id": "T-313",
+  "title": "Restore harness-status skill synchronization",
+  "description": "Treat .claude/skills/harness-status/SKILL.md as read-only canonical input for this task. Own .agents/skills/harness-status/SKILL.md, skills/harness-status/SKILL.md, and .harness/tests/test_codex_integration.py. Resolve the observed divergence by making the reusable Codex/plugin copies byte-identical to the Claude skill and extend the existing sync test to compare all three. Do not edit any .claude file. Acceptance command: python3 -m unittest discover -s .harness/tests -p test_codex_integration.py -v. The test output must report a nonzero test count and fail on future byte divergence.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-12T01:24:10Z",
+      "agent": "main",
+      "note": "DECISION: Treat .claude/skills/harness-status/SKILL.md as read-only canonical bytes; synchronize both reusable copies and extend the Codex integration test to assert all three surfaces remain identical."
+    },
+    {
+      "ts": "2026-07-12T01:25:00Z",
+      "agent": "main",
+      "note": "DECISION: Coordinated with T-312 through the parent dispatcher: while holding test_codex_integration.py, updated the exact Codex agent profile expectation from five to six and added context_scout so the concurrent parity port will not regress the full suite."
+    },
+    {
+      "ts": "2026-07-12T01:25:27Z",
+      "agent": "main",
+      "note": "DEVIATION: The acceptance test's pre-existing blackboard smoke assertion assumed an empty Codex frontier, but this follow-up epic intentionally has open Codex work. Made it state-robust: either a legal dispatch or the no-claimable response proves engine routing, while preserving the original assertions for each branch. Kept pre-existing whitespace-tolerant sync for unrelated skills; harness-status alone now uses byte equality across Claude, project, and plugin."
+    },
+    {
+      "ts": "2026-07-12T01:26:58Z",
+      "agent": "main",
+      "note": "RESULT: Project Codex harness-status skill synchronized byte-for-byte from read-only Claude canonical input; SHA-256 c6d697ba94bae8127545bd550c5ea2ffaeef4051dcab457738bdae34ea4bff7f."
+    },
+    {
+      "ts": "2026-07-12T01:26:58Z",
+      "agent": "main",
+      "note": "RESULT: Plugin harness-status skill synchronized to the same canonical bytes."
+    },
+    {
+      "ts": "2026-07-12T01:26:58Z",
+      "agent": "main",
+      "note": "RESULT: Regression test now asserts byte equality for Claude/project/plugin harness-status surfaces; coordinated exact six-agent expectation with T-312."
+    },
+    {
+      "ts": "2026-07-12T01:26:58Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: Replay: python3 -m unittest discover -s .harness/tests -p test_codex_integration.py -v => 6 tests, OK (2 TOML skips under Python 3.9); python3.12 same command => 6 tests, all OK. shasum -a 256 .claude/skills/harness-status/SKILL.md .agents/skills/harness-status/SKILL.md skills/harness-status/SKILL.md => identical c6d697ba94bae8127545bd550c5ea2ffaeef4051dcab457738bdae34ea4bff7f. git diff --check on owned files => clean. Claude canonical was read-only; no .claude file changed. Verify the byte-diff assertion fails if either downstream copy is perturbed, then restore it without editing Claude."
+    },
+    {
+      "ts": "2026-07-12T01:28:29Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFICATION START: replay Python 3.9 and 3.12 suites, exact byte hashes, six-agent expectation, scoped diff check, and non-mutating perturbation simulation."
+    },
+    {
+      "ts": "2026-07-12T01:28:44Z",
+      "agent": "codex-verifier-a",
+      "note": "VERIFIED: exact acceptance replay produced 6 tests on Python 3.9 (4 pass, 2 expected TOML skips) and 6/6 pass on Python 3.12. Claude canonical, project skill and plugin skill have identical SHA-256 c6d697ba94bae8127545bd550c5ea2ffaeef4051dcab457738bdae34ea4bff7f. Scoped diff check clean. Independent non-mutating Path.read_bytes perturbation of plugin copy made the targeted sync test fail exactly once, proving byte drift detection. Six-profile assertion includes context_scout. Claude canonical was read only."
+    }
+  ]
+}
