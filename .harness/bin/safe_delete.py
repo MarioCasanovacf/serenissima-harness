@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import fcntl
 import json
 import os
 import re
@@ -13,6 +12,8 @@ import sys
 import uuid
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
+
+import portalock
 
 
 CONTROL_PLANE = {
@@ -98,9 +99,9 @@ def _log_event(root: Path, event: str, **fields) -> None:
         }
         record.update(fields)
         with path.open("a", encoding="utf-8") as handle:
-            fcntl.flock(handle, fcntl.LOCK_EX)
+            portalock.lock_ex(handle)
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            portalock.unlock(handle)
     except Exception:
         # Audit logging must not corrupt or strand a completed reversible move.
         pass

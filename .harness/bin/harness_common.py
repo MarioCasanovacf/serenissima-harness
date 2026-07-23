@@ -3,17 +3,19 @@
 All tools under .harness/bin/ are stdlib-only (python3 >= 3.9) and fail-safe:
 they must never corrupt shared state. Invariants:
   - Shared JSON files are mutated only through read-modify-write cycles
-    serialized by the `guarded()` context manager (flock on .harness/locks/.guard).
-  - NEVER nest `guarded()` blocks (flock on a second file handle would deadlock).
+    serialized by the `guarded()` context manager (an exclusive lock on
+    .harness/locks/.guard, via portalock -- POSIX fcntl / Windows msvcrt).
+  - NEVER nest `guarded()` blocks (locking a second file handle would deadlock).
   - All JSON writes are atomic (tempfile in the same directory + os.replace).
-  - JSONL appends take an exclusive flock on the log file for the write.
+  - JSONL appends take an exclusive lock on the log file for the write.
 """
 import datetime as _dt
-import fcntl
 import json
 import os
 import tempfile
 from pathlib import Path
+
+import portalock
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = ROOT / ".harness"
@@ -84,11 +86,11 @@ class guarded:
     def __enter__(self):
         GUARD.parent.mkdir(parents=True, exist_ok=True)
         self._fh = open(GUARD, "a+")
-        fcntl.flock(self._fh, fcntl.LOCK_EX)
+        portalock.lock_ex(self._fh)
         return self
 
     def __exit__(self, *exc):
-        fcntl.flock(self._fh, fcntl.LOCK_UN)
+        portalock.unlock(self._fh)
         self._fh.close()
         return False
 
@@ -98,9 +100,9 @@ def append_jsonl(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record, ensure_ascii=False)
     with open(path, "a", encoding="utf-8") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        portalock.lock_ex(f)
         f.write(line + "\n")
-        fcntl.flock(f, fcntl.LOCK_UN)
+        portalock.unlock(f)
 
 
 def log_event(kind, **fields):

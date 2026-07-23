@@ -13,13 +13,14 @@ rm -rf, git clean -xfd, git reset --hard, and force-push data loss.
 from __future__ import annotations
 
 import datetime as dt
-import fcntl
 import json
 import os
 import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Optional, Tuple
+
+import portalock
 
 
 BLOCK_MESSAGE = (
@@ -122,9 +123,9 @@ def _log_block(payload: dict, rule: str, text: str) -> None:
         }
         record = {key: value for key, value in record.items() if value is not None}
         with path.open("a", encoding="utf-8") as handle:
-            fcntl.flock(handle, fcntl.LOCK_EX)
+            portalock.lock_ex(handle)
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            portalock.unlock(handle)
     except Exception:
         pass
 
