@@ -1,0 +1,7 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Harness runtime substrate: raw append-only experience log (claude.md §4A.2).
+# Curated artifacts under .harness/logs/ (audit_gen*.md, reports) stay tracked.
+.harness/logs/transcript.jsonl
