@@ -1,5 +1,12 @@
 # Gemini native adapter scope
 
+Repository capability note (non-normative): Gemini CLI automatically discovers repo-scoped
+workspace skills from [.agents/skills/](.agents/skills/), as documented in the official
+[Gemini CLI skill discovery tiers](https://geminicli.com/docs/cli/using-agent-skills/). This
+discovery is independent of context-file injection through [.gemini/settings.json](.gemini/settings.json).
+It does not change the precedence of gemini.md or the shared blackboard lifecycle, and it is not a
+claim that this repository provides an installable Gemini distribution.
+
 This file interprets the existing `gemini.md` constitution for the native surfaces shipped by
 this repository; it does not replace that constitution or the shared blackboard invariants.
 

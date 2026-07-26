@@ -33,6 +33,22 @@ We have fetched and cloned the reference source code repositories for key framew
 *   **[agentic-harness-engineering-reference/](agentic-harness-engineering-reference/)**: The Agentic Harness Engineering (AHE) framework, including `evolve.py` and the paper PDF.
 
 ### 4. Runtime Substrate & Orchestration (Generation 0 — bootstrapped 2026-07-03)
+
+The shared capability surface also includes
+[design-taste-frontend](.agents/skills/design-taste-frontend/SKILL.md), a progressively disclosed,
+stack-neutral workflow for distinctive marketing frontends and careful redesigns. Codex and
+Gemini share the canonical [.agents/skills/](.agents/skills/) directory, Claude uses the
+[.claude/skills/](.claude/skills/) mirror, and the installable Codex plugin uses the
+[skills/](skills/) mirror. Upstream MIT provenance is pinned to commit
+b17742737e796305d829b3ad39eda3add0d79060.
+
+[design-taste-production](.agents/skills/design-taste-production/SKILL.md) is the broader
+production capability: it covers marketing and product surfaces, dashboards, analytical
+graphics, transactional flows, visual review, image concepts, and executive decision memos. Its
+core directory is byte-identical across the three discovery surfaces and contains no
+model-, runtime-, vendor-, or hosted-service dependency. The `personal:mario` profile is an
+explicit opt-in layer; without that exact flag the skill remains brand-neutral.
+
 *   **[AGENTS.md](AGENTS.md)**: The capability directory — every resident agent, skill, hook, and loop that ships with the harness, with intent-to-resource routing and the extension patterns proven in sibling deployments. Engines should read this before deciding how to route a task.
 *   **[ORCHESTRATION.md](ORCHESTRATION.md)**: The delegation topology contract — dependency-DAG delegation (cascade where a real artifact dependency exists, parallel everywhere else), claims with leases, TTL write locks, producer ≠ approver, engine routing, and the seeded task DAG.
 *   **[.harness/](.harness/)**: The Runtime layer (R): guarded `blackboard.json`, `state.json` (limits, capability contracts, human gates, evolution queue), `tasks/` detail files, `locks/`, `logs/` (JSONL observability), and the deterministic control plane in `bin/` (`blackboard.py`, `lock.py`, hook scripts). See `.harness/README.md`.
@@ -42,7 +58,7 @@ We have fetched and cloned the reference source code repositories for key framew
 *   **[GEMINI_HEADLESS.md](GEMINI_HEADLESS.md)**: The unattended Gemini CLI bridge. It executes self-contained assignments with `stream-json`, preserves exit codes and raw JSONL evidence, uses distinct harness identities, and never bypasses approvals or silently mutates the board.
 *   **[GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md](GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md)**: Current primary-source architecture research for a deeper Gemini implementation across interactive CLI, native subagents, shared skills, headless JSONL workers, Antigravity workflows, extensions, policies, and future Managed Agents.
 *   **[.codex/](.codex/)**: Native Codex project integration — bounded multi-agent configuration plus planner, worker, verifier, evolution, and research profiles that speak the same blackboard lifecycle.
-*   **[.agents/skills/](.agents/skills/)**: Repo-scoped Codex workflows for board status, direct Codex claims, and full-frontier orchestration. The same workflow format is also a future interoperability surface for Gemini CLI and Antigravity.
+*   **[.agents/skills/](.agents/skills/)**: Canonical repo-scoped workspace skills discovered directly by Codex and Gemini CLI, including shared harness workflows and design-taste-frontend. Claude and installable Codex plugin mirrors are described above.
 *   **[.codex-plugin/](.codex-plugin/)** and **[skills/](skills/)**: Installable Codex plugin manifest and packaged copies of the reusable workflows, guarded by a synchronization test against `.agents/skills/`.
 *   **[DATA_LOSS_SAFETY.md](DATA_LOSS_SAFETY.md)**: Codex-specific defense in depth against project deletion and discarded edits: native command rules, a project/plugin pre-tool guard, and reversible audited quarantine instead of permanent deletion.
 

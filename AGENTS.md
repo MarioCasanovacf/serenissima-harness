@@ -37,11 +37,18 @@ not a personality: the board (`.harness/blackboard.json`) decides who may do wha
 
 ## Skills
 
-Definitions in [`.claude/skills/`](.claude/skills/).
+Shared universal definitions live canonically in
+[.agents/skills/](.agents/skills/), which Codex and Gemini can consume. Claude uses the matching
+[.claude/skills/](.claude/skills/) mirror, and the installable Codex plugin ships the matching
+[skills/](skills/) mirror. Engine-specific workflows may exist only on their native surface.
 
 | Skill | Trigger | What it does |
 |---|---|---|
-| [`harness-status`](.claude/skills/harness-status/SKILL.md) | "board status", "what is the harness doing" | Prints the live board: task DAG, claimable frontier, cascade gates, active write-locks, recent events |
+| [design-taste-production](.agents/skills/design-taste-production/SKILL.md) | "design or review this interface", "build this dashboard", "make this personal:mario" | Routes production UI, analytical graphics, redesigns, image concepts, and executive memos through a model- and runtime-independent design contract; Mario's personal profile activates only when explicitly flagged |
+| [design-taste-frontend](.agents/skills/design-taste-frontend/SKILL.md) | "design a landing page", "polish this marketing frontend", "redesign this portfolio" | Applies stack-neutral anti-generic design judgment, conditional framework and motion guidance, redesign preservation, and production preflight |
+| [harness-claim-next](.agents/skills/harness-claim-next/SKILL.md) | "claim the next Codex task", "work the next harness task" | Runs the legal claim, lock, bounded work, artifact registration, and verifier handoff lifecycle |
+| [harness-orchestrate](.agents/skills/harness-orchestrate/SKILL.md) | "plan and dispatch this goal", "finish this harness goal" | Coordinates the legal frontier through native Codex subagents and independent verifier identities |
+| [harness-status](.agents/skills/harness-status/SKILL.md) | "board status", "what is the harness doing" | Prints the live board: task DAG, claimable frontier, cascade gates, active write-locks, recent events |
 
 ## Codex-native adapter
 
