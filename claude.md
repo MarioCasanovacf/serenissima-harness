@@ -48,7 +48,7 @@ Claude interacts with the environment through local CLI tools.
 ### A. Core Local Tools
 *   **Tool Discovery (do this first)**: The deterministic control plane lives in `.harness/bin/` — list that directory and read each tool's docstring/`--help` before proposing new tooling; several affordances already exist.
 *   **Goal Mode Loop**: Automate iterative test-fix cycles locally via `python3 .harness/bin/goal_mode.py run --cmd "<test command>"` — the iteration bound is enforced mechanically (exit 3 = bound reached: stop and mark the task `blocked`).
-*   **AST Semantic Indexing**: `python3 .harness/bin/ast_index.py query <symbol>` (after `build`) finds function, class, and variable definitions without reading entire files.
+*   **AST Semantic Indexing**: `python3 .harness/bin/ast_index.py query <symbol>` (after `build`) finds function, class, and method definitions without reading entire files.
 *   **Remote Hook Notifications**: Trigger script webhooks (integrating with WeChat, Feishu, or Telegram) to report long-running task completions or request human validation.
 
 ### B. Handling Tool Failures

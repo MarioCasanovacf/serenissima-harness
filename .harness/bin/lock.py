@@ -31,6 +31,18 @@ from pathlib import Path
 import harness_common as hc
 
 
+def _default_ttl():
+    """Lock TTL default from state.json limits (fallback 900), mirroring how
+    blackboard.py sources the claim lease. Previously --ttl hardcoded 900 and
+    silently ignored limits.lock_ttl_seconds_default, so an operator who tuned
+    the limit saw no effect on lock lifetime."""
+    state = hc.read_json(hc.STATE) or {}
+    try:
+        return int(state.get("limits", {}).get("lock_ttl_seconds_default", 900))
+    except (TypeError, ValueError):
+        return 900
+
+
 def _normalized_log_path(p):
     """P-008a: normalize a path-like value for the log boundary -- relative to
     the workspace root (hc.ROOT) when it resolves inside it, else logged
@@ -173,7 +185,7 @@ def main(argv):
     p_acq.add_argument("path")
     p_acq.add_argument("--holder", default=hc.agent_id())
     p_acq.add_argument("--task", default=None)
-    p_acq.add_argument("--ttl", type=int, default=900)
+    p_acq.add_argument("--ttl", type=int, default=_default_ttl())
     p_acq.set_defaults(func=acquire)
 
     p_rel = sub.add_parser("release", help="release a write lock you hold")

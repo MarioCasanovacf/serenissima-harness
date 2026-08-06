@@ -235,8 +235,18 @@ def cmd_run(args):
         stdout, stderr = proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as exc:
         timed_out = True
-        stdout = exc.stdout or ""
-        stderr = (exc.stderr or "") + "\n[goal_mode] TIMEOUT after {}s".format(timeout_seconds)
+        # A timed-out process that already emitted output hands back BYTES on
+        # .stdout/.stderr even under text=True (CPython does not decode the
+        # partial buffers). Concatenating str to those raised TypeError here --
+        # crashing before the iteration counter below is bumped, so the
+        # anti-runaway bound never advanced on exactly the spew-then-hang case
+        # it exists to catch. Normalize to str unconditionally.
+        def _as_str(value):
+            if isinstance(value, bytes):
+                return value.decode("utf-8", "replace")
+            return value or ""
+        stdout = _as_str(exc.stdout)
+        stderr = _as_str(exc.stderr) + "\n[goal_mode] TIMEOUT after {}s".format(timeout_seconds)
     duration = time.monotonic() - started
 
     if returncode == 0 and not timed_out:

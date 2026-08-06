@@ -113,9 +113,15 @@ def log_event(kind, **fields):
 
 
 def lock_name_for(path):
-    """Map a workspace path to its lock file name (relative path, sep -> '__').
+    """Map a workspace path to its lock file name.
     Returns None for paths outside the workspace root (those are never locked
-    here; writes outside the root are forbidden by the Control layer anyway)."""
+    here; writes outside the root are forbidden by the Control layer anyway).
+
+    The separator is percent-encoded (not '/'->'__'), because '__' was not
+    injective: `a/b` and a file literally named `a__b` both mapped to
+    `a__b.lock`, so locking one blocked the other. Escaping '%' first keeps the
+    encoding reversible and collision-free; ordinary names stay readable
+    (`pkg/mod.py` -> `pkg%2Fmod.py.lock`)."""
     p = Path(path)
     if not p.is_absolute():
         p = ROOT / p
@@ -124,7 +130,8 @@ def lock_name_for(path):
         rel = p.relative_to(ROOT)
     except (OSError, ValueError):
         return None
-    return str(rel).replace(os.sep, "__") + ".lock"
+    encoded = str(rel).replace("%", "%25").replace(os.sep, "%2F")
+    return encoded + ".lock"
 
 
 def read_lock(path):

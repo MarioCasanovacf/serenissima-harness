@@ -168,8 +168,15 @@ function splitArgs(args, allowedFlags) {
  * unparsable result.
  */
 function parseFromDate(raw) {
-  const hasOffset = /(Z|[+-]\d{2}:\d{2})$/i.test(raw);
-  const source = raw.includes('T') && !hasOffset ? `${raw}Z` : raw;
+  // A single space between the date and time is RFC 3339's accepted
+  // alternative to 'T' (e.g. "2026-01-01 12:00"). Normalize it to 'T' FIRST
+  // so it takes the identical naive->UTC path as the 'T' form; otherwise
+  // new Date("2026-01-01 12:00") would be read in LOCAL time, contradicting
+  // the documented "naive (no offset/Z) = UTC" contract.
+  const normalized = raw.replace(/^(\d{4}-\d{2}-\d{2}) (\d{2})/, '$1T$2');
+  const hasOffset = /(Z|[+-]\d{2}:\d{2})$/i.test(normalized);
+  const source =
+    normalized.includes('T') && !hasOffset ? `${normalized}Z` : normalized;
   const date = new Date(source);
   if (Number.isNaN(date.getTime())) {
     throw new UsageError(`Invalid --from date '${raw}': must be a valid ISO-8601 date/time`);

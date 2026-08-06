@@ -54,7 +54,15 @@ def _validate(root: Path, raw: str) -> Tuple[Path, Path]:
     candidate = Path(raw).expanduser()
     if not candidate.is_absolute():
         candidate = root / candidate
-    absolute = candidate.absolute()
+    # Resolve BEFORE deriving `relative`. The previous code kept the path
+    # unresolved (.absolute()), so a `..` segment left relative.parts[0]
+    # pointing at an innocent dir: `projects/../.harness/state.json` had
+    # parts[0]=='projects' and slipped straight past the control-plane guard
+    # below while actually targeting `.harness/`. resolve() collapses `..`
+    # and follows symlinks, so the guard now sees the true destination. root
+    # is already resolved by _root(); strict=False (3.9 default) lets a
+    # not-yet-existing leaf resolve.
+    absolute = candidate.resolve()
     try:
         relative = absolute.relative_to(root)
     except ValueError as exc:
@@ -63,11 +71,6 @@ def _validate(root: Path, raw: str) -> Tuple[Path, Path]:
         raise SafetyError("refusing workspace root")
     if not absolute.exists() and not absolute.is_symlink():
         raise SafetyError("path does not exist: {}".format(raw))
-    # Refuse symlinks (or symlinked parents) that escape the workspace.
-    try:
-        absolute.resolve().relative_to(root)
-    except ValueError as exc:
-        raise SafetyError("path resolves outside workspace: {}".format(raw)) from exc
     if relative.parts and relative.parts[0].lower() in _CONTROL_PLANE_LOWER:
         raise SafetyError("control-plane path is protected: {}".format(relative))
     return absolute, relative
