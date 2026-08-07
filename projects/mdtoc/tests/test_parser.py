@@ -237,6 +237,40 @@ class TestHtmlCommentExclusion(unittest.TestCase):
         result = parse_headings(text)
         self.assertEqual(result, [Heading(level=1, text="After", line=2)])
 
+    def test_second_comment_open_on_same_line_reopens_comment_state(self):
+        # A line holding a CLOSED comment followed by a SECOND, un-closed
+        # '<!--' must leave the parser INSIDE a comment, so a heading on a
+        # following line (which lives inside that still-open comment) is NOT
+        # collected. Regression: a single find() only saw the first '<!--'
+        # and left in_comment False.
+        text = "\n".join(
+            [
+                "<!-- a --> text <!-- open again",
+                "# Ghost inside the still-open comment",
+                "-->",
+                "# Real",
+            ]
+        )
+        result = parse_headings(text)
+        self.assertEqual(result, [Heading(level=1, text="Real", line=4)])
+
+    def test_multiline_comment_close_line_trailing_text_is_not_a_heading(self):
+        # The line that CLOSES a multi-line HTML comment is, per CommonMark
+        # HTML-block (type 2) semantics, entirely part of the HTML block, so
+        # a '# ...' appearing AFTER the '-->' on that same closing line is
+        # NOT a heading. Regression: re-slicing the line after '-->' shifted
+        # columns and produced a phantom heading from '--> # Ghost'.
+        text = "\n".join(
+            [
+                "<!--",
+                "still commented",
+                "--> # Ghost",
+                "# Real",
+            ]
+        )
+        result = parse_headings(text)
+        self.assertEqual(result, [Heading(level=1, text="Real", line=4)])
+
 
 class TestLineNumbers(unittest.TestCase):
     """1-based line numbers are correct even with interleaved noise."""

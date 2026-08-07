@@ -173,7 +173,7 @@ def main(argv):
     p_acq.add_argument("path")
     p_acq.add_argument("--holder", default=hc.agent_id())
     p_acq.add_argument("--task", default=None)
-    p_acq.add_argument("--ttl", type=int, default=900)
+    p_acq.add_argument("--ttl", type=int, default=hc.limit("lock_ttl_seconds_default", 900))
     p_acq.set_defaults(func=acquire)
 
     p_rel = sub.add_parser("release", help="release a write lock you hold")

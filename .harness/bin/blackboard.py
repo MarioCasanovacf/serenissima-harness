@@ -66,7 +66,9 @@ import argparse
 import datetime as dt
 import json
 import re
+import shutil
 import sys
+import uuid
 
 import harness_common as hc
 
@@ -91,14 +93,23 @@ def save_bb(bb, actor):
 
 
 def expire_claims(bb):
-    """Release claims whose lease has expired. Returns [(task_id, holder)]."""
+    """Release claims whose lease has expired. Returns [(task_id, holder)].
+
+    A task with a handoff record goes back to 'review', not 'open': the work is
+    finished and awaiting a verdict, so it must not re-enter the worker frontier
+    as fresh work when its verifier's lease dies. A 'blocked' task keeps its
+    status, but an expired claim on it is still released so a dead holder can't
+    pin it forever.
+    """
     released = []
     for tid, t in bb.get("tasks", {}).items():
-        if t.get("status") in ("claimed", "in_progress"):
+        if t.get("status") in ("claimed", "in_progress", "blocked"):
             exp = hc.parse_iso(t.get("claim_expires_at") or "")
             if exp is not None and exp < hc.now_utc():
-                released.append((tid, t.get("claimed_by")))
-                t["status"] = "open"
+                holder = t.get("claimed_by")
+                if t.get("status") != "blocked":
+                    t["status"] = "review" if t.get("handoff") else "open"
+                released.append((tid, holder, t.get("status")))
                 t["claimed_by"] = None
                 t["claim_expires_at"] = None
     return released
@@ -129,11 +140,7 @@ def bump_reputation_locked(agent, outcome):
 
 
 def default_lease():
-    state = hc.read_json(hc.STATE) or {}
-    try:
-        return int(state.get("limits", {}).get("claim_lease_seconds_default", 3600))
-    except (TypeError, ValueError):
-        return 3600
+    return hc.limit("claim_lease_seconds_default", 3600)
 
 
 def detail_path(task_id):
@@ -178,9 +185,9 @@ def resolve_note(args):
 
 
 def report_expirations(released):
-    for tid, holder in released:
-        hc.log_event("claim_expired", task=tid, previous_holder=holder)
-        print("note: lease on {} (held by {}) expired -> task released to open".format(tid, holder))
+    for tid, holder, dest in released:
+        hc.log_event("claim_expired", task=tid, previous_holder=holder, released_to=dest)
+        print("note: lease on {} (held by {}) expired -> task released to {}".format(tid, holder, dest))
 
 
 # ------------------------------- commands ---------------------------------
@@ -330,6 +337,19 @@ def cmd_update(args):
         previous_status = t.get("status")
         override_used = False
         verifier_execute_used = False
+        if args.status and previous_status in ("done", "failed"):
+            # P-023: done/failed are terminal for EVERY verb, not just reopen's
+            # docstring. Without this, `update --status open` was a silent
+            # resurrection path that skipped reopen's mandatory note and audit
+            # event, and `update --status done` on an already-done task
+            # re-credited reputation for the same work.
+            hc.log_event("terminal_update_refused", task=args.task_id, agent=args.agent,
+                         previous_status=previous_status, requested_status=args.status)
+            sys.exit(
+                "refused: {tid} is '{prev}' -- terminal (P-023). `update` cannot move a task "
+                "off done/failed; the only sanctioned way back is `blackboard.py reopen {tid} "
+                "--agent <you> --note \"why\"` (mandatory note, audited).".format(
+                    tid=args.task_id, prev=previous_status))
         if args.status == "done":
             # MECHANICAL producer != approver guardrail -- AUTHORSHIP-FIRST (P-011).
             # Originally this gated on previous_status == 'review' BEFORE checking
@@ -389,15 +409,30 @@ def cmd_update(args):
                     sys.exit(refusal)
         if args.status:
             t["status"] = args.status
+            if args.status in ("claimed", "in_progress"):
+                # NO STALLS: a claimed/in_progress task must always carry a live
+                # lease, or expire_claims can never release it when its owner
+                # dies (update was a lease-less side door around claim).
+                exp = hc.parse_iso(t.get("claim_expires_at") or "")
+                if exp is None or exp < hc.now_utc():
+                    t["claimed_by"] = t.get("claimed_by") or args.agent
+                    t["claim_expires_at"] = hc.iso_in(default_lease())
             if args.status in ("done", "failed"):
                 t["completed_at"] = hc.now_iso()
                 t["completed_by"] = args.agent
                 t["claimed_by"] = None
                 t["claim_expires_at"] = None
                 # credit the PRODUCER (who handed the work off), not whoever
-                # holds the claim at verdict time (usually the verifier)
-                producer = (t.get("handoff") or {}).get("from") or claimant or args.agent
-                bump_reputation_locked(producer, args.status)
+                # holds the claim at verdict time (usually the verifier). An
+                # orphan task with neither handoff nor claimant gets NO credit:
+                # crediting the verdicting agent let anyone farm reputation by
+                # closing orphans.
+                producer = (t.get("handoff") or {}).get("from") or claimant
+                if producer:
+                    bump_reputation_locked(producer, args.status)
+                else:
+                    hc.log_event("reputation_skipped", task=args.task_id, agent=args.agent,
+                                 reason="no handoff producer and no claimant of record")
             elif args.status == "open":
                 t["claimed_by"] = None
                 t["claim_expires_at"] = None
@@ -452,6 +487,12 @@ def cmd_handoff(args):
         t = bb.get("tasks", {}).get(args.task_id)
         if t is None:
             sys.exit("unknown task {}".format(args.task_id))
+        if t.get("status") in ("done", "failed"):
+            # P-023: handoff was a second resurrection side door -- it set
+            # status='review' unconditionally, even on terminal tasks.
+            sys.exit("refused: {tid} is '{status}' -- terminal (P-023). Reopen it first "
+                     "(`blackboard.py reopen {tid} --agent <you> --note \"why\"`) before "
+                     "handing it off again.".format(tid=args.task_id, status=t.get("status")))
         t["status"] = "review"
         t["handoff"] = {"to_role": args.to_role, "from": args.agent,
                         "note": note, "ts": hc.now_iso()}
@@ -517,6 +558,61 @@ def cmd_reopen(args):
                  previous_status=previous_status, note=note)
     print("reopened {} (was '{}') -> 'open' by {}. Reason logged to events.jsonl and {}.".format(
         args.task_id, previous_status, args.agent, detail_path(args.task_id)))
+    return 0
+
+
+def cmd_reset(args):
+    """Clear the board back to empty -- the sanctioned 'start clean' verb.
+
+    The repo ships an onboarding board of EXAMPLE tasks (T-001..T-004) so a
+    fresh clone teaches itself from its first `status`. `reset` is how you clear
+    those examples (or any finished project) before real work, WITHOUT
+    hand-editing blackboard.json -- which the harness forbids (blackboard.py is
+    the ONLY sanctioned writer). It is reversible: the current board, task
+    detail files, and state are copied to .harness/trash/reset-<ts>/ before
+    anything is cleared, and --yes is required so it can never fire by accident.
+
+    Config in state.json (limits, human gates, the evolution ledger, capability
+    contracts) is preserved -- only task-derived reputation is cleared, since it
+    described tasks that no longer exist.
+    """
+    if not args.yes:
+        sys.exit(
+            "refused: `reset` wipes the board (all tasks, epics, and task-derived "
+            "reputation). Re-run with --yes to confirm. The current board, task "
+            "files, and state are archived to .harness/trash/ first, so it is "
+            "reversible.")
+    # timestamp + uuid (mirrors safe_delete's entry_id) with exist_ok=False, so
+    # two resets in the same second can never collide and overwrite the first
+    # run's archive -- the backup is what makes this command reversible.
+    stamp = hc.now_iso().replace(":", "").replace("-", "") + "-" + uuid.uuid4().hex[:12]
+    backup = hc.HARNESS / "trash" / "reset-{}".format(stamp)
+    with hc.guarded():
+        old = load_bb()
+        (backup / "tasks").mkdir(parents=True, exist_ok=False)
+        if hc.BLACKBOARD.exists():
+            shutil.copy2(str(hc.BLACKBOARD), str(backup / "blackboard.json"))
+        if hc.STATE.exists():
+            shutil.copy2(str(hc.STATE), str(backup / "state.json"))
+        archived = 0
+        for task_file in sorted(hc.TASKS.glob("*.json")):
+            shutil.move(str(task_file), str(backup / "tasks" / task_file.name))
+            archived += 1
+        fresh = {"schema_version": old.get("schema_version", "0.1.0"),
+                 "generation": old.get("generation", 0),
+                 "tasks": {}, "epics": {}}
+        if old.get("protocol") is not None:
+            fresh["protocol"] = old["protocol"]
+        save_bb(fresh, args.agent)
+        state = hc.read_json(hc.STATE)
+        if isinstance(state, dict) and isinstance(state.get("agents"), dict):
+            state["agents"]["reputation"] = {}
+            hc.atomic_write_json(hc.STATE, state)
+    rel_backup = backup.relative_to(hc.ROOT)
+    hc.log_event("board_reset", agent=args.agent, backup=str(rel_backup), tasks_archived=archived)
+    print("board reset to empty by {}. Archived {} task file(s) + board + state to {} (reversible).".format(
+        args.agent, archived, rel_backup))
+    print("start clean: `add-task` your own tasks, or let the orchestration-planner decompose a goal.")
     return 0
 
 
@@ -633,6 +729,12 @@ def main(argv):
     p_reopen.add_argument("task_id")
     add_note_args(p_reopen)
     p_reopen.set_defaults(func=cmd_reopen)
+
+    p_reset = sub.add_parser("reset", parents=[common],
+                             help="clear the board to empty for a clean start "
+                                  "(archives current board to .harness/trash/ first; --yes required)")
+    p_reset.add_argument("--yes", action="store_true", help="confirm the wipe (required; reset refuses without it)")
+    p_reset.set_defaults(func=cmd_reset)
 
     p_add = sub.add_parser("add-task", parents=[common], help="publish a new task on the board")
     p_add.add_argument("--id", required=True)

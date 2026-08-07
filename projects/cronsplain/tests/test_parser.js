@@ -139,6 +139,23 @@ test('both domRestricted and dowRestricted true when neither field is a bare wil
   assert.strictEqual(p.dowRestricted, true);
 });
 
+test("a '*/n'-rooted dayOfMonth is NOT restricted for the coupling (Vixie root is '*')", () => {
+  // Vixie sets DOM_STAR from the field's FIRST character; '*/2' begins with
+  // '*', so it does NOT count as restricted for the OR/AND coupling
+  // decision. A textual '!== *' check wrongly marked '*/2' as restricted,
+  // which flipped '0 0 */2 * 5' to the OR-union instead of the AND that
+  // real Vixie/cronie applies. (Cross-checked against cronie src/entry.c.)
+  const p = parse('0 0 */2 * 5');
+  assert.strictEqual(p.domRestricted, false);
+  assert.strictEqual(p.dowRestricted, true);
+});
+
+test("a '*/n'-rooted dayOfWeek is likewise unrestricted for the coupling", () => {
+  const p = parse('0 0 15 * */2');
+  assert.strictEqual(p.domRestricted, true);
+  assert.strictEqual(p.dowRestricted, false);
+});
+
 // ---------------------------------------------------------------------------
 // Full expanded-Set correctness for a couple of complete expressions
 // ---------------------------------------------------------------------------

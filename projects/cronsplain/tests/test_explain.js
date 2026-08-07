@@ -46,6 +46,16 @@ test("both-restricted OR case '0 0 13 * 5' -> explicit OR/union coupling in pros
   );
 });
 
+test("'*/n'-rooted DOM with restricted DOW -> AND coupling in prose (not OR)", () => {
+  // dom '*/2' begins with '*' -> Vixie DOM_STAR -> AND coupling, so the two
+  // day fields are joined with "and", not the "or" union of a both-restricted
+  // expression. The '*/2' constraint must still be spelled out (not dropped).
+  assert.strictEqual(
+    explain('0 0 */2 * 5'),
+    'At 00:00, every 2 days of the month and on Friday.'
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Real-world crons from the task brief
 // ---------------------------------------------------------------------------

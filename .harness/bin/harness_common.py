@@ -66,6 +66,17 @@ def read_json(path, default=None):
         return default
 
 
+def limit(key, fallback):
+    """Read an integer limit from state.json's `limits` block, falling back if
+    the file/key is missing or malformed. Single source for the read-int-limit
+    pattern the CLIs share (claim lease, lock TTL, goal-mode bounds)."""
+    limits = (read_json(STATE) or {}).get("limits") or {}
+    try:
+        return int(limits.get(key, fallback))
+    except (TypeError, ValueError):
+        return fallback
+
+
 def atomic_write_json(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,9 +124,15 @@ def log_event(kind, **fields):
 
 
 def lock_name_for(path):
-    """Map a workspace path to its lock file name (relative path, sep -> '__').
+    """Map a workspace path to its lock file name.
     Returns None for paths outside the workspace root (those are never locked
-    here; writes outside the root are forbidden by the Control layer anyway)."""
+    here; writes outside the root are forbidden by the Control layer anyway).
+
+    The separator is percent-encoded (not '/'->'__'), because '__' was not
+    injective: `a/b` and a file literally named `a__b` both mapped to
+    `a__b.lock`, so locking one blocked the other. Escaping '%' first keeps the
+    encoding reversible and collision-free; ordinary names stay readable
+    (`pkg/mod.py` -> `pkg%2Fmod.py.lock`)."""
     p = Path(path)
     if not p.is_absolute():
         p = ROOT / p
@@ -124,7 +141,8 @@ def lock_name_for(path):
         rel = p.relative_to(ROOT)
     except (OSError, ValueError):
         return None
-    return str(rel).replace(os.sep, "__") + ".lock"
+    encoded = str(rel).replace("%", "%25").replace(os.sep, "%2F")
+    return encoded + ".lock"
 
 
 def read_lock(path):

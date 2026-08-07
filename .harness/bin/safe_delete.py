@@ -51,26 +51,33 @@ def _root(value: Optional[str]) -> Path:
 
 
 def _validate(root: Path, raw: str) -> Tuple[Path, Path]:
-    candidate = Path(raw).expanduser()
+    candidate = (Path(raw).expanduser())
     if not candidate.is_absolute():
         candidate = root / candidate
     absolute = candidate.absolute()
+    # `named` = the entry the user actually pointed at: `..` collapsed lexically
+    # but symlinks NOT followed. This is what we move and record, so quarantining
+    # a symlink moves the LINK (not its target) and a dangling symlink stays
+    # deletable -- both regressed when this used candidate.resolve().
+    named = Path(os.path.normpath(str(absolute)))
+    # `resolved` follows `..` AND symlinks, and is used ONLY for the containment
+    # and control-plane checks, so `projects/../.harness/x` and a symlink that
+    # escapes the workspace are both still caught.
+    resolved = absolute.resolve()
     try:
-        relative = absolute.relative_to(root)
+        guard_rel = resolved.relative_to(root)
+        relative = named.relative_to(root)
     except ValueError as exc:
         raise SafetyError("outside workspace: {}".format(raw)) from exc
-    if relative == Path("."):
+    if relative == Path(".") or guard_rel == Path("."):
         raise SafetyError("refusing workspace root")
-    if not absolute.exists() and not absolute.is_symlink():
+    # existence check on the NAMED path: a dangling symlink is present as a link
+    # (is_symlink() True) even though its target does not exist.
+    if not named.exists() and not named.is_symlink():
         raise SafetyError("path does not exist: {}".format(raw))
-    # Refuse symlinks (or symlinked parents) that escape the workspace.
-    try:
-        absolute.resolve().relative_to(root)
-    except ValueError as exc:
-        raise SafetyError("path resolves outside workspace: {}".format(raw)) from exc
-    if relative.parts and relative.parts[0].lower() in _CONTROL_PLANE_LOWER:
-        raise SafetyError("control-plane path is protected: {}".format(relative))
-    return absolute, relative
+    if guard_rel.parts and guard_rel.parts[0].lower() in _CONTROL_PLANE_LOWER:
+        raise SafetyError("control-plane path is protected: {}".format(guard_rel))
+    return named, relative
 
 
 def _write_manifest(path: Path, data: dict) -> None:

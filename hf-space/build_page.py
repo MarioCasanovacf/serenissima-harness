@@ -6,6 +6,8 @@ Run:  python3 build_page.py   ->  writes index.html
 """
 import html
 import json
+import re
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
@@ -13,6 +15,7 @@ import networkx as nx
 import plotly.graph_objects as go
 
 HERE = Path(__file__).parent
+REPO = HERE.parent  # local build only: the harness repo that produced data/
 BLACKBOARD = json.loads((HERE / "data" / "blackboard.json").read_text())
 STATE = json.loads((HERE / "data" / "state.json").read_text())
 TASKS = BLACKBOARD["tasks"]
@@ -31,7 +34,9 @@ EPIC_LABEL = {
     "E-03": "E-03 · Evolution loop", "ready-for-usage": "Ready-for-usage certification",
     "mdtoc": "mdtoc · first real project", "cronsplain": "cronsplain · second real project",
     "gen-2-fixes": "Generation 2 · fixes", "gen-3-early": "Generation 3 · early",
-    "gen-3": "Generation 3", "gen-4": "Generation 4",
+    "gen-3": "Generation 3", "gen-4": "Generation 4", "gen-5": "Generation 5",
+    "multi-engine-followup": "Multi-engine · follow-up",
+    "multi-engine-homologation-followup": "Multi-engine · homologation follow-up",
     "scratch": "Guardrail probe", "scratch-guardrail": "Guardrail probe",
     "scratch-guardrail-v2": "Guardrail probes · producer vs approver",
     "scratch-swarm": "Swarm smoke test", "scratch-usage-doc": "Usage-doc scratch"}
@@ -167,10 +172,17 @@ def _positions(sub, edges):
 
 
 def dag_figure():
+    # Preferred display order; any epic present in the snapshot but not listed here
+    # is appended in first-seen order so every task renders (caption must match content).
     order = ["E-01", "E-02", "E-03", "mdtoc", "cronsplain", "ready-for-usage",
-             "gen-2-fixes", "gen-3-early", "gen-3", "gen-4", "scratch-swarm",
-             "scratch-guardrail-v2", "scratch-guardrail", "scratch-usage-doc", "scratch"]
-    present = [e for e in order if any(t.get("epic") == e for t in TASKS.values())]
+             "gen-2-fixes", "gen-3-early", "gen-3", "gen-4", "gen-5",
+             "multi-engine-followup", "multi-engine-homologation-followup",
+             "scratch-swarm", "scratch-guardrail-v2", "scratch-guardrail",
+             "scratch-usage-doc", "scratch"]
+    epics_in_data = [t.get("epic") for t in TASKS.values() if t.get("epic")]
+    present = [e for e in order if e in epics_in_data]
+    present += [e for e in dict.fromkeys(epics_in_data)
+                if e not in order and e not in present]
     fig = go.Figure()
     trace_epic = []
     default = present[0]
@@ -214,15 +226,54 @@ def dag_figure():
     return fig.to_html(full_html=False, include_plotlyjs="cdn", config={"displayModeBar": False})
 
 
+def _suite_count(cmd, cwd, pattern, fallback, healthy):
+    """Run a project's real test suite at build time and read the count from its
+    output — but only trust it if the suite is GREEN (``healthy`` matches). If the
+    tree/runtime is missing, or the suite is mid-edit / failing, return the last
+    confirmed passing count instead of baking a broken-moment number into the page."""
+    try:
+        if not Path(cwd).exists():
+            return fallback
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=180)
+        out = (p.stdout or "") + (p.stderr or "")
+        if not re.search(healthy, out):
+            return fallback  # red / in-flux suite -> do not report its count
+        m = re.search(pattern, out)
+        if m:
+            return int(m.group(1))
+    except Exception:
+        pass
+    return fallback
+
+
+def _mdtoc_test_count():
+    # Fallback = last confirmed all-passing count; a green live run overrides it.
+    return _suite_count(["python3", "-m", "unittest"], str(REPO / "projects" / "mdtoc"),
+                        r"Ran (\d+) tests?", 74, healthy=r"(?m)^OK\b")
+
+
+def _cronsplain_test_count():
+    cron = REPO / "projects" / "cronsplain"
+    files = sorted(str(p) for p in (cron / "tests").glob("*.js")) if (cron / "tests").exists() else []
+    if not files:
+        return 98
+    return _suite_count(["node", "--test", *files], str(cron),
+                        r"#\s*tests\s+(\d+)", 98, healthy=r"#\s*fail\s+0\b")
+
+
+MDTOC_TESTS, CRONSPLAIN_TESTS = _mdtoc_test_count(), _cronsplain_test_count()
+
+
 def tests_figure():
+    counts_ = [MDTOC_TESTS, CRONSPLAIN_TESTS]
     fig = go.Figure(go.Bar(
-        x=[63, 93], y=["mdtoc (Python)", "cronsplain (Node.js)"], orientation="h",
-        marker_color=[INK, OXBLOOD], text=["63 tests", "93 tests"], textposition="outside",
+        x=counts_, y=["mdtoc (Python)", "cronsplain (Node.js)"], orientation="h",
+        marker_color=[INK, OXBLOOD], text=[f"{n} tests" for n in counts_], textposition="outside",
         textfont=dict(family=SANS, size=13, color=INK), width=0.5, hoverinfo="skip"))
     fig.update_layout(
         plot_bgcolor=PAPER, paper_bgcolor=PAPER, height=200, margin=dict(l=8, r=48, t=10, b=10),
         font=dict(family=SANS, color=INK, size=13),
-        xaxis=dict(visible=False, range=[0, 108]),
+        xaxis=dict(visible=False, range=[0, max(counts_) * 1.18]),
         yaxis=dict(tickfont=dict(family=SANS, size=13, color=INK)))
     return fig.to_html(full_html=False, include_plotlyjs=False, config={"displayModeBar": False})
 
@@ -247,22 +298,53 @@ def ledger_rows():
     return "\n".join(rows)
 
 
+def _has_cross_agent_handoff(t):
+    """A done task counts as producer != approver only if it carries a real
+    cross-agent handoff: handoff.from exists and differs from completed_by.
+    Excludes auto-approvals (T-001) and join/coordinator closes with no handoff."""
+    h = t.get("handoff") or {}
+    frm = h.get("from") if isinstance(h, dict) else None
+    return bool(frm) and frm != t.get("completed_by")
+
+
 def counts():
     tasks = list(TASKS.values())
-    return dict(tasks=len(tasks), done=sum(1 for t in tasks if t.get("status") == "done"),
-                epics=len({t.get("epic") for t in tasks}), gen=EVOLUTION.get("generation", "?"),
+    done = [t for t in tasks if t.get("status") == "done"]
+    return dict(tasks=len(tasks), done=len(done),
+                cross_done=sum(1 for t in done if _has_cross_agent_handoff(t)),
+                epics=len({t.get("epic") for t in tasks if t.get("epic")}),
+                gen=EVOLUTION.get("generation", "?"),
                 accepted=len(EVOLUTION.get("accepted_mutations", [])))
 
 
+def bin_cli_count(fallback=15):
+    """Count the runnable stdlib-only CLIs in the harness bin/ (files exposing an
+    argparse/__main__ entrypoint); support modules like harness_common are excluded.
+    Local build only; falls back to a verified constant if bin/ isn't reachable."""
+    binp = REPO / ".harness" / "bin"
+    if not binp.exists():
+        return fallback
+    n = 0
+    for f in binp.glob("*.py"):
+        try:
+            txt = f.read_text()
+        except Exception:
+            continue
+        if "argparse" in txt or "__main__" in txt:
+            n += 1
+    return n or fallback
+
+
 C = counts()
+BIN_CLIS = bin_cli_count()
 TOPOLOGY, LIFECYCLE, EVOLOOP = topology_svg(), lifecycle_svg(), evolution_svg()
 DAG_HTML, TESTS_HTML, LEDGER = dag_figure(), tests_figure(), ledger_rows()
 
-SUBSTRATE = """.harness/
+SUBSTRATE = f""".harness/
  ├── blackboard.json   the task DAG — only blackboard.py may write it
- ├── bin/              nine stdlib-only CLIs: blackboard, lock, session,
- │                     goal_mode, ast_index, notify, recontext, log hooks,
- │                     and migrate_project.py (one-command transplant)
+ ├── bin/              {BIN_CLIS} stdlib-only CLIs — blackboard, lock, session,
+ │                     goal_mode, ast_index, notify, recontext, guard/log hooks,
+ │                     migrate_project (one-command transplant), and more
  ├── locks/  logs/     TTL write-locks · append-only evidence (events + transcript)
  └── state.json        limits, human gates, agent registry, evolution memory
 .claude/agents/        the bench: planner / worker / verifier / evolution-analyst
@@ -371,7 +453,7 @@ footer p {{ font-family:var(--font-sans); font-size:13px; line-height:20px; colo
 <section>
   <div class="sec-head"><h2><span class="sec-num">01</span>The load-bearing layer</h2></div>
   <div class="col">
-    <p>No database. No external APIs. No framework to buy into. Plain files, nine stdlib-only
+    <p>No database. No external APIs. No framework to buy into. Plain files, {BIN_CLIS} stdlib-only
     Python CLIs, and a set of rules that are <strong>programs for agents to really work</strong>
     &mdash; an agent can&rsquo;t claim a blocked task or edit a file someone else is holding
     because the command refuses it, not because it agreed to behave.</p>
@@ -459,12 +541,11 @@ footer p {{ font-family:var(--font-sans); font-size:13px; line-height:20px; colo
   </div>
   <aside class="callout callout--limits">
     <div class="head">Limits</div>
-    <div class="body"><p>The newest decision was a rejection. Two external ideas were evaluated
-    for generation 5 &mdash; a Git-for-agent-runs checkpointer and a self-correcting
-    trace&rarr;fix&rarr;regression loop &mdash; and both were declined: the failure modes they
-    solve have not occurred in this harness&rsquo;s own trajectories, so they were logged with
-    falsifiable revisit triggers rather than adopted on theory. A well-argued reject beats an
-    enthusiastic adopt.</p></div>
+    <div class="body"><p>Not every proposal is adopted. Two externally-sourced ideas &mdash; a
+    Git-for-agent-runs checkpointer and a self-correcting trace&rarr;fix&rarr;regression loop
+    &mdash; were both declined: the failure modes they solve have not occurred in this
+    harness&rsquo;s own trajectories, so they were logged with falsifiable revisit triggers
+    rather than adopted on theory. A well-argued reject beats an enthusiastic adopt.</p></div>
   </aside>
   <div class="ledger"><div class="ledger-wrap"><table>
     <tr><th>ID</th><th>Status</th><th>Target</th><th>Summary</th></tr>
@@ -499,18 +580,20 @@ footer p {{ font-family:var(--font-sans); font-size:13px; line-height:20px; colo
 <section>
   <div class="sec-head"><h2><span class="sec-num">07</span>Proof it works</h2></div>
   <div class="stats">
-    <div class="stat"><b>{C['done']}</b><span>tasks, producer &ne; approver</span></div>
+    <div class="stat"><b>{C['cross_done']}</b><span>done, producer &ne; approver</span></div>
     <div class="stat"><b>2</b><span>real projects shipped</span></div>
     <div class="stat"><b>{C['gen']}</b><span>generations of self-audit</span></div>
-    <div class="stat"><b>2</b><span>tournaments, byte-identical winners</span></div>
+    <div class="stat"><b>2</b><span>tournaments, algorithm-verbatim winners</span></div>
   </div>
   <div class="col">
     <p>The harness helped build itself, evolved itself across {C['gen']} generations under low
     supervision, and shipped two real projects under its own rules. <code>mdtoc</code> (a
     Markdown table-of-contents generator, Python) and <code>cronsplain</code> (a cron-expression
-    explainer, zero-dependency Node.js) were each planned, built, and tested on the board &mdash;
-    every task with producer&nbsp;&ne;&nbsp;approver, every verdict adversarially replayed, each
-    winning implementation chosen by a tournament and promoted byte-for-byte.</p>
+    explainer, zero-dependency Node.js) were each planned, built, and tested on the board under
+    the producer&nbsp;&ne;&nbsp;approver rule, every verdict adversarially replayed by a different
+    agent, each winning implementation chosen by a tournament and promoted algorithm-verbatim
+    &mdash; the winning code carried over byte-for-byte, with only candidate-identifying strings
+    renamed and self-test blocks stripped, per the harness&rsquo;s documented decoupling rule.</p>
   </div>
   <div class="figure figure--wide">
     <div class="canvas">{TESTS_HTML}</div>

@@ -29,7 +29,7 @@ this file is the substrate reference.
  │    └── events.jsonl      Semantic events: claims, hand-offs, locks, expiries
  │                          (written by the CLIs).
  └── bin/                   The deterministic control plane (python3 >= 3.9, stdlib-only):
-      ├── blackboard.py     status | next | show | claim | update | handoff | add-task
+      ├── blackboard.py     status | next | show | claim | update | handoff | reopen | reset | add-task
       ├── lock.py           acquire | release | status | sweep
       ├── session.py        register <name> [--ttl 7200] [--task T-ID] | unregister <name> | list — session-holder registry (P-002 fix; register/unregister are coordinator-only, see §Identity)
       ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
@@ -43,6 +43,16 @@ this file is the substrate reference.
 
 ### Task lifecycle (enforced by `blackboard.py`)
 `open → claimed → in_progress → review → done` (or `blocked` / `failed` / back to `open`).
+
+`done` and `failed` are terminal for every verb (P-023). The only sanctioned way back is
+`blackboard.py reopen <T-ID>`, which acts solely on a terminal task, refuses without a
+`--note` explaining the resurrection, and logs a `task_reopened` event (who/why) — the single
+audited path from a terminal state back to `open`.
+
+To clear the whole board for a fresh start (e.g. after the onboarding examples), use
+`blackboard.py reset --yes` — it archives the current board, task files, and state to
+`.harness/trash/` first (reversible), then empties the board. It is the sanctioned board-wipe;
+never hand-edit `blackboard.json` to clear it.
 
 1. `blackboard.py next --agent <you> [--role r] [--engine e]` — dispatcher suggests work.
 2. `blackboard.py claim <T-ID> --agent <you>` — **refused if any `depends_on` is not `done`**

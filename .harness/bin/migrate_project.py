@@ -95,7 +95,21 @@ SRC_CLAUDE_AGENTS = SRC_ROOT / ".claude" / "agents"
 SRC_CLAUDE_SKILL = SRC_ROOT / ".claude" / "skills" / "harness-status"
 SRC_ORCHESTRATION = SRC_ROOT / "ORCHESTRATION.md"
 SRC_USAGE = SRC_ROOT / "USAGE.md"
-SRC_CLAUDE_MD = SRC_ROOT / "CLAUDE.md"
+
+
+def _first_existing(root, *names):
+    """First of `names` that exists under root (case matters on Linux); falls
+    back to names[0] for messaging. The harness ships the spec as `claude.md`
+    (lowercase), but this pointed at `CLAUDE.md`, so on a case-sensitive FS the
+    INTEGRATE step silently found nothing and never merged the harness spec."""
+    for name in names:
+        candidate = root / name
+        if candidate.exists():
+            return candidate
+    return root / names[0]
+
+
+SRC_CLAUDE_MD = _first_existing(SRC_ROOT, "CLAUDE.md", "claude.md")
 SRC_STATE = SRC_ROOT / ".harness" / "state.json"
 SRC_BLACKBOARD = SRC_ROOT / ".harness" / "blackboard.json"
 
@@ -105,6 +119,15 @@ GITIGNORE_ENTRIES = [
     ".harness/locks/.guard",
     ".harness/logs/*.jsonl",
     ".harness/session_holders.json",
+    # Secrets: notify_config.json can hold a bot token -- must never be committed.
+    ".harness/notify_config.json",
+    # Reversible-deletion / reset archives: hold wiped-board task notes and
+    # quarantined file contents (same leak class as notify_config.json).
+    ".harness/trash/",
+    # Other regenerable runtime artifacts (not *.jsonl, so not covered above).
+    ".harness/logs/goal_mode_state.json",
+    ".harness/logs/goal_mode_last_failure.md",
+    ".harness/index/",
 ]
 
 

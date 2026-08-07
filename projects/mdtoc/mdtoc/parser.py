@@ -95,22 +95,38 @@ def parse_headings(text: str) -> List[Heading]:
             if close_at == -1:
                 continue  # whole line still inside the comment
             in_comment = False
-            line = line[close_at + len(_HTML_COMMENT_CLOSE):]
-            # fall through: re-check whatever trails the closing marker
+            # The line that CLOSES a multi-line comment is entirely part of
+            # the HTML block per CommonMark HTML-block (type 2) semantics, so
+            # anything trailing the '-->' on this line is still block content
+            # -- never a heading. Discard the whole line. (Re-slicing after
+            # '-->' shifted columns and let '--> # Ghost' leak a phantom
+            # heading; masking alone could not fix a column-0 '-->'.)
+            continue
 
-        open_at = line.find(_HTML_COMMENT_OPEN)
-        if open_at != -1:
-            close_at = line.find(_HTML_COMMENT_CLOSE, open_at + len(_HTML_COMMENT_OPEN))
+        # Scan the live text left-to-right, masking every comment that opens
+        # AND closes on this line (preserving column positions) and then
+        # re-searching from just past it -- so a SECOND '<!--' later on the
+        # same line is still seen. The last open that does NOT close on this
+        # line switches on the multi-line comment state.
+        search_from = 0
+        while True:
+            open_at = line.find(_HTML_COMMENT_OPEN, search_from)
+            if open_at == -1:
+                break
+            close_at = line.find(
+                _HTML_COMMENT_CLOSE, open_at + len(_HTML_COMMENT_OPEN)
+            )
             if close_at == -1:
                 # Comment opens here and continues on later lines; only the
                 # portion before it is live text on this line.
                 in_comment = True
                 line = line[:open_at]
-            else:
-                # Opens and closes on the same line: mask the commented
-                # span (preserving column positions) and keep scanning.
-                span_len = (close_at + len(_HTML_COMMENT_CLOSE)) - open_at
-                line = line[:open_at] + (" " * span_len) + line[close_at + len(_HTML_COMMENT_CLOSE):]
+                break
+            # Opens and closes on the same line: mask the commented span
+            # (preserving column positions) and keep scanning past it.
+            end = close_at + len(_HTML_COMMENT_CLOSE)
+            line = line[:open_at] + (" " * (end - open_at)) + line[end:]
+            search_from = end
 
         match = _HEADING_RE.match(line)
         if not match:

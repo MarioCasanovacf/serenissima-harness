@@ -1,7 +1,9 @@
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -71,17 +73,35 @@ class CodexIntegrationTests(unittest.TestCase):
             sys.path.pop(0)
         self.assertEqual(module.VALID_ENGINES, ["claude", "gemini", "codex", "any"])
 
+        # Run against a THROWAWAY harness tree, never the live board. blackboard.py
+        # derives its root from its own file location and expire_claims persists
+        # lease releases on any command, so invoking `next` against the repo's real
+        # board mutated it every time the suite ran (a released stale claim + an
+        # updated_by="lease-expiry" bump). A copy keeps the test hermetic.
+        tmp = tempfile.mkdtemp(prefix="codex-smoke-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        tmp_bin = Path(tmp) / ".harness" / "bin"
+        shutil.copytree(ROOT / ".harness" / "bin", tmp_bin)
+        for sub in ("locks", "logs", "tasks"):
+            (Path(tmp) / ".harness" / sub).mkdir(parents=True, exist_ok=True)
+        (Path(tmp) / ".harness" / "blackboard.json").write_text(json.dumps({
+            "schema_version": "0.1.0", "generation": 0, "tasks": {}, "epics": {},
+            "updated_at": "2026-08-05T00:00:00Z", "updated_by": "test-init",
+        }))
+        (Path(tmp) / ".harness" / "state.json").write_text(json.dumps(
+            {"limits": {}, "agents": {"reputation": {}}}))
+
         result = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / ".harness" / "bin" / "blackboard.py"),
+                str(tmp_bin / "blackboard.py"),
                 "next",
                 "--agent",
                 "codex-smoke",
                 "--engine",
                 "codex",
             ],
-            cwd=ROOT,
+            cwd=tmp,
             text=True,
             capture_output=True,
         )

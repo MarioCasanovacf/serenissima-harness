@@ -38,6 +38,11 @@ COMMAND_RULES = (
     ("git reset --hard", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\breset\b[^\n;&|]*--hard\b")),
     ("git force push", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bpush\b[^\n;&|]*(?:--force(?:-with-lease|-if-includes)?\b|(?:^|\s)-[^\s]*f[^\s]*(?:\s|$))")),
     ("git checkout discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bcheckout\b[^\n;&|]*(?:\s--\s|--(?:ours|theirs)\b|(?:^|\s)-[^\s]*f[^\s]*(?:\s|$))")),
+    # `git checkout .` (and `git checkout ./`) discards ALL uncommitted edits in
+    # the tree yet carries no `--`/`-f`/`--ours` token, so the rule above missed
+    # it. Scoped to a literal `.` arg to stay unambiguous -- `git checkout main`
+    # (a branch switch) is intentionally NOT matched.
+    ("git checkout . discards all local edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bcheckout\s+\.(?:/|\s|$)")),
     ("git restore discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\brestore(?:\s|$)(?![^\n;&|]*(?:--help|-h)(?:\s|$))")),
     ("git switch discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bswitch\b[^\n;&|]*--discard-changes\b")),
     ("git rm (use --cached for index-only removal)", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b(?=[^\n;&|]*\brm\b)(?![^\n;&|]*--cached\b)[^\n;&|]*\brm\b")),
@@ -55,7 +60,16 @@ COMMAND_RULES = (
     ("JavaScript filesystem deletion", re.compile(r"(?i)\b(?:fs\.)?(?:rmSync|rmdirSync|unlinkSync)\s*\(|\b(?:fs\.)?promises\.(?:rm|rmdir|unlink)\s*\(|\bDeno\.remove\s*\(")),
     ("compiled-language filesystem deletion", re.compile(r"(?i)\b(?:os\.RemoveAll|os\.Remove|Files\.deleteIfExists|Files\.delete|fs::remove_file|fs::remove_dir_all|fs::remove_dir)\s*\(")),
     ("Ruby filesystem deletion", re.compile(r"(?i)\b(?:File\.(?:delete|unlink)|FileUtils\.(?:rm|rm_f|rm_r|rm_rf|remove|remove_dir|remove_entry))\s*\(?")),
-    ("Perl unlink", re.compile(r"(?i)\bunlink\b")),
+    # Perl `unlink($f)` / `unlink "f"` / `unlink @files` / `unlink $x`, plus the
+    # list-producing forms `unlink glob(...)`, `unlink map {...}`, `unlink grep
+    # {...}`, `unlink <*.log>` (mass deletes). Scoped to Perl call syntax so the
+    # bare word in prose, a grep PATTERN, or a plain filename argument
+    # (`grep unlink file`) does NOT trip the guard, while an actual delete does.
+    # Command-position `unlink <path>` is covered by the deletion rules above.
+    ("Perl unlink", re.compile(
+        r"(?i)\bunlink\s*\("
+        r"|\bunlink\s+['\"$@<]"
+        r"|\bunlink\s+(?:glob|map|grep|readdir|sort|reverse|split|keys|values)\b")),
 )
 
 PATCH_DELETE = re.compile(r"(?m)^\s*\*\*\* Delete File:\s*\S+")

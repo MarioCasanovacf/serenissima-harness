@@ -6,6 +6,35 @@ harness itself. This is the only doc you need to get from zero to a finished tas
 and [.harness/README.md](.harness/README.md) (substrate reference) — this doc never
 contradicts either.
 
+## Start here — the onboarding board (step 0)
+
+A fresh clone ships with a 4-task **onboarding board** (`T-001`–`T-004`) so your very first
+`status` renders the whole lifecycle at a glance. Run it:
+
+```bash
+python3 .harness/bin/blackboard.py status
+```
+
+You'll see one task in each state — `T-001` **done** (a finished task; its handoff note is a
+real evidence string), `T-002` **review** (a producer waiting on a *different* agent's
+verdict), `T-003` **open** (claimable right now), and `T-004` **open but gated** behind
+`T-003` (the cascade gate). Read any of them in full:
+
+```bash
+python3 .harness/bin/blackboard.py show T-001
+```
+
+When you're ready for real work, wipe the examples:
+
+```bash
+python3 .harness/bin/blackboard.py reset --yes
+```
+
+`reset` archives the current board — every task file plus `blackboard.json` and `state.json` —
+to `.harness/trash/reset-<ts>/` **before** clearing, so it is reversible. Until you reset, the
+ids `T-001`–`T-004` are taken by the examples; pick fresh `T-0NN` ids (e.g. `T-010`) for your
+own goals while they're live.
+
 ## 1. The mental model, in one paragraph
 
 Work lives as tasks on a shared **blackboard** (`.harness/blackboard.json`), wired into a
@@ -26,26 +55,30 @@ Two ways to get a goal onto the board:
   edge = independent = parallelizable).
 - **Multi-step/uncertain**: delegate decomposition to the `orchestration-planner` bench agent
   (thinker role) — it designs the DAG, writes `.harness/plan.md`, and publishes the tasks for
-  you. This is what happened for the real `mdtoc` project below (T-020 planned T-021..T-029).
+  you. This is what happened for the real `mdtoc` project (§6): `T-020` planned `T-021..T-029`
+  — a run preserved in git history and the landing snapshot, no longer on the live board.
 
-**Worked mini-example** (verified live on this board — inspect it yourself with
-`python3 .harness/bin/blackboard.py show T-091` / `show T-092`; re-running the exact commands
-below will now fail with "already exists" since these IDs are taken — pick fresh `T-0NN` ids
-for your own goal):
+**Worked mini-example.** The onboarding board already ships a live producer→dependent pair you
+can inspect right now — `show T-003` (claimable) and `show T-004` (gated behind `T-003`, the
+cascade gate). To pose your *own* goal, write the same shape with fresh ids (`T-001`–`T-004`
+are taken by the examples until you `reset`; `add-task` validates `--id` against the `T-NNN`
+format, so use e.g. `T-010`/`T-011`):
 
 ```bash
 python3 .harness/bin/blackboard.py add-task --agent <you> \
-  --id T-091 --title "producer task" --role worker --engine any --priority 9 \
-  --epic my-goal --description "what T-091 actually produces"
+  --id T-010 --title "producer task" --role worker --engine any --priority 9 \
+  --epic my-goal --description "what T-010 actually produces"
 
 python3 .harness/bin/blackboard.py add-task --agent <you> \
-  --id T-092 --title "dependent task" --role verifier --engine any --priority 9 \
-  --epic my-goal --depends-on T-091 --description "consumes T-091's artifact"
+  --id T-011 --title "dependent task" --role verifier --engine any --priority 9 \
+  --epic my-goal --depends-on T-010 --description "consumes T-010's artifact"
 ```
 
-`add-task` refuses unknown `--depends-on` ids and refuses to redefine an existing `--id`, so
-edges are always real by construction. `blackboard.py status` now shows T-091 as
-`claimable now` and T-092 as `gated (cascade): T-092 waits for T-091` — exactly the DAG you asked for.
+`add-task` refuses unknown `--depends-on` ids and refuses to redefine an existing `--id`
+(`refused: task T-010 already exists`), so edges are always real by construction.
+`blackboard.py status` now shows T-010 as `claimable now` and T-011 as
+`gated (cascade): T-011 waits for T-010` — exactly the DAG you asked for, the same shape as the
+live `T-003`→`T-004` example.
 
 ## 3. Dispatching and working a task
 
@@ -59,20 +92,23 @@ edges are always real by construction. `blackboard.py status` now shows T-091 as
 | Hand off (never self-approve) | `blackboard.py handoff <T-ID> --to-role verifier --note "<replayable evidence>"` |
 | Release locks | `python3 .harness/bin/lock.py release <path> --holder <you>` |
 
-Continuing the worked example above, the exact sequence that closed out T-091 (all verified live):
+Run the full claim→lock→handoff cycle on the `T-010` you just created — every command works on
+a clean clone (or run it against the shipped `T-003` claimable example):
 
 ```bash
-python3 .harness/bin/blackboard.py claim T-091 --agent substrate-worker-2
-python3 .harness/bin/lock.py acquire SCRATCH-usage-example.md --holder substrate-worker-2 --task T-091
-python3 .harness/bin/blackboard.py update T-091 --status in_progress --agent substrate-worker-2 --note "plan: ..."
-python3 .harness/bin/blackboard.py update T-091 --agent substrate-worker-2 --artifact SCRATCH-usage-example.md
-python3 .harness/bin/blackboard.py handoff T-091 --to-role verifier --agent substrate-worker-2 --note "..."
+python3 .harness/bin/blackboard.py claim T-010 --agent substrate-worker-2
+python3 .harness/bin/lock.py acquire SCRATCH-usage-example.md --holder substrate-worker-2 --task T-010
+python3 .harness/bin/blackboard.py update T-010 --status in_progress --agent substrate-worker-2 --note "plan: ..."
+python3 .harness/bin/blackboard.py update T-010 --agent substrate-worker-2 --artifact SCRATCH-usage-example.md
+python3 .harness/bin/blackboard.py handoff T-010 --to-role verifier --agent substrate-worker-2 --note "..."
 python3 .harness/bin/lock.py release SCRATCH-usage-example.md --holder substrate-worker-2
 ```
 
-Trying `claim T-092 --agent substrate-worker-2` at this point still refuses:
-`refused (cascade gate): T-092 depends on unfinished task(s): T-091.` — because handing off
+Trying `claim T-011 --agent substrate-worker-2` at this point still refuses:
+`refused (cascade gate): T-011 depends on unfinished task(s): T-010.` — because handing off
 puts a task in `review`, not `done`; only a verifier's `update --status done` clears the gate.
+(The same refusal fires verbatim on `claim T-004` while `T-003` is still open — the shipped
+example of exactly this rule.)
 
 **Running agents — in-session vs. a second terminal:**
 - *In-session fan-out*: a coordinator session spawns bench agents (`.claude/agents/*.md`,
@@ -117,7 +153,7 @@ anomalies), ask for it in a Claude Code session and the `harness-status` skill
 > 4. **Human gates — these ALWAYS require explicit human approval, verbatim from `state.json`:**
 >    - git push or any network publication of workspace content
 >    - deleting files outside .harness/ scratch areas
->    - activating or sending remote webhook notifications (T-005) for the first time
+>    - activating or sending remote webhook/messenger notifications for the first time
 >    - mutating claude.md or gemini.md (harness generation bump via the §5A verification gate)
 > 5. **Never hand-edit `blackboard.json`** (or `state.json`) — mutate only through the CLIs
 >    (`blackboard.py`, `lock.py`, `session.py`), which serialize writes under a single guard.
@@ -127,7 +163,8 @@ anomalies), ask for it in a Claude Code session and the `harness-status` skill
 The cost of skipping rule 3 is not hypothetical: while verifying this doc's worked example, a
 `blackboard.py update` call that accidentally omitted `--agent` used the default identity and
 set the scratch task straight to `done` — a live self-approval slip, caught and reverted
-immediately (see `T-091.json` notes). It cost one bogus `+1` to a reputation counter in
+immediately (the incident's task notes live on in git history, on the board this onboarding
+board replaced). It cost one bogus `+1` to a reputation counter in
 `state.json` that no CLI can cleanly retract; that's the actual blast radius of this rule, and
 exactly why it exists.
 
@@ -145,12 +182,15 @@ exactly why it exists.
 - `.harness/tasks/T-XXX.json` — one detail file per task; `notes[]` record expected-vs-actual
   (decision observability) and are the durable proxy for reasoning that never leaves a session.
 - `.harness/logs/audit_gen*.md` — the evolution audits (see §7).
-- **Worked reality**: the `mdtoc` epic (T-020..T-029, `projects/mdtoc/`) is a real external
-  project built entirely through this protocol — planner decomposition, a disjoint-ownership
-  parallel frontier, a tournament node (3 candidate sluggers + one verifier verdict), and a
-  final join. Read any `T-02X.json` handoff note for a real replayable evidence string. As of
-  this writing T-028 is still `in_progress` (claimed by another worker) — do not touch
-  `projects/mdtoc/` files; only read them.
+- **Worked reality**: the `mdtoc` epic (`projects/mdtoc/`) is a real external project built
+  entirely through this protocol — planner decomposition (`T-020` → `T-021..T-029`), a
+  disjoint-ownership parallel frontier, a tournament node (3 candidate sluggers + one verifier
+  verdict), and a final join. The project code still ships in `projects/mdtoc/`; its task
+  history (every `T-02X` handoff note with its real replayable evidence string) is **preserved
+  in git history and in the landing snapshot `hf-space/data/blackboard.json`**, not on the live
+  board — a fresh clone's live board is the onboarding board (see "Start here"), so
+  `show T-02X` won't find them. Treat `projects/mdtoc/` as a finished worked example: read it
+  for evidence, don't rebuild it.
 
 ## 7. Evolution, in two lines
 

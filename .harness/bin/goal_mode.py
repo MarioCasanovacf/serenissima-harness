@@ -65,17 +65,8 @@ MAX_FILE_MENTIONS = 15
 def _limits_defaults():
     """Read (max_iters, timeout_seconds) defaults from state.json limits,
     falling back to hardcoded values if the file is missing/malformed."""
-    state = hc.read_json(hc.STATE) or {}
-    limits = state.get("limits") or {}
-    try:
-        max_iters = int(limits.get("max_retries_per_failure", DEFAULT_MAX_ITERS))
-    except (TypeError, ValueError):
-        max_iters = DEFAULT_MAX_ITERS
-    try:
-        timeout_seconds = int(limits.get("max_seconds_per_command", DEFAULT_TIMEOUT_SECONDS))
-    except (TypeError, ValueError):
-        timeout_seconds = DEFAULT_TIMEOUT_SECONDS
-    return max_iters, timeout_seconds
+    return (hc.limit("max_retries_per_failure", DEFAULT_MAX_ITERS),
+            hc.limit("max_seconds_per_command", DEFAULT_TIMEOUT_SECONDS))
 
 
 def _key_for(task, cmd):
@@ -235,8 +226,18 @@ def cmd_run(args):
         stdout, stderr = proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as exc:
         timed_out = True
-        stdout = exc.stdout or ""
-        stderr = (exc.stderr or "") + "\n[goal_mode] TIMEOUT after {}s".format(timeout_seconds)
+        # A timed-out process that already emitted output hands back BYTES on
+        # .stdout/.stderr even under text=True (CPython does not decode the
+        # partial buffers). Concatenating str to those raised TypeError here --
+        # crashing before the iteration counter below is bumped, so the
+        # anti-runaway bound never advanced on exactly the spew-then-hang case
+        # it exists to catch. Normalize to str unconditionally.
+        def _as_str(value):
+            if isinstance(value, bytes):
+                return value.decode("utf-8", "replace")
+            return value or ""
+        stdout = _as_str(exc.stdout)
+        stderr = _as_str(exc.stderr) + "\n[goal_mode] TIMEOUT after {}s".format(timeout_seconds)
     duration = time.monotonic() - started
 
     if returncode == 0 and not timed_out:
