@@ -66,6 +66,17 @@ def read_json(path, default=None):
         return default
 
 
+def limit(key, fallback):
+    """Read an integer limit from state.json's `limits` block, falling back if
+    the file/key is missing or malformed. Single source for the read-int-limit
+    pattern the CLIs share (claim lease, lock TTL, goal-mode bounds)."""
+    limits = (read_json(STATE) or {}).get("limits") or {}
+    try:
+        return int(limits.get(key, fallback))
+    except (TypeError, ValueError):
+        return fallback
+
+
 def atomic_write_json(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

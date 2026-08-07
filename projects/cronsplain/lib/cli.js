@@ -172,8 +172,13 @@ function parseFromDate(raw) {
   // alternative to 'T' (e.g. "2026-01-01 12:00"). Normalize it to 'T' FIRST
   // so it takes the identical naive->UTC path as the 'T' form; otherwise
   // new Date("2026-01-01 12:00") would be read in LOCAL time, contradicting
-  // the documented "naive (no offset/Z) = UTC" contract.
-  const normalized = raw.replace(/^(\d{4}-\d{2}-\d{2}) (\d{2})/, '$1T$2');
+  // the documented "naive (no offset/Z) = UTC" contract. A single-digit hour
+  // ("2026-01-01 5:00") is zero-padded so it too becomes valid ISO and takes
+  // the UTC path -- matching only 2-digit hours left that case reading as local.
+  const normalized = raw.replace(
+    /^(\d{4}-\d{2}-\d{2}) (\d{1,2})(?=:)/,
+    (_m, date, hour) => `${date}T${hour.padStart(2, '0')}`,
+  );
   const hasOffset = /(Z|[+-]\d{2}:\d{2})$/i.test(normalized);
   const source =
     normalized.includes('T') && !hasOffset ? `${normalized}Z` : normalized;

@@ -60,11 +60,16 @@ COMMAND_RULES = (
     ("JavaScript filesystem deletion", re.compile(r"(?i)\b(?:fs\.)?(?:rmSync|rmdirSync|unlinkSync)\s*\(|\b(?:fs\.)?promises\.(?:rm|rmdir|unlink)\s*\(|\bDeno\.remove\s*\(")),
     ("compiled-language filesystem deletion", re.compile(r"(?i)\b(?:os\.RemoveAll|os\.Remove|Files\.deleteIfExists|Files\.delete|fs::remove_file|fs::remove_dir_all|fs::remove_dir)\s*\(")),
     ("Ruby filesystem deletion", re.compile(r"(?i)\b(?:File\.(?:delete|unlink)|FileUtils\.(?:rm|rm_f|rm_r|rm_rf|remove|remove_dir|remove_entry))\s*\(?")),
-    # Perl `unlink $f` / `unlink("f")` / `unlink @files`. Scoped to Perl call
-    # syntax (an arg follows) so the bare word in prose, a grep pattern, or a
-    # filename no longer trips the guard -- command-position `unlink <path>` is
-    # already covered by the "wrapped"/"direct filesystem deletion" rules above.
-    ("Perl unlink", re.compile(r"(?i)\bunlink\s*\(|\bunlink\s+['\"$@]")),
+    # Perl `unlink($f)` / `unlink "f"` / `unlink @files` / `unlink $x`, plus the
+    # list-producing forms `unlink glob(...)`, `unlink map {...}`, `unlink grep
+    # {...}`, `unlink <*.log>` (mass deletes). Scoped to Perl call syntax so the
+    # bare word in prose, a grep PATTERN, or a plain filename argument
+    # (`grep unlink file`) does NOT trip the guard, while an actual delete does.
+    # Command-position `unlink <path>` is covered by the deletion rules above.
+    ("Perl unlink", re.compile(
+        r"(?i)\bunlink\s*\("
+        r"|\bunlink\s+['\"$@<]"
+        r"|\bunlink\s+(?:glob|map|grep|readdir|sort|reverse|split|keys|values)\b")),
 )
 
 PATCH_DELETE = re.compile(r"(?m)^\s*\*\*\* Delete File:\s*\S+")

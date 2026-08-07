@@ -256,9 +256,9 @@ def _cronsplain_test_count():
     cron = REPO / "projects" / "cronsplain"
     files = sorted(str(p) for p in (cron / "tests").glob("*.js")) if (cron / "tests").exists() else []
     if not files:
-        return 94
+        return 98
     return _suite_count(["node", "--test", *files], str(cron),
-                        r"#\s*tests\s+(\d+)", 94, healthy=r"#\s*fail\s+0\b")
+                        r"#\s*tests\s+(\d+)", 98, healthy=r"#\s*fail\s+0\b")
 
 
 MDTOC_TESTS, CRONSPLAIN_TESTS = _mdtoc_test_count(), _cronsplain_test_count()

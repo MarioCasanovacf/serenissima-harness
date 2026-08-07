@@ -107,6 +107,21 @@ test('next: space-separated naive --from is interpreted as UTC (same as the T fo
   }
 });
 
+test('next: space-separated --from with a SINGLE-digit hour is UTC (zero-padded)', () => {
+  // Regression: normalizing only 2-digit hours left "5:00" on the local-time
+  // path; the single-digit hour must be zero-padded to '05' and read as UTC.
+  const savedTZ = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  try {
+    const spaced = run(['next', '* * * * *', '--from', '2026-01-01 5:00', '--count', '1']);
+    assert.strictEqual(spaced.code, 0);
+    assert.strictEqual(spaced.stdout, '2026-01-01T05:01:00.000Z\n');
+  } finally {
+    if (savedTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = savedTZ;
+  }
+});
+
 test('next: --from with an explicit offset is converted to its UTC instant', () => {
   // 2026-01-01T00:00:00+02:00 == 2025-12-31T22:00:00Z; the next 00:00 UTC
   // daily occurrence strictly after that instant is 2026-01-01T00:00:00Z.

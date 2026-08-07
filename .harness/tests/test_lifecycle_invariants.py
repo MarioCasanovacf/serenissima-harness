@@ -70,6 +70,9 @@ class LifecycleInvariants(unittest.TestCase):
         (h / "logs" / "events.jsonl").write_text("")
         for leftover in (h / "tasks").glob("*.json"):
             leftover.unlink()
+        # the class shares one root; clear reset archives so each test's trash/ is its own
+        if (h / "trash").exists():
+            shutil.rmtree(h / "trash")
 
     # ---- helpers -----------------------------------------------------------
     def cli(self, *args):
@@ -173,6 +176,18 @@ class LifecycleInvariants(unittest.TestCase):
         self.assertTrue(archived, "reset must archive the prior board for reversibility")
         prior = json.loads(archived[0].read_text())
         self.assertIn("T-009", prior["tasks"], "the archived board must hold the pre-reset tasks")
+
+    def test_reset_backups_do_not_collide(self):
+        # two resets in the same wall-clock second must each keep their archive
+        # (the backup dir carries a uuid suffix, not just a second-granular stamp).
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        self.cli("reset", "--agent", "op", "--yes")
+        self.cli("add-task", "--agent", "p", "--id", "T-002", "--title", "b",
+                 "--role", "worker", "--engine", "any")
+        self.cli("reset", "--agent", "op", "--yes")
+        backups = list((self.root / ".harness" / "trash").glob("reset-*"))
+        self.assertEqual(len(backups), 2, "each reset must preserve its own archive")
 
     def test_lease_less_inprogress_gets_a_lease(self):
         # driving a task to in_progress via update (bypassing claim) must still

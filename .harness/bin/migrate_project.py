@@ -121,6 +121,9 @@ GITIGNORE_ENTRIES = [
     ".harness/session_holders.json",
     # Secrets: notify_config.json can hold a bot token -- must never be committed.
     ".harness/notify_config.json",
+    # Reversible-deletion / reset archives: hold wiped-board task notes and
+    # quarantined file contents (same leak class as notify_config.json).
+    ".harness/trash/",
     # Other regenerable runtime artifacts (not *.jsonl, so not covered above).
     ".harness/logs/goal_mode_state.json",
     ".harness/logs/goal_mode_last_failure.md",

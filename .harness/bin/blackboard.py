@@ -68,6 +68,7 @@ import json
 import re
 import shutil
 import sys
+import uuid
 
 import harness_common as hc
 
@@ -139,11 +140,7 @@ def bump_reputation_locked(agent, outcome):
 
 
 def default_lease():
-    state = hc.read_json(hc.STATE) or {}
-    try:
-        return int(state.get("limits", {}).get("claim_lease_seconds_default", 3600))
-    except (TypeError, ValueError):
-        return 3600
+    return hc.limit("claim_lease_seconds_default", 3600)
 
 
 def detail_path(task_id):
@@ -585,11 +582,14 @@ def cmd_reset(args):
             "reputation). Re-run with --yes to confirm. The current board, task "
             "files, and state are archived to .harness/trash/ first, so it is "
             "reversible.")
-    stamp = hc.now_iso().replace(":", "").replace("-", "")
+    # timestamp + uuid (mirrors safe_delete's entry_id) with exist_ok=False, so
+    # two resets in the same second can never collide and overwrite the first
+    # run's archive -- the backup is what makes this command reversible.
+    stamp = hc.now_iso().replace(":", "").replace("-", "") + "-" + uuid.uuid4().hex[:12]
     backup = hc.HARNESS / "trash" / "reset-{}".format(stamp)
     with hc.guarded():
         old = load_bb()
-        (backup / "tasks").mkdir(parents=True, exist_ok=True)
+        (backup / "tasks").mkdir(parents=True, exist_ok=False)
         if hc.BLACKBOARD.exists():
             shutil.copy2(str(hc.BLACKBOARD), str(backup / "blackboard.json"))
         if hc.STATE.exists():

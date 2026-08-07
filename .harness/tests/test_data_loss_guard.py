@@ -156,6 +156,25 @@ class DataLossGuardTests(unittest.TestCase):
                 result = run_guard(self.workspace, command)
                 self.assertEqual(result.returncode, 0, (command, result.stderr))
 
+    def test_perl_unlink_list_forms_are_blocked(self):
+        # Regression: the narrowed Perl rule must still catch the list-producing
+        # mass-delete forms (glob/map/grep/readline) that a naked \bunlink\b caught.
+        for command in (
+            "perl -e 'unlink glob \"*.log\"'",
+            "perl -e 'unlink map { $_->[1] } @pairs'",
+            "perl -e 'unlink grep { -f } @files'",
+            "perl -e 'unlink <*.log>'",
+        ):
+            with self.subTest(command=command):
+                self.assertBlocked(command)
+
+    def test_unlink_as_a_bare_word_is_allowed(self):
+        # ...without re-introducing the false positives the narrowing fixed.
+        for command in ("grep -n 'unlink' file.py", "man unlink", "grep unlink src/foo.c"):
+            with self.subTest(command=command):
+                result = run_guard(self.workspace, command)
+                self.assertEqual(result.returncode, 0, (command, result.stderr))
+
     def test_malformed_payload_does_not_crash(self):
         result = subprocess.run(
             [sys.executable, str(GUARD)], input="not-json", text=True, capture_output=True
