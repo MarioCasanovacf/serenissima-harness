@@ -1,0 +1,39 @@
+{
+  "id": "PR-002",
+  "schema_version": 1,
+  "title": "Test-discovery precision: exact commands, verifiers assert nonzero count",
+  "subject": "test-discovery-precision",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-025"
+  ],
+  "ratio": "**Test-discovery precision (P-025)**: acceptance criteria MUST carry the exact,\nlayout-matching test command — not a generic invocation that silently discovers zero\ntests against a mismatched file layout. Verifiers MUST assert a **nonzero executed-test\ncount** before trusting a green run; exit 0 alone is not evidence.",
+  "dicta": [
+    "Precedent this\ncodifies: a bare `node --test` returned exit 0 with 0 tests executed against the\ncronsplain `tests/test_*.js` layout (node's default discovery pattern doesn't match it)\n— a false-green a less careful verifier could have rubber-stamped; the corrected,\nlayout-matching criterion command is `node --test tests/*.js` (T-044/T-052 join note,\n`events.jsonl`)."
+  ],
+  "scope_conditions": [
+    "role:thinker or role:coordinator drafting acceptance_criteria test commands for any task in any epic",
+    "role:verifier evaluating any test-suite run before marking a task done"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a bare-discovery false-green (exit 0, 0 tests executed) recurs after this rule shipped, or a verifier is shown accepting a green run without checking the executed-test count.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "T-044",
+    "T-052",
+    "ORCHESTRATION.md:82-90"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-057",
+  "published_by": "worker-build-4",
+  "published_at": "2026-08-11T07:25:38Z"
+}

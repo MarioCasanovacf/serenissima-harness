@@ -1,0 +1,38 @@
+{
+  "id": "PR-003",
+  "schema_version": 1,
+  "title": "Verbatim promotion: byte-identical code plus legitimate decoupling",
+  "subject": "verbatim-promotion",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-026"
+  ],
+  "ratio": "**Verbatim promotion (P-026)**: when the winner is promoted into production, \"verbatim\"\nmeans algorithm **byte-identical** PLUS legitimate decoupling from its candidate\nharness — candidate-identifying strings/prefixes renamed, the candidate's own\nself-test/`__main__` block stripped, and zero runtime `require`/`import` of anything\nunder `candidates/`.",
+  "dicta": [
+    "Precedent: T-049's promoted `lib/schedule.js` is byte-identical to\n`schedule_b.js` except two renamed error-message prefixes (`schedule_b:` →\n`schedule:`), with the self-check guard dropped and no runtime dependency on\n`candidates/` (`events.jsonl` T-049 verdict note, \"PROMOTION FIDELITY\")."
+  ],
+  "scope_conditions": [
+    "role:worker or role:verifier promoting a tournament/consensus candidate under a projects/*/candidates/ directory into production code",
+    "tournament/consensus topology promotions only (ORCHESTRATION.md section 5); does not extend to ordinary fan-out/join merges with a single candidate"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a tournament promotion is ever verdicted 'verbatim' without a byte-diff actually being run against the promoted file's candidate source.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "T-049",
+    "ORCHESTRATION.md:211-218"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-057",
+  "published_by": "worker-build-4",
+  "published_at": "2026-08-11T07:25:38Z"
+}

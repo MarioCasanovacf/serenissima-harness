@@ -1,0 +1,42 @@
+{
+  "id": "PR-004",
+  "schema_version": 1,
+  "title": "Verifier rotation: no single reviewer approves an entire epic",
+  "subject": "verifier-rotation",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-031",
+    "event:2026-07-05T00:56:51Z"
+  ],
+  "ratio": "**Verifier rotation (F6)**: no single reviewer identity may be the sole approver of an\nentire epic. Epic joins and guardrail changes require a reviewer distinct from every\nproducer in the epic — rotate identities or bring in a second reviewer with a different\nlens.",
+  "dicta": [
+    "Precedent this codifies: T-031's guardrail was verdicted by a rotated `verifier-b`\n(`events.jsonl:585`) and T-032/T-033 rotated in `verifier-c`. Counter-example this rule\nforecloses: the mdtoc epic (T-021..T-029), where a single `harness-verifier` identity\nclaimed and approved all 9 producer tasks (`events.jsonl:312-481`) — exactly the\nmonoculture risk the §5A loop flagged (`audit_gen3.md` §4 row F6, input `state.json:352`)."
+  ],
+  "scope_conditions": [
+    "role:verifier verdicting an epic join or a guardrail change",
+    "per-epic: applies to the set of producer tasks within one epic, not across unrelated epics"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a single verifier identity is shown claiming and approving all producer tasks in a future epic (a T-021..T-029-shaped recurrence), or if the en-banc quorum question (SDR-07 / T-348) is ratified in a way that changes this rule's shape.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "T-031",
+    "T-021",
+    "T-029",
+    "ORCHESTRATION.md:119-126",
+    "event:2026-07-05T00:56:51Z"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-031",
+  "published_by": "worker-build-4",
+  "published_at": "2026-08-11T07:25:38Z"
+}

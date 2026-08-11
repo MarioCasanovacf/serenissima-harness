@@ -1,0 +1,42 @@
+{
+  "id": "PR-001",
+  "schema_version": 1,
+  "title": "Terminal-state --reopen: mandatory note, event-logged, narrow scope",
+  "subject": "reopen-terminal-state",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-302"
+  ],
+  "ratio": "The only sanctioned way back is an explicit verb,\nnever hand-editing `blackboard.json` (forbidden — `blackboard.py` is the sole writer):\n`python3 .harness/bin/blackboard.py reopen <T-ID> --agent <you> --note \"<why>\"`. It (1) only\nacts on tasks currently `done`/`failed` (refused otherwise — it is not a generic\nstatus-setter), (2) mandates `--note`/`--note-file`/`--note-stdin` explaining why — no note\nmeans no reopen, refusing silent resurrection, (3) logs a `task_reopened` event to\n`events.jsonl` recording who and why, and (4) resets the task to `open`, clearing\nclaim/handoff/completion state so it re-enters the claimable frontier cleanly (cascade gate\nre-evaluates `depends_on` normally on the next claim).",
+  "dicta": [
+    "**Terminal-state reopen (P-023)**: `done` and `failed` are terminal — nothing in the table\nabove moves a task off them, by design.",
+    "INTEGRITY GAP: this rule is applied in code (`.harness/bin/blackboard.py:470`, cmd_reopen) and in prose (`ORCHESTRATION.md:58`) but has NO entry in `state.json evolution.accepted_mutations` (verified live: the 27-entry array runs P-001..P-022, P-024..P-026, P-029, P-030 -- P-023, P-027, P-028 are absent). `.harness/state.json:846` itself records this as a gen-5 backlog item: \"gen-5 backlog: P-023 terminal-state --reopen rule (LOW, latent); ...\". RESOLUTION PATH: backfilling `evolution.accepted_mutations` for P-023 is a TIER-2 CONSTITUTIONAL act gated on the section 5A loop (logs -> audit with quoted evidence -> state.json evolution.pending_proposals -> human approval via state.json human_gates -> gated apply -> harness_generation bump + git commit; ORCHESTRATION.md:225-229) plus the human gate itself -- it MUST NOT be performed unilaterally by a worker publishing this record. This record raises it as an OPEN-QUESTION for the epic join (T-348) to escalate to the operator, and does not perform the backfill."
+  ],
+  "scope_conditions": [
+    "role:worker|verifier|thinker invoking `blackboard.py reopen` on a task whose status is currently done or failed",
+    "the reopen verb inside .harness/bin/blackboard.py only; does not extend to precedent.py's own status-flip verbs (overrules/supersedes/voids/confirm)"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when evolution.accepted_mutations gains a P-023 entry via the section 5A loop plus the human gate (see the recorded resolution path in dicta); until then this record's own authority stays tier-3 (verdicted on T-302), not tier-2, and the state.json constitutional gap remains open.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "T-302",
+    ".harness/bin/blackboard.py:470",
+    "ORCHESTRATION.md:58-67",
+    ".harness/state.json:846",
+    "P-023"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-302",
+  "published_by": "worker-build-4",
+  "published_at": "2026-08-11T07:25:38Z"
+}

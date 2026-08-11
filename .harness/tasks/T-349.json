@@ -1,0 +1,23 @@
+{
+  "id": "T-349",
+  "title": "STANDING QUARTERLY (next due 2026-11-10): are frontier-lab handoff and memory conventions getting richer or thinner (Part VI falsification watch)",
+  "description": "The roadmap's standing monitoring duty (docs/civilizational-roadmap-brief.md:106): track whether frontier-lab handoff and memory conventions are getting RICHER (supports the roadmap) or THINNER (undermines it - the prosthesis reading wins, the roadmap inverts, and the omniscient chieftain returns). Quarterly cadence; NEXT DUE 2026-11-10 (this epic was published 2026-08-10). Append-only log at docs/monitoring/part-vi-handoff-conventions.md, owned solely by this task. It has no dependencies, gates nothing, and is deliberately excluded from the epic join T-348 because a standing duty never terminates - gating a join on it would deadlock the epic. Engine any: the reading is citation-bounded, not judgment-bounded.",
+  "acceptance_criteria": [
+    "OWNS EXACTLY ONE FILE, append-only: docs/monitoring/part-vi-handoff-conventions.md (create the docs/monitoring/ directory with mkdir -p). Never rewrite a prior quarter's entry - a monitoring log that can be edited retroactively cannot falsify anything.",
+    "THE METRIC IS STRUCTURAL, NOT VOLUMETRIC - this is the load-bearing criterion and it comes from the research-librarian's caveat: 'richer' means MORE STRUCTURAL FIELDS (typed memory tiers, roles, evidence gates, stopping criteria, citation or ID mechanisms, authority distinctions), NOT more tokens. Externalizing harness policy into a natural-language harness SHRINKS the static artifact while making it more formally structured: Live-SWE 60.10k tokens / 68 files down to 2.90k / 3, MHTBA 10.50k/3 down to 0.80k/1, SeeAct 47.50k/5 down to 1.40k/1 (papers/natural_language_agent_harnesses.pdf:6, Table 2; the paper's framing: 'NLAHs expose the reusable harness policy in fewer static materials'). A metric that counts file size or token count would therefore report THINNER exactly when the convention became more constitutional. Record raw token or file-size footprint SEPARATELY and label it explicitly as a NON-SIGNAL.",
+    "EACH QUARTERLY ENTRY CONTAINS: the date; the conventions surveyed (named product or lab, named artifact - for example the AGENTS.md / CLAUDE.md pattern, memory-file tiering, handoff or progress file formats, published harness policy documents) each with a source and a retrieval date; the COUNT of distinct structural field types per convention versus the previous quarter; the raw footprint as a labelled non-signal; and a one-word verdict RICHER / THINNER / FLAT with the specific evidence for it and an explicit statement of what observation would flip that verdict.",
+    "EVERY claim tagged ESTABLISHED / ANALOGY / SPECULATION (roadmap Part V principle 5). Cite the two-tier memory convention already in the corpus as the baseline datapoint: agentic-harness-engineering-reference/agents/code_agent_simple/LongTermMEMORY.md:1-3 (persistent facts, conventions, architectural decisions) paired with ShortTermMEMORY.md:1-3 (cleared between sessions) - typed, not undifferentiated.",
+    "ALSO TRACK the other Part VI falsification watch item: model-layer memory architectures that demonstrably eliminate the handoff problem, on the roadmap's ~18-month window (from 2026-08-10, so through approximately 2028-02). Record any evidence for or against, with sources.",
+    "ESCALATION RULE: a THINNER verdict in two consecutive quarters is a MANDATORY FINDING at the next section 5A evolution audit (the roadmap inverts if the prosthesis reading wins), recorded as an OPEN-QUESTION: note so the audit chases it (ORCHESTRATION.md:79-80). A single THINNER quarter is recorded but does not escalate.",
+    "CADENCE MAINTENANCE: at the end of each entry, state the NEXT DUE date (quarterly: 2026-11-10, then 2027-02-10, 2027-05-10, 2027-08-10) and hand off to role verifier for that quarter's verdict. The verifier checks only that sources exist, the metric used is structural rather than volumetric, and the verdict follows from the recorded evidence - doc tier per P-024.",
+    "CONSUMES the falsification signals produced by T-337 (the Graeber-Wengrow steelman) and consolidated by T-344 once those exist; until then, track the two Part VI criteria as written in the brief. No code, no source edits (thinker role)."
+  ],
+  "context_files": [
+    "docs/civilizational-roadmap-brief.md",
+    ".harness/context-brief-precedent-layer.md",
+    ".harness/coordinator-decisions-precedent-layer.md",
+    ".harness/corpus-grounding-precedent-layer.md",
+    ".harness/plan.md"
+  ],
+  "notes": []
+}

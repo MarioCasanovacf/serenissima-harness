@@ -350,6 +350,396 @@ the DAG). ANSWERED — all confirmations recorded below:
   and as an `OPEN-QUESTION:` note for the gen-4 audit (worked precedent: mdtoc
   `tests/__init__.py`, `.harness/logs/audit_gen3.md` P-013/F1).
 
+## precedent-layer (jurisprudence for agent sessions)  [PUBLISHED 2026-08-10 — T-330..T-349 LIVE on the board]
+
+> STATUS: **PUBLISHED 2026-08-10** by `orchestration-planner`. All BLOCKING known-unknowns were
+> closed before publication — five by the coordinator decision memo
+> (`.harness/coordinator-decisions-precedent-layer.md`, D1–D8, route (b): recorded answer), three
+> by repo evidence resolved in this plan (route (b) as well: planner decision grounded in a cited
+> file, recorded in `## Unknowns — Epic: precedent-layer` below). No spike task was needed: none
+> of the open questions was a fact a probe could discover — they were scoping and authority
+> decisions the coordinator/operator holds, or invariants already written down in the repo.
+
+### Why
+
+The harness has records but no law. Handoff notes, `DECISION:` prefixes and the ~30-deep
+P-number ledger are **memos**: descriptive, disposable, no normative force. Roadmap Part II
+(`docs/civilizational-roadmap-brief.md:28-58`) asks for the leap from bureaucracy to legal
+order — records that **bind** successors unless explicitly overruled with reasoning. Four
+deliverables: a precedent-aware record schema (ratio/dicta, scope conditions, authority level,
+citation IDs), a queryable citation index, an overruling protocol, and a conflict-detection
+pass. The brief gates all of it behind a seven-item legal-research agenda with a hard rule:
+*schema design may begin once items 1–3 are synthesized; items 4–7 refine it* (line 57).
+
+Two facts from the corpus survey (`.harness/corpus-grounding-precedent-layer.md`) shape the
+acceptance criteria more than anything in the brief:
+
+1. **Author-declared ratio is roughly trustworthy; author-declared blast radius is not.**
+   Measured: benefit attribution precision 33.7% / recall 51.4% (~5x random) versus regression
+   precision 11.8% / recall 11.1% against 5.6%/5.4% random baselines (~2x)
+   (`papers/agentic_harness_engineering.pdf:9`, §4.4.2 "Regression blindness"). Therefore the
+   schema lets the author declare the **ratio** and bind on publication, but **scope conditions
+   do not bind until a verifier confirms them**, and the unconfirmed state must be mechanically
+   distinguishable — not a prose convention. This is criterion-level, not advisory: T-339 fixes
+   it, T-340 implements it, T-346 attacks it (invariant (c)).
+2. **Non-additive interaction risk: one more layer that re-does existing verification can
+   regress the system.** Measured: "+ system_prompt only" scored −2.3pp aggregate, the only
+   regression among four single-component swaps; "components interact non-additively… stacking
+   them spends turns on redundant re-checks" (`papers/agentic_harness_engineering.pdf:8` Table 3
+   RQ3a, p.9). Therefore every task in this epic carries an **extend-do-not-duplicate**
+   criterion naming the existing record it extends (note taxonomy `ORCHESTRATION.md:69-77`, the
+   `reopen` verb `blackboard.py:470-517`, the P-number ledger in `state.json`, `events.jsonl`,
+   `recontext.py`), and the check is concrete: **no new log file**, records point at the issuing
+   task's existing verdict instead of re-recording verification, `PRECEDENT.md` cites
+   `ORCHESTRATION.md` rules instead of restating them. T-348 confirms it end to end.
+
+### The DAG (T-330 … T-349, epic `precedent-layer`, engine `claude` except T-349 `any`)
+
+```mermaid
+graph TD
+  subgraph research["RESEARCH FRONTIER — 9 tasks, ZERO edges between them, all claimable at publication (p1)"]
+    T330["T-330 R1 stare decisis mechanics<br/>01-stare-decisis-mechanics.md"]
+    T331["T-331 R2 ratio identification<br/>02-ratio-identification.md"]
+    T332["T-332 R3 overruling doctrines<br/>03-overruling-doctrines.md"]
+    T333["T-333 R4 distinguishing / anti-evasion<br/>04-distinguishing-anti-evasion.md"]
+    T334["T-334 R5 jurisprudencia constante<br/>05-jurisprudencia-constante.md"]
+    T335["T-335 R6 administrative + mercantile<br/>06-administrative-mercantile-precedent.md"]
+    T336["T-336 R7 failure modes<br/>07-failure-modes.md"]
+    T337["T-337 R8 Graeber-Wengrow steelman<br/>08-graeber-wengrow-steelman.md"]
+    T338["T-338 R9 Part III mechanism design<br/>09-mechanism-design-market-primitives.md<br/>RESEARCH ONLY, ZERO CODE"]
+  end
+  T339["T-339 SYNTHESIS GATE (thinker, FRONTIER)<br/>synthesis-design-requirements.md<br/>= the brief's items-1-3 gate"]
+  T344["T-344 REFINEMENT SYNTHESIS (thinker, FRONTIER)<br/>synthesis-refinements.md<br/>= the brief's items-4-7 refinement"]
+  subgraph build["BUILD — control-plane tier (P-024 full adversarial replay)"]
+    T340["T-340 B1 precedent.py + .harness/precedents/<br/>+ PR schema + test_precedent.py (worker)"]
+    T341["T-341 B2 PRECEDENT.md v0 (worker)"]
+    T342["T-342 B3 conflicts subcommand<br/>+ test_precedent_conflicts.py (worker)"]
+    T343["T-343 B4 seed migration PR x4<br/>+ test_precedent_seed.py (worker)"]
+    T345["T-345 B5 refine PRECEDENT.md<br/>failure-mode + anti-evasion + steelman (worker)"]
+  end
+  T346["T-346 VERIFY cluster 1 (rotation slot 1)<br/>CLI replay + doc/code drift cross-check"]
+  T347["T-347 VERIFY cluster 2 (rotation slot 2)<br/>own adversarial registry + seed audit"]
+  T348["T-348 EPIC JOIN (verifier, FRONTIER)<br/>full replay + D1/D2/D4 operator ratification<br/>+ U4 explainer, exactly 3 questions"]
+  T349["T-349 STANDING QUARTERLY (thinker, engine any)<br/>Part VI richer-vs-thinner watch<br/>next due 2026-11-10 — NO edges, gates nothing"]
+
+  T330 --> T339
+  T331 --> T339
+  T332 --> T339
+  T339 --> T340
+  T339 --> T341
+  T340 --> T342
+  T340 --> T343
+  T333 --> T344
+  T334 --> T344
+  T335 --> T344
+  T336 --> T344
+  T337 --> T344
+  T344 --> T345
+  T341 --> T345
+  T342 --> T345
+  T340 --> T346
+  T341 --> T346
+  T342 --> T347
+  T343 --> T347
+  T330 --> T348
+  T331 --> T348
+  T332 --> T348
+  T333 --> T348
+  T334 --> T348
+  T335 --> T348
+  T336 --> T348
+  T337 --> T348
+  T338 --> T348
+  T339 --> T348
+  T340 --> T348
+  T341 --> T348
+  T342 --> T348
+  T343 --> T348
+  T344 --> T348
+  T345 --> T348
+  T346 --> T348
+  T347 --> T348
+```
+
+### Task table
+
+| ID | Role | Engine | Tier (P-030) | Prio | Depends on | Owns (sole writer) |
+|---|---|---|---|---|---|---|
+| T-330 | worker | claude | sonnet | 1 | — | `docs/precedent-research/01-stare-decisis-mechanics.md` |
+| T-331 | worker | claude | sonnet | 1 | — | `…/02-ratio-identification.md` |
+| T-332 | worker | claude | sonnet | 1 | — | `…/03-overruling-doctrines.md` |
+| T-333 | worker | claude | sonnet | 1 | — | `…/04-distinguishing-anti-evasion.md` |
+| T-334 | worker | claude | sonnet | 1 | — | `…/05-jurisprudencia-constante.md` |
+| T-335 | worker | claude | sonnet | 1 | — | `…/06-administrative-mercantile-precedent.md` |
+| T-336 | worker | claude | sonnet | 1 | — | `…/07-failure-modes.md` |
+| T-337 | worker | claude | sonnet | 1 | — | `…/08-graeber-wengrow-steelman.md` |
+| T-338 | worker | claude | sonnet | 1 | — | `…/09-mechanism-design-market-primitives.md` |
+| T-339 | thinker | claude | **frontier** | 2 | T-330,331,332 | `…/synthesis-design-requirements.md` |
+| T-340 | worker | claude | sonnet | 2 | T-339 | `.harness/bin/precedent.py`, `.harness/precedents/`, `.harness/tests/test_precedent.py` |
+| T-341 | worker | claude | sonnet | 2 | T-339 | `PRECEDENT.md` (creates) |
+| T-342 | worker | claude | sonnet | 3 | T-340 | `conflicts` subcommand in `precedent.py`, `.harness/tests/test_precedent_conflicts.py` |
+| T-343 | worker | claude | sonnet | 3 | T-340 | the 4 live `.harness/precedents/PR-*.json`, `.harness/tests/test_precedent_seed.py` |
+| T-344 | thinker | claude | **frontier** | 2 | T-333,334,335,336,337 | `…/synthesis-refinements.md` |
+| T-345 | worker | claude | sonnet | 4 | T-344,T-341,T-342 | `PRECEDENT.md` (refines) |
+| T-346 | verifier | claude | sonnet | 4 | T-340,T-341 | nothing (replay-only) |
+| T-347 | verifier | claude | sonnet | 4 | T-342,T-343 | nothing (replay-only) |
+| T-348 | verifier | claude | **frontier** | 5 | all 18 above | `docs/precedent-layer-explainer.html`, `docs/precedent-research/README.md` |
+| T-349 | thinker | any | sonnet | 6 | — | `docs/monitoring/part-vi-handoff-conventions.md` |
+
+### Every edge is a real artifact-consumption (no false cascade)
+
+- `T-330,T-331,T-332 → T-339` — **the brief's own gate** (`docs/civilizational-roadmap-brief.md:57`).
+  The synthesis literally reads those three Markdown files and cites each requirement back to a
+  section in them. Items 4–9 are deliberately **not** edges: gating the schema on all seven
+  research items would violate the brief's staging and serialize a nine-wide frontier for no
+  artifact reason.
+- `T-339 → T-340` — `precedent.py` implements the schema, subcommand names, flag names,
+  exit-code contract, registry-root override and guarded ID allocation that
+  `synthesis-design-requirements.md` fixes. Real consumption.
+- `T-339 → T-341` — `PRECEDENT.md` documents the tier ladder, field semantics and overruling
+  protocol from the same document. **No edge T-340 → T-341**: the contract doc states the
+  contract, so it can be written in parallel with the code, and T-346 exists precisely to catch
+  drift between them.
+- `T-340 → T-342` — the `conflicts` subcommand is added **inside** `precedent.py` and consumes
+  the record schema, the loader and the registry-root override. Same file, so the edge is also
+  what keeps two workers off one file.
+- `T-340 → T-343` — the seed records are created by running `precedent.py publish`; they cannot
+  exist before the CLI does. **T-342 ⟂ T-343** (no edge either way): disjoint files
+  (`test_precedent_conflicts.py` vs `test_precedent_seed.py` + registry records), and the
+  registry-root override keeps T-342's tests out of the live registry T-343 writes. This pair is
+  the epic's genuine concurrency slot.
+- `T-333,T-334,T-335,T-336,T-337 → T-344` — the refinement synthesis reads all five documents
+  (items 4–7 plus the mandated steelman) and consolidates their detection signals into one
+  registry-computable list. Real consumption. **No edge from T-344 to any build task's
+  predecessor**: the research half never waits on the build half.
+- `T-344 → T-345` — T-345 writes T-344's requirements into `PRECEDENT.md`.
+- `T-341 → T-345` — T-345 **edits the file T-341 created**; sequencing them is what makes
+  `PRECEDENT.md` a single-owner artifact at every instant (F1).
+- `T-342 → T-345` — the reconciliation subsection quotes the **real** `--help`, detector names
+  and exit codes of the shipped `conflicts` pass. You cannot quote a command that does not exist,
+  and paraphrasing it is exactly the drift this epic is built to detect.
+- `T-340,T-341 → T-346` and `T-342,T-343 → T-347` — a verifier replays the artifacts it verdicts.
+- `→ T-348` — all 18 listed explicitly. The join replays the full suite, audits all nine research
+  documents against their Sources sections, confirms the non-duplication contract end to end, and
+  presents D1/D2/D4 to the operator. It consumes every artifact, so every edge is real. Listing
+  them explicitly rather than relying on transitive closure (the mdtoc/cronsplain convention)
+  costs one long `depends_on` line and buys an unambiguous board reading; **T-338 in particular
+  has no other consumer** (Part III is research-only) and would be silently ungated under a
+  closure-only reading.
+- **No edge to T-349.** The standing quarterly duty is non-terminating by design; its next
+  instance falls due 2026-11-10. Gating the join on a task that must never be `done` would
+  deadlock the epic. Recorded as a deliberate exception to "the join depends on everything".
+
+### Bootstrap / infra ownership (F1 — every shared file has exactly one owner)
+
+| Shared artifact | Sole owner | Race risk |
+|---|---|---|
+| `docs/precedent-research/` (directory only, no content) | any research task, via `mkdir -p` | **None** — `mkdir -p` is idempotent and the directory carries no content. Nine parallel tasks each own exactly one distinct `NN-slug.md` inside it. |
+| `docs/precedent-research/README.md` (the index) | **T-348 only** | Explicitly forbidden to all nine research tasks — this is the mdtoc `tests/__init__.py` shape (`audit_gen3.md` P-013/F1) and is fixed by assigning the only shared *content* file to the join. |
+| `.harness/bin/precedent.py` | T-340 creates, T-342 extends (sequential edge, `lock.py` on top) | None — never two concurrent writers. |
+| `.harness/tests/test_precedent*.py` | three **distinct** files: `test_precedent.py` (T-340), `test_precedent_conflicts.py` (T-342), `test_precedent_seed.py` (T-343) | None. This is why the acceptance command's glob is `-p "test_precedent*.py"`: it discovers all three, so T-342 and T-343 never edit each other's file and stay parallel. |
+| `.harness/precedents/` live registry | T-340 creates the directory; **T-343 is the only task that writes records into it** | Closed mechanically by the **registry-root override** T-340 must ship: T-342's tests run against a temp root and assert nothing lands in the live registry. |
+| `PRECEDENT.md` | T-341 creates, T-345 refines (sequential edge) | None. T-342/T-343 are explicitly forbidden to touch it. |
+| `.harness/state.json` | **nobody in this epic** | T-343 is explicitly forbidden to backfill `evolution.accepted_mutations` — that is a tier-2 constitutional act (§5A loop + human gate, `ORCHESTRATION.md:225-229`). It escalates instead; T-347 verifies with `git diff` that state.json is untouched. |
+| `docs/monitoring/part-vi-handoff-conventions.md` | T-349 only, append-only | None (no other task writes under `docs/monitoring/`). |
+| `claude.md` / `gemini.md` / `ORCHESTRATION.md` | **nobody in this epic** | Incorporating a duty to cite precedent into an NLAH is an NLAH mutation: §5A loop + human gate. Out of scope, stated in `PRECEDENT.md`'s own header. |
+
+### Dispatch notes (tiers per P-030, `ORCHESTRATION.md:136-160`)
+
+**Frontier tier (opus/fable) — 3 of 20 tasks:** T-339 (synthesis gate), T-344 (refinement
+synthesis), T-348 (epic join). These are low-verifiability judgment: no adversarial replay can
+catch a bad schema decomposition or a bad ratification framing, which is the same argument that
+keeps `orchestration-planner` on opus. Everything else runs **sonnet**: the nine research tasks
+(cited reading — high-verifiability, and the citation spot-check at T-348 is the adversarial
+gate), the five build tasks (code gated by an exact test command with a nonzero-count assertion),
+both cluster verifiers (adversarial replay is execution with replayable evidence), and T-349
+(bounded, source-cited monitoring). Reviewer tier defaults to sonnet per P-024; the coordinator
+may override **T-346 alone** to opus if the schema semantics prove contested
+(`state.json cost_policy` rules 3–4). `haiku` is used nowhere in this epic — every task is
+long-horizon or judgment-bearing (`coffee_bench.pdf` pp.6–7, idle-drift).
+
+**Wave order (max_parallel_workers = 3):**
+
+1. **Wave 1 — research, 9 claimable, run 3 at a time (p1).** Recommended ordering so the gate
+   opens first: T-330, T-331, T-332 (the gate trio) → then T-333, T-336, T-337 (the ones T-344
+   needs plus the mandated steelman) → then T-334, T-335, T-338. Nothing forces this order; any
+   3-subset is legal because the nine share no file.
+2. **Wave 2 — T-339 (frontier, thinker).** Opens the whole build half.
+3. **Wave 3 — T-340 + T-341 in parallel (2 workers), and T-344 (frontier thinker) as soon as
+   items 4–7 + the steelman are `done`** — T-344 has no build dependency, so it can run
+   concurrently with the build. Up to 3 concurrent.
+4. **Wave 4 — T-342 + T-343 in parallel (the concurrency slot), plus T-346 (verifier)** once
+   T-340/T-341 are `done`.
+5. **Wave 5 — T-345 (worker) + T-347 (verifier).**
+6. **Wave 6 — T-348 epic join (frontier), then its verdict by a distinct identity.**
+7. **T-349 is claimable from publication and belongs to no wave.** Its first entry may be filed
+   any time; the cadence anchor is 2026-11-10.
+
+**Engine routing.** All nineteen epic tasks are `--engine claude`; T-349 is `--engine any`
+(citation-bounded reading, no judgment call an engine choice would change). **Nothing is bridged
+to Gemini in this epic**, deliberately: the nine research tasks need *web retrieval* (coordinator
+decision D7 — the coordinator session's WebSearch/WebFetch are local environment tools; the
+no-external-LLM rule concerns model APIs, not retrieval), and the Gemini route is a
+human-pasted prompt bridge (`ORCHESTRATION.md:168-174`) with no web tools, while the
+Gemini-native headless route must never be used to outsource reasoning. The one future node that
+*would* justify `--engine gemini` is the deferred **full retrofit of all ~30 P-numbers** into the
+schema: that is bulk long-context digestion of `state.json` + `ORCHESTRATION.md` + `events.jsonl`
+(2035 lines) against a fixed schema, exactly the Gemini profile. It is out of scope for v0 (D2)
+and is a follow-on epic.
+
+### Verifier rotation plan (F6 — no sole approver of an epic)
+
+The counter-example this epic must not reproduce: the mdtoc epic, where a single
+`harness-verifier` identity claimed and approved all nine producer tasks
+(`ORCHESTRATION.md:119-126`). Nor may this epic reproduce it *thematically* — it is building
+infrastructure against single-arbiter adjudication (roadmap Part V principle 1), so the
+verification process itself must not be a monoculture.
+
+| Verdict scope | Reviewer identity | Constraint |
+|---|---|---|
+| Research items 1–5 (T-330…T-334), doc tier | `harness-verifier` | brief replay only (P-024) |
+| Research items 6–9 (T-335…T-338), doc tier | a second identity, e.g. `harness-verifier-b` | splits the nine so no one identity approves all research (the mdtoc shape) |
+| T-339 synthesis gate | a third identity, preferably a different engine lens (e.g. `codex-verifier`) | must not be the identity that verdicted T-330/331/332 |
+| T-344 refinement synthesis | `harness-verifier` | — |
+| T-340 + T-341 | the executor of **T-346** (rotation slot 1) | full adversarial replay; not a producer of either |
+| T-342 + T-343 | the executor of **T-347** (rotation slot 2) | must differ from T-346's reviewer; different-engine lens preferred |
+| T-345 | any verifier identity that did not produce it | — |
+| **T-348 epic join** | executed by a verifier identity that produced **no** artifact anywhere in the epic; **verdicted by yet another** such identity | the P-022 verifier-self-done shortcut is **forbidden** on T-348: the join produces artifacts (explainer + research index), so it must `handoff --to-role verifier` and let the authorship check enforce producer ≠ approver mechanically |
+
+### Scope boundaries held (what this epic must not do)
+
+- **Part III: exactly one research artifact, zero code** (D8, roadmap Part V principle 2 —
+  "the sequence is load-bearing… do not skip"). T-338 is that artifact; it has no build edge.
+- **Part IV: untouched.** No identity/attestation/treaty/embassy work.
+- **No NLAH mutation.** `claude.md`/`gemini.md` are unchanged; `PRECEDENT.md` v0 says so in its
+  own header. Making precedent-citation a *duty* is a §5A + human-gate act, and a follow-on.
+- **No `state.json` write.** Including the P-023 `accepted_mutations` backfill, which is
+  escalated by T-343 and presented by T-348, not performed by a worker.
+- **Forward-only + 4 seed exemplars** (D2). Full P-number retrofit is a follow-on gated on the
+  schema surviving T-346/T-347.
+- **Conflict detection is a pass, not a gate** (D6). No hook, engine parity preserved.
+
+## Unknowns — Epic: `precedent-layer` (populated per orchestration-planner.md steps 5-6, U1+U3)
+
+> Populated BEFORE the DAG was published. Every BLOCKING known-unknown is closed below by route
+> (b) — a recorded answer, either from the coordinator decision memo
+> (`.harness/coordinator-decisions-precedent-layer.md`) or from cited repo evidence. No spike task
+> was warranted: none of these was a fact a probe could discover.
+
+**Known knowns** (verified this session, with the evidence):
+- System `python3` is **3.9.6**; `.harness/bin/*.py` are stdlib-only, `>= 3.9`
+  (`harness_common.py:1-10`). TOML-parsing tests already gate on `python3.12`
+  (`.harness/tests/test_context_scout_parity.py:5-7`). So no 3.10+ syntax at module scope.
+- The substrate test convention is `python3 -m unittest discover -s .harness/tests -p '<glob>' -v`
+  and `python3 -m py_compile <new_cli>.py` (`.harness/tasks/T-315.json:4`, `T-311.json:4`).
+- `blackboard.py` is the sole writer of `blackboard.json` (`.harness/README.md:14-15`);
+  `state.json human_gates` gates git push / network publication / deletions outside `.harness/`
+  scratch / first webhook / **mutating `claude.md`|`gemini.md`** — `git commit` is not gated.
+- `protected_paths` is `[]` (opt-in, `guard_paths.py:6-25`): nothing under a new
+  `.harness/precedents/` is protected automatically.
+- The zero-legal-corpus fact: `papers/` (12 PDFs) + `fetched_docs/` (5 MD) contain no
+  jurisprudence source at all (`.harness/context-brief-precedent-layer.md` §2.7).
+- `evolution.accepted_mutations` holds 27 entries; **P-023, P-027, P-028 are absent**, and
+  `state.json:791` already flags the P-023 gap as gen-5 backlog. This is the live defect the
+  layer is meant to catch, and it is why P-023 is seed exemplar #1.
+- T-318..T-329 belong to the concurrent design-taste epic and are untouched here; the working
+  tree was already dirty at publication time (informational, not a blocker).
+
+**Known unknowns** (each classified BLOCKING / NON-BLOCKING; all BLOCKING ones CLOSED):
+- **Q1 [BLOCKING → CLOSED] What decision-granularity earns precedent status?** Gates the
+  registry's size and the schema's weight. → **Closed by D1**: precedent status is an explicit
+  act of publication, never automatic promotion of `DECISION:` notes. Precision over recall; the
+  evolution audit chases under-capture, because nothing can un-noise a polluted registry.
+- **Q2 [BLOCKING → CLOSED] Retrofit the ~30 existing P-numbers, or forward-only?** Triples epic
+  scope if guessed wrong. → **Closed by D2**: forward-only + four seed exemplars (P-023, P-025,
+  P-026, F6); full retrofit is a follow-on gated on the schema surviving adversarial verification.
+- **Q3 [BLOCKING → CLOSED] What identifier is "session 40 citable in session 200" bound to?**
+  → **Closed by D3**: `PR-NNN` minted by the registry CLI is the citable unit; citations anchor
+  to already-durable engine-agnostic identifiers (T-ids, agent identity, harness generation,
+  `events.jsonl` timestamps). The Claude hook `session_id` is rejected — ephemeral, single-engine.
+- **Q4 [BLOCKING → CLOSED] How does "authority level" map onto role/engine/tier?** → **Closed by
+  D4**: four tiers keyed to *mechanically observable facts* (operator gate fired; §5A NLAH
+  mutation accepted; producer≠approver verdict exists; unverified single-agent note = persuasive
+  only). Bindingness = how much adversarial process the decision survived. T-330 and T-334 may
+  return evidence that moves a tier boundary; that is an overruling for T-348 to present.
+- **Q5 [BLOCKING → CLOSED] Core substrate or `projects/` sandbox?** Changes test convention,
+  lock treatment and blast radius. → **Closed by D5**: core substrate —
+  `.harness/precedents/`, `.harness/bin/precedent.py`, `PRECEDENT.md` at root,
+  `.harness/tests/test_precedent.py`.
+- **Q6 [BLOCKING → CLOSED] May a worker write `state.json evolution.accepted_mutations` to fix
+  the P-023 gap?** Not covered by the memo; I resolved it from repo evidence rather than asking,
+  because the repo already answers it. → **NO.** The P-number ledger is mutated only through the
+  §5A loop with human approval (`ORCHESTRATION.md:225-229`, `state.json human_gates`), which
+  under D4 makes it a **tier-2 constitutional record**. A worker backfilling it unilaterally
+  would be forging the constitutional ledger. T-343 therefore *records* the gap and its
+  resolution path inside the PR record and escalates the backfill; T-347 verifies `state.json` is
+  untouched; T-348 puts it to the operator.
+- **Q7 [BLOCKING → CLOSED] Can T-342's tests and T-343's live seeds share
+  `.harness/precedents/` without racing?** → **NO, and it is designed out**: T-340 must ship a
+  registry-root override (`--root` / `PRECEDENT_ROOT`) and prove in a test that nothing lands in
+  the live registry when it is set. This is the F1 lesson from mdtoc's unowned
+  `tests/__init__.py` applied preemptively (`audit_gen3.md` P-013/F1).
+- **Q8 [NON-BLOCKING] Should `.harness/precedents/` be added to `state.json protected_paths`?**
+  It is arguably as load-bearing as `blackboard.json`, but `protected_paths` is opt-in and empty.
+  → Deferred: T-348 presents it to the operator as an explicit decision. Gates nothing.
+- **Q9 [NON-BLOCKING] Exact PR field names, subcommand names, exit codes.** → Owned by T-339
+  (that is what the synthesis gate is *for*); T-340 implements what it fixes.
+- **Q10 [NON-BLOCKING] Does the layer eventually become a *duty* (cite precedent before
+  deciding) in `claude.md`?** → Out of scope: NLAH mutation, §5A + human gate. Stated in
+  `PRECEDENT.md`'s header so no worker drifts into it.
+
+**Unknown knowns** (U3 blindspot interview — assumptions the operator/coordinator likely holds
+that I was about to bake into the DAG; each carries the DEFAULT baked in, and its confirmation):
+1. **Web access actually reaches the research agents.** I am assuming the nine research tasks
+   will be dispatched to agents that really hold WebSearch/WebFetch, not to the web-free bench
+   agents — otherwise "at least 3 primary sources with retrievable identifiers" is unsatisfiable
+   and the tasks would silently degrade into parametric legal claims dressed as ESTABLISHED,
+   which is precisely the fabricated rigor Part V principle 5 forbids.
+   → **DEFAULT baked in:** web-capable dispatch per D7, plus a mechanical fallback — an agent
+   without web tools must mark the task `blocked` with an `OPEN-QUESTION:` note rather than
+   produce parametric-only research. → **Confirmation:** CONFIRMED by coordinator decision D7
+   (`.harness/coordinator-decisions-precedent-layer.md` §D7): "the research fan-out therefore
+   runs with web-capable research agents… The bench remains web-free." The fallback is the
+   planner's addition and is written into every research task's criteria.
+2. **"Prototype" means real code in the real substrate, not a design doc.** Part II says
+   "Deliverables to **prototype**"; I am assuming that means a working CLI under `.harness/bin/`
+   that other agents could actually use, with tests — not a paper schema.
+   → **DEFAULT baked in:** working stdlib CLI + registry + tests, forward-only.
+   → **Confirmation:** CONFIRMED by D5 (placement is core substrate, CLI named, tests named) and
+   by the coordinator's dispatch requiring the exact P-025 test command with a nonzero executed
+   count. A design-doc-only deliverable would have no test command.
+3. **The four seed precedents are exemplars for *schema validation*, not a migration project.**
+   I am assuming their purpose is to break the schema against real records (P-023's integrity gap
+   is the interesting one), not to establish binding law over the harness's history.
+   → **DEFAULT baked in:** four records, quoted ratio, scope conditions marked *unconfirmed*, no
+   claim of retroactive bindingness. → **Confirmation:** CONFIRMED by D2 ("to validate the schema
+   against reality rather than against imagination").
+4. **The epic ends in a commit, not a push.** I am assuming the operator wants the U4 explainer
+   because *new control-plane files are entering the repo*, and that `git push` remains a separate
+   human gate. → **DEFAULT baked in:** T-348 produces the explainer with exactly 3 questions and a
+   commit plan; it does **not** push. → **Confirmation:** CONFIRMED by the coordinator's dispatch
+   ("this epic will end in a git commit of new control-plane files") and consistent with
+   `state.json human_gates` listing push, not commit.
+5. **The operator reads diagrams, not tables.** The U4 explainer's audience is the human, and the
+   standing global preference is explicit: the first representation must be visual; tables are
+   backup for verification, never the vehicle of the argument.
+   → **DEFAULT baked in:** T-348's explainer is `docs/precedent-layer-explainer.html`,
+   visual-first with inline SVG for the tier ladder, the record lifecycle and the epic DAG,
+   following the worked precedent `docs/harness-explainer.html`. No emojis anywhere.
+   → **Confirmation:** CONFIRMED by the operator's standing global preferences and by the
+   existing `docs/harness-explainer.html` precedent (U4, `ORCHESTRATION.md:105-110`).
+
+**Unknown unknowns** (acknowledged blind spot — no candidate list):
+- The one I can name the *shape* of without naming the content: this epic asks nine agents to
+  research a body of law none of them has a local corpus for, and the failure mode is
+  **plausible fabrication** — a confidently-cited case that does not exist. It is not detectable
+  from inside a research task, which is why the join spot-checks at least 2 named sources per
+  document with web access and rejects via `reopen` rather than patching. If a fabricated source
+  survives that, it becomes a gen-5 audit finding, not a silent correction.
+- Anything else that surfaces mid-execution is NOT silently patched around: it is logged as an
+  `OPEN-QUESTION:` note (swept by T-348) and becomes a known-unknown in the next epic's Unknowns
+  section (worked precedent: mdtoc's `tests/__init__.py`, `.harness/logs/audit_gen3.md` P-013/F1).
+
 ## Standing design rules
 1. Default to parallel: only add a `depends_on` edge when a task literally consumes another task's artifact.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).
