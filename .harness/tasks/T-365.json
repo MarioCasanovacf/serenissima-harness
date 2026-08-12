@@ -1,0 +1,8 @@
+{
+  "id": "T-365",
+  "title": "Gen-6 evolution audit input: process P-023 backfill via 5A with human gate (ESCA-01)",
+  "description": "Operator ruling ESCA-01, 2026-08-12: documentese y respetese. The P-023 accepted_mutations gap stays documented (PR-001 dicta) and the constitutional path is respected: no unilateral backfill, ever. This task feeds the next 5A evolution audit: draft the P-023 backfill as a formal entry in state.json evolution.pending_proposals with quoted evidence, obtain the human gate, apply, bump harness_generation, commit. Until then the conflicts detector's single finding (PR-001 dangling P-023) is the alarm working as designed and MUST NOT be silenced.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

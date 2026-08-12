@@ -1,0 +1,58 @@
+{
+  "id": "PR-017",
+  "schema_version": 2,
+  "title": "R-B ratified: interpretive code constitutional; amendments reasoned",
+  "subject": "interpretive-code-amendment-procedure",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-362",
+    "decision:T-362#operator-ruling-RB-2026-08-12"
+  ],
+  "ratio": "INTERPRETIVE-CODE.md v1 holds constitutional rank. The amendment procedure is: a build session that needs a constitutional addendum requests it explicitly, reasons it with the operator, and only then delimits the instance that later constructions will reference; the amendment is published as a tier 1 or 2 record naming the IC rules changed and the version jump before any text edit lands. A hand-edit without that record carries no authority.",
+  "dicta": [
+    "Operator wording 2026-08-12: the manual is amended by protocol whenever a constitutional addendum is needed; the session requests the addendum, reasons it with the end user, and then delimits the instance to be referenced for later constructions. The duty-to-use question remains open and belongs to the NLAH mutation path (5A plus human gate), per the memo v1 R-B presentation."
+  ],
+  "scope_conditions": [
+    "any edit to INTERPRETIVE-CODE.md; any session requesting a constitutional addendum"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a duty-to-consult the code is imposed via the NLAH path, or if the version anchor scheme changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-008",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-362",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-12T03:33:32Z",
+  "sources": [
+    "T-362",
+    "decision:T-362#operator-ruling-RB-2026-08-12"
+  ],
+  "validity_conditions": [
+    "INTERPRETIVE-CODE.md section 7 records the overruling-grade amendment route; the operator remains the reasoning counterpart"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

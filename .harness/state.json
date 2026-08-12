@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 13,
+        "tasks_done": 20,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-07-12T01:29:17Z"
+        "last_outcome_at": "2026-08-12T03:01:45Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -303,6 +303,196 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-07-12T01:40:17Z"
+      },
+      "codex-worker-taste": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-15T00:45:43Z"
+      },
+      "codex-verifier-taste": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-15T00:45:52Z"
+      },
+      "codex-worker-taste-production": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-15T00:57:55Z"
+      },
+      "codex-verifier-taste-production": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-15T01:06:32Z"
+      },
+      "codex-worker-root": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-16T06:21:45Z"
+      },
+      "codex-worker-root-relocate": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-07-18T01:09:35Z"
+      },
+      "worker-research-4": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:03:48Z"
+      },
+      "worker-research-5": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:03:48Z"
+      },
+      "worker-research-6": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:03:48Z"
+      },
+      "worker-research-1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:03:53Z"
+      },
+      "worker-research-2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:04:05Z"
+      },
+      "worker-research-7": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:14:55Z"
+      },
+      "worker-research-8": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:15:03Z"
+      },
+      "worker-research-9": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:15:34Z"
+      },
+      "thinker-refinement": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T05:35:11Z"
+      },
+      "thinker-synthesis": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T06:19:58Z"
+      },
+      "worker-build-1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T07:02:09Z"
+      },
+      "worker-build-4": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T07:47:46Z"
+      },
+      "verifier-build-b": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T08:17:27Z"
+      },
+      "verifier-build-a": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T08:20:29Z"
+      },
+      "verifier-join": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T09:36:45Z"
+      },
+      "worker-r10": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T18:54:57Z"
+      },
+      "worker-r11": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T18:54:57Z"
+      },
+      "thinker-v1-synthesis": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T19:35:52Z"
+      },
+      "worker-v1-1": {
+        "tasks_done": 2,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-11T22:23:58Z"
+      },
+      "worker-v1-2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:27:41Z"
+      },
+      "worker-v1-3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:27:41Z"
+      },
+      "worker-v1-4": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:27:51Z"
+      },
+      "worker-v1-5": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:27:51Z"
+      },
+      "verifier-v1-c": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:52:35Z"
+      },
+      "worker-v1-6": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:53:27Z"
+      },
+      "verifier-v1-d": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T00:57:28Z"
+      },
+      "verifier-v1-b": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T01:01:55Z"
+      },
+      "verifier-v1-join": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T01:30:20Z"
+      },
+      "codex-worker-mario-feedback": {
+        "tasks_done": 0,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-08-12T02:51:09Z"
+      },
+      "codex-worker-mario-feedback-b": {
+        "tasks_done": 0,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-08-12T02:51:09Z"
+      },
+      "coordinator-fable": {
+        "tasks_done": 0,
+        "tasks_failed": 3,
+        "last_outcome_at": "2026-08-12T02:51:09Z"
+      },
+      "codex-worker-universal-taste": {
+        "tasks_done": 0,
+        "tasks_failed": 1,
+        "last_outcome_at": "2026-08-12T02:51:09Z"
       }
     }
   },
@@ -808,5 +998,8 @@
       "7 MODEL FLOOR (amended by P-030, re-amended per operator ontology 2026-07-11): the partition is by VERIFIABILITY (intelligent_ai_delegation.pdf p.2), which coincides with the operator's ontology 'frontier orchestrates/plans/directs; cheap tier executes'. LOW-verifiability judgment work (goal decomposition, DAG design, join synthesis, direction) stays FRONTIER: orchestration-planner stays opus — a prompted sonnet is NOT a Trinity/Conductor trained router, that evidence does not transfer. HIGH-verifiability execution work (code with tests, audits with replayable evidence, corpus reading with page-cited claims, research) runs SONNET: workers, verifiers, evolution-analyst, research-librarian — quality is protected by producer!=approver adversarial replay, not by model tier. Trivial bounded mechanical tasks may be haiku per-call; NEVER long-horizon or strategic work at haiku (coffee_bench.pdf p.7: Haiku 4.5 idle-drift, -$630 net income, ~40/90 idle days)"
     ]
   },
-  "protected_paths": []
+  "protected_paths": [
+    ".harness/precedents",
+    ".harness/precedents/*"
+  ]
 }

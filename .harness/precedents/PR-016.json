@@ -1,0 +1,60 @@
+{
+  "id": "PR-016",
+  "schema_version": 2,
+  "title": "R-C ratified: the rule sessions actually cite is the governing principle",
+  "subject": "citation-principle",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-362",
+    "decision:T-362#operator-ruling-RC-2026-08-12"
+  ],
+  "ratio": "Force flows from real citation by sessions: computed on read from the citation index, consolidated by qualified reiteration (per the R-A confidence floor), decayed toward persuasive by activity-clock disuse. What sessions cite is what governs; what nothing cites drifts to persuasive. PR-010 and its DECAY_N=10 calibration are ratified as operating doctrine of the legislative machinery.",
+  "dicta": [
+    "Operator wording 2026-08-12: we take the rule that sessions cite as the principle of this legislative machinery."
+  ],
+  "scope_conditions": [
+    "the force model and any downstream consumer of force levels"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the Kimble asymmetry (external-correction-channel input) is added to the force model, per research doc 11.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-010",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [
+    "PR-015"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-362",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-12T03:32:51Z",
+  "sources": [
+    "T-362",
+    "decision:T-362#operator-ruling-RC-2026-08-12"
+  ],
+  "validity_conditions": [
+    "the citation index remains the registry's own cites and confirm data, never the contaminated event log"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,60 @@
+{
+  "id": "PR-015",
+  "schema_version": 2,
+  "title": "R-A ratified: reiteration counts only under confirmed conditions",
+  "subject": "reiteration-confidence-floor",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-362",
+    "decision:T-362#operator-ruling-RA-2026-08-12"
+  ],
+  "ratio": "PR-009 (reiteration raises force) is ratified by the operator with a binding qualification: a citation counts toward consolidation only when the applying context satisfies the cited record's declared conditions with at least the minimum confidence floor. The v0 mechanical floor is confirmation by an identity distinct from the record's publisher (producer is never approver); self-asserted application alone never mints consolidated force.",
+  "dicta": [
+    "Operator wording 2026-08-12: apply the constitutional principle and jurisprudence where applicable; repetition of rules is a valid criterion provided the repetition of the necessary subjective conditions is met with a minimum confidence limit. This resolves the policy half of FORCE-IDENTITY-A (T-354): an actor rotating identity strings can no longer fabricate settled force, because unconfirmed applications do not count toward the C threshold. Numeric confidence scoring beyond the confirmation floor is deferred to a future amendment through the interpretive-code path."
+  ],
+  "scope_conditions": [
+    "force computation and consolidation counting in precedent.py; any future mechanism that attaches consequences to force levels"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when numeric condition-match scoring is proposed, or if the confirm mechanism's identity floor changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-009",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [
+    "PR-016"
+  ],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-362",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-12T03:32:51Z",
+  "sources": [
+    "T-362",
+    "decision:T-362#operator-ruling-RA-2026-08-12"
+  ],
+  "validity_conditions": [
+    "the confirm verb exists and requires an identity distinct from the publisher; producer-never-approver remains enforced by the substrate"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}
