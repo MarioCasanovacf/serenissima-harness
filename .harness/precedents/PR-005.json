@@ -1,0 +1,47 @@
+{
+  "id": "PR-005",
+  "schema_version": 2,
+  "title": "Determination, reinterpretation, valuation: the three typed operations",
+  "subject": "typed-operations",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#2"
+  ],
+  "ratio": "Every interpretive act recorded in the registry is typed as exactly one of three operations,\nstructurally separate: `determination` (the publish-time recorded choice, at the author's own\nauthority tier, of what binds -- realist terminology, since the interpreter chooses rather than\nmerely recognizes a pre-existing meaning), `reinterpretation` (a later act stating what a\npreviously determined ratio means: `declarative` when it fixes an indeterminate ratio for a new\ncase, `corrective-restrictive` or `corrective-extensive` when it argues the originally identified\nratio was merely apparent and states a narrower or wider real ratio), and `valuation` (a\nmetatextual act that changes a ratio's institutional force -- declaring a passage `obiter`,\n`error-in-pronouncement`, or `context-change` -- without touching its meaning). The `operation`\nfield is mandatory on every record, exhaustive at these three types and their per-type subtype\nenums, and defaults to `{\"type\": \"determination\", \"subtype\": null}` when a publish supplies none.\nConflict detection and the overruling protocol branch on this typing: a record may never carry an\nuntyped \"precedent\" blob conflating identification, reinterpretation, and valuation, because doing\nso makes disagreement about which of the three happened unadjudicable.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any agent publishing to the registry",
+    "the operation field, its type and subtype enums"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the operation taxonomy gains or loses a type or subtype via a recorded amendment",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:34:35Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#2",
+    "T-352"
+  ],
+  "validity_conditions": [
+    ".harness/bin/precedent.py:1",
+    "the registry CLI enforces the operation matrix at publish"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

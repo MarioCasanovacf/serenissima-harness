@@ -2,6 +2,22 @@
 published into the LIVE `.harness/precedents/` registry via the real
 `precedent.py publish` CLI (never hand-written -- T-343 AC-1).
 
+UPDATED BY T-355 to assert the schema v2 shape: T-355 ran the real
+`precedent.py migrate` verb against these four live records
+(docs/precedent-research/synthesis-v1-requirements.md V1-36..V1-40/V1-38;
+.harness/coordinator-decisions-addendum.md A1/A9.2), so every record here
+is now `schema_version: 2` with `sources`/`validity_conditions`/
+`operation`/`interpretive_code_version` backfilled from real origins. The
+migration's own dedicated tests (content preservation against
+`git show HEAD:...`, idempotency, the sources ledger's grammar validity
+and origin resolution, touch-nothing-but-the-four) live in the sibling
+`test_precedent_migration.py`, not here -- this file keeps its original
+job: everything in this docstring below about ratio/dicta quotation
+fidelity and citation resolution is UNCHANGED by the migration, because
+`migrate` never alters any field this file already asserted (V1-01/V1-17:
+the only fields it may touch are the four new v2 fields plus
+`schema_version` itself).
+
 READ-ONLY against the live registry (T-343 AC-5): every assertion here uses
 `precedent.py cite`/`show`/`list` (subprocess, matching test_precedent.py's
 own convention) or plain file reads of already-published records; nothing
@@ -112,13 +128,19 @@ EXPECTED_ISSUING_TASK = {
 
 
 class LiveRegistryPresenceTests(unittest.TestCase):
-    """Exactly the four seed records exist, minted by `publish` (real IDs)."""
+    """The four seed records are present, minted by `publish` (real IDs).
+    Superset semantics (T-363): the live registry legitimately grows past
+    these four (T-358 minted PR-005..PR-013 on top of them, and future
+    publishes will mint more), so this only asserts the four seeds are
+    THERE -- it never pins the registry's total census."""
 
     def test_exactly_four_seed_records_present(self):
-        ids = sorted(p.stem for p in LIVE_REGISTRY.glob("PR-*.json"))
-        self.assertEqual(ids, list(SEED_IDS),
-                          "expected exactly the four T-343 seed records under "
-                          ".harness/precedents/, found {}".format(ids))
+        ids = set(p.stem for p in LIVE_REGISTRY.glob("PR-*.json"))
+        missing = [pr_id for pr_id in SEED_IDS if pr_id not in ids]
+        self.assertEqual(missing, [],
+                          "expected the four T-343 seed records to be present under "
+                          ".harness/precedents/ (the registry may legitimately hold "
+                          "additional records published later); missing {}".format(missing))
 
 
 class SchemaValidationTests(unittest.TestCase):
@@ -126,7 +148,12 @@ class SchemaValidationTests(unittest.TestCase):
 
     def _check_common_schema(self, pr_id, rec):
         self.assertEqual(rec.get("id"), pr_id)
-        self.assertEqual(rec.get("schema_version"), precedent.SCHEMA_VERSION)
+        # T-355: the live seeds were migrated to schema v2 (V1-01/V1-37);
+        # precedent.SCHEMA_VERSION stays frozen at 1 by T-353's own
+        # DECISION (module docstring) precisely so this repurposing is
+        # unambiguous -- SCHEMA_VERSION_V2 is the value every v2-aware
+        # write path, including `migrate`, actually writes.
+        self.assertEqual(rec.get("schema_version"), precedent.SCHEMA_VERSION_V2)
         self.assertIn(rec.get("authority_tier"), precedent.VALID_TIERS)
         self.assertIn(rec.get("status"), precedent.VALID_STATUS)
         self.assertEqual(rec.get("status"), "active")
@@ -156,6 +183,20 @@ class SchemaValidationTests(unittest.TestCase):
         self.assertIsNone(rec.get("overruled_by"))
         self.assertIsNone(rec.get("superseded_by"))
         self.assertIsNone(rec.get("voided_by"))
+        # -- schema v2 fields, backfilled by T-355's migration (A1/V1-11,
+        # A5/V1-10 #28, A4/V1-13, A3/V1-15) --
+        self.assertIsInstance(rec.get("sources"), list)
+        self.assertTrue(rec["sources"], "sources must be non-empty on every v2 record (A1/V1-11)")
+        for tok in rec["sources"]:
+            self.assertIsNotNone(precedent.token_kind(tok),
+                                  "{}: source token {!r} fails the V1-02 citation grammar"
+                                  .format(pr_id, tok))
+        self.assertIsInstance(rec.get("validity_conditions"), list)
+        if rec["authority_tier"] in (1, 2, 3):
+            self.assertTrue(rec["validity_conditions"],
+                             "validity_conditions required non-empty at tiers 1-3 (V1-10 #28)")
+        self.assertEqual(rec.get("operation"), {"type": "determination", "subtype": None})
+        self.assertEqual(rec.get("interpretive_code_version"), "pre-code")
 
     def test_all_four_records_load_and_validate(self):
         for pr_id in SEED_IDS:
@@ -296,13 +337,23 @@ class ShowAndListCommandTests(unittest.TestCase):
                 self.assertIn("scope: UNCONFIRMED (does not bind)", result.stdout)
 
     def test_list_shows_all_four_seed_records(self):
+        # Superset semantics (T-363): `list --json` legitimately returns
+        # more than the four seeds now (T-358 minted PR-005..PR-013, and
+        # future publishes will mint more), so this asserts the four seeds
+        # are present and correctly shaped -- never that they are the only
+        # entries, and never the total registry census.
         result = run("list", "--json")
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        ids = sorted(entry["id"] for entry in payload)
-        self.assertEqual(ids, list(SEED_IDS))
-        for entry in payload:
-            self.assertEqual(entry["confirmation_status"], "unconfirmed")
+        by_id = {entry["id"]: entry for entry in payload}
+        missing = [pr_id for pr_id in SEED_IDS if pr_id not in by_id]
+        self.assertEqual(missing, [],
+                          "expected `list --json` to include the four T-343 seed "
+                          "records (the registry may legitimately hold additional "
+                          "records published later); missing {}".format(missing))
+        for pr_id in SEED_IDS:
+            with self.subTest(pr_id=pr_id):
+                self.assertEqual(by_id[pr_id]["confirmation_status"], "unconfirmed")
 
 
 class NoMutationGuaranteeTests(unittest.TestCase):

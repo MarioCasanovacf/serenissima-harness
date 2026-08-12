@@ -1,0 +1,59 @@
+{
+  "id": "PR-007",
+  "schema_version": 2,
+  "title": "Schema v2 migration: a once-only exception to record immutability",
+  "subject": "schema-v2-migration-exception",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#3"
+  ],
+  "ratio": "the immutable list grows by the four v2 fields -- `sources`, `validity_conditions`, `operation`,\n`interpretive_code_version` -- and by `schema_version`; the mutable list is unchanged; PLUS one\nnarrowly stated exception: the once-only schema migration may, on a `schema_version` 1 record,\nadd exactly the four v2 fields and flip `schema_version` 1->2, altering no existing field value\nbyte-for-byte. No other in-place addition or rewrite is ever permitted; the exception is\nstructurally consumed once zero v1 records remain in the live root. SDR-01's declared reach\n(\"immutable after publication\", unqualified) was apparent; its real ratio -- published content is\nnever altered and lineage is append-only -- never extended to a pure format migration that adds\nschema-mandated fields while preserving every existing byte. The correction restricts SDR-01's\nreach to content alteration; it does not touch the mutable-fields list, which is unchanged.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "the four schema_version 1 records PR-001..PR-004 only",
+    "the migrate verb's single live-root run"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if any schema_version 1 record ever reappears in the live root",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "reinterprets",
+      "target": "decision:T-339#SDR-01",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": 3,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:34:56Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#3",
+    "T-352",
+    "T-339"
+  ],
+  "validity_conditions": [
+    ".harness/precedents/README.md:1",
+    "zero schema_version 1 records remain in the live root after T-355"
+  ],
+  "operation": {
+    "type": "reinterpretation",
+    "subtype": "corrective-restrictive"
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,58 @@
+{
+  "id": "PR-010",
+  "schema_version": 2,
+  "title": "Force is computed on read; decay is measured on the activity clock",
+  "subject": "graded-force",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#5"
+  ],
+  "ratio": "Force is a value computed on read, never a stored field on any record: storing it would mutate\npublished records continuously as citations accumulate, violating the append-only immutability\ndiscipline this registry enforces on published content, and computed-on-read also makes the\nforce formula itself amendable by ordinary code change without touching any record. Force is\ncomputed over `status`, `authority_tier`, `published_by`, `published_at`, `relations[]`,\n`operation.subtype`, and `cited_by` -- data publication and confirmation already write -- never\nover `events.jsonl`, because the live event log is measured, at this epic's own audit, to carry\nroughly 9,600 precedent-family events against a four-record registry, a pollution any\nevents-derived signal would inherit.\n\nDecay -- the periodic pass flagging a never-cited tier 1-3 record as a reconsideration candidate\n-- is likewise measured on this activity clock: the count of strictly-later-published records in\nthe same root, never wall-clock (which measures the burstiness of operator sessions, not neglect\nby the polity) and never `events.jsonl` (corrupted by the same pollution). The calibrated\nthreshold is ten intervening publications: roughly one full epic-wave of registry activity\npassing with zero citations, which is the earliest point at which \"never recited\" stops being\nindistinguishable from \"just published in this batch.\"\n\nA decay flag changes nothing by itself -- no status change, no force drop -- until an agent\nrecords a `context-change` or `error-in-pronouncement` valuation against the flagged record; the\nmachine flags, an agent decides, and the decision is itself a recorded, contestable act.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any agent computing force or running the stale pass",
+    "the decay flag's consumers"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if DECAY_N=10 or the C>=3 threshold is changed by a recorded amendment or a DEVIATION-noted code change",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-009",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:35:30Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#5",
+    "T-352"
+  ],
+  "validity_conditions": [
+    ".harness/bin/precedent.py:1",
+    "stale computes the decay clock from the registry directory, never from events.jsonl"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

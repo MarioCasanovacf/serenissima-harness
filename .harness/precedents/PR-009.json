@@ -1,0 +1,62 @@
+{
+  "id": "PR-009",
+  "schema_version": 2,
+  "title": "Reiteration raises force: partial overruling of the T-344 R-2 framing",
+  "subject": "reiteration-force",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#5"
+  ],
+  "ratio": "Reiteration is a first-class force-raising mechanism at every tier, computed on read from the\ncitation index (addendum section 5: jurisprudencia constante; Llewellyn's accumulating\ncitations): a tier 1-3 record with three or more qualifying consistent applications (the C\ncounter) computes force `settled`, above plain `binding`; a tier-4 record with three or more\ncomputes force `reiterated`, above plain `persuasive`. A never-recited ratio may decay to\npersuasive (flagged only, never auto-expired).\n\nPRESERVED, explicitly, against a different error than the one T-344's R-2 framing guarded\nagainst: T-344's own argument -- that any N>1 threshold is a de facto ban on binding -- is\nPRESERVED and UNTOUCHED, because this record does not require N>1 for ANY bindingness.\n`authority_tier` (1-4) remains the ISSUANCE authority, unchanged: how much adversarial process a\ndecision survived at birth. A single verdicted decision still binds at issuance; no N>1 threshold\nis required to bind. What changes is the CEILING a ratio's force may reach through accumulated,\nconsistent, unforced application -- never the FLOOR of what makes a decision bind in the first\nplace.\n\nR-3's zeroing rule (a recognized contrary application zeroes the counter, never merely skips an\nincrement) and R-2's disclosed N=3 threshold (with its bracket: Mexico's five, Spain's historical\ntwo) are carried forward as the reiteration mechanism's own terms. The candidate-surfacing job\nR-2's flag performed survives as a side effect (a `reiterated` tier-4 record is exactly the\npromotion candidate R-2 wanted surfaced) but is no longer the flag's whole meaning.\n\nThis is a partial overruling of the T-344 R-2 framing (\"repeated confirmation becomes a separate,\nnon-binding reiterated flag on tier-4 records -- not a replacement of tier 3 and not a new\nbinding tier\"): the framing correctly read the materials T-344 had at the time, and is not\ndeclared erroneous ab initio; it is superseded, forward-looking, by new operator-supplied\ndoctrine (the addendum), on the reasoning stated above and in the accompanying factor note.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any agent computing, rendering, or citing a record's force"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if measured registry velocity makes C>=3 unreachable across two consecutive epics, or if a recorded amendment changes the force enum",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "overrules",
+      "target": "decision:T-344#R-2",
+      "distinguishing_facts": null,
+      "factors": [
+        "doctrinal_change"
+      ],
+      "factor_note": "doctrinal_change: the addendum's graded-force doctrine is new external doctrine that changes the\napplicable rule; it is not a claim that T-344's own reasoning was defective at the time it was\nwritten. The addendum (Sandoval Islas, \"Distinciones entre la interpretacion de disposiciones\nlegislativas y la interpretacion de precedentes,\" Problema 20, IIJ-UNAM 2026, DOI\n10.22201/iij.24487937e.2026.20.20316, section 5) states: \"Reiteration raises force (jurisprudencia\nconstante ... a ratio's force level increases with N consistent applications across sessions,\nrecorded via the citation index).\" Its own instruction line prevails over prior assumptions where\nit conflicts with them: \"Where this addendum conflicts with prior assumptions in the roadmap,\nthis addendum prevails.\"\n\nT-344 reasoned correctly from the materials it had: its central argument -- that any N>1\nthreshold is a de facto ban on binding, because it would let a first, isolated decision escape\never binding at all -- is expressly PRESERVED here. This record does not impose an N>1 requirement\non bindingness at any tier. `authority_tier` remains untouched as the issuance-authority axis; a\nsingle verdicted decision still binds at issuance with no reiteration required. What the new\ndoctrine changes is the ceiling a ratio's force may reach through consistent, unforced, repeated\napplication -- not the floor T-344 was defending.\n\nThe overruling is therefore forward-looking, on new operator-supplied doctrine (a\n`determination` choosing which reading controls now), not a corrective act claiming R-2 was\nerroneous ab initio. Coordinator decision A2 (.harness/coordinator-decisions-addendum.md)\nexplicitly directs this reasoning \"to be published as a formal record.\"\n",
+      "controlling_authority": null,
+      "target_tier_declared": 3,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [
+    "PR-010"
+  ],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:35:18Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#5",
+    "T-352",
+    "T-344"
+  ],
+  "validity_conditions": [
+    ".harness/bin/precedent.py:1",
+    "force is computed on read by precedent.py; no stored force field exists"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

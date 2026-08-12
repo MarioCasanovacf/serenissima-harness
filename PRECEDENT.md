@@ -1,4 +1,4 @@
-# PRECEDENT.md — The Precedent-Layer Contract (v0)
+# PRECEDENT.md — The Precedent-Layer Contract (v1)
 
 > **Summary**: a precedent is not a note. `.harness/precedents/PR-NNN.json` (D5) holds records
 > that a CLI mints, mutates, and resolves — never a hand-edited file. Four authority tiers key
@@ -23,11 +23,32 @@ This document is the source-of-truth *explanation* for the schema and CLI that
 `.harness/bin/precedent.py` (T-340) implements — mirroring the role `ORCHESTRATION.md` plays
 for the task/handoff lifecycle, but for the precedent-record lifecycle (coordinator decision
 D5). Where this document and the shipped CLI disagree, the CLI's actual `--help` output is
-correct and this document has drifted (T-346's adversarial replay exists to catch that). This
-revision (T-345) folds in failure modes, anti-evasion detection signals, adjudication-record
+correct and this document has drifted (T-346's adversarial replay exists to catch that). The
+v0 revision (T-345) folded in failure modes, anti-evasion detection signals, adjudication-record
 detail, and the standing steelman caution against the whole layer — sections 10-13 below,
 sourced from `docs/precedent-research/synthesis-refinements.md` (T-344) and reconciled against
 the shipped CLI exactly as section 16 records.
+
+**v1 (this revision, T-357) states the doctrine an external legal-theory input fixes and the
+coordinator's amendment memo adopts: the hybrid ratio model with its corrective path (section
+17), the three operations kept structurally separate (section 18), graded force distinguished
+from issuance tier (section 19), validity conditions distinct from scope conditions (section
+19.3), the fact-re-description constraint on distinguishing (section 20), and the realist
+frame (section 21).** The external input is Mario Armando Sandoval Islas, "Distinciones entre
+la interpretación de disposiciones legislativas y la interpretación de precedentes," *Problema.
+Anuario de Filosofía y Teoría del Derecho* 20 (IIJ-UNAM, 2026), **DOI
+`10.22201/iij.24487937e.2026.20.20316`** — a paper working within the Genoese school of legal
+realism (Tarello, Guastini, Chiassoni). This document cites it as `doi:<the-DOI>#<section>`
+(the citation grammar's own external-identifier token, section 5.1) plus the coordinator
+decision letter (A1-A9, `.harness/coordinator-decisions-addendum.md`) that adopted it — **never
+by the local `docs/` path**: `docs/` is gitignored (`.gitignore:33`, verified live), so a path
+citation would dangle for every reader who clones this tracked repository. Schema v2 and CLI v2
+(the four new fields, the `migrate`/`stale` verbs, graded force) are `.harness/bin/precedent.py`
+work this document does not implement or claim shipped — where this document states a v2 CLI
+surface, it cites the requirement id in `docs/precedent-research/synthesis-v1-requirements.md`
+(T-352) that fixed it, exactly as this paragraph's own discipline requires, and leaves the
+shipped-vs-documented reconciliation to the epic's own adversarial replay (T-360), the same
+posture section 16 already takes for v0.
 
 **Why this exists, with a worked example rather than a hypothetical one.** The harness already
 cites precedent informally, in prose, with no resolver: `ORCHESTRATION.md:58` cites `P-023`
@@ -56,6 +77,13 @@ can. That is the whole layer's job in one sentence.
 | `distinguishes` requires non-empty `distinguishing_facts` **and** a target whose own `scope_conditions` is non-empty | Distinguishing a record that declared no scope at all — there is nothing on record to distinguish *from* |
 | Conflict detection (`conflicts`) is an on-demand pass, not a gate | A false-positive gate trains agents to route around the registry, which is fatal to the layer (forum-shopping by abandonment); accepted cost: a pass can be forgotten where a gate cannot (coordinator decision D6, quoted in full in section 9) |
 | Precedent disputes route through verifier rotation (F6), never a single arbiter | Coordinator-as-sole-arbiter is exactly the "single agent decides alone" pattern the founding premise forbids (`docs/civilizational-roadmap-brief.md:92`) |
+
+**v1 amends the `supersedes` row above.** Section 16.1's ledger records the amendment in full:
+`supersedes` gains the ordering half of tier symmetry (a lower-authority acting record may no
+longer flip a higher-authority target's `status`), while keeping no tier-4-target refusal (the
+merge outcome, section 12, stays available). The row above states the v0 rule the amendment
+changes; it is left as written rather than rewritten in place, because it is exactly the "old
+text" half of that ledger entry.
 
 ## 2. The record and its lifecycle
 
@@ -101,6 +129,20 @@ The only fields any verb may mutate in place, exhaustively: `status`, `overruled
 a later record narrows or rejects a scope claim by publishing a new field value on itself, not
 by rewriting the record it disagrees with — lineage is append-only.
 
+**Schema v2 (v1 amendment) adds four fields on top of the table above, and this section does
+not re-derive their full table either — the complete v2 field table lives at
+`docs/precedent-research/synthesis-v1-requirements.md` section 2 (its V1-10), exactly as this
+section already defers the full v1 table to `synthesis-design-requirements.md`.** In one line
+each, forward-referenced to where this document states their doctrine in full: `sources`
+(class A, required ≥ 1 token, immutable — section 17); `validity_conditions` (class W, required
+non-empty at tiers 1-3, immutable — section 19.3); `operation` (class A, required, immutable —
+section 18); `interpretive_code_version` (class A, required, immutable — cites
+`INTERPRETIVE-CODE.md` by name and version only, never by rule id, section 18). All four join
+the immutable list above; none joins the mutable list. A `schema_version` field (`R`, `2` on
+every new publish) also joins the table, distinguishing a v1-shaped record (schema_version 1,
+missing all four) from a v2-shaped one — the v2 CLI loads both without refusal (dual-read), a
+CLI-side migration mechanic this document does not implement or claim shipped.
+
 ### 2.3 Two independent lifecycles, never one
 
 ```
@@ -142,7 +184,9 @@ whatsoever; SDR-17.8 deliberately never applies one to it (section 1's headline 
 live consequence). Nothing in this table protects a tier-1, tier-2, or tier-3 record's `status`
 from a `supersedes` call originating at any tier, including tier 4. Section 10.2 documents this
 as a genuine, unresolved detector-surface gap, not a designed protection this table's silence
-would otherwise imply.
+would otherwise imply. **v1 amends this**: section 16.1's ledger records `supersedes` gaining
+the ordering half of tier symmetry — the ONLY change; the tier-4-target refusal stays absent by
+design, per the same ledger entry.
 
 **Per-field bindingness, not record-as-a-whole.** The tier above governs the record's `ratio`
 immediately on publication, but its scope claims sit at persuasive strength until confirmed
@@ -303,7 +347,9 @@ record's own tier is established the normal way — it must itself clear formati
 factor/reliance requirement beyond the `status == active` precondition every relation type
 shares in the table below. A tier-4 record may `supersedes` a tier-1 record's `status` through
 an ordinary `publish` call today; section 10.2 names this as a genuine, unresolved
-detector-surface gap, not an intended protection.
+detector-surface gap, not an intended protection. **v1 amends this** — section 16.1's ledger
+entry adds the ordering half of tier symmetry to `supersedes`, leaving the tier-4-target
+non-refusal untouched.
 
 **The required reasoning record, exhaustively.**
 
@@ -376,6 +422,14 @@ acknowledged-pair exclusion as (1); (5) dangling citations registry-wide, any st
 the identical resolution core `cite --all` already runs (SDR-23/C-2) rather than
 reimplementing it, and the mechanism section 5.2 forward-references as what eventually catches
 a P-023-shaped gap.
+
+**v1 doctrine: detector 3 widens to also scan `supersedes` relations for the same
+tier-violating shape**, per section 16.1's ledger entry and section 10.2's carried-defect-(ii)
+note — this is doctrine this document states for `.harness/bin/precedent.py` (T-353) to build
+against, not a claim that the five-detector count above has already become six; the count
+above describes the shipped surface as last verified live (section 16), and the epic's own
+adversarial replay (T-360) is what confirms whether the widened detector 3 actually ships as
+detector 3 (a widened check) rather than a new detector 6 — either shape satisfies the doctrine.
 
 This document states that shipped surface and stops there, by design: the detectors' own
 semantic judgment calls — what a verifier does with a given finding, whether a detector's
@@ -514,6 +568,13 @@ routes to section 12's adjudication protocol.
   than leaving `supersedes` looking covered by the same protection `overrules`/`voids` carry.
   This belongs to `.harness/bin/precedent.py` (T-340/T-342's file) to fix, not to this document —
   named here for the same reason the two gaps above are.
+  **v1 status: this gap is "carried defect (ii)" and is now IN SCOPE, fixed by doctrine in this
+  revision — section 16.1's ledger records the exact amendment (`supersedes` gains the ordering
+  half of tier symmetry, not the tier-4-target refusal) and its authority (T-347's finding,
+  verdicted at T-352). The CLI-side fix remains `.harness/bin/precedent.py`'s own work
+  (`docs/precedent-research/synthesis-v1-requirements.md` V1-03/V1-49 fix the exact scope for
+  that file to build against); this document states the doctrine the fix must satisfy and does
+  not claim the fix has shipped — the epic's own adversarial replay (T-360) reconciles the two.**
 - **A fourth gap from the same replay, T-347's Case G: the citation resolver never reads
   `dicta`.** `_record_citation_tokens` (`.harness/bin/precedent.py:786-794`) walks `cites`,
   `tier_evidence`, and `relations[].target`/`controlling_authority` only — never `ratio`,
@@ -778,6 +839,14 @@ record, subject to the same schema and checks):
    `ORCHESTRATION.md:100`);
 4. the ruling as a `relation` outcome: which record prevails (`follows`), a distinguish with its
    facts, an overruling with its reasoning burden (section 7), or a merged successor (below);
+4a. **the adjudication's own `operation` field (schema v2, section 18) tags `determination`, not
+   a corrective reinterpretation or a valuation** — an adjudicator picks a winner between two
+   readings each defensible at publication, a forward-looking choice, not a claim that the
+   losing record's reasoning was defective from birth. An adjudicator who genuinely believes the
+   losing record's reasoning was wrong is not adjudicating a peer conflict at all; the act must
+   instead be typed and routed as `reinterpretation`/`corrective` or `overrules` at the losing
+   record's own tier (section 18's closing paragraph; section 11's Rodriguez de Quijas/Broome v
+   Cassell routing rule, applied to the same line);
 5. the adjudication's own `ratio` and `scope_conditions`, contemporaneous at publication (section
    4's Chenery-shaped rule, applied here at a different grain);
 6. append-only relation entries linking both parent records — parent texts are never edited
@@ -896,11 +965,14 @@ own existing log.**
   supports state-formation; predominantly ex-post supports alien-coordination — the fork made
   consultation unnecessary.
 
-## 14. What v0 does NOT do
+## 14. What v0 does NOT do (kept current as its v1 equivalent)
 
 So no downstream reader invents any of the following by assuming it is implied. The first eight
 bullets are T-341's; the remainder are what T-344's research explicitly deferred, carried here so
-this list stays the single place a reader checks before assuming a gap is closed.
+this list stays the single place a reader checks before assuming a gap is closed. Every bullet
+below was re-checked against this revision, not merely carried forward by inertia: none of them
+was closed by the schema-v2/CLI-v2 doctrine sections 17-21 add, and section 14.1 below states
+the schema-v2-specific items this same doctrine explicitly keeps out of scope.
 
 - **No full retrofit of the ~30 existing P-numbers.** Forward-only, plus a small seed
   migration of exemplar precedents to validate the schema against real history rather than
@@ -928,8 +1000,15 @@ this list stays the single place a reader checks before assuming a gap is closed
   genuine, a scope honest, a citation apt, or a distinguish evasive stays a verifier-role
   judgment, permanently, by design (section 11 items 6-7). It is not a future automation target
   this document is quietly building toward.
-- **No new duty in `claude.md` or `gemini.md`.** Restated from the header: this document
-  exists, and nothing currently reads it before deciding.
+- **No new duty in `claude.md` or `gemini.md`, still true in v1.** Restated from the header,
+  and re-checked, not merely carried forward, for this revision: no agent is yet obliged to
+  consult or cite the registry — or `INTERPRETIVE-CODE.md` — before deciding, and schema v2's
+  new fields (`sources`, `validity_conditions`, `operation`, `interpretive_code_version`,
+  section 17-19) change what a record must contain if published, not whether publishing or
+  consulting is required of anyone. **Making either a duty would itself be an NLAH mutation** —
+  the §5A loop plus the human gate that already covers "mutating `claude.md` or `gemini.md`"
+  (`ORCHESTRATION.md:225-229`; the STATUS note at this document's own head) — and a worker task
+  revising this contract cannot do that and does not claim to have done it.
 - **No sixth conflict detector.** No citation-graph/cluster query (S-13), distinguish-density
   counter (S-05), scope-erosion counter (S-06), or distinguisher-identity-concentration counter
   (S-04, section 11 item 5) runs today — verified live, exactly five detector functions exist in
@@ -957,6 +1036,42 @@ this list stays the single place a reader checks before assuming a gap is closed
 - **No wider quorum for tier-3 overruling.** Section 8's decision stands: equal adversarial
   weight suffices; a wider ("en banc") requirement is a named open alternative for the operator,
   not built.
+
+### 14.1 What v1's schema-v2 doctrine additionally does not do
+
+Named flat, per `docs/precedent-research/synthesis-v1-requirements.md`'s own out-of-scope
+statement (its V1-54), so this stays the one list a reader checks before assuming any of the
+following was quietly adopted alongside sections 17-21:
+
+- **No NLAH mutation, no `state.json` write, no `ORCHESTRATION.md` edit, no full P-number
+  retrofit** — all four restated from the bullets above and from v0's own list; schema v2 does
+  not touch any of them.
+- **No hook, no hard gate.** Conflict detection stays an on-demand pass (section 9, coordinator
+  decision D6); the validity-conditions/decay pass (section 19.2) is the same class — read-only,
+  on-demand, never a publish-time block beyond the mandatory-but-non-blocking checks already
+  named.
+- **Nothing from roadmap Parts III/IV.** Unchanged from v0's own boundary.
+- **The Kimble external-fix-channel force input is NOT adopted.** An author-declared
+  classification that would raise a record's own protection at issuance, with no confirming
+  check, is a candidate amendment to the force computation (section 19.1) — not built in v1;
+  forwarded to the epic join as a named candidate, not silently dropped.
+- **Force-scaled factor-note specificity is NOT adopted.** No mechanical grader for "how
+  specific must a factor note be, given the target's force" exists; forwarded to the epic join
+  alongside the Kimble question, for the same reason section 11 items 6-7 leave materiality to a
+  verifier rather than a script.
+- **The conflicts-obligation question is named, not resolved** (section 21's closing paragraph
+  already states it in full: whether any agent is yet obliged to run `conflicts` once a finding
+  is discoverable). **The interested-party check's gap on `distinguishes`/`overrules`
+  publication is unchanged** (section 11 item 3; section 21's closing paragraph names it again
+  for continuity) — both forwarded to the epic join, neither settled by this revision.
+- **Detector 2's `superseded` blind spot and detector 4's subject-agnostic scope collisions**
+  (section 10.2's other named gaps, distinct from the `supersedes` tier-check fix section 16.1
+  records) **are real, known, and NOT fixed by this epic** — only the two carried defects named
+  in section 16.1 were in scope; these two remain forwarded to the epic join exactly as v0 left
+  them.
+- **No `merge` verb, no en-banc quorum, no lineage namespaces, no session infrastructure, no
+  semantic-genuineness automation.** All five stand unchanged from v0's own list above; schema
+  v2 introduces no new primitive in any of these five directions.
 
 ## 15. What this document extends, and does not restate
 
@@ -1068,3 +1183,387 @@ otherwise flag `DANGLING`; and section 1's headline-rules row implying `--acknow
 takes an argument it does not (`store_true`; the refusal message, not the flag, lists the
 citing records — section 7 already said this correctly, only the summary row disagreed with it).
 None of the three changes a refusal, an exit code, a schema field, or a lifecycle transition.
+
+### 16.1 v1 amendment ledger (T-357) — extends this same ledger, does not invent a second one
+
+**The two carried defects named for this task, verified rather than assumed repaired.** The
+board criterion for this task names two specific pre-existing defects as this task's to fix:
+a stale line cite at the old `PRECEDENT.md:36` and five path citations missing their
+`.harness/` prefix. Both were checked live against the current text before any v1 edit:
+`grep -n -i "P-023" PRECEDENT.md` plus a direct read of the intro paragraph shows the
+`state.json` reference already resolved to a JSON-path quote with no line number (the repair
+the paragraph immediately above this one already records, from this same section's prior
+revision); `grep -n '\`[a-zA-Z_./-]*\.py:[0-9]' PRECEDENT.md` shows every `precedent.py`/
+`blackboard.py`/`harness_common.py` citation in the document already carries its `.harness/`
+prefix — zero matches lacking it. **Verdict: both carried defects were already repaired by the
+revision recorded immediately above (the prior task's own "Repair pass" items); this task found
+nothing further to fix at either named location and makes no additional edit there.** Recorded
+here, not silently assumed, per this task's own reasoning-record discipline.
+
+**Every v0 rule this revision changes — old text, new text, and the authority for the change.**
+Cited `V1-NN` ids are `docs/precedent-research/synthesis-v1-requirements.md` (T-352)
+requirement ids, consumed as this task's own contract per that document's task-routing map
+(its section 14); `doi:` tokens are `10.22201/iij.24487937e.2026.20.20316` plus section,
+never the local path (intro, this document). DECISION, disclosed: the authority column below
+cites A9.2/A9.5 where the true operative authority is one of the memo's six recorded
+blindspot-interview answers rather than A1-A7 directly — the board criterion's own phrasing
+("the coordinator decision by letter A1-A7") names the range that carries the substantive
+doctrine, but `.harness/coordinator-decisions-addendum.md` runs A1 through A9, and citing the
+letter that is actually load-bearing is more accurate than omitting it or misattributing it to
+a nearby A1-A7 entry that did not decide the point.
+
+| Rule amended | Old text (quoted) | New text | Authority | Classification |
+|---|---|---|---|---|
+| SDR-01, immutability (section 2.1) | "`relations`, `ratio`, `dicta`, `scope_conditions`, `declared_width`, `tier_evidence`, `cites`, `subject`, `title`, `issuing_task` are immutable after publication. The only fields any verb may mutate in place, exhaustively: `status`, `overruled_by`, `superseded_by`, `voided_by`, `cited_by` (append-only), `confirmation_status`, `confirmed_by`, `confirmed_at`, `narrowed_scope`, `confirmation_note`." | The immutable list gains `sources`, `validity_conditions`, `operation`, `interpretive_code_version`, and `schema_version`; the mutable list is unchanged; one narrow exception — the once-only schema migration may add exactly those four fields and flip `schema_version` 1→2 on a v1 record, altering no existing field's value (section 19). | `doi:...#3` via A1; migration authority A9.2 | reinterpretation-corrective-restrictive (V1-01) |
+| SDR-10, citation grammar (section 5.1) | Seven exhaustive kinds: `PR-NNN`, `T-NNN`, `P-NNN`, `gen:N`, `agent:name`, `event:TS`, `path:lines`. | The grammar gains `doi:<DOI>[#fragment]` (external durable identifier, UNCHECKED by design — no network fetch exists in this harness's tool agency, and a DOI is durable precisely because it outlives local state) and `decision:T-NNN#anchor` (task-anchored recorded decision; the `T-NNN` half resolves against `.harness/tasks/`, the anchor is unchecked) — nine kinds, exhaustive. `session_id`'s rejection stands untouched. | `doi:...#3` via A1; A9.1; A9.5 | reinterpretation-corrective-extensive (V1-02) |
+| SDR-17.8, tier symmetry excludes `supersedes` (sections 1, 3, 7, 10.2) | "`supersedes` carries neither refusal above — no tier check, no tier-4-target refusal," reproduced live from the shipped module's own documented DECISION: "`supersedes` is deliberately excluded: SDR-17.8 never applies a tier check to it." | `supersedes` gains the ORDERING half of tier symmetry — an acting record whose tier number is greater (lower authority) than the target's is a refusal. It does **not** gain the tier-4-target refusal: superseding replaces content rather than overturning force, and the merge outcome (section 12's "Merge as an adjudication outcome" paragraph) stays available to an equal-or-higher successor. | Not addendum-grounded — T-347 Case C's live-reproduced finding (section 10.2), verdicted at T-352; published as a registry record (the epic's own T-358 batch, `decision:T-339#SDR-17.8` anchored) | reinterpretation-corrective-restrictive (V1-03) |
+| The reiterated flag, `docs/precedent-research/synthesis-refinements.md` R-2 (T-344) — never itself restated as a structural rule in this contract's v0 text | "Repeated confirmation becomes a separate, non-binding `reiterated` flag on tier-4 records — not a replacement of tier 3 and not a new binding tier … The flag changes nothing about bindingness." | Reiteration is a first-class, computed-on-read force-raising mechanism at every tier (section 19.1). R-1's floor (N=1 binds at tier 3, no threshold for ANY bindingness) and D1's rule (no reiteration ever promotes a tier-4 record to binding) are both explicitly preserved — what changes is the ceiling, not the floor. | `doi:...#5` via A2 (partial overruling, targeting `decision:T-344#R-2`) | determination at tier 1 (V1-05) |
+| SDR-19.5 / SDR-26, single event sink (section 7's "into the **same** `.harness/logs/events.jsonl`") | "log ONE `precedent_published` event … into the EXISTING `events.jsonl` — no new log file, ever"; "a second log file is precisely the redundant re-verification layer C-2 warns against." | Unchanged for the live default root. When the root is **overridden** (`--root`/`PRECEDENT_ROOT` — every test and throwaway registry), events append to a sidecar `<root>/events.jsonl` inside that overridden root instead; the live substrate never gains a second log file. | Not addendum-grounded — T-346's measured test-event pollution of the live log, verdicted at T-352; not published as a registry record (amends build/test mechanics, not a norm of agent conduct — disclosed planner judgment, recorded here per that same judgment) | reinterpretation-corrective-restrictive (V1-06) |
+| Relation type enum (T-344 field floor, exercised throughout sections 2.3, 7, 9-12 as `follows`\|`distinguishes`\|`overrules`\|`supersedes`\|`voids`) | Five relation types, no carrier for a reinterpretation or a valuation act. | The enum gains `reinterprets` and `revalues` — the relation carriers for the reinterpretation and valuation operations (section 18). Both reuse the existing relation machinery whole (target resolution, `cited_by` side effect, `below_target_tier` stamping); neither ever flips the target's `status`. | `doi:...#2` via A4 | determination — a new primitive on directive, not a re-reading of the old enum (V1-07) |
+
+**Confirmed UNCHANGED, for citation completeness (not amendments, so no old/new pair applies):**
+SDR-23 (`cite` stays read-only, logs no event — the force formula reads only data publication
+and confirmation already write, so no cite event is ever needed); SDR-15 (the exit-code
+contract is reused verbatim by every v2 verb, including the new `migrate`/`stale`); SDR-07
+(equal adversarial weight still suffices for a tier-3 overrule — section 8's open question
+stands, re-confirmed against fresh sources); and every SDR/S/R item not named above, en bloc.
+
+## 17. THE HYBRID RATIO MODEL
+
+**The question this section answers, stated as the external legal-theory input poses it: does
+the author of a decision declare its own ratio, or does a later reader extract it?** Real
+systems run both, and the answer this layer adopts is the hybrid the source names
+(`doi:10.22201/iij.24487937e.2026.20.20316#3`, coordinator decision A1):
+
+- **The author session declares its ratio at write time** — a structured field, general and
+  abstract, with `scope_conditions` — as the record's **primary reference**. This is
+  **institutional fixation**: the same move the source's own worked analogue makes (Mexican
+  *tesis jurisprudenciales* — an organ fixes, in a separate document, what a decision's ratio
+  is). Declaring narrows the interpretive range for every later reader; it does not settle the
+  question permanently, because —
+- **The successor retains the corrective path.** A successor may argue the declared ratio was
+  merely *apparent* and the real ratio differs — but **only** by reinterpreting the **source
+  materials that produced the decision**, with recorded reasoning, at sufficient authority
+  level. This is the `reinterpretation` operation's `corrective-restrictive`/
+  `corrective-extensive` subtype (section 18); it is never available by preference alone, and
+  it is never available against a target whose tier is 4 (a persuasive, never-verdicted note's
+  declared ratio is contested by disagreement or distinguishing, the same category-error
+  boundary section 3's tier ladder already draws for overruling).
+- **Correction without sources is mere disagreement, and is INVALID.** Second-degree documents
+  — and every precedent record is one, section 21 — without their first-degree sources make
+  founded overruling impossible: a corrective act that cites nothing beyond its own say-so is
+  indistinguishable from a lower tier simply preferring a different outcome, which is exactly
+  the evasion the tier ladder (section 3) and the anti-evasion norms (section 11, section 20)
+  exist to close off.
+
+**The mechanical consequence: every precedent record carries a mandatory `sources` field.**
+`sources` (schema field #27, `docs/precedent-research/synthesis-v1-requirements.md` V1-11) is
+the interpretive resources actually consulted in producing the decision — distinct from
+`cites` (the general anchor list; overlap is legitimate and expected). It is required,
+non-empty, on **every** publish, every tier, every operation type — not only corrective acts —
+because a record's own reasoning should always be traceable to what it read. A publish whose
+operation is a corrective reinterpretation, or which carries an `overrules`/`voids` relation,
+and whose `sources` is empty is a **mechanical refusal**: this is A1's "correction without
+sources is mechanically rejected" rule, and `docs/precedent-research/synthesis-v1-requirements.md`
+V1-20 fixes its exact scope and refusal message for the CLI T-353 builds — this document states
+the doctrine the CLI enforces; it does not claim the enforcement already ships, and where it
+does, the shipped `--help` text is authoritative over any transcript this document could quote
+(the same posture section 16 already takes toward v0's CLI).
+
+**What counts as a source, and the delta discipline.** Any token the citation grammar accepts
+(section 5.1, extended by section 16.1's V1-02 row): spec sections, prior `PR-NNN` records,
+`T-NNN` tasks, `P-NNN` mutations, external docs by `doi:`, and the board's own recorded
+decisions by `decision:T-NNN#anchor`. A corrective reinterpretation whose sources add nothing
+the target's own `sources`/`cites` did not already consult is not refused — the addendum's own
+caveat is that correction must rest on something not before the earlier decision — but it is
+**warned**, non-blocking, per the same mandatory-but-non-blocking discipline SDR-18's
+citation-completeness scan already uses (section 10.3): the tool produces the exhibit, the
+reviewing verifier weighs it, never the reverse.
+
+## 18. THE THREE OPERATIONS
+
+**Any precedent-layer schema must keep three operations structurally separate**
+(`doi:10.22201/iij.24487937e.2026.20.20316#2`, coordinator decision A4): a single "precedent"
+blob conflating them makes disagreement unadjudicable, because a disagreement about *which
+reading controls* and a disagreement about *how much force it carries* are different disputes
+with different remedies, and a record that does not distinguish the two forces every reader to
+guess which one is actually being contested.
+
+1. **`determination`** — the recorded choice of what binds, at publish time, by the author.
+   **Terminological caution, adopted explicitly:** this document says "determination," never
+   "identification." Identifying a ratio implies it pre-exists and is merely recognized (the
+   cognitivist thesis); determining implies the interpreter *chooses* it (the realist thesis).
+   This layer adopts the realist reading precisely because a recorded choice must carry
+   reasoning and be contestable — an "identified" fact does not need reasons; a "determined"
+   choice does, and this schema is built to demand exactly that. Every ordinary publish that
+   is not a reinterpretation or a valuation writes `operation.type = determination`; the field
+   is always present — a record may never carry an untyped operation.
+2. **`reinterpretation`** — what a ratio *means*, not what binds. Two subtypes:
+   - `declarative`: fixing an indeterminate ratio for a new case. Applying a ratio to a new
+     case this way is itself a consistent application — it feeds the qualifying-applications
+     counter (section 19.1), it never zeroes it.
+   - `corrective` (`restrictive` | `extensive`): arguing the previously declared ratio was
+     merely apparent and the real ratio differs — the corrective path section 17 names, gated
+     on sources, tier symmetry, and (per section 17) a refusal against a tier-4 target.
+3. **`valuation`** — ascribing the ratio's institutional force. **This is metatextual: it
+   changes force, not meaning.** Three named subtypes, all first-class recorded acts, never
+   silent divergence: declaring a passage `obiter` rather than ratio (reclassifies a passage;
+   the whole record's computed force is untouched — section 19.1); `error-in-pronouncement`
+   (arguing the ratio was pronounced in error — requires the `reasoning_error` factor, the
+   same mandatory-reasoning discipline section 7's overruling table already runs); and
+   `context-change` (arguing the environment the ratio presupposed has changed — this is the
+   recorded act a `validity_conditions` failure or a decay flag, section 19, *invites*, not
+   the flag itself). `error-in-pronouncement` and `context-change` are the two subtypes with a
+   whole-record force effect (section 19.1); `obiter` has none — it reclassifies one passage,
+   and weighing that stays the reader's/verifier's job, exactly as `dicta` already is
+   permanently persuasive-only (section 4).
+
+**Operations never mix outside a fixed matrix.** A `determination` never carries a
+`reinterprets`/`revalues` relation (that would be an untyped-blob evasion wearing a typed
+label); a `reinterpretation` or `valuation` carries **exactly one** `reinterprets`/`revalues`
+relation naming its target — never zero, never more than one. A record MAY combine a
+corrective reinterpretation with an `overrules` relation on the same publish (the target is
+both re-read and overturned in one act, the Morelle-shaped move section 11 already names by
+citation); it may never combine a `determination` with either new relation type. This full
+matrix — which relation each operation/subtype requires, which extra flags, which refusals —
+is fixed in `docs/precedent-research/synthesis-v1-requirements.md` V1-14; this document states
+the doctrine the matrix encodes and does not re-derive the matrix's own cells.
+
+**Neither `reinterprets` nor `revalues` ever flips a target's `status`, and neither ever
+requires `--acknowledge-reliance`.** They overturn nothing — the valuation force effect is
+computed on read (section 19.1), never by a status transition. This is the structural line
+that keeps section 2.3's two independent lifecycles independent of a third: `status` moves
+only on `overrules`/`supersedes`/`voids`; `confirmation_status` moves only on `confirm`; force
+moves on neither, it is a pure read-time computation over whichever operations and relations
+already published.
+
+**Adjudication tags its own operation, and the tag is a substantive choice, not a formality.**
+An adjudication record (section 12) tags `operation.type = determination` — a forward-looking
+choice of which of two live readings controls now, never a claim that the losing reading was
+defective from birth. The distinction matters because it is exactly the line section 11's
+Rodriguez de Quijas/Broome v Cassell routing rule already draws: an adjudicator who instead
+means "the losing record's reasoning was wrong" is not adjudicating a peer conflict, they are
+overruling, and the act must be typed and routed as `reinterpretation`/`corrective` or
+`overrules` at the losing record's own tier, never smuggled through as a plain determination.
+An adjudicator who genuinely picked a winner between two readings that were each defensible at
+publication — the ordinary case — tags `determination` and nothing more is required.
+
+## 19. GRADED FORCE, DECAY, AND VALIDITY CONDITIONS
+
+### 19.1 Graded force, distinguished from `authority_tier`
+
+**`authority_tier` is unchanged and remains the ISSUANCE authority** — how much adversarial
+process a decision survived at birth (section 3). **A single verdicted decision still binds at
+issuance; no reiteration count is required for bindingness, at any tier.** This floor does not
+move.
+
+**`force` is a new, separate, computed-on-read value — never stored** (coordinator decision
+A2: "storing it would mutate published records continuously, violating immutability;
+computed-on-read also makes the force formula itself amendable without touching records"). It
+is a graded spectrum, total order high to low: `settled` > `binding` > `reiterated` >
+`persuasive` > `none`. `none` is a dead record (`status != active` — its history stays
+citable, it carries no force). `binding`/`persuasive` are exactly D4's old binary, now the
+*default* level within each authority band rather than the whole story. `settled` (tier 1-3)
+and `reiterated` (tier 4) are the new bands **reiteration adds on top of issuance**: force is
+graded, not binary, and **reiteration raises force** (*jurisprudencia constante*; also
+observed de facto in common law via accumulating citations) — this is the addendum's section 5
+doctrine, adopted by coordinator decision A2.
+
+**What reiteration changes is the ceiling, not the floor.** A tier 1-3 record with at least
+three qualifying, non-contrary applications by a distinct-identity author computes `settled`
+(above plain `binding`); a tier-4 record with the same count computes `reiterated` (above
+plain `persuasive`) — but no amount of reiteration ever moves a tier-4 note into binding:
+publication at a verdicted tier stays the only route to bindingness (D4 is untouched). A
+contrary or interrupting application — an equal-or-higher-tier `distinguishes`, or a corrective
+`reinterprets` — **zeroes** the counter; it never merely skips an increment, the same discipline
+Mexico's *cinco sentencias no interrumpidas* rule enforces. This partially overrules, with
+reasoning, `docs/precedent-research/synthesis-refinements.md`'s R-2 framing of a "reiterated"
+flag as non-binding decoration — section 16.1's ledger records the amendment and its authority
+in full; T-344's original argument (no N>1 threshold should be required for ANY bindingness) is
+expressly preserved, because the addendum's doctrine does not require one either.
+
+**A weakening valuation (`error-in-pronouncement` or `context-change`, section 18) renders a
+tier 1-3 record's force `persuasive` instead of `binding`/`settled`** — but only when recorded
+at equal-or-higher authority than the target (the same tier-symmetric discipline that protects
+every other force-affecting act in this document); a below-target-tier valuation is recorded
+and rendered, but has no effect on the target's computed force, the identical persuasive-only
+stamp section 6's below-target-tier distinguish already carries.
+
+### 19.2 Decay: the activity clock, flagging only
+
+**"The ratio was created long ago and the context has changed" is a recognized
+force-weakening technique this layer must be able to name mechanically, not only rhetorically**
+(the addendum's own context-drift caution, section 6 DIRECTIVE, coordinator decision A5). In
+this harness the changing context is the codebase/spec state, and the clock that measures
+staleness is the **registry's own activity**, never wall-clock and never the raw event log:
+this bench has published a twenty-task epic and several records inside a single day, so a
+wall-clock window would measure the burstiness of operator sessions, not neglect by the
+polity; the event log is, independently, the substrate the v1 amendment ledger's events-sink
+fix (section 16.1) exists to unpollute, so it is disqualified as a clock input on its own
+measured evidence. The clock is instead **the count of later-published records in the same
+registry root** — a pure, unpollutable, test-isolated observable.
+
+**A decay candidate is FLAGGED, never auto-expired and never silently demoted.** An active
+tier 1-3 record with no citations at all, once enough later records have published without
+ever citing it, becomes a **reconsideration candidate** — nothing about its `status` changes,
+and its computed force is **not** lowered by the flag itself. The force drop to `persuasive`
+happens only through a **recorded** `valuation`/`context-change` act (section 18, section
+19.1) that the flag *invites* — never as a side effect of the flag being raised. This is the
+harmonization this document adopts between two binding inputs that would otherwise conflict:
+coordinator decision A2 says decay "flags for reconsideration; it never auto-expires a record";
+coordinator decision A4 says every metatextual weakening is "a first-class recorded act, never
+silent." A mechanism that silently computed a lower force for an uncited record would itself
+be the silent weakening A4 forbids, so the machine only ever flags, and a recorded act does the
+weakening — at every tier uniformly, since nothing below a record's own tier could record an
+effective weakening against it regardless (tier symmetry, section 19.1). Tier-4 records are
+never decay-flagged: tier 4 is a legitimate *permanent* mode of operation (section 13's
+steelman already names this — "the registry's summer"), and flagging every never-cited note
+would flood the pass with exactly the noise a selective mechanism exists to refuse.
+
+**This periodic pass is a sibling read-only verb, not a sixth `conflicts` detector** — the same
+on-demand, never-a-gate discipline section 9 already runs, extended to a different finding
+class: `conflicts` detects record-vs-record contradiction and routes to adjudication (section
+12); this pass detects record-vs-ENVIRONMENT drift and routes to reconsideration. Its exact
+surface, exit codes, and finding-line format are fixed in
+`docs/precedent-research/synthesis-v1-requirements.md` V1-34 for `.harness/bin/precedent.py`
+(T-354) to build against; this document names the doctrine the verb enforces and does not
+claim the verb already ships.
+
+### 19.3 Validity conditions versus scope conditions
+
+**Every binding-tier record already declares two different kinds of condition, and v0 named
+only one of them.** `scope_conditions` (section 6, unchanged) is the class of CASES a ratio
+applies to — roles, task classes, paths-as-jurisdiction, tiers. `validity_conditions` (schema
+field #28, new) is the facts about the ENVIRONMENT a ratio presupposes — file paths, tool
+versions, board mechanics, repo state (the addendum's own enumeration, section 6 DIRECTIVE,
+coordinator decision A5, verbatim).
+
+**The one-sentence discriminating test an author or a reader applies to any candidate string:**
+if the string is true or false about the repository *today*, independent of any case being
+decided, it is a validity condition; if the string can only be evaluated against a candidate
+case — "does this rule govern that act?" — it is a scope condition. ("`blackboard.py` defines a
+`reopen` verb acting only on done/failed tasks" is true or false today, independent of any
+case: validity. "role:worker invoking `reopen` on a done task" is evaluable only against an
+act: scope.) `validity_conditions` is required, non-empty, at tiers 1-3, exactly parallel to
+`scope_conditions`'s own tier split (section 6); optional, default empty, at tier 4.
+
+**The periodic pass (section 19.2's sibling verb) flags records whose `validity_conditions` no
+longer hold as RECONSIDERATION CANDIDATES — never auto-expiry, at any tier, ever.** This is the
+same discipline decay already runs (section 19.2), applied to a different failure signal:
+where decay measures neglect (nobody has cited a record), a validity-condition failure measures
+drift (the environment the ratio presupposed has changed out from under it) — both route to
+the same recorded response, a deliberate `valuation`/`context-change` publish, an overruling,
+or a documented decision to leave the record standing; neither ever flips `status` on its own.
+
+## 20. THE FACT-RE-DESCRIPTION CONSTRAINT
+
+**This section extends section 11's anti-evasion norms; it does not restate or duplicate
+them.** Section 11 already requires a `distinguishes` relation to carry non-empty
+`distinguishing_facts` (signal S-01, "formal-completeness," DETECTED BY V0) — but *non-empty*
+constrains only whether a distinguishing move says anything about facts at all, not whether
+what it says is doing legitimate work. The addendum's own diagnosis of why that gap matters
+(`doi:10.22201/iij.24487937e.2026.20.20316#7`, coordinator decision A6) is the reason this
+constraint exists as its own named section rather than a footnote to S-01:
+
+**"Following precedent" is never mechanical, because material facts can be re-described.**
+Internal and external distinguishing both operate literally by changing the description of
+facts — that is what distinguishing *is*. Anti-evasion design must therefore constrain the act
+of *fact re-description itself*, not merely the presence of a rule citation: a lower tier that
+wants to evade a binding ratio can always find *some* factual difference to point to (any two
+decisions differ in some respect), so requiring a citation of facts without requiring that the
+citation be *material* leaves the evasion fully open — the same failure mode section 11 already
+names via Duncan Hosie's "Factual Revisionism" vocabulary (substitution, rhetorical
+naturalization, evasion, nominal acceptance): a diff of the *words* cannot, by itself, tell
+legitimate narrowing from quiet reversal.
+
+**The constraint this section adds, on top of S-01's non-empty check: every distinguishing move
+must state (a) WHICH material facts differ from the target's own facts, and (b) WHY that
+difference is material — i.e., why it is the kind of difference that, given the target's own
+underlying ratio, ought to change the outcome.** This is a protocol rule a verifier checks by
+reading the text, not a structural parser check — materiality is, per section 11 item 6, a
+verifier/adjudicator judgment the schema does not automate and does not claim to. What the
+schema *can* and does check mechanically remains exactly S-01's non-empty precondition and
+S-02's authority-symmetry stamp (section 11); what this section adds is the standing
+**reading** a verifier applies to that text once it exists: a `distinguishing_facts` entry that
+names a difference without saying why it matters, or that argues the target's *reasoning* was
+wrong rather than that the *facts* differ, fails this constraint and, per section 11's own
+routing rule, the second failure mode routes through the overruling protocol (section 7) at
+the target's tier — it is not an ordinary distinguish at all, however it is labeled.
+
+**Where computable, the S-signal list gains a check on fact-re-description discipline** — this
+is the addendum's own instruction (coordinator decision A6, last sentence), and this document
+does not invent a new mechanical grader beyond what section 11 already names as buildable: S-07
+(the fact-restatement fidelity diff, verdict PARTIAL v0, not shipped) is the existing candidate
+whose purpose this constraint sharpens — it would flag a distinguish whose "material facts"
+were never asserted before the act of distinguishing itself, the textual symptom of a
+fact-re-description move manufactured for the occasion rather than found in the record. This
+section does not change that signal's shipped status; it names why the signal matters more
+precisely than section 11's own text did before this revision.
+
+## 21. THE REALIST FRAME
+
+**Records are dispositions, not norms — the norm is what a successor extracts.** A disposition
+is the text; a norm is the meaning interpretation produces from it (the addendum's core
+postulate, `doi:10.22201/iij.24487937e.2026.20.20316#1`, section 1). Every handoff, precedent
+file, and task note in this harness is a disposition; the norm any later session applies is
+what that session's own interpretation extracts from it — writing a clearer disposition reduces
+but never eliminates the gap, because indeterminacy is structural (vagueness, ambiguity,
+unforeseen application contexts, competing methods, competing background theories). This is
+why `ratio` is a recorded **determination** and not a recognized fact (section 18's
+terminological caution) — a determination is exactly a session's interpretive act on a
+disposition, made explicit and contestable.
+
+**Precedents are second-degree documents.** The recorded outcome of interpreting is itself a
+document that can be reinterpreted: a precedent record is a *product* of a prior interpretation
+of other materials (specs, prior precedents, code, task history), never a first-degree
+disposition in its own right. This is exactly why section 17's corrective path requires
+`sources` — a second-degree document without its first-degree sources on record makes founded
+overruling impossible, because there is nothing beneath it for a corrective act to
+reinterpret. Legislation-like inputs (specs, requirements documents) are first-degree; every
+`PR-NNN` record is second-degree, and this document — a contract *about* second-degree records
+— inherits the same status one level up: it is itself reinterpretable, per its own section 16
+ledger's discipline, and does not claim otherwise.
+
+**No mechanism in this layer may presuppose recoverable collective intent.** The "will" of a
+multi-agent council, an epic, or a coordinator's dispatch is not a discoverable fact — appeals
+to it are normative moves dressed as descriptions, not descriptions. This is why every
+interpretive act this schema mechanizes records **declared** reasoning only: a `ratio`, a
+`factor`, a `valuation-note`, a `distinguishing_facts` entry are all first-person, contestable
+statements of what an agent or session concluded and why — never a claim about what "the
+harness really meant." A future mechanism proposal that presupposes recoverable collective
+intent — for example, inferring a lineage's "true purpose" from its aggregate history rather
+than from what any single session actually recorded — would violate this frame on its face, and
+this document names that as a standing design constraint, not merely a caution (coordinator
+decision A7; `doi:10.22201/iij.24487937e.2026.20.20316#7`).
+
+**Legal certainty is not a property texts have; it is an institutional achievement.** "Citizens
+know the norms that bind them" — the universal-guarantee framing the addendum's source
+critiques — is not something a well-written disposition delivers on its own, given structural
+indeterminacy. It is produced, when it is produced at all, by a *disciplined, auditable
+interpretive process*: a fixed, versioned interpretive code (`INTERPRETIVE-CODE.md`, cited by
+name and version only — this document does not enumerate its rules, which are that document's
+own artifact); a citation grammar that distinguishes resolvable references from dangling ones
+(section 5); a tier ladder keyed to observable adversarial process, not to rank (section 3); and
+a reconciliation ledger that records every amendment's old text, new text, and authority
+(section 16, extended by 16.1). **This is exactly this layer's value proposition, stated
+plainly and not softened: not that agents will always agree, but that when they disagree, the
+disagreement is auditable.** Section 13's steelman already asks whether a cheap-forking actor
+class needs this at all; this frame is the answer to a narrower question the steelman leaves
+open — *if* the layer exists, what discipline makes its certainty real rather than performed —
+and the answer is process, not text.
+
+**What this frame forecloses for future mechanism design, named so nobody has to rediscover it
+by building the wrong thing first:** no signal, detector, or adjudication step in this document
+or any future revision of it may compute a verdict from an inferred "true intent" behind a
+decision, a lineage, or an epic; every such mechanism must instead read what was actually
+recorded — `ratio`, `sources`, `factors`, notes — and treat the absence of a recorded reason as
+exactly what it is, an absence, never a fact to be inferred around. Two open questions this
+frame raises but does not resolve — forwarded, not silently dropped, the same posture section 8
+already models for the tier-3 quorum question: **whether any agent is yet obliged to run
+`conflicts` once a finding is discoverable** (the Mexican mandatory-once-denounced model versus
+this layer's current silent-discretionary default — `docs/precedent-research/
+10-horizontal-peer-precedent.md` §4, forwarded to the epic join, T-362); and **the interested-
+party check's own gap on `distinguishes`/`overrules` publication** (section 11 item 3 already
+names this; it remains open in v1, forwarded to the same join). Both are named here, not
+resolved, because resolving either would itself be a mechanism-design decision this worker task
+does not have standing to make.

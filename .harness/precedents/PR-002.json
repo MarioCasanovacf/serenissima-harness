@@ -1,6 +1,6 @@
 {
   "id": "PR-002",
-  "schema_version": 1,
+  "schema_version": 2,
   "title": "Test-discovery precision: exact commands, verifiers assert nonzero count",
   "subject": "test-discovery-precision",
   "status": "active",
@@ -35,5 +35,19 @@
   "voided_by": null,
   "issuing_task": "T-057",
   "published_by": "worker-build-4",
-  "published_at": "2026-08-11T07:25:38Z"
+  "published_at": "2026-08-11T07:25:38Z",
+  "sources": [
+    "T-044",
+    "T-052",
+    "ORCHESTRATION.md:82-90"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:82-90",
+    "the substrate test suite runs via python3 -m unittest discover -s .harness/tests"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "pre-code"
 }

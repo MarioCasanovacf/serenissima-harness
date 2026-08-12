@@ -740,6 +740,422 @@ that I was about to bake into the DAG; each carries the DEFAULT baked in, and it
   `OPEN-QUESTION:` note (swept by T-348) and becomes a known-unknown in the next epic's Unknowns
   section (worked precedent: mdtoc's `tests/__init__.py`, `.harness/logs/audit_gen3.md` P-013/F1).
 
+## precedent-layer-v1 (intake of the operator's legal-theory addendum)  [PUBLISHED 2026-08-11 — T-350..T-362 LIVE on the board]
+
+> STATUS: **PUBLISHED 2026-08-11** by `orchestration-planner`. Amendment epic over the shipped
+> `precedent-layer` v0 (T-330…T-349). Tier-1 input: the operator's addendum
+> `docs/serenissima-addendum-legal-theory.md` (Sandoval Islas, *Problema* 20, IIJ-UNAM 2026,
+> DOI `10.22201/iij.24487937e.2026.20.20316`; Genoese legal realism — Tarello, Guastini,
+> Chiassoni), which states in its own instruction line that it is **binding design input where
+> marked DIRECTIVE** and **prevails where it conflicts with prior assumptions**. Coordinator
+> amendment decisions A1–A8 (`.harness/coordinator-decisions-addendum.md`) are BINDING for this
+> plan. Every BLOCKING known-unknown is closed below — three by route (a) (the synthesis gate
+> T-352 is a real `depends_on` of every node that needs the answer, so the cascade gate
+> mechanically prevents an early claim), two by route (b) (recorded answer with cited evidence).
+
+### Why
+
+v0 built the machinery; the addendum supplies the legal theory v0 was designed around a
+placeholder for. Four things change, and each is a schema-level change, not a doc edit:
+
+1. **Sources become mandatory** (addendum §3, DIRECTIVE / A1). A precedent is a *second-degree
+   document* — the product of a prior interpretation of other materials. Without its
+   first-degree sources, a successor cannot mount the corrective move ("the declared ratio was
+   apparent; the real one is X") on any ground but assertion. So the corrective path exists,
+   and a corrective act with no sources is mechanically rejected.
+2. **Force stops being binary** (addendum §5 / A2). `authority_tier` stays *issuance* authority
+   — how much adversarial process the decision survived at birth, unchanged, N=1 still binds.
+   A new graded `force` rises with recorded consistent applications and decays toward
+   persuasive for records never re-cited inside a window. The change is to the ceiling, not the
+   floor, which is precisely why T-344's R-2 framing is *partially* overruled and not discarded.
+3. **The three operations get separated** (addendum §2, DIRECTIVE / A4): determination of the
+   ratio, reinterpretation (declarative / corrective-restrictive / corrective-extensive), and
+   valuation — which is metatextual: it changes force, not meaning. A single blob conflating
+   them makes disagreement unadjudicable.
+4. **A new primitive: the shared interpretive code** (addendum §4, DIRECTIVE / A3).
+   `INTERPRETIVE-CODE.md` v1 at repo root, constitutional-tier, versioned, IC-NN rule ids, and
+   every interpretive act cites the code version used. Its honest claim is not determinacy —
+   indeterminacy is structural — but *auditability*: two sessions that disagree read different
+   dispositions, used different code versions, or applied the same code differently. Three
+   distinguishable failure modes instead of one fog.
+
+The epic's own point is reflexive: **the amendment is published through the layer's own
+protocol** (T-358). A2's partial overruling of T-344 is not a memo — it is a record, minted by
+the real CLI, carrying its sources and its reasoning. An amendment layer that amends itself by
+hand-editing is the silent divergence it exists to forbid.
+
+### The DAG (T-350 … T-362, epic `precedent-layer-v1`, engine `claude` throughout)
+
+```mermaid
+graph TD
+  subgraph research["RESEARCH REMAINDERS — 2 tasks, ZERO edges between them, both claimable at publication (p1)"]
+    T350["T-350 R1 horizontal peer precedent<br/>10-horizontal-peer-precedent.md"]
+    T351["T-351 R2 reasoning-burden calibration<br/>11-reasoning-burden-calibration.md"]
+  end
+  T352["T-352 SYNTHESIS v1 GATE (thinker, FRONTIER)<br/>synthesis-v1-requirements.md<br/>schema v2 + CLI v2 + IC-NN rule list"]
+  subgraph build["BUILD — control-plane tier (P-024 full adversarial replay)"]
+    T353["T-353 B1a precedent.py schema v2 core<br/>+ 2 carried defect fixes (worker)"]
+    T354["T-354 B1b graded force + staleness pass (worker)"]
+    T355["T-355 B1c migrate PR-001..PR-004 (worker)"]
+    T356["T-356 B2 INTERPRETIVE-CODE.md v1 (worker)"]
+    T357["T-357 B3 PRECEDENT.md v1 (worker)"]
+    T358["T-358 B4 publish the tier-1 records<br/>+ the A2 partial overruling (worker)"]
+  end
+  T359["T-359 VERIFY cluster 1 (rotation slot 1)<br/>CLI v2 replay + migration content proof"]
+  T360["T-360 VERIFY cluster 2 (rotation slot 2)<br/>constitutional docs vs shipped code"]
+  T361["T-361 VERIFY cluster 3 (rotation slot 3)<br/>records vs the addendum text they enact"]
+  T362["T-362 EPIC JOIN v1 (verifier, FRONTIER)<br/>full replay + A2/IC-v1 ratification<br/>+ U4 explainer, exactly 3 questions"]
+
+  T350 --> T352
+  T351 --> T352
+  T352 --> T353
+  T352 --> T356
+  T352 --> T357
+  T353 --> T354
+  T353 --> T355
+  T353 --> T358
+  T356 --> T358
+  T353 --> T359
+  T354 --> T359
+  T355 --> T359
+  T353 --> T360
+  T354 --> T360
+  T356 --> T360
+  T357 --> T360
+  T358 --> T361
+  T350 --> T362
+  T351 --> T362
+  T352 --> T362
+  T353 --> T362
+  T354 --> T362
+  T355 --> T362
+  T356 --> T362
+  T357 --> T362
+  T358 --> T362
+  T359 --> T362
+  T360 --> T362
+  T361 --> T362
+```
+
+### Task table
+
+| ID | Role | Engine | Tier (P-030) | Prio | Depends on | Owns (sole writer) |
+|---|---|---|---|---|---|---|
+| T-350 | worker | claude | sonnet | 1 | — | `docs/precedent-research/10-horizontal-peer-precedent.md` |
+| T-351 | worker | claude | sonnet | 1 | — | `docs/precedent-research/11-reasoning-burden-calibration.md` |
+| T-352 | thinker | claude | **frontier** | 2 | T-350,T-351 | `docs/precedent-research/synthesis-v1-requirements.md` |
+| T-353 | worker | claude | sonnet | 3 | T-352 | `.harness/bin/precedent.py`, `.harness/tests/test_precedent_v2.py`, + assertion-only edits to `test_precedent.py` / `test_precedent_conflicts.py` |
+| T-354 | worker | claude | sonnet | 4 | T-353 | `.harness/bin/precedent.py` (2nd writer, sequential), `.harness/tests/test_precedent_force.py` |
+| T-355 | worker | claude | sonnet | 4 | T-353 | `.harness/precedents/PR-001…PR-004.json`, `.harness/tests/test_precedent_migration.py`, `.harness/tests/test_precedent_seed.py` |
+| T-356 | worker | claude | sonnet | 3 | T-352 | `INTERPRETIVE-CODE.md` (creates, repo root, tracked) |
+| T-357 | worker | claude | sonnet | 3 | T-352 | `PRECEDENT.md` (v0 → v1) |
+| T-358 | worker | claude | sonnet | 5 | T-353,T-356 | the newly minted `.harness/precedents/PR-005+.json` |
+| T-359 | verifier | claude | sonnet | 6 | T-353,T-354,T-355 | nothing (replay-only) |
+| T-360 | verifier | claude | sonnet | 6 | T-353,T-354,T-356,T-357 | nothing (replay-only) |
+| T-361 | verifier | claude | sonnet | 6 | T-358 | nothing (replay-only) |
+| T-362 | verifier | claude | **frontier** | 7 | all 12 above | `docs/precedent-research/ratification-memo-v1.md`, `docs/precedent-layer-v1-explainer.html`, `docs/precedent-research/README.md` |
+
+### Every edge is a real artifact-consumption (no false cascade)
+
+- `T-350,T-351 → T-352` — the synthesis literally reads both Markdown files and cites each
+  requirement back to a section in them (A8's two research remainders). The addendum and the
+  A1–A8 memo are also inputs but are **already-existing files**, so they generate no edge.
+- `T-352 → T-353 / T-356 / T-357` — the synthesis fixes the schema v2 field table, the CLI v2
+  flags and exit codes, the IC-NN rule list, and the doctrine PRECEDENT.md v1 states. All three
+  consumers read that one document. This is the epic's only 3-wide fan-out and it sits exactly
+  at `limits.max_parallel_workers = 3`.
+- `T-353 → T-354` — the force pass is added **inside** `precedent.py` and consumes the v2
+  loader, the typed-operation model and the new fields. Same file, so the edge is also what
+  keeps two workers off one file at any instant (F1).
+- `T-353 → T-355` — the migration writes records that must validate under the v2 schema and be
+  written by the v2 writer. Cannot precede it.
+- `T-353 → T-358` — a v2 record cannot be minted before the v2 schema, the DOI source-token
+  grammar and the overruling anchor mechanism exist.
+- `T-356 → T-358` — every record carries `interpretive_code_version` citing
+  `INTERPRETIVE-CODE.md` v1. You cannot cite a version of a document that does not exist; the
+  v0 precedent for this shape is `T-342 → T-345` ("you cannot quote a command that does not
+  exist").
+- `T-353,T-354,T-355 → T-359` and `T-358 → T-361` — a verifier replays the artifacts it verdicts.
+- `T-353,T-354 → T-360` — **not** a doc dependency: this verifier's central charge is running
+  the real commands the two documents claim behavior for. It consumes the shipped CLI, so the
+  edge is real. `T-356,T-357 → T-360` are the artifacts under verdict.
+- `→ T-362` — all 12 listed explicitly rather than by transitive closure (the v0 convention):
+  one long `depends_on` line buys an unambiguous board reading, and the join genuinely consumes
+  every artifact (it audits both research docs, replays every command, proves the migration
+  independently, and indexes everything in `README.md`).
+
+**Edges deliberately NOT drawn, each with its reason** — this is the part worth auditing:
+
+- **`T-353 → T-357` (code → PRECEDENT.md): absent.** The v1 content floor is *doctrine* fixed by
+  the synthesis (hybrid ratio model, three operations, graded force, validity conditions, fact
+  re-description, realist frame), not CLI output. T-357 is explicitly forbidden to quote
+  `--help` text or exit codes it cannot verify; it cites the synthesis, and **T-360 exists
+  precisely to catch drift between document and shipped code**. Same reasoning v0 used for
+  `T-340 ⟂ T-341`, which T-346 then verified with zero drift found.
+- **`T-356 → T-357` (interpretive code → PRECEDENT.md): absent.** T-357 references
+  `INTERPRETIVE-CODE.md` by document name and version only, never by an individual IC-NN rule
+  id — the ids are T-356's artifact, written concurrently. T-360 checks cross-consistency and
+  rejects any IC-NN id quoted in PRECEDENT.md that does not exist.
+- **`T-354 → T-358` (force → records): absent.** The records are doctrine plus sources; nothing
+  in a `publish` call consumes the force computation. Adding this edge would serialize the
+  epic's tail for no artifact reason.
+- **`T-354 ⟂ T-355` and `T-355 ⟂ T-358`: the epic's two genuine concurrency slots.** T-354 edits
+  `precedent.py`; T-355 edits the four live records plus `test_precedent_seed.py`; T-358 mints
+  `PR-005+`. Disjoint files, disjoint record ids, and `PR-NNN` allocation is inside
+  `hc.guarded()`. T-355's migration is additionally required to be **idempotent and guarded**,
+  which is what makes a concurrent `publish` into the same directory safe rather than lucky.
+- **`T-357 → T-358` (PRECEDENT.md → records): absent.** The records' authority anchor is the
+  addendum by **DOI + section** (tier-1), not PRECEDENT.md. T-358 is therefore forbidden to
+  cite unminted PR-ids from a document, and T-357 is forbidden to cite PR-ids it cannot know.
+
+### The ordering invariant that replaces a phantom edge (F1's real shape here)
+
+`T-353` ships schema v2 while the live registry is **still at `schema_version` 1**, because
+`T-355` has not run yet. The existing 100-test suite — including the 14 seed tests in
+`test_precedent_seed.py`, which `T-353` may **not** edit — runs against that mixed state. So:
+
+- `T-353`'s acceptance criterion is that the suite is green **anyway**, which forces the
+  synthesis's dual-read migration semantics to be genuinely implemented rather than asserted.
+- If dual-read turns out impossible under the synthesis's own semantics, `T-353` hands off
+  **blocked** with the failing test names. It does **not** migrate the seeds and does **not**
+  edit `test_precedent_seed.py` — that is `T-355`'s file, and a producer that silently absorbs
+  another task's artifact to make its own tests pass destroys the evidence.
+
+This is the mdtoc `tests/__init__.py` failure shape (`audit_gen3.md` P-013/F1) caught before it
+happens: a file two tasks would both want to touch, assigned to exactly one, with the
+consequence of not-touching-it written into the other's acceptance criteria.
+
+### Bootstrap / infra ownership (F1 — every shared file has exactly one owner)
+
+| Shared artifact | Sole owner | Race risk |
+|---|---|---|
+| `docs/precedent-research/` (directory) | already exists; both research tasks `mkdir -p` | **None** — idempotent, and each task owns one distinct `NN-slug.md`. |
+| `docs/precedent-research/README.md` (index) | **T-362 only** | Explicitly forbidden to T-350/T-351 (the v0 rule, carried). |
+| `.harness/bin/precedent.py` | T-353 creates v2, T-354 extends — **sequential edge + `lock.py`** | None: never two concurrent writers. |
+| `.harness/tests/test_precedent.py`, `test_precedent_conflicts.py` | T-353 (assertion updates only); T-354 may amend **only** assertions its own output change invalidates, listing each | None: sequential. T-355/T-358 are forbidden to touch them. |
+| `.harness/tests/test_precedent_seed.py` | **T-355 only** | Closed by writing "do not touch this file" into T-353's and T-354's criteria, and by T-353's dual-read invariant above. |
+| New test files | three **distinct** names: `test_precedent_v2.py` (T-353), `test_precedent_force.py` (T-354), `test_precedent_migration.py` (T-355) | None. The acceptance glob `-p "test_precedent*.py"` discovers all six files, which is why the count must exceed 100. |
+| `.harness/precedents/PR-001…004.json` | **T-355 only** | T-358 is forbidden to edit them; it mints `PR-005+`. |
+| `.harness/precedents/PR-005+.json` | **T-358 only**, all minted by the real CLI | Hand-writing a record is an automatic REJECT. Allocation is inside `hc.guarded()`. |
+| `PRECEDENT.md` | **T-357 only** | T-356 explicitly forbidden. |
+| `INTERPRETIVE-CODE.md` | **T-356 only** (new tracked file at repo root) | T-357 explicitly forbidden. |
+| `docs/precedent-research/ratification-memo.md` (v0) | **nobody** — closed artifact of T-348 | T-362 writes `ratification-memo-v1.md` instead of editing a done task's artifact. |
+| `.harness/state.json` | **nobody in this epic** | The P-023 `accepted_mutations` backfill stays a tier-2 constitutional act (§5A loop + human gate, `ORCHESTRATION.md:225-229`); T-362 escalates, no worker performs it. |
+| `claude.md` / `gemini.md` / `ORCHESTRATION.md` | **nobody in this epic** | Making precedent- or code-citation a *duty* is an NLAH mutation; both new documents must say so in their own "what this does not do" sections. |
+
+### Carried defects from v0 that this epic folds in (and the ones it does not)
+
+`T-346` recorded two **observability** items that intersect the schema work, so they are folded
+in at `T-353` if the synthesis confirms the placement (T-352 criterion 13 forces an explicit
+decision rather than a silent deferral):
+
+- **(i) test events pollute the live audit log** — the suite appended roughly 598 synthetic
+  events to `.harness/logs/events.jsonl` with no test-root marker. Fix constraint: it must not
+  change any `harness_common` signature other CLIs depend on. Proof obligation: a test that
+  measures the live line count before and after a full cycle under an overridden root, and
+  `T-359` invariant (b) re-measures it independently.
+- **(ii) `supersedes` has no tier check** — `SDR-17.8` applies tier symmetry to `overrules` and
+  `voids` only, and conflicts detector 3 excludes `supersedes` by a documented DECISION. Adding
+  the check therefore **amends a deliberate exclusion**, so T-352 must also rule whether that
+  amendment is itself publishable as a record (and if so, it joins T-358's ledger).
+
+**Not folded in, carried instead** (tracked in T-362's carried-defect ledger, disposition
+required for each): the Merritt v Merritt pinpoint in `04-distinguishing-anti-evasion.md`
+([1970] 1 WLR 121 → 1211, owner T-333); T-346's four doc/cosmetic items, of which the ones
+inside `PRECEDENT.md` are repaired by T-357 because they fall in its file; the absolute-user-path
+leak at `.harness/context-brief-precedent-layer.md:183` (a commit blocker if ever committed).
+
+### Dispatch notes (tiers per P-030, `ORCHESTRATION.md:136-160`)
+
+**Frontier tier — 2 of 13 tasks:** `T-352` (the synthesis gate) and `T-362` (the epic join).
+Both are low-verifiability judgment: no adversarial replay catches a schema decomposition that
+is merely *imprecise*, and none catches a ratification framing that presents a constitutional
+amendment misleadingly. Everything else runs **sonnet**: the two research tasks (cited reading,
+with the citation spot-check at T-362 as the adversarial gate), the six build tasks (gated by
+exact test commands with nonzero-count assertions), and all three cluster verifiers (adversarial
+replay is high-verifiability execution with replayable evidence). The coordinator may override
+`T-359` alone to frontier if the force semantics or the migration-immutability question prove
+contested (`state.json cost_policy` rules 3–4, P-024). `haiku` is used nowhere.
+
+**Wave order (`max_parallel_workers = 3`):**
+
+1. **Wave 1 — T-350 + T-351 (2 workers, p1).** Both claimable at publication; they share no file.
+2. **Wave 2 — T-352 (frontier thinker).** Opens the entire build half. Single point of gating,
+   by design: this is the epic's one gate and its precision is the epic's main risk.
+3. **Wave 3 — T-353 + T-356 + T-357 in parallel (3 workers, exactly at the cap).**
+4. **Wave 4 — T-354 + T-355 in parallel, and T-358 once T-356 is also done.** Up to 3 concurrent.
+5. **Wave 5 — T-359, T-360, T-361 (three distinct verifier identities).** T-361 can start as
+   soon as T-358 is done and does not wait on T-354/T-355.
+6. **Wave 6 — T-362 epic join (frontier), then its verdict by a fourth distinct identity.**
+
+**Engine routing. Nothing is bridged to Gemini in this epic, deliberately** — same reasoning as
+v0 and it has not changed: the two research tasks need *web retrieval* (the coordinator
+session's WebSearch/WebFetch are local environment tools; the no-external-LLM rule concerns
+model APIs, not retrieval), and the Gemini route is a human-pasted prompt bridge
+(`ORCHESTRATION.md:168-174`) with no web tools. The build tasks are surgical edits to one
+1265-line file plus four JSON records — not long-context digestion. The one future node that
+would justify `--engine gemini` remains the deferred **full retrofit of the ~30 P-numbers**
+into the schema, which is bulk long-context digestion against a fixed schema; still out of
+scope (D2).
+
+### Verifier rotation plan (F6 — no sole approver, and no cross-epic monoculture either)
+
+Burned identities from v0 that must not be reused as this epic's approvers: `verifier-final`
+(explicitly, per the coordinator's dispatch — it verdicted the v0 join, and reusing it would
+make the ratification trail a two-epic monoculture, the exact shape `ORCHESTRATION.md:119-126`
+forbids), plus `verifier-join`, `verifier-build-a/b`, `verifier-research-a/b`,
+`verifier-synthesis`, `verifier-refinement` as producers-or-approvers of the artifacts now
+being amended. Fresh identities are recommended for all four slots.
+
+| Verdict scope | Reviewer slot | Constraint |
+|---|---|---|
+| T-350, T-351 (doc tier) | one identity, brief replay (P-024) | must not be the identity that verdicts T-352 |
+| T-352 synthesis gate | a second identity | doc/contract tier; the real adversarial test is T-359 |
+| T-353 + T-354 + T-355 | **executor of T-359** (rotation slot 1) | full adversarial replay; produced none of the three |
+| T-356 + T-357 | **executor of T-360** (rotation slot 2) | must differ from T-359's identity |
+| T-358 | **executor of T-361** (rotation slot 3) | must differ from T-359's and T-360's |
+| **T-362 epic join** | executed by an identity that produced **no** artifact anywhere in this epic and is not `verifier-final`; **verdicted by yet another** such identity | P-022 verifier-self-done is **forbidden** on T-362 (it produces artifacts), so the authorship check enforces producer ≠ approver mechanically |
+
+### Scope boundaries held (what this epic must not do)
+
+- **No NLAH mutation.** `claude.md` / `gemini.md` untouched. Neither new document may impose a
+  duty to cite; both must say so in their own "what this does not do" section. Making citation
+  a duty is a §5A + human-gate act and a follow-on epic.
+- **No `state.json` write**, including the P-023 `accepted_mutations` backfill — escalated by
+  T-362, never performed by a worker.
+- **No `ORCHESTRATION.md` edit.**
+- **No full P-number retrofit** (still deferred, D2).
+- **Conflict detection stays an on-demand pass, never a gate or a hook** (D6): engine parity
+  preserved. The new validity-conditions staleness check inherits that constraint — read-only,
+  logs nothing, flags reconsideration candidates, never auto-expires.
+- **No hand-written record.** Every record in this epic is minted by running the real CLI.
+
+## Unknowns — Epic: `precedent-layer-v1` (populated per orchestration-planner.md steps 5-6, U1+U3)
+
+> Populated BEFORE the DAG was published. Three BLOCKING known-unknowns are closed by **route
+> (a)** — converted into charges on the synthesis gate T-352, which is a real `depends_on` of
+> every node that needs the answer, so the cascade gate mechanically prevents those nodes from
+> being claimed early. Two are closed by **route (b)** — a recorded answer grounded in cited
+> repo evidence. The U3 blindspot interview questions are listed below with the planner's
+> recorded default answer; a correction from the operator or coordinator re-cuts only the
+> node named in each row.
+
+**Known knowns** (verified this session, with the evidence):
+
+- `docs/` is **gitignored** (`.gitignore:33`, confirmed with `git check-ignore -v`). The
+  addendum, both research remainders, the synthesis and the join's memo/explainer are therefore
+  **operator-local and untracked**, exactly as v0's nine research docs were. Consequence that
+  drives three separate acceptance criteria: `PRECEDENT.md`, `INTERPRETIVE-CODE.md` and every
+  registry record — all tracked — must cite the addendum by **DOI + section**, never by local
+  path, or the citation dangles for every reader who clones the repo. This mechanically closes
+  the trailing OPEN-QUESTION in `.harness/coordinator-decisions-addendum.md`.
+- `.harness/precedents/PR-001…004.json` **are tracked** (`git ls-files`), so the pre-migration
+  content is independently recoverable via `git show HEAD:.harness/precedents/PR-001.json`.
+  That is what makes T-359's and T-362's migration content proofs *independent* rather than a
+  re-reading of T-355's own diff.
+- The live suite is **100 tests across three files** (`test_precedent.py` 55, `_conflicts.py`
+  31, `_seed.py` 14) and the whole substrate suite is **146** (both quoted from independent runs
+  in T-347's and T-348's verdict notes). Those two numbers are the floors every replay criterion
+  in this epic asserts against.
+- `.harness/bin/precedent.py` is **1265 lines**; `harness_common.py` is 178. System `python3` is
+  **3.9.6**, stdlib only, no 3.10+ syntax at module scope.
+- **`cite` writes nothing, including events** (SDR-23, quoted verbatim in `precedent.py`'s own
+  module docstring). There is no cite-event stream in `events.jsonl`. `cited_by` is a
+  publish-time side effect. This is the single most likely way to write an unimplementable
+  force formula, so it is a hard constraint on T-352 and a REJECT-level check at T-359.
+- **SDR-01 immutability**: `ratio`, `dicta`, `scope_conditions`, `declared_width`,
+  `tier_evidence`, `cites`, `subject`, `title`, `issuing_task`, `relations` are immutable after
+  publication; only `status`, the `*_by` links, `cited_by` (append), and the `confirmation_*`
+  fields may be mutated.
+- The live registry's conflicts baseline is **exactly one finding**: PR-001's dangling `P-023`
+  token — the layer correctly reporting a real constitutional gap, not a defect. Every
+  replay criterion in this epic states that baseline so no verifier absorbs a new finding.
+- `protected_paths` is still `[]`; `evolution.accepted_mutations` still holds 27 entries with
+  P-023, P-027, P-028 absent. Both remain open and travel forward to T-362.
+
+**Known unknowns** (each classified BLOCKING / NON-BLOCKING; all BLOCKING ones CLOSED):
+
+- **Q1 [BLOCKING → CLOSED, route (a): T-352 criterion 7]. Is `force` stored or computed on
+  read?** Blocking because it decides whether `T-355` must wait on `T-354` (a real edge or a
+  false one) *and* whether `SDR-01` must be overruled. Recorded default the synthesis may
+  overrule only with reasoning: **computed on read**, because a stored `force` would have to
+  mutate published records on every new citation — which is exactly what SDR-01 forbids. If the
+  synthesis stores it, it must amend SDR-01 explicitly, instruct T-358 to publish that
+  amendment, and say in plain words that the coordinator must serialize T-355 after T-354.
+- **Q2 [BLOCKING → CLOSED, route (a): T-352 criterion 9]. What can the A2 overruling record
+  point at?** The thing A2 partially overrules — R-2 in `synthesis-refinements.md` — is **not a
+  PR record**; it lives in a gitignored synthesis document, while the v0 relation grammar
+  requires a `PR-NNN` target that resolves. Without an answer, T-358 literally cannot run its
+  flagship command. T-352 must fix one of two mechanisms (extend the target grammar to a
+  non-PR recorded-decision anchor, or publish-then-overrule) precisely enough that T-353
+  implements it and T-358 executes it with no invention.
+- **Q3 [BLOCKING → CLOSED, route (a): T-352 criterion 8]. What clock does the decay window
+  use?** Wall-clock days are rejected by default with evidence: this bench published a
+  twenty-task epic and four records inside a single day (T-330…T-349, `published_at`
+  2026-08-10/11), so a wall-clock window measures burstiness, not neglect. T-352 must name the
+  unit (harness generations, intervening published records, or a hybrid), the threshold, and
+  the exact observable.
+- **Q4 [BLOCKING → CLOSED, route (b): recorded answer, enforced as T-353 criterion 3]. Does
+  schema v2 break the existing suite while the live registry is still v1?** Answer: it must not.
+  T-353 ships before T-355 migrates, so v1 records must remain loadable (dual-read) and the
+  14 seed tests — which T-353 may not edit — must stay green. If that proves impossible, T-353
+  hands off **blocked**; it does not migrate the seeds or edit another task's test file.
+- **Q5 [BLOCKING → CLOSED, route (b): recorded answer, enforced as T-352 criterion 11(c)].
+  Does the in-place migration violate SDR-01?** Answer: A1 rests on addendum §3, which carries
+  **tier-1** authority and by the addendum's own instruction line prevails over prior
+  assumptions — SDR-01 is a synthesis-level requirement, below it. So the migration is
+  authorized, but under the memo's own discipline note ("everything here that amends a
+  previously recorded decision MUST be published through `precedent.py`") the *exception itself*
+  must be recorded: T-352 rules on it, T-358 publishes it if so ruled.
+- **Q6 [NON-BLOCKING]. Must `interpretive_code_version` resolve to a real
+  `INTERPRETIVE-CODE.md` version (refuse / warn / unchecked)?** If T-352 makes it refuse, the
+  resolution target must be overridable like `PRECEDENT_ROOT` so T-353's tests use a fixture and
+  do not acquire a dependency on T-356's real file. Flagged in T-352's criteria; does not gate.
+- **Q7 [NON-BLOCKING]. Does U4 apply to this epic?** Planner ruling: **yes** — the join asks the
+  operator to ratify constitutional-tier material, and asking for ratification of a document the
+  operator has not been made to understand is precisely what U4 forbids
+  (`ORCHESTRATION.md:105-110`). T-362 therefore produces a 3-question explainer. Recorded as an
+  ADDITION to the coordinator's enumerated join charges, not a substitution.
+
+**Unknown knowns** (U3 blindspot interview — assumptions the planner was about to bake into the
+DAG, put to the coordinator; recorded default answers below, each with the single node a
+correction would re-cut):
+
+1. **The A2 overruling has no PR-record target.** Assumed: T-352 extends the anchor grammar to a
+   non-PR recorded-decision anchor rather than first re-publishing R-2 as a record purely so it
+   can be overruled. → re-cuts T-352 criterion 9 and T-353 only. *Awaiting confirmation.*
+2. **Migration is an in-place rewrite** of PR-001…PR-004 (bump `schema_version`, add fields,
+   backfill `sources`), not a supersede-with-new-records migration — accepted as a once-only,
+   tier-1-authorized exception to SDR-01. → re-cuts T-355. *Awaiting confirmation.*
+3. **`force` is computed on read, never stored** (see Q1). → re-cuts T-354 and adds an edge
+   T-354 → T-355 if corrected. *Awaiting confirmation.*
+4. **The decay window is counted in harness generations or intervening records, not wall-clock
+   days** (see Q3). → re-cuts T-352 criterion 8. *Awaiting confirmation.*
+5. **Untracked research output is acceptable**, as in v0: `docs/` is gitignored, so the two new
+   research documents and the synthesis ship operator-local while `INTERPRETIVE-CODE.md`,
+   `PRECEDENT.md` and the records are tracked and cite by DOI. → re-cuts nothing if confirmed;
+   if the operator wants the research tracked, it re-cuts the output paths of T-350/T-351.
+   *Awaiting confirmation.*
+6. **Scope is unchanged from v0**: no `claude.md`/`gemini.md`/`ORCHESTRATION.md`/`state.json`
+   writes, no P-023 backfill, no P-number retrofit. → re-cuts the scope-boundary criteria across
+   the epic if corrected. *Awaiting confirmation.*
+
+**Unknown unknowns** (structural hedges, not predictions):
+
+- The synthesis gate is the epic's single point of failure by construction — six of thirteen
+  tasks read it and nothing else fixes the schema. The hedge is T-352's self-check criterion
+  ("write out the exact command an implementer would produce from your text; if you cannot, the
+  requirement is not precise enough") plus T-359's charge to replay the built CLI against every
+  numbered requirement, which converts vagueness into a nameable REJECT rather than a build
+  that quietly invents constitutional material.
+- The genuinely new failure mode this epic introduces is a **record that cites a DIRECTIVE and
+  then says something else**. No test suite catches it. The hedge is T-361's text-against-source
+  audit: the addendum sentence and the record's ratio quoted side by side.
+- The migration is the only irreversible act in the epic (it rewrites published records in
+  place). The hedge is triple: T-355 proves preservation, T-359 re-derives it from `git show`,
+  and T-362 is charged with producing its own comparison and forbidden to delegate it to a
+  citation of T-359's verdict.
+
 ## Standing design rules
 1. Default to parallel: only add a `depends_on` edge when a task literally consumes another task's artifact.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).

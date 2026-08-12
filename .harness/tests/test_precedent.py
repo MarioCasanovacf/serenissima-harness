@@ -11,6 +11,49 @@ PRECEDENT_ROOT env var -- NOTHING here ever writes into the live
 
 RESERVES the name `conflicts` for T-342 (SDR-27): this file does not test it
 and does not create test_precedent_conflicts.py.
+
+---- T-353 amendments (schema v2 core) -------------------------------------
+
+`docs/precedent-research/synthesis-v1-requirements.md` (V1-11/V1-15/V1-10
+#28) makes `--sources` and `--code-version` mandatory on EVERY publish, and
+`--validity`/`--validity-file` mandatory non-empty at tiers 1-3. Every test
+in this file that publishes was written against the v1 CLI, which had no
+such requirement, so every one of them would now refuse at exit 1 unless
+patched -- this is "your own schema change invalidates the assertion" per
+board T-353's OWNS-EXACTLY clause, not new test behavior. Amendments, each
+disclosed:
+
+  1. `PrecedentCLITestCase.publish()` (the shared helper used by nearly
+     every test below) now injects `--sources <task>` (any non-empty
+     citation token satisfies V1-11; it need not resolve -- a dangling
+     source is a WARNING, never a refusal, V1-11) and `--code-version v1`
+     unconditionally, and `--validity <placeholder>` whenever tier is in
+     (1, 2, 3), unless the caller passes `sources=`/`validity=` explicitly.
+     This is pure test-infrastructure -- it does not change what any test
+     asserts.
+  2. Six tests build their CLI argv directly via raw `run(...)`/inline
+     subprocess lists rather than through the helper (`test_ratio_file_
+     and_stdin_forms`, `test_scope_file_newline_delimited`,
+     `ConcurrentPublishTests.test_two_concurrent_publishes_get_distinct_
+     monotonic_ids`, `test_precedent_root_env_var_isolates_from_live_
+     registry`, `test_root_flag_wins_over_env_var`) -- each of those raw
+     calls now also passes `--sources`/`--code-version` (and `--validity`
+     where tier is 1-3) so the success path they assert is unaffected.
+     `test_refuses_out_of_range_tier`/`test_refuses_missing_tier_evidence`/
+     `test_refuses_bad_width` are UNCHANGED: each refuses at a check that
+     runs strictly before T-353's new v2 checks (tier range, tier_evidence
+     presence, width), so the missing --sources/--code-version never
+     matters for them.
+  3. `test_minimal_tier4_publish_defaults` asserted
+     `rec["schema_version"] == 1`; T-353/V1-10 #2 makes every NEW publish
+     write `schema_version 2` (the live seed records stay at 1 until
+     T-355 runs `migrate` -- board T-353 AC-3's ordering invariant). Updated
+     to `== 2`, with a comment citing V1-10 #2. Comprehensive v2 field
+     assertions (sources/validity_conditions/operation/
+     interpretive_code_version defaults, refusals, typed operations, the
+     carried defects) live in the new `test_precedent_v2.py` rather than
+     here, per T-353's OWNS-EXACTLY scope ("solely to update assertions
+     your own schema change invalidates").
 """
 import json
 import os
@@ -44,24 +87,41 @@ class PrecedentCLITestCase(unittest.TestCase):
 
     def publish(self, task="T-100", title="Title", subject="subject-a", tier=4,
                 tier_evidence=None, ratio="some ratio text", width="narrow",
-                scope=None, revisit_trigger=None, extra_args=None, root=None):
+                scope=None, revisit_trigger=None, sources=None, validity=None,
+                code_version="v1", extra_args=None, root=None):
+        # T-353 (V1-11/V1-15/V1-10 #28): --sources and --code-version are
+        # mandatory on every publish now; --validity is mandatory non-empty
+        # at tiers 1-3. Defaulted here so the ~90 pre-existing calls below
+        # (written against the v1 CLI) keep exercising their OWN targeted
+        # refusal/success path instead of tripping a new v2 check first --
+        # see this file's module docstring, amendment 1.
         root = root if root is not None else self.root
         te = tier_evidence if tier_evidence is not None else [task]
+        src = sources if sources is not None else [task]
         args = ["publish", "--root", str(root), "--task", task, "--title", title,
-                "--subject", subject, "--tier", str(tier), "--ratio", ratio, "--width", width]
+                "--subject", subject, "--tier", str(tier), "--ratio", ratio, "--width", width,
+                "--code-version", code_version]
         for t in te:
             args += ["--tier-evidence", t]
+        for s in src:
+            args += ["--sources", s]
         if tier in (1, 2, 3):
             sc = scope if scope is not None else ["role:worker"]
             rt = revisit_trigger if revisit_trigger is not None else "revisit if X"
+            vc = validity if validity is not None else ["validity condition placeholder"]
             for s in sc:
                 args += ["--scope", s]
             args += ["--revisit-trigger", rt]
+            for v in vc:
+                args += ["--validity", v]
         elif scope is not None:
             for s in scope:
                 args += ["--scope", s]
             if revisit_trigger is not None:
                 args += ["--revisit-trigger", revisit_trigger]
+            if validity is not None:
+                for v in validity:
+                    args += ["--validity", v]
         if extra_args:
             args += extra_args
         return run(*args)
@@ -115,7 +175,11 @@ class PublishSuccessTests(PrecedentCLITestCase):
         self.assertEqual(pr_id, "PR-001")
         self.assertIn("published PR-001", result.stdout)
         rec = self.load(pr_id)
-        self.assertEqual(rec["schema_version"], 1)
+        # T-353/V1-10 #2: every new publish writes schema_version 2 now
+        # (the live registry stays at 1 until T-355 runs `migrate` --
+        # board T-353 AC-3's ordering invariant). Amended assertion,
+        # disclosed in this file's module docstring, amendment 3.
+        self.assertEqual(rec["schema_version"], 2)
         self.assertEqual(rec["status"], "active")
         self.assertEqual(rec["authority_tier"], 4)
         self.assertEqual(rec["confirmation_status"], "unconfirmed")
@@ -145,7 +209,8 @@ class PublishSuccessTests(PrecedentCLITestCase):
         rfile.write_text("ratio via file, with `backticks` and $(danger)", encoding="utf-8")
         result = run("publish", "--root", str(self.root), "--task", "T-110", "--title", "t",
                      "--subject", "subj-file", "--tier", "4", "--tier-evidence", "T-110",
-                     "--ratio-file", str(rfile), "--width", "narrow")
+                     "--ratio-file", str(rfile), "--width", "narrow",
+                     "--sources", "T-110", "--code-version", "v1")
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]
         rec = self.load(pr_id)
@@ -153,7 +218,8 @@ class PublishSuccessTests(PrecedentCLITestCase):
 
         result2 = run("publish", "--root", str(self.root), "--task", "T-111", "--title", "t",
                      "--subject", "subj-file2", "--tier", "4", "--tier-evidence", "T-111",
-                     "--ratio-stdin", "--width", "narrow", input_text="ratio via stdin")
+                     "--ratio-stdin", "--width", "narrow", "--sources", "T-111",
+                     "--code-version", "v1", input_text="ratio via stdin")
         self.assertEqual(result2.returncode, 0, result2.stderr)
 
     def test_scope_file_newline_delimited(self):
@@ -162,7 +228,8 @@ class PublishSuccessTests(PrecedentCLITestCase):
         result = run("publish", "--root", str(self.root), "--task", "T-120", "--title", "t",
                      "--subject", "subj-scopefile", "--tier", "3", "--tier-evidence", "T-120",
                      "--ratio", "r", "--width", "narrow", "--scope-file", str(sfile),
-                     "--revisit-trigger", "x")
+                     "--revisit-trigger", "x", "--sources", "T-120", "--code-version", "v1",
+                     "--validity", "validity condition placeholder")
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]
         rec = self.load(pr_id)
@@ -557,7 +624,7 @@ class ConcurrentPublishTests(PrecedentCLITestCase):
             return [sys.executable, str(PRECEDENT_PY), "publish", "--root", str(self.root),
                     "--task", task, "--title", "concurrent test", "--subject", subject,
                     "--tier", "4", "--tier-evidence", task, "--ratio", "concurrent ratio text",
-                    "--width", "narrow"]
+                    "--width", "narrow", "--sources", task, "--code-version", "v1"]
 
         p1 = subprocess.Popen(build("T-401", "concurrent-a"), stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, text=True)
@@ -613,6 +680,7 @@ class RootIsolationTests(PrecedentCLITestCase):
         result = run("publish", "--task", "T-411", "--title", "env override test",
                      "--subject", "subj-isolation-env", "--tier", "4",
                      "--tier-evidence", "T-411", "--ratio", "r", "--width", "narrow",
+                     "--sources", "T-411", "--code-version", "v1",
                      env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         after = self._live_pr_files()
@@ -629,6 +697,7 @@ class RootIsolationTests(PrecedentCLITestCase):
         result = run("publish", "--root", str(self.root), "--task", "T-412",
                      "--title", "flag wins", "--subject", "subj-flag-wins", "--tier", "4",
                      "--tier-evidence", "T-412", "--ratio", "r", "--width", "narrow",
+                     "--sources", "T-412", "--code-version", "v1",
                      env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]

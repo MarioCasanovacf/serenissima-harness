@@ -1,0 +1,46 @@
+{
+  "id": "PR-012",
+  "schema_version": 2,
+  "title": "No recoverable collective intent; distinguishing must state material facts",
+  "subject": "realist-standing-rules",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-352"
+  ],
+  "ratio": "No mechanism in this registry may presuppose recoverable collective intent: the \"will\" of a\nmulti-agent council or session is not a discoverable fact, and appeals to it are normative moves\ndressed as descriptions, not descriptions -- mechanisms record DECLARED reasoning only, never\ninferred intent. \"Following precedent\" is never mechanical, because material facts can always be\nre-described: internal and external distinguishing operate literally by changing the description\nof the facts a ratio is applied to. Anti-evasion design must therefore constrain fact\nre-description itself, not merely rule citation: every distinguishing move must state (a) WHICH\nmaterial facts differ from the target record's facts and (b) WHY the difference is material to\nthe ratio's application -- an unstated or immaterial distinction is not a legitimate distinguishing\nact. Legal/institutional certainty is not a property a text has by itself; it is an achievement\nproduced by disciplined, auditable interpretive process -- which is this registry's own value\nproposition, and the reason every record here is a disposition (text) whose norm (meaning) is\nproduced, contestably, by reading it, and every precedent is itself a second-degree document: the\nrecorded product of a prior interpretation of other materials, open in turn to reinterpretation.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any mechanism design proposal for this layer",
+    "any distinguishing record's statement of differing facts"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a mechanism presupposing recoverable collective intent is ever proposed for this layer",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:35:52Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#7",
+    "T-352"
+  ],
+  "validity_conditions": [
+    "PRECEDENT.md:1",
+    "PRECEDENT.md v1 carries the fact-re-description constraint and the second-degree-documents frame"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,6 +1,6 @@
 {
   "id": "PR-003",
-  "schema_version": 1,
+  "schema_version": 2,
   "title": "Verbatim promotion: byte-identical code plus legitimate decoupling",
   "subject": "verbatim-promotion",
   "status": "active",
@@ -34,5 +34,18 @@
   "voided_by": null,
   "issuing_task": "T-057",
   "published_by": "worker-build-4",
-  "published_at": "2026-08-11T07:25:38Z"
+  "published_at": "2026-08-11T07:25:38Z",
+  "sources": [
+    "T-049",
+    "ORCHESTRATION.md:211-218"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:211-218",
+    "promotion to ORCHESTRATION.md quotes the note verbatim rather than paraphrasing"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "pre-code"
 }

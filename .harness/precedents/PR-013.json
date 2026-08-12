@@ -1,0 +1,58 @@
+{
+  "id": "PR-013",
+  "schema_version": 2,
+  "title": "Supersedes gains the ordering half of tier symmetry",
+  "subject": "supersedes-tier-symmetry",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-347",
+    "T-352"
+  ],
+  "ratio": "`supersedes` gains the ordering half of tier symmetry: a `supersedes` relation whose acting\nrecord's tier number is greater (lower authority) than the target's is a REFUSAL, exit 1.\n`supersedes` does not gain SDR-17.9's tier-4-target refusal: overruling a tier-4 note is a\ncategory error because tier 4 binds nobody, but superseding replaces content rather than\noverturning force, and replacement of a persuasive note by an equal-or-higher consolidating\nsuccessor is exactly the R-12 merge outcome v0 already blesses (`publish --supersedes X --cites\nY`). Conflicts detector 3 widens to scan `supersedes` relations for tier-violating entries (its\ndocumented exclusion DECISION flips with this amendment): a controlling consideration -- the\nOverturned-by column's protection of every binding tier from lower-authority status flips -- was\nnot carried through to the third status-flipping verb, and T-347's live reproduction (a tier-4,\nnever-verdicted record flipping a tier-1 record's status to superseded, exit 0, zero conflicts\nfindings) demonstrates the resulting step wrong.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any supersedes relation published to the registry"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the merge outcome is ever blocked in practice by the ordering check",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "reinterprets",
+      "target": "decision:T-339#SDR-17.8",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": 3,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:36:03Z",
+  "sources": [
+    "T-347",
+    "T-352",
+    "decision:T-339#SDR-17.8"
+  ],
+  "validity_conditions": [
+    ".harness/bin/precedent.py:1",
+    "publish refuses a supersedes whose acting tier number exceeds the target's"
+  ],
+  "operation": {
+    "type": "reinterpretation",
+    "subtype": "corrective-restrictive"
+  },
+  "interpretive_code_version": "v1"
+}

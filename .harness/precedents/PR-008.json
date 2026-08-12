@@ -1,0 +1,47 @@
+{
+  "id": "PR-008",
+  "schema_version": 2,
+  "title": "The shared interpretive code is constitutional-tier system material",
+  "subject": "interpretive-code",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#4"
+  ],
+  "ratio": "Serenissima maintains the interpretive code that governs how a recorded ratio is read as an\nexplicit, versioned system artifact identical for all sessions, not composed ad hoc and privately\nby each interpreter: translation rules stating how to read a ratio (literal first, then\npurposive, then systematic), preference rules ranking competing readings, and procedure rules\nfixing the order of application, each rule carrying a stable `IC-NN` id inside a document\n(`INTERPRETIVE-CODE.md`) that itself carries an explicit `Version:` line. Every interpretive act\nrecorded in the registry cites the code version it applied (`interpretive_code_version`), so that\nwhen two sessions disagree, the disagreement decomposes into one of three distinguishable failure\nmodes -- a different disposition read, a different code version cited, or the same code version\napplied differently -- instead of one undifferentiated fog. The code is constitutional-tier\nmaterial: amendable only through the overruling-grade protocol, at tier 1 or 2, naming the rules\nchanged and the version bump; an ordinary edit to the document without a published amending\nrecord is invalid.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "every interpretive act recorded in the registry",
+    "INTERPRETIVE-CODE.md amendment attempts"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit at any Version bump of INTERPRETIVE-CODE.md",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:35:07Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#4",
+    "T-352"
+  ],
+  "validity_conditions": [
+    "INTERPRETIVE-CODE.md:1",
+    "INTERPRETIVE-CODE.md declares exactly one line matching Version: v-digit"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

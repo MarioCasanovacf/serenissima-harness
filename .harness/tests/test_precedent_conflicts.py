@@ -20,9 +20,24 @@ a clean/near-miss control fixture proving it does NOT fire on the adjacent
 legitimate case (a detector with no false-positive test is untested, per AC-5):
   1. same-subject ratio contradiction between two ACTIVE records
   2. an ACTIVE record citing an OVERRULED record as binding support
-  3. overrules/voids by a lower-authority tier against a higher-tier target
+  3. overrules/voids/supersedes by a lower-authority tier against a higher-
+     tier target (supersedes added by T-353, carried defect ii)
   4. same-tier scope-condition overlap between two ACTIVE records, divergent ratio
   5. dangling citations (includes the P-023-shaped fixture named in AC-5)
+
+---- T-353 amendment (schema v2 core) --------------------------------------
+
+`docs/precedent-research/synthesis-v1-requirements.md` makes `--sources` and
+`--code-version` mandatory on every publish (V1-11/V1-15), and `--validity`
+mandatory non-empty at tiers 1-3 (V1-10 #28). This file's own `publish()`
+helper (below) is amended to inject `--sources <task>` and
+`--code-version v1` unconditionally, and `--validity <placeholder>` at
+tiers 1-3, mirroring test_precedent.py's identical, identically-disclosed
+amendment -- infrastructure only, no assertion in this file changes meaning.
+`write_raw_record()` is UNCHANGED: it bypasses the CLI entirely to build
+schema_version-1-shaped fixtures for detector 3's tamper-stand-in tests, and
+the v2 CLI's dual-read tolerance (V1-36) is exactly what keeps those
+fixtures valid input for `conflicts` without any v2 field.
 """
 import json
 import pathlib
@@ -74,8 +89,18 @@ class ConflictsTestCase(unittest.TestCase):
         # non-overridden fixture registry-integrity-clean unless a test
         # deliberately overrides tier_evidence or adds a dangling --cites.
         te = tier_evidence if tier_evidence is not None else ["T-330"]
+        # T-353 (V1-11/V1-15/V1-10 #28): --sources/--code-version mandatory
+        # on every publish; --validity mandatory non-empty at tiers 1-3 --
+        # see this file's module docstring, the T-353 amendment note.
+        # DEFAULT SOURCES TO "T-330", not `task`: this file's synthetic
+        # --task values (T-600..T-999999) are deliberately chosen to never
+        # resolve as real board tasks (see the tier_evidence default's own
+        # comment above); V1-45 makes `conflicts` detector 5 walk `sources`
+        # registry-wide, so a non-resolving default would turn EVERY clean-
+        # control fixture in this file into a dangling-citation finding.
         args = ["publish", "--root", str(self.root), "--task", task, "--title", title,
-                "--subject", subject, "--tier", str(tier), "--ratio", ratio, "--width", width]
+                "--subject", subject, "--tier", str(tier), "--ratio", ratio, "--width", width,
+                "--sources", "T-330", "--code-version", "v1"]
         for t in te:
             args += ["--tier-evidence", t]
         if tier in (1, 2, 3):
@@ -84,6 +109,7 @@ class ConflictsTestCase(unittest.TestCase):
             for s in sc:
                 args += ["--scope", s]
             args += ["--revisit-trigger", rt]
+            args += ["--validity", "validity condition placeholder"]
         elif scope is not None:
             for s in scope:
                 args += ["--scope", s]

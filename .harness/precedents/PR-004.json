@@ -1,6 +1,6 @@
 {
   "id": "PR-004",
-  "schema_version": 1,
+  "schema_version": 2,
   "title": "Verifier rotation: no single reviewer approves an entire epic",
   "subject": "verifier-rotation",
   "status": "active",
@@ -38,5 +38,20 @@
   "voided_by": null,
   "issuing_task": "T-031",
   "published_by": "worker-build-4",
-  "published_at": "2026-08-11T07:25:38Z"
+  "published_at": "2026-08-11T07:25:38Z",
+  "sources": [
+    "T-031",
+    "T-021",
+    "T-029",
+    "ORCHESTRATION.md:119-126"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:119-126",
+    "events.jsonl records verdicting verifier identities per task"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "pre-code"
 }

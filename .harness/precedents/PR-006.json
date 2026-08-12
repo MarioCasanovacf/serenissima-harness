@@ -1,0 +1,47 @@
+{
+  "id": "PR-006",
+  "schema_version": 2,
+  "title": "Sources are mandatory; correction without sources is refused",
+  "subject": "sources-and-corrective-path",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-352",
+    "doi:10.22201/iij.24487937e.2026.20.20316#3"
+  ],
+  "ratio": "Author-declared ratios bind at publication as the primary reference (institutional fixation, the\ntesis-jurisprudencial pattern), but a successor retains a corrective path: it may argue a declared\nratio is merely apparent and state the real one, ONLY by reinterpreting the source materials that\nactually produced the original decision, with recorded reasoning, at an authority tier no lower\nthan the original. Because a second-degree document (a precedent) without its first-degree\nsources makes founded overruling impossible, every registry record -- of any tier, of any\noperation type -- MUST carry a non-empty `sources` field naming the interpretive resources\nactually consulted in producing it (spec sections, prior PR-IDs, tasks, external docs by durable\nidentifier). A corrective reinterpretation, or an overruling/voiding act, that cites no sources is\nmechanically REFUSED at publish (exit 1): correction without sources is mere disagreement, and\nmere disagreement is not a recorded interpretive act this registry can adjudicate.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any agent publishing a record",
+    "any successor arguing a declared ratio is apparent"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the sources grammar gains kinds or the corrective refusal is relaxed by recorded amendment",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-358",
+  "published_by": "worker-v1-6",
+  "published_at": "2026-08-12T00:34:46Z",
+  "sources": [
+    "doi:10.22201/iij.24487937e.2026.20.20316#3",
+    "T-352"
+  ],
+  "validity_conditions": [
+    ".harness/bin/precedent.py:1",
+    "publish refuses a record with no sources"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

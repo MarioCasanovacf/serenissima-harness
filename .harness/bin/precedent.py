@@ -52,6 +52,8 @@ mandatory field" filed under REFUSAL (exit 1), not under "usage error"
 --subject) stay ordinary argparse `required=True` (exit 2 if the flag is
 absent altogether) since there is no SDR text to route their absence to
 exit 1; their FORMAT, once given, is still validated per SDR-17.2 as exit 1.
+T-353's v2 fields (--sources, --validity, --code-version, --operation*)
+follow the SAME convention, disclosed inline at each flag.
 
 DECISION (relation `factor_note` enforcement, section 2.2 field table):
 SDR-17's list names factor_note only via item 11 (tier-3 overrule targets).
@@ -117,8 +119,186 @@ DECISION (detector 3 also covers `voids`, not just `overrules`): the AC text
 says "overruling", but SDR-17.8's tier-symmetry rule governs `overrules` AND
 `voids` identically ("`overrules`/`voids` refuse when..."). A voids act by a
 lower-tier record against a higher-tier target is the same illegitimacy
-D4 forbids, so detector 3 checks both relation types. `supersedes` is
-deliberately excluded: SDR-17.8 never applies a tier check to it.
+D4 forbids, so detector 3 checks both relation types.
+
+AMENDED BY T-353 (V1-03/V1-49, carried defect ii): the v0 DECISION here used
+to read "`supersedes` is deliberately excluded: SDR-17.8 never applies a
+tier check to it." `docs/precedent-research/synthesis-v1-requirements.md`
+V1-03 corrects that reach: SDR-17.8's tier-symmetry ratio was never meant to
+protect every status-flipping verb except one, and T-347 Case C reproduced
+the resulting bypass live (a tier-4, never-verdicted record flipped a
+tier-1 record's `status` to `superseded`, exit 0, zero `conflicts`
+findings -- PRECEDENT.md section 10.2/16 item 10). `supersedes` now gets the
+ORDERING half of tier symmetry (acting tier number > target tier number ->
+refusal, both at `publish` and in detector 3 below) but deliberately NOT
+SDR-17.9's tier-4-target refusal: superseding replaces content rather than
+overturning force, and the R-12 merge outcome
+(`publish --supersedes X --cites Y`) must keep working at equal-or-higher
+authority. See the T-353 section further down for the full citation trail.
+
+---- T-353 additions (schema v2 core: sources, validity_conditions, typed
+operations, interpretive_code_version, v1 dual-read, carried defects i/ii)
+----------------------------------------------------------------------------
+
+Implements exactly what `docs/precedent-research/synthesis-v1-requirements.md`
+("V1-NN" ids below) fixes for T-353's slice of the precedent-layer-v1 epic:
+the schema v2 field table (V1-10..V1-17), the citation-token grammar
+extension (`doi:`/`decision:`, V1-18/V1-19), the corrective-sources
+enforcement (A1, V1-11/V1-20/V1-21), typed operations and their
+per-operation required-field matrix (A4, V1-13/V1-14), the task-anchored
+overruling anchor mechanism (V1-31/V1-32), the `migrate` verb's mechanics
+(V1-36/V1-37/V1-40 -- content-free; T-355 owns the live backfill content),
+the v2 CLI surface in scope for this task (V1-41/V1-42/V1-45), and the two
+carried defects from T-346 (V1-48 test-event isolation; V1-49 supersedes
+tier check, see above). Does NOT implement graded force, decay, `stale`, or
+the show/list v2 stdout lines (V1-22..V1-30, V1-34/V1-35, V1-43/V1-44 are
+T-354's routing, per the synthesis's own task routing map, section 14).
+
+DECISION (SCHEMA_VERSION stays frozen at 1; SCHEMA_VERSION_V2 = 2 is the new
+write constant): `.harness/tests/test_precedent_seed.py` (owned by T-355,
+this task may not edit it) asserts
+`rec.get("schema_version") == precedent.SCHEMA_VERSION` against the LIVE,
+still-unmigrated seed records (schema_version 1) -- that is the "ordering
+invariant" board T-353 AC-3 names explicitly. Repurposing `SCHEMA_VERSION`
+to mean "2" would break that pre-existing, unmodifiable assertion the
+instant this file is imported, well before T-355 ever runs `migrate`
+against the live root. The two constants are therefore kept distinct: the
+old name stays bound to its old value (read by the one external test that
+already depends on it); `SCHEMA_VERSION_V2` is the value every v2-aware
+write path (`publish`, `migrate`) actually uses (V1-10 #2: "int, 2 on every
+new publish; 1 tolerated read-only").
+
+DECISION (event routing: `emit_event()` replaces direct `hc.log_event()`
+calls, V1-06/V1-48 carried defect i): every event this file emits -- publish
+success/refusal, confirm success/refusal, the flip events, dangling/gap
+warnings, `precedent_migrated` -- now routes through the module-local
+`emit_event(root, kind, **fields)` below rather than calling
+`hc.log_event` directly. When the effective root (after --root/
+PRECEDENT_ROOT/default resolution, unchanged SDR-13) is the live default
+(`.harness/precedents/` under `hc.ROOT`), it still delegates to
+`hc.log_event` verbatim -- the live substrate's behavior is byte-identical
+to v1. Any OVERRIDDEN root (every test, every throwaway registry) instead
+appends the same record shape to `<root>/events.jsonl` via the EXISTING
+`hc.append_jsonl` -- no new log file on the live substrate, ever, and no
+`harness_common` function signature changes (board T-353 AC-6's hard
+constraint). Basis: T-346 measured ~598 synthetic events polluting the live
+audit log from this file's own test suite; the synthesis's live
+measurement at this epic's start (V1-28) found ~9,600 precedent-family
+events against a 4-record live registry.
+
+DECISION (v2 flags stay argparse-optional, manual-checked -- extends the v0
+DECISION above verbatim): `--sources`, `--validity`, `--code-version`,
+`--operation`, `--operation-subtype` are all required-by-the-synthesis but
+NOT argparse `required=True`/`choices=`-constrained, for the identical
+reason SDR-17's own fields are not: so a missing or malformed value takes
+the SAME exit-1 REFUSAL path (V1-42's item numbering continues SDR-17's).
+
+DECISION (`migrate` refusals are not event-logged): V1-46 states the v2
+event-kind delta is exhaustive at exactly two new kinds --
+`precedent_migrated` and `sources_delta_gap` -- with every other event
+reusing SDR-26's existing nine. No migrate-refusal kind is named anywhere
+in the synthesis. Inventing one (`precedent_migrate_refused`, say) would
+contradict that explicit exhaustiveness claim; reusing `precedent_publish_
+refused` would misattribute a migrate-time refusal to the publish verb.
+`migrate` therefore refuses via stderr + exit 1 only (SDR-15's own exit-code
+contract is the refusal signal), planner judgment, disclosed.
+
+DEVIATION (module-docstring-only; no code effect): V1-33's exact `publish`
+command for the A2 overruling record (row 5 of the T-358 ledger) is not
+run by this task -- T-358 owns it. This file's `--reinterprets`/
+`--overrules` decision:-anchor mechanics are built and tested against
+synthetic `decision:T-NNN#anchor` fixtures in `test_precedent_v2.py`
+instead, per T-353's own scope (it must not touch `.harness/precedents/`).
+
+---- T-354 additions (graded force, decay, the `stale` staleness pass,
+show/list v2 stdout rendering) ---------------------------------------------
+
+Implements exactly what `docs/precedent-research/synthesis-v1-requirements.md`
+fixes for T-354's slice of the precedent-layer-v1 epic: graded force
+computed on read (A2, V1-22..V1-27), the activity-clock decay flag with its
+calibrated N (A9.4, V1-28..V1-30), the `stale` validity-conditions pass
+(A5, V1-34/V1-35), and the `show`/`list` v2 stdout contract (V1-43/V1-44).
+Does NOT touch the schema v2 core, the citation grammar, typed operations,
+`migrate`, or the two carried defects -- all T-353's, done, verified.
+
+THE HARD CONSTRAINT THIS TASK MUST NOT VIOLATE (board T-354 AC-2): `cite`
+never writes anything, including events (SDR-23's own words, quoted above:
+"never writes anything, including events (C-2: signals are read-only
+queries)"), so there is no cite-event stream in events.jsonl to count.
+V1-23's own formula confirms this by construction: "No events.jsonl read;
+no cite event exists or is needed (V1-04)." Every function below reads
+ONLY registry-file data that `publish`/`confirm` already write: `status`,
+`authority_tier`, `published_by`, `published_at`, `relations[]` (`type`,
+`target`, `below_target_tier`), `operation.subtype`, `cited_by`, and the
+root's own record list (via `scan_registry`). No new read of events.jsonl
+is added anywhere in this section.
+
+DECISION (force is computed on read, never stored -- A9.3, V1-22/V1-25):
+no new field is added to the published record shape; `computed_force()`
+takes the full `records_by_id` map of the SAME root (V1-27: "the SAME
+registry root the verb was invoked with... No cross-root reads, ever") and
+returns the level fresh on every call. `show`/`list` render it; nothing
+ever writes it. Per board T-354 AC-6's own conditional: since force is
+computed on read (not a stored field), the "confirm the SDR-01 immutability
+amendment was published" branch does not apply -- confirmed and recorded in
+the handoff, not silently skipped.
+
+DECISION (`weakened_by`'s line position and tier scope, V1-24/V1-43): the
+synthesis fixes four stdout lines (`force`, `decay`, `operation`,
+`interpretive_code_version`) and separately says an effective weakening
+valuation "adds one line" without pinning its exact position. Implemented
+immediately after the `force` line (the line it explains), before `decay`.
+V1-24's FORCE EFFECT ("a tier 1-3 target's force renders persuasive instead
+of binding/settled") is applied only at tiers 1-3 inside `computed_force()`,
+exactly as the V1-22 table scopes it; the `weakened_by` DISPLAY line,
+however, is independent of tier (V1-24 defines "effective weakening
+valuation" generically, with no tier restriction on the definition itself)
+-- so a tier-4 record with a recorded, qualifying `revalues` relation still
+shows `weakened_by`, it just never changes tier 4's already-floor force.
+Disclosed since the synthesis does not spell out this tier-4 corner case.
+
+DECISION (`list`'s new column literal, V1-44): "gains one column:
+`force=<level>` inserted between the status and confirmation_status
+columns" is read literally -- the CELL VALUE is the greppable token
+`force=<level>` (matching the file's existing convention of greppable
+`show` lines), with a plain `FORCE` header label above it, exactly as the
+existing five columns pair a plain header with a plain value.
+
+DECISION (multiple effective weakening valuations, no ordering given):
+V1-24 does not say what happens when more than one active `revalues`
+qualifies against the same target. `effective_weakening_valuation()` picks
+the earliest by `(published_at, id)` -- the same deterministic tie-break
+V1-23's own counter formula uses for `apps` -- so the choice is reproducible
+across calls, disclosed as planner judgment (no research basis for a
+different rule).
+
+DECISION (`stale`'s summary counters, V1-34): "`stale: <K> reconsideration
+candidate(s) across <R> record(s)`" does not define K/R precisely. Read by
+analogy to the shipped `conflicts` summary line (`"{} conflict finding(s)
+across {} record(s)".format(len(findings), len(all_ids))`, this same file,
+`cmd_conflicts`): K = total finding LINES (one per failing checkable
+validity entry, one per decay candidate -- V1-34's own two greppable line
+shapes), R = total records scanned in the root, matching `conflicts`'
+existing convention rather than inventing a new one.
+
+DECISION (`stale` logs no event, mutates nothing -- board T-354 AC-5):
+same class as `cite`/`conflicts` (SDR-23's own words; the `conflicts`
+DECISION note above: "logging one would make `conflicts` the only read verb
+in this file with a side effect"). `stale` is the sibling read verb V1-34
+names it as; adding an event here would reintroduce exactly that asymmetry
+for a second verb. No `emit_event` call exists anywhere in `cmd_stale` or
+its helpers.
+
+DECISION (`stale --json`'s "unchecked": true entries, V1-35): V1-35's own
+words -- a free-text (non-checkable) `validity_conditions` entry is
+"reported by `stale --json` as `"unchecked": true`, never flagged, never an
+error". `list_unchecked_validity_entries()` builds exactly those entries;
+`cmd_stale` appends them to the `--json` array AFTER the real findings, and
+ONLY in `--json` mode -- text mode's two greppable line shapes (V1-34) and
+the K/R summary counter (the DECISION above) are both defined purely in
+terms of findings, so neither renders unchecked entries. They never affect
+the exit code (0/3 still keys off `findings` alone, never `findings +
+unchecked`).
 """
 import argparse
 import json
@@ -130,20 +310,48 @@ from pathlib import Path
 import harness_common as hc
 
 # --------------------------------------------------------------------------
-# Constants / schema vocabulary (section 2, 2.1, 2.2)
+# Constants / schema vocabulary (section 2, 2.1, 2.2; T-353: V1-10)
 # --------------------------------------------------------------------------
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 1  # frozen -- see the module docstring DECISION note above.
+SCHEMA_VERSION_V2 = 2  # V1-10 #2: every new publish/migrate writes this.
 DEFAULT_ROOT = hc.HARNESS / "precedents"
 
 VALID_TIERS = (1, 2, 3, 4)
 VALID_STATUS = ("active", "overruled", "superseded", "void_per_incuriam")
 VALID_WIDTH = ("narrow", "wide")
 VALID_CONFIRMATION_OUTCOMES = ("confirmed", "narrowed", "rejected")
-RELATION_TYPES = ("follows", "distinguishes", "overrules", "supersedes", "voids")
+RELATION_TYPES = ("follows", "distinguishes", "overrules", "supersedes", "voids",
+                  "reinterprets", "revalues")  # V1-07: last two added by T-353
 FACTOR_ENUM = ("reasoning_error", "unworkability", "doctrinal_change", "factual_change", "reliance")
 
+# T-353, A4/V1-13: the typed-operation vocabulary.
+OPERATION_TYPES = ("determination", "reinterpretation", "valuation")
+OPERATION_SUBTYPES = {
+    "determination": (None,),
+    "reinterpretation": ("declarative", "corrective-restrictive", "corrective-extensive"),
+    "valuation": ("obiter", "error-in-pronouncement", "context-change"),
+}
+CORRECTIVE_SUBTYPES = ("corrective-restrictive", "corrective-extensive")
+
+# T-354, A2/V1-22: the graded-force enum, high to low. `force` is never a
+# key on a record -- it is computed on read by computed_force() below.
+FORCE_LEVELS = ("settled", "binding", "reiterated", "persuasive", "none")
+# V1-22: "The reiteration threshold 3 is R-2's disclosed N=3, carried with
+# its bracket". Revisable by ordinary code change WITH a DEVIATION note
+# citing V1-22/R-2 -- it is calibration, not doctrine.
+REITERATION_N = 3
+# T-354, A9.4/V1-29: "N = 10, calibrated against the registry's real
+# citation velocity" -- T-352's own recorded calibration reasoning (the
+# full bracket argument, N=5 vs N=10 vs N=20, lives in V1-29). Revisable by
+# ordinary code change WITH a DEVIATION note citing V1-29 -- calibration,
+# not doctrine.
+DECAY_N = 10
+
 # relation type -> (status it stamps on the target, backref field it fills)
+# NOTE: reinterprets/revalues are deliberately absent -- V1-07: "Neither ever
+# flips the target's status ... it records a reading" / "changes force, not
+# meaning".
 TIER_STATUS_TARGET = {
     "overrules": "overruled",
     "supersedes": "superseded",
@@ -161,7 +369,7 @@ FLIP_EVENT = {
 }
 
 # --------------------------------------------------------------------------
-# Citation token grammar (SDR-10)
+# Citation token grammar (SDR-10; T-353 extends per V1-02: doi:, decision:)
 # --------------------------------------------------------------------------
 
 PR_RE = re.compile(r"^PR-\d{3,}$")
@@ -174,9 +382,33 @@ PATH_RE = re.compile(r"^([^\s:]+\.[A-Za-z0-9]+):(\d+(?:-\d+)?)$")
 SUBJECT_RE = re.compile(r"^[a-z0-9-]+$")
 PR_ID_NUM_RE = re.compile(r"^PR-(\d+)$")
 
+# T-353, V1-18: external durable identifier. UNCHECKED by design (no network
+# fetch exists in this harness's tool agency; a DOI's whole point is
+# outliving local state -- docs/ is gitignored, memo OPEN-QUESTION/A9.5).
+DOI_RE = re.compile(r"^doi:10\.\d{4,9}/[^\s#]+(#[A-Za-z0-9][A-Za-z0-9._-]*)?$")
+# T-353, V1-19: task-anchored recorded decision. The T-NNN half resolves
+# exactly like a plain T token; the fragment is UNCHECKED (may live in a
+# gitignored doc; the task file is the durable anchor, D3/A9.1).
+DECISION_RE = re.compile(r"^decision:T-\d{3,}#[A-Za-z0-9][A-Za-z0-9._-]*$")
+DECISION_TASK_RE = re.compile(r"^decision:(T-\d{3,})#")
+# T-353, V1-15: interpretive_code_version format. The migrate-only sentinel
+# "pre-code" is checked separately (publish refuses it explicitly).
+CODE_VERSION_RE = re.compile(r"^v\d+$")
+
+# T-354, V1-35: the two mechanically-CHECKABLE forms a `validity_conditions`
+# entry may take. `VALIDITY_FILE_LINE_RE` reuses SDR-10's own path-token
+# regex (`PATH_RE`) verbatim -- "the file-line form" is the identical grammar
+# already used for citation `path:lines` tokens; `VALIDITY_BAREPATH_RE` is
+# new (a bare `path:` entry names a file OR a directory, unlike PATH_RE's
+# file-plus-line-range). Every other entry is free text: unchecked, never
+# flagged (V1-35's own "R-6 permanent non-goal" clause).
+VALIDITY_FILE_LINE_RE = PATH_RE
+VALIDITY_BAREPATH_RE = re.compile(r"^path:(\S+)$")
+
 
 def token_kind(token):
-    """Classify a citation token per SDR-10's grammar table. None if none match."""
+    """Classify a citation token per SDR-10's grammar table, extended by
+    T-353/V1-02 with `doi` and `decision`. None if none match."""
     if not isinstance(token, str):
         return None
     if PR_RE.match(token):
@@ -193,6 +425,10 @@ def token_kind(token):
         return "event"
     if PATH_RE.match(token):
         return "path"
+    if DOI_RE.match(token):
+        return "doi"
+    if DECISION_RE.match(token):
+        return "decision"
     return None
 
 
@@ -261,9 +497,19 @@ def _path_token_exists(token):
     return p.exists()
 
 
+def _decision_task_half_exists(token):
+    """T-353, V1-19: resolve a `decision:T-NNN#anchor` token on its T-NNN
+    half exactly as a plain T token resolves; the fragment is unchecked."""
+    m = DECISION_TASK_RE.match(token)
+    if not m:
+        return False
+    return (hc.TASKS / (m.group(1) + ".json")).exists()
+
+
 def resolve_citation(token, root):
-    """Read-only resolution of one citation token per SDR-10. `root` is only
-    consulted for PR-NNN tokens (the registry currently in scope)."""
+    """Read-only resolution of one citation token per SDR-10, extended by
+    T-353/V1-18/V1-19. `root` is only consulted for PR-NNN tokens (the
+    registry currently in scope)."""
     kind = token_kind(token)
     if kind == "PR":
         return record_path(root, token).exists()
@@ -279,6 +525,10 @@ def resolve_citation(token, root):
         return _event_ts_exists(token)
     if kind == "path":
         return _path_token_exists(token)
+    if kind == "doi":
+        return True  # V1-18: UNCHECKED, never dangling, by design.
+    if kind == "decision":
+        return _decision_task_half_exists(token)
     return False
 
 
@@ -384,11 +634,46 @@ def integrity_error(path, cause):
     return 4
 
 
-def refuse(event_kind, reason, **fields):
+# --------------------------------------------------------------------------
+# T-353: event routing (V1-06/V1-48, carried defect i)
+# --------------------------------------------------------------------------
+
+def is_live_root(root):
+    """True iff `root` resolves to the live default `.harness/precedents/`.
+    Works regardless of HOW that root was reached (no --root/PRECEDENT_ROOT
+    at all, or either explicitly pointed back at the default) -- V1-48
+    cares about the effective resolved path, not the mechanism."""
+    try:
+        return Path(root).resolve() == DEFAULT_ROOT.resolve()
+    except OSError:
+        return False
+
+
+def _sidecar_events_path(root):
+    return Path(root) / "events.jsonl"
+
+
+def emit_event(root, kind, **fields):
+    """V1-06/V1-48: every event emission in this file routes through here
+    instead of calling hc.log_event directly. Live default root -> the
+    live .harness/logs/events.jsonl via hc.log_event, byte-identical to v1.
+    Any OVERRIDDEN root (every test, every throwaway registry) -> the same
+    record shape appended to `<root>/events.jsonl` via the EXISTING
+    hc.append_jsonl -- a sidecar that lives and dies with its throwaway
+    root. No harness_common signature is touched."""
+    if is_live_root(root):
+        hc.log_event(kind, **fields)
+        return
+    record = {"ts": hc.now_iso(), "event": kind, "agent": hc.agent_id()}
+    record.update(fields)
+    hc.append_jsonl(_sidecar_events_path(root), record)
+
+
+def refuse(event_kind, reason, root, **fields):
     """Log a refusal event (SDR-26) and print the message. Callers do
     `return refuse(...)` -- this function itself never exits the process,
     so `with hc.guarded():` blocks unwind and release their lock normally."""
-    hc.log_event(event_kind, reason=reason, **fields)
+    emit_event(root, event_kind, reason=reason, **fields)
     print("refused: " + reason, file=sys.stderr)
     return 1
 
@@ -398,7 +683,8 @@ def refuse(event_kind, reason, **fields):
 # --------------------------------------------------------------------------
 
 def make_relation(rtype, target, distinguishing_facts=None, factors=None,
-                   factor_note=None, controlling_authority=None):
+                   factor_note=None, controlling_authority=None,
+                   target_tier_declared=None):
     return {
         "type": rtype,
         "target": target,
@@ -406,8 +692,18 @@ def make_relation(rtype, target, distinguishing_facts=None, factors=None,
         "factors": factors or [],
         "factor_note": factor_note,
         "controlling_authority": controlling_authority,
+        "target_tier_declared": target_tier_declared,  # V1-16, T-353
         "below_target_tier": None,  # stamped by the CLI once the target's tier is known
     }
+
+
+def _decision_target_tier(target, args):
+    """T-353, V1-16/V1-32: target_tier_declared is set from --target-tier
+    iff the target is a decision:-anchored token; forbidden (stays None)
+    otherwise."""
+    if DECISION_RE.match(target or ""):
+        return getattr(args, "target_tier", None)
+    return None
 
 
 def resolve_ratio(args):
@@ -424,10 +720,30 @@ def resolve_scope(scope_list_arg, scope_file_arg):
     return list(scope_list_arg or [])
 
 
+def resolve_validity(validity_list_arg, validity_file_arg):
+    """T-353, V1-10 #28: same wire format as --scope-file (one non-empty,
+    stripped entry per line)."""
+    if validity_file_arg:
+        return [line.strip() for line in read_file_text(validity_file_arg).splitlines() if line.strip()]
+    return list(validity_list_arg or [])
+
+
+def resolve_valuation_note(args):
+    """T-353, V1-14: mandatory reasoning for any `valuation` publish."""
+    if args.valuation_note_file:
+        return read_file_text(args.valuation_note_file)
+    return args.valuation_note
+
+
 def assemble_relations(args):
     """Build the relations[] list from CLI args. Returns (relations, error)
     -- error is a plain string (never raised) so callers can route it
-    through the same refuse() -> exit 1 path as every other SDR-17 check."""
+    through the same refuse() -> exit 1 path as every other SDR-17 check.
+
+    T-353 adds `reinterprets` (V1-07/V1-13) and `revalues` (V1-07/V1-13) to
+    the v0 five. `--revalues` accepts PR-NNN only (V1-19: decision: tokens
+    are valid ONLY as overrules/reinterprets targets); `--reinterprets` and
+    `--overrules` accept either PR-NNN or a decision:T-NNN#anchor token."""
     relations = []
     for target in (args.follows or []):
         relations.append(make_relation("follows", target))
@@ -455,13 +771,38 @@ def assemble_relations(args):
     if args.overrules:
         factor_note = read_file_text(args.factor_note_file) if args.factor_note_file else args.factor_note
         relations.append(make_relation("overrules", args.overrules,
-                                        factors=list(args.factor or []), factor_note=factor_note))
+                                        factors=list(args.factor or []), factor_note=factor_note,
+                                        target_tier_declared=_decision_target_tier(args.overrules, args)))
     if args.supersedes:
         relations.append(make_relation("supersedes", args.supersedes))
     if args.voids:
         relations.append(make_relation("voids", args.voids, controlling_authority=args.controlling_authority))
 
+    if args.reinterprets:
+        relations.append(make_relation("reinterprets", args.reinterprets,
+                                        target_tier_declared=_decision_target_tier(args.reinterprets, args)))
+    if args.revalues:
+        if not PR_RE.match(args.revalues):
+            return None, ("--revalues target must be a PR-NNN record -- decision: tokens are "
+                           "not valid revalues targets (V1-19)")
+        factor_note = read_file_text(args.factor_note_file) if args.factor_note_file else args.factor_note
+        relations.append(make_relation("revalues", args.revalues,
+                                        factors=list(args.factor or []), factor_note=factor_note))
+
     return relations, None
+
+
+def _target_tier_status(rel, target_cache):
+    """T-353: (tier, status) for a relation's target, uniformly for PR-NNN
+    (record lookup) and decision:-anchored (author-declared tier, no
+    status to violate -> reported as 'active') targets. V1-19/V1-32."""
+    tid = rel["target"]
+    if DECISION_RE.match(tid):
+        return rel.get("target_tier_declared"), "active"
+    trec = target_cache.get(tid)
+    if trec is None:
+        return None, None
+    return trec.get("authority_tier"), trec.get("status")
 
 
 def cmd_publish(args):
@@ -470,135 +811,325 @@ def cmd_publish(args):
     try:
         ratio = resolve_ratio(args)
         scope_list = resolve_scope(args.scope, args.scope_file)
+        validity_list = resolve_validity(args.validity, args.validity_file)
+        valuation_note = resolve_valuation_note(args)
         relations, rel_err = assemble_relations(args)
     except FileArgError as e:
         print("refused: {}".format(e), file=sys.stderr)
         return 1
     if rel_err:
-        return refuse("precedent_publish_refused", rel_err, task=args.task)
+        return refuse("precedent_publish_refused", rel_err, root, task=args.task)
 
     dicta_list = list(args.dicta or [])
     cites_list = list(args.cites or [])
     te_list = list(args.tier_evidence or [])
+    sources_list = list(args.sources or [])
     subject = args.subject
     title = args.title
     tier = args.tier
     width = args.width
     revisit_trigger = args.revisit_trigger
+    operation_type = args.operation
+    operation_subtype = args.operation_subtype
+    code_version = args.code_version
 
     # ---- SDR-17 items 1-5: pure argument-shape checks, no registry needed ----
     if not ratio.strip():
-        return refuse("precedent_publish_refused", "ratio must be non-empty (SDR-17.1)", task=args.task)
+        return refuse("precedent_publish_refused", "ratio must be non-empty (SDR-17.1)", root, task=args.task)
     if not SUBJECT_RE.match(subject or ""):
         return refuse("precedent_publish_refused",
                        "subject '{}' must match the slug regex ^[a-z0-9-]+$ (SDR-17.2)".format(subject),
-                       task=args.task)
+                       root, task=args.task)
     if len(title) > 80:
-        return refuse("precedent_publish_refused", "title exceeds 80 chars (SDR-17.2)", task=args.task)
+        return refuse("precedent_publish_refused", "title exceeds 80 chars (SDR-17.2)", root, task=args.task)
     if tier not in VALID_TIERS:
-        return refuse("precedent_publish_refused", "tier must be one of 1,2,3,4 (SDR-17.3)", task=args.task)
+        return refuse("precedent_publish_refused", "tier must be one of 1,2,3,4 (SDR-17.3)", root, task=args.task)
     if not te_list:
-        return refuse("precedent_publish_refused", "tier_evidence must be non-empty (SDR-17.3)", task=args.task)
+        return refuse("precedent_publish_refused", "tier_evidence must be non-empty (SDR-17.3)", root, task=args.task)
     if not tier_evidence_kind_ok(tier, te_list):
         return refuse("precedent_publish_refused",
                        "tier_evidence for tier {} lacks a required token kind "
-                       "(section 3 table, SDR-17.3)".format(tier), task=args.task)
+                       "(section 3 table, SDR-17.3)".format(tier), root, task=args.task)
     if tier in (1, 2, 3):
         if not scope_list:
             return refuse("precedent_publish_refused",
-                           "scope_conditions must be non-empty at tiers 1-3 (SDR-17.4)", task=args.task)
+                           "scope_conditions must be non-empty at tiers 1-3 (SDR-17.4)", root, task=args.task)
         if not revisit_trigger or not revisit_trigger.strip():
             return refuse("precedent_publish_refused",
-                           "revisit_trigger must be non-empty at tiers 1-3 (SDR-17.4)", task=args.task)
+                           "revisit_trigger must be non-empty at tiers 1-3 (SDR-17.4)", root, task=args.task)
     if width not in VALID_WIDTH:
         return refuse("precedent_publish_refused",
-                       "declared_width must be 'narrow' or 'wide' (SDR-17.5)", task=args.task)
+                       "declared_width must be 'narrow' or 'wide' (SDR-17.5)", root, task=args.task)
     for rel in relations:
-        if rel["type"] == "overrules":
+        if rel["type"] in ("overrules", "revalues"):
             for f in rel["factors"]:
                 if f not in FACTOR_ENUM:
                     return refuse("precedent_publish_refused",
                                    "--factor '{}' is not one of {} (SDR-17.11's factor enum)"
-                                   .format(f, ", ".join(FACTOR_ENUM)), task=args.task)
+                                   .format(f, ", ".join(FACTOR_ENUM)), root, task=args.task)
+
+    # ---- T-353, V1-42 items 16-24: NEW v2 pure argument-shape checks --------
+
+    # V1-11/V1-20: sources mandatory on every publish; corrective acts get
+    # a distinct, A1-naming message (board T-353 AC-4's mandated observable).
+    if not sources_list:
+        is_corrective_relation = any(rel["type"] in ("overrules", "voids") for rel in relations)
+        is_corrective_reinterpretation = (operation_type == "reinterpretation"
+                                           and operation_subtype in CORRECTIVE_SUBTYPES)
+        if is_corrective_relation or is_corrective_reinterpretation:
+            return refuse("precedent_publish_refused",
+                           "corrective act cites no sources (A1, V1-20)", root, task=args.task)
+        return refuse("precedent_publish_refused",
+                       "sources must be non-empty (A1, V1-11)", root, task=args.task)
+
+    # V1-10 #28: validity_conditions required non-empty at tiers 1-3.
+    if tier in (1, 2, 3) and not validity_list:
+        return refuse("precedent_publish_refused",
+                       "validity_conditions must be non-empty at tiers 1-3 (A5, V1-10 #28)",
+                       root, task=args.task)
+
+    # V1-15: --code-version format; the migrate-only sentinel is refused here.
+    if not code_version:
+        return refuse("precedent_publish_refused",
+                       "--code-version is required, format ^v\\d+$ (A3, V1-15)", root, task=args.task)
+    if code_version == "pre-code":
+        return refuse("precedent_publish_refused",
+                       "--code-version 'pre-code' is the migrate-only sentinel; publish refuses "
+                       "it (V1-15)", root, task=args.task)
+    if not CODE_VERSION_RE.match(code_version):
+        return refuse("precedent_publish_refused",
+                       "--code-version '{}' must match ^v\\d+$ (V1-15)".format(code_version),
+                       root, task=args.task)
+
+    # V1-13: operation/subtype coherence.
+    if operation_type not in OPERATION_TYPES:
+        return refuse("precedent_publish_refused",
+                       "--operation must be one of {} (A4, V1-13)".format(", ".join(OPERATION_TYPES)),
+                       root, task=args.task)
+    allowed_subtypes = OPERATION_SUBTYPES[operation_type]
+    if operation_type == "determination":
+        if operation_subtype is not None:
+            return refuse("precedent_publish_refused",
+                           "operation determination's subtype must be null -- omit "
+                           "--operation-subtype (V1-13)", root, task=args.task)
+    else:
+        if operation_subtype not in allowed_subtypes:
+            return refuse("precedent_publish_refused",
+                           "--operation-subtype for {} must be one of {} (V1-13)".format(
+                               operation_type, ", ".join(s for s in allowed_subtypes if s)),
+                           root, task=args.task)
+
+    # V1-14: relation/operation incoherence -- a record may never carry an
+    # untyped operation or a blob conflating determination/reinterpretation/
+    # valuation (board T-353 AC-5).
+    has_reinterprets_rel = any(r["type"] == "reinterprets" for r in relations)
+    has_revalues_rel = any(r["type"] == "revalues" for r in relations)
+    if operation_type == "determination" and (has_reinterprets_rel or has_revalues_rel):
+        return refuse("precedent_publish_refused",
+                       "a determination may never carry a reinterprets/revalues relation "
+                       "(A4; addendum sec.2; V1-14)", root, task=args.task)
+    if operation_type == "reinterpretation" and not has_reinterprets_rel:
+        return refuse("precedent_publish_refused",
+                       "reinterpretation requires exactly one --reinterprets relation (V1-14)",
+                       root, task=args.task)
+    if operation_type == "valuation" and not has_revalues_rel:
+        return refuse("precedent_publish_refused",
+                       "valuation requires exactly one --revalues relation (V1-14)",
+                       root, task=args.task)
+    if operation_type != "reinterpretation" and has_reinterprets_rel:
+        return refuse("precedent_publish_refused",
+                       "a --reinterprets relation requires --operation reinterpretation (V1-14)",
+                       root, task=args.task)
+    if operation_type != "valuation" and has_revalues_rel:
+        return refuse("precedent_publish_refused",
+                       "a --revalues relation requires --operation valuation (V1-14)",
+                       root, task=args.task)
+
+    # V1-14: valuation's mandatory note + the error-in-pronouncement factor.
+    if operation_type == "valuation":
+        if not valuation_note or not valuation_note.strip():
+            return refuse("precedent_publish_refused",
+                           "valuation requires --valuation-note or --valuation-note-file (V1-14)",
+                           root, task=args.task)
+        if operation_subtype == "error-in-pronouncement" and "reasoning_error" not in (args.factor or []):
+            return refuse("precedent_publish_refused",
+                           "valuation subtype error-in-pronouncement requires --factor "
+                           "reasoning_error (V1-14)", root, task=args.task)
+
+    # V1-32/V1-42.24: --target-tier required iff any relation is decision:-
+    # anchored; a decision: token is valid ONLY as an overrules/reinterprets
+    # target (V1-19).
+    if args.target_tier is not None and args.target_tier not in VALID_TIERS:
+        return refuse("precedent_publish_refused",
+                       "--target-tier must be one of 1,2,3,4", root, task=args.task)
+    for rel in relations:
+        if DECISION_RE.match(rel["target"]):
+            if rel["type"] not in ("overrules", "reinterprets"):
+                return refuse("precedent_publish_refused",
+                               "a decision: token is valid only as an overrules/reinterprets "
+                               "target, not '{}' (V1-19, V1-42.24)".format(rel["type"]),
+                               root, task=args.task)
+            if rel.get("target_tier_declared") is None:
+                return refuse("precedent_publish_refused",
+                               "relation target {} is decision:-anchored and requires "
+                               "--target-tier (V1-32, V1-42.24)".format(rel["target"]),
+                               root, task=args.task)
 
     # ---- SDR-17 items 6-14 (registry-dependent) + SDR-19 commit, ONE guard ----
     same_subject_missing = []
     dangling_tokens = []
     side_effects = []
+    sources_delta_target = None
     new_id = None
     try:
         with hc.guarded():
             target_cache = {}
 
-            # item 6: every relation target must resolve
+            # item 6, extended per V1-19: every relation target must resolve.
+            # decision:-anchored targets resolve on their T-NNN half against
+            # .harness/tasks/, exactly as a plain T token would.
             for rel in relations:
                 tid = rel["target"]
+                if DECISION_RE.match(tid):
+                    m = DECISION_TASK_RE.match(tid)
+                    if not (hc.TASKS / (m.group(1) + ".json")).exists():
+                        return refuse("precedent_publish_refused",
+                                       "relation target {} does not resolve: {} not found "
+                                       "under .harness/tasks/ (V1-19)".format(tid, m.group(1)),
+                                       root, task=args.task)
+                    continue
                 p = record_path(root, tid)
                 if not p.exists():
                     return refuse("precedent_publish_refused",
                                    "relation target {} does not resolve to an existing record "
-                                   "(SDR-17.6)".format(tid), task=args.task)
+                                   "(SDR-17.6)".format(tid), root, task=args.task)
                 if tid not in target_cache:
                     target_cache[tid] = load_record_or_raise(p)
 
             # item 7: distinguishes needs non-empty facts + non-empty target scope
+            # (distinguishes never has a decision: target -- refused above.)
             for rel in relations:
                 if rel["type"] == "distinguishes":
                     if not (rel.get("distinguishing_facts") or "").strip():
                         return refuse("precedent_publish_refused",
                                        "distinguishes against {} requires non-empty "
                                        "distinguishing_facts (SDR-17.7)".format(rel["target"]),
-                                       task=args.task)
+                                       root, task=args.task)
                     if not target_cache[rel["target"]].get("scope_conditions"):
                         return refuse("precedent_publish_refused",
                                        "cannot distinguish against {}: target's scope_conditions "
-                                       "is empty (SDR-17.7)".format(rel["target"]), task=args.task)
+                                       "is empty (SDR-17.7)".format(rel["target"]), root, task=args.task)
 
-            # items 8-9: overrules/voids tier symmetry + tier-4-target refusal
+            # items 8-9: overrules/voids tier symmetry + tier-4-target refusal,
+            # generalized to read the target's tier via _target_tier_status so
+            # decision:-anchored targets are checked against target_tier_declared
+            # (V1-32) uniformly with real records.
             for rel in relations:
                 if rel["type"] in ("overrules", "voids"):
-                    tgt = target_cache[rel["target"]]
-                    tgt_tier = tgt.get("authority_tier")
+                    tgt_tier, _tgt_status = _target_tier_status(rel, target_cache)
                     if tier > (tgt_tier or 0):
                         return refuse("precedent_publish_refused",
                                        "{} of {} refused: acting tier {} is lower authority than "
                                        "target tier {} (SDR-17.8)".format(rel["type"], rel["target"],
                                                                            tier, tgt_tier),
-                                       task=args.task)
+                                       root, task=args.task)
                     if tgt_tier == 4:
                         return refuse("precedent_publish_refused",
                                        "{} of {} refused: target is tier 4 -- a category error, cite "
                                        "or distinguish instead (SDR-17.9)".format(rel["type"], rel["target"]),
-                                       task=args.task)
+                                       root, task=args.task)
 
-            # item 10: overrules/supersedes/voids need an active target
+            # NEW (T-353, carried defect ii, V1-03/V1-49): supersedes gets
+            # the ORDERING half of tier symmetry only -- no tier-4-target
+            # refusal (V1-03's own reasoning: the R-12 merge outcome must
+            # keep working). supersedes never has a decision:-anchored
+            # target (refused earlier), so target_cache always has it.
+            for rel in relations:
+                if rel["type"] == "supersedes":
+                    tgt = target_cache[rel["target"]]
+                    tgt_tier = tgt.get("authority_tier")
+                    if tier > (tgt_tier or 0):
+                        return refuse("precedent_publish_refused",
+                                       "supersedes of {} refused: acting tier {} is lower "
+                                       "authority than target tier {} (carried defect ii; "
+                                       "V1-03/V1-49)".format(rel["target"], tier, tgt_tier),
+                                       root, task=args.task)
+
+            # NEW (T-353, V1-14): reinterprets/revalues target-active check,
+            # and corrective reinterpretation's tier violations (acting tier
+            # number > target tier number; target tier == 4). Declarative
+            # reinterpretation carries NO tier-order refusal -- it may target
+            # any active record regardless of tier (below_target_tier makes
+            # it persuasive-only for its own author, S-02's shape).
+            for rel in relations:
+                if rel["type"] == "reinterprets":
+                    tgt_tier, tgt_status = _target_tier_status(rel, target_cache)
+                    if tgt_status is not None and tgt_status != "active":
+                        return refuse("precedent_publish_refused",
+                                       "reinterprets of {} refused: target status is '{}', not "
+                                       "active (V1-14)".format(rel["target"], tgt_status),
+                                       root, task=args.task)
+                    if operation_subtype in CORRECTIVE_SUBTYPES:
+                        if tier > (tgt_tier or 0):
+                            return refuse("precedent_publish_refused",
+                                           "corrective reinterpretation of {} refused: acting "
+                                           "tier {} exceeds target tier {} (addendum sec.3 "
+                                           "'sufficient authority level'; V1-14)".format(
+                                               rel["target"], tier, tgt_tier), root, task=args.task)
+                        if tgt_tier == 4:
+                            return refuse("precedent_publish_refused",
+                                           "corrective reinterpretation of {} refused: target is "
+                                           "tier 4 -- a category error (V1-14)".format(rel["target"]),
+                                           root, task=args.task)
+                if rel["type"] == "revalues":
+                    _tgt_tier, tgt_status = _target_tier_status(rel, target_cache)
+                    if tgt_status is not None and tgt_status != "active":
+                        return refuse("precedent_publish_refused",
+                                       "revalues of {} refused: target status is '{}', not "
+                                       "active (V1-14)".format(rel["target"], tgt_status),
+                                       root, task=args.task)
+
+            # item 10: overrules/supersedes/voids need an active target.
+            # decision:-anchored targets have no status to violate --
+            # _target_tier_status reports "active" for them uniformly (V1-32).
             for rel in relations:
                 if rel["type"] in ("overrules", "supersedes", "voids"):
-                    tgt = target_cache[rel["target"]]
-                    if tgt.get("status") != "active":
+                    _t, tgt_status = _target_tier_status(rel, target_cache)
+                    if tgt_status != "active":
                         return refuse("precedent_publish_refused",
                                        "{} of {} refused: target status is '{}', not active "
-                                       "(SDR-17.10)".format(rel["type"], rel["target"], tgt.get("status")),
-                                       task=args.task)
+                                       "(SDR-17.10)".format(rel["type"], rel["target"], tgt_status),
+                                       root, task=args.task)
 
-            # item 11 (+ section 2.2 factor_note rule) and item 12 (reliance ack)
+            # item 11 (+ section 2.2 factor_note rule) and item 12 (reliance
+            # ack) -- generalized to use _target_tier_status so a
+            # decision:-anchored overrules of a declared tier-3 target also
+            # requires a factor (V1-32). No --acknowledge-reliance check for
+            # decision: targets: "no cited_by exists to measure reliance
+            # against" (V1-32).
             for rel in relations:
                 if rel["type"] == "overrules":
-                    tgt = target_cache[rel["target"]]
-                    if tgt.get("authority_tier") == 3 and not rel["factors"]:
+                    tgt_tier, _s = _target_tier_status(rel, target_cache)
+                    if tgt_tier == 3 and not rel["factors"]:
                         return refuse("precedent_publish_refused",
                                        "overrules of tier-3 target {} requires >=1 --factor "
-                                       "(SDR-17.11)".format(rel["target"]), task=args.task)
+                                       "(SDR-17.11)".format(rel["target"]), root, task=args.task)
                     if rel["factors"] and not (rel.get("factor_note") or "").strip():
                         return refuse("precedent_publish_refused",
                                        "overrules with --factor requires --factor-note or "
-                                       "--factor-note-file (section 2.2 field table)", task=args.task)
-                    if tgt.get("cited_by") and not args.acknowledge_reliance:
-                        return refuse("precedent_publish_refused",
-                                       "overrules of {} refused: target is cited_by {} -- pass "
-                                       "--acknowledge-reliance after reviewing the blast radius "
-                                       "(SDR-17.12)".format(rel["target"], tgt.get("cited_by")),
-                                       task=args.task)
+                                       "--factor-note-file (section 2.2 field table)", root, task=args.task)
+                    if not DECISION_RE.match(rel["target"]):
+                        tgt = target_cache[rel["target"]]
+                        if tgt.get("cited_by") and not args.acknowledge_reliance:
+                            return refuse("precedent_publish_refused",
+                                           "overrules of {} refused: target is cited_by {} -- pass "
+                                           "--acknowledge-reliance after reviewing the blast radius "
+                                           "(SDR-17.12)".format(rel["target"], tgt.get("cited_by")),
+                                           root, task=args.task)
+                if rel["type"] == "revalues" and rel["factors"] and not (rel.get("factor_note") or "").strip():
+                    return refuse("precedent_publish_refused",
+                                   "revalues with --factor requires --factor-note or "
+                                   "--factor-note-file (section 2.2 field table)", root, task=args.task)
 
             # item 13: voids requires a resolvable controlling_authority
             for rel in relations:
@@ -607,14 +1138,31 @@ def cmd_publish(args):
                     if not ca or not resolve_citation(ca, root):
                         return refuse("precedent_publish_refused",
                                        "voids of {} requires --controlling-authority with a "
-                                       "resolvable token (SDR-17.13)".format(rel["target"]), task=args.task)
+                                       "resolvable token (SDR-17.13)".format(rel["target"]), root, task=args.task)
 
-            # item 14 (+ generalized to every relation per the field table): stamp below_target_tier
+            # item 14 (generalized to every relation type via the tier
+            # helper, so reinterprets/revalues and decision:-anchored
+            # targets get below_target_tier too -- V1-16, V1-32).
             for rel in relations:
-                tgt = target_cache[rel["target"]]
-                rel["below_target_tier"] = tier > (tgt.get("authority_tier") or 0)
+                tgt_tier, _s = _target_tier_status(rel, target_cache)
+                rel["below_target_tier"] = tier > (tgt_tier or 0)
 
             # item 15 is satisfied by construction: no CLI path sets confirmation_*.
+
+            # NEW (T-353, V1-21): the sources-delta check -- warning, never
+            # a refusal. Only meaningful against a PR-NNN target (a
+            # decision:-anchored target has no sources/cites to diff, V1-21
+            # "the check is SKIPPED").
+            for rel in relations:
+                if (rel["type"] == "reinterprets" and operation_subtype in CORRECTIVE_SUBTYPES
+                        and not DECISION_RE.match(rel["target"])):
+                    trec = target_cache.get(rel["target"])
+                    if trec is not None:
+                        target_sources = set(trec.get("sources") or [])
+                        target_cites = set(trec.get("cites") or [])
+                        delta = set(sources_list) - (target_sources | target_cites)
+                        if not delta:
+                            sources_delta_target = rel["target"]
 
             # SDR-18: S-09 citation-completeness scan (mandatory, non-blocking)
             covered = set(cites_list) | set(rel["target"] for rel in relations)
@@ -626,8 +1174,10 @@ def cmd_publish(args):
             except RegistryIntegrityError as e:
                 return integrity_error(e.path, e)
 
-            # SDR-18/SDR-12: dangling cites/tier_evidence tokens (non-blocking)
-            for token in cites_list + te_list:
+            # SDR-18/SDR-12/V1-11: dangling cites/tier_evidence/sources tokens
+            # (non-blocking). doi: tokens never appear here (resolve_citation
+            # always returns True for them, V1-18).
+            for token in cites_list + te_list + sources_list:
                 if not resolve_citation(token, root):
                     dangling_tokens.append(token)
 
@@ -635,7 +1185,7 @@ def cmd_publish(args):
             new_id = allocate_next_id(root)
             record = {
                 "id": new_id,
-                "schema_version": SCHEMA_VERSION,
+                "schema_version": SCHEMA_VERSION_V2,
                 "title": title,
                 "subject": subject,
                 "status": "active",
@@ -660,13 +1210,22 @@ def cmd_publish(args):
                 "issuing_task": args.task,
                 "published_by": args.agent,
                 "published_at": hc.now_iso(),
+                "sources": sources_list,
+                "validity_conditions": validity_list,
+                "operation": {"type": operation_type, "subtype": operation_subtype},
+                "interpretive_code_version": code_version,
             }
             hc.atomic_write_json(record_path(root, new_id), record)
 
-            # SDR-19.3/19.4: cited_by back-references + status flips on targets
+            # SDR-19.3/19.4: cited_by back-references + status flips on targets.
+            # decision:-anchored targets get NEITHER: "no cited_by side
+            # effect (nothing to append to)" (V1-32).
             targets_touch = {}
             for rel in relations:
-                entry = targets_touch.setdefault(rel["target"], {"cited_by": False, "flip": None})
+                tid = rel["target"]
+                if DECISION_RE.match(tid):
+                    continue
+                entry = targets_touch.setdefault(tid, {"cited_by": False, "flip": None})
                 entry["cited_by"] = True
                 if rel["type"] in TIER_STATUS_TARGET:
                     entry["flip"] = rel["type"]
@@ -690,21 +1249,161 @@ def cmd_publish(args):
         return integrity_error(e.path, e)
 
     # ---- SDR-19.5: log events only after the guard releases ----
-    hc.log_event("precedent_published", id=new_id, agent=args.agent, tier=tier,
-                 subject=subject, issuing_task=args.task)
+    emit_event(root, "precedent_published", agent=args.agent, id=new_id, tier=tier,
+               subject=subject, issuing_task=args.task)
     for rtype, tid in side_effects:
-        hc.log_event(FLIP_EVENT[rtype], id=tid, by=new_id, agent=args.agent)
+        emit_event(root, FLIP_EVENT[rtype], agent=args.agent, id=tid, by=new_id)
     for token in dangling_tokens:
-        hc.log_event("dangling_reference", record=new_id, token=token)
+        emit_event(root, "dangling_reference", record=new_id, token=token)
     if dangling_tokens:
         print("warning: {} dangling citation token(s): {}".format(
             len(dangling_tokens), ", ".join(dangling_tokens)))
     if same_subject_missing:
-        hc.log_event("citation_gap", record=new_id, subject=subject, missing=same_subject_missing)
+        emit_event(root, "citation_gap", record=new_id, subject=subject, missing=same_subject_missing)
         print("warning: citation-completeness gap -- active tier 1-3 record(s) sharing subject "
               "'{}' not cited: {}".format(subject, ", ".join(same_subject_missing)))
+    if sources_delta_target:
+        emit_event(root, "sources_delta_gap", record=new_id, target=sources_delta_target)
+        print("warning: corrective act cites nothing the target did not already consult (V1-21)")
     print("published {}".format(new_id))
     return 0
+
+
+# --------------------------------------------------------------------------
+# T-354: graded force, computed on read (A2, V1-22..V1-27)
+# --------------------------------------------------------------------------
+
+def qualifying_applications_count(pr_id, records_by_id):
+    """V1-23: the qualifying-applications counter C(PR-X), verbatim.
+    Reads ONLY relations[] on OTHER records, those records' status/
+    published_by/published_at, operation.subtype, and the target's own id
+    -- no events.jsonl, no cite event (V1-04/V1-23: "No events.jsonl read;
+    no cite event exists or is needed")."""
+    x = records_by_id.get(pr_id) or {}
+    published_by_x = x.get("published_by")
+    apps = []
+    for other_id, other in records_by_id.items():
+        if other_id == pr_id:
+            continue
+        if other.get("status") != "active":
+            continue
+        if other.get("published_by") == published_by_x:
+            continue  # no self-reiteration (P-011's authorship-governs logic)
+        for rel in (other.get("relations") or []):
+            if rel.get("target") != pr_id:
+                continue
+            if rel.get("below_target_tier") is not False:
+                continue  # a lower-tier claim is persuasive only for its author (S-02)
+            if rel.get("type") not in ("follows", "reinterprets", "distinguishes"):
+                continue
+            apps.append((other.get("published_at") or "", other_id, other, rel))
+    apps.sort(key=lambda t: (t[0], t[1]))
+
+    c = 0
+    for _ts, _oid, other, rel in apps:
+        rtype = rel.get("type")
+        if rtype == "follows":
+            c += 1
+        elif rtype == "reinterprets":
+            subtype = (other.get("operation") or {}).get("subtype")
+            if subtype == "declarative":
+                c += 1  # applying the ratio to a new case IS a consistent application
+            elif isinstance(subtype, str) and subtype.startswith("corrective"):
+                c = 0  # zeroing -- R-3, carried
+        elif rtype == "distinguishes":
+            c = 0  # zeroing -- R-3, carried
+    return c
+
+
+def effective_weakening_valuations(pr_id, records_by_id):
+    """V1-24: every ACTIVE record V with operation.type=='valuation',
+    subtype in {error-in-pronouncement, context-change}, carrying a
+    `revalues` relation at PR-X with below_target_tier==False. Returns a
+    list of (published_at, other_id, other_record, subtype) sorted by the
+    same (published_at, id) tie-break V1-23's own counter uses."""
+    out = []
+    for other_id, other in records_by_id.items():
+        if other.get("status") != "active":
+            continue
+        op = other.get("operation") or {}
+        if op.get("type") != "valuation":
+            continue
+        subtype = op.get("subtype")
+        if subtype not in ("error-in-pronouncement", "context-change"):
+            continue
+        for rel in (other.get("relations") or []):
+            if (rel.get("type") == "revalues" and rel.get("target") == pr_id
+                    and rel.get("below_target_tier") is False):
+                out.append((other.get("published_at") or "", other_id, other, subtype))
+                break
+    out.sort(key=lambda t: (t[0], t[1]))
+    return out
+
+
+def effective_weakening_valuation(pr_id, records_by_id):
+    """The single effective weakening valuation `computed_force` and
+    `show`'s `weakened_by` line consume -- the earliest by (published_at,
+    id) when more than one qualifies (module docstring DECISION). None if
+    none qualify. Returns (other_id, other_record, subtype)."""
+    apps = effective_weakening_valuations(pr_id, records_by_id)
+    if not apps:
+        return None
+    _ts, other_id, other, subtype = apps[0]
+    return other_id, other, subtype
+
+
+def computed_force(pr_id, rec, records_by_id):
+    """V1-22's enum table, computed fresh on every call -- NEVER stored
+    (A9.3, V1-25). Returns (level, c) where level is one of FORCE_LEVELS
+    and c is the qualifying-applications count (meaningful only when level
+    is 'settled' or 'reiterated', per V1-43's own rendering rule)."""
+    if rec.get("status") != "active":
+        return "none", 0
+    tier = rec.get("authority_tier")
+    c = qualifying_applications_count(pr_id, records_by_id)
+    if tier in (1, 2, 3):
+        # V1-24: an effective weakening valuation renders persuasive
+        # instead of binding/settled, REGARDLESS of C -- the table's
+        # persuasive row is unconditioned on C for the weakened case.
+        if effective_weakening_valuation(pr_id, records_by_id) is not None:
+            return "persuasive", c
+        if c >= REITERATION_N:
+            return "settled", c
+        return "binding", c
+    # tier 4 (or a malformed/out-of-range tier -- SDR-06 gives it no other
+    # home; the enum's tier-4 row is the only floor this file defines):
+    if c >= REITERATION_N:
+        return "reiterated", c
+    return "persuasive", c
+
+
+# --------------------------------------------------------------------------
+# T-354: decay -- the activity clock (A9.4, V1-28..V1-30)
+# --------------------------------------------------------------------------
+
+def decay_clock(rec, records_by_id):
+    """V1-28: the count of records in the SAME root with `published_at`
+    strictly greater than rec's. Batch-mates (identical published_at)
+    never count toward each other's clocks -- comparing a timestamp to
+    itself is never '>', so no self-exclusion special-case is needed."""
+    ts = rec.get("published_at") or ""
+    return sum(1 for other in records_by_id.values() if (other.get("published_at") or "") > ts)
+
+
+def is_decay_candidate(rec, records_by_id):
+    """V1-29: an ACTIVE record at tier 1-3 with cited_by EMPTY whose clock
+    is >= DECAY_N is a DECAY CANDIDATE. Tier 4 is NEVER decay-flagged (R-16:
+    "the registry's summer" is a legitimate permanent mode). Returns
+    (is_candidate, M) -- M is always the clock value, even when not a
+    candidate, so callers needing the raw count never recompute it."""
+    m = decay_clock(rec, records_by_id)
+    if rec.get("status") != "active":
+        return False, m
+    if rec.get("authority_tier") not in (1, 2, 3):
+        return False, m
+    if rec.get("cited_by"):
+        return False, m
+    return m >= DECAY_N, m
 
 
 # --------------------------------------------------------------------------
@@ -728,7 +1427,61 @@ def binding_summary_line(rec):
     return "scope: UNKNOWN ({})".format(cs)
 
 
+def effective_operation(rec):
+    """V1-36 dual-read default: a schema_version-1 record has no
+    `operation` key -- reads as an IMPLIED determination (every v1 record
+    recorded what binds; none reinterprets or revalues anything)."""
+    op = rec.get("operation")
+    if op is None:
+        return {"type": "determination", "subtype": None}
+    return op
+
+
+def operation_line(rec):
+    """V1-43: `operation: <type>[/<subtype>][ (implied, schema v1)]`."""
+    if rec.get("operation") is None:
+        return "operation: determination (implied, schema v1)"
+    op = rec["operation"]
+    otype, osub = op.get("type"), op.get("subtype")
+    if osub:
+        return "operation: {}/{}".format(otype, osub)
+    return "operation: {}".format(otype)
+
+
+def interpretive_code_version_line(rec):
+    """V1-43: `interpretive_code_version: <value | (none, schema v1)>`."""
+    v = rec.get("interpretive_code_version")
+    if v is None:
+        return "interpretive_code_version: (none, schema v1)"
+    return "interpretive_code_version: {}".format(v)
+
+
+def force_line(pr_id, rec, records_by_id):
+    """V1-43: `force: <level>[ (consistent applications: <C>)]`, with the
+    `(status: <status>)` suffix reserved for level 'none'."""
+    level, c = computed_force(pr_id, rec, records_by_id)
+    if level == "none":
+        return "force: none (status: {})".format(rec.get("status"))
+    if level in ("settled", "reiterated"):
+        return "force: {} (consistent applications: {})".format(level, c)
+    return "force: {}".format(level)
+
+
+def decay_line(rec, records_by_id):
+    """V1-43: `decay: <none | RECONSIDERATION CANDIDATE (...)>`."""
+    candidate, m = is_decay_candidate(rec, records_by_id)
+    if candidate:
+        return ("decay: RECONSIDERATION CANDIDATE (0 citations after {} subsequent "
+                "publications; threshold {})".format(m, DECAY_N))
+    return "decay: none"
+
+
 def cmd_show(args):
+    # T-353, V1-36 dual-read: the record JSON + binding-summary line render
+    # exactly as they always did for a schema_version-1 record. T-354 adds
+    # the four v2 stdout lines below (V1-43) plus the conditional
+    # weakened_by line (V1-24) -- see the module docstring DECISION on its
+    # position.
     root = resolve_root(args)
     path = record_path(root, args.pr_id)
     if not path.exists():
@@ -740,6 +1493,21 @@ def cmd_show(args):
         return integrity_error(e.path, e)
     print(json.dumps(rec, indent=2, ensure_ascii=False))
     print(binding_summary_line(rec))
+
+    # T-354, V1-22..V1-30/V1-43: graded force + decay + operation/code
+    # version. Computed over the WHOLE root (V1-27), not just this record.
+    try:
+        records_by_id = dict(scan_registry(root))
+    except RegistryIntegrityError as e:
+        return integrity_error(e.path, e)
+    print(force_line(args.pr_id, rec, records_by_id))
+    weakening = effective_weakening_valuation(args.pr_id, records_by_id)
+    if weakening is not None:
+        other_id, _other_rec, subtype = weakening
+        print("weakened_by: {} (valuation/{})".format(other_id, subtype))
+    print(decay_line(rec, records_by_id))
+    print(operation_line(rec))
+    print(interpretive_code_version_line(rec))
     return 0
 
 
@@ -748,11 +1516,17 @@ def cmd_show(args):
 # --------------------------------------------------------------------------
 
 def cmd_list(args):
+    # T-353, V1-36 dual-read: unchanged from v1 for the record scan/filter.
+    # T-354, V1-44: gains the FORCE column (text) and the force/
+    # decay_candidate/operation/interpretive_code_version keys (--json).
     root = resolve_root(args)
     try:
         records = list(scan_registry(root))
     except RegistryIntegrityError as e:
         return integrity_error(e.path, e)
+    # T-354, V1-27: force/decay computed over the WHOLE root, BEFORE
+    # filtering -- a filtered-out record can still be another's reiteration.
+    records_by_id = dict(records)
 
     filtered = []
     for pid, rec in records:
@@ -765,17 +1539,28 @@ def cmd_list(args):
         filtered.append((pid, rec))
 
     if args.json:
-        out = [{"id": pid, "authority_tier": rec.get("authority_tier"), "status": rec.get("status"),
+        out = []
+        for pid, rec in filtered:
+            level, _c = computed_force(pid, rec, records_by_id)
+            candidate, _m = is_decay_candidate(rec, records_by_id)
+            out.append({
+                "id": pid, "authority_tier": rec.get("authority_tier"), "status": rec.get("status"),
                 "confirmation_status": rec.get("confirmation_status"), "subject": rec.get("subject"),
-                "title": rec.get("title")} for pid, rec in filtered]
+                "title": rec.get("title"),
+                "force": level,
+                "decay_candidate": candidate,
+                "operation": effective_operation(rec),
+                "interpretive_code_version": rec.get("interpretive_code_version"),
+            })
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
-        print("{:<8} {:<5} {:<16} {:<14} {:<24} {}".format(
-            "ID", "TIER", "STATUS", "CONFIRM", "SUBJECT", "TITLE"))
+        print("{:<8} {:<5} {:<16} {:<14} {:<14} {:<24} {}".format(
+            "ID", "TIER", "STATUS", "FORCE", "CONFIRM", "SUBJECT", "TITLE"))
         for pid, rec in filtered:
-            print("{:<8} {:<5} {:<16} {:<14} {:<24} {}".format(
-                pid, rec.get("authority_tier"), rec.get("status"), rec.get("confirmation_status"),
-                str(rec.get("subject"))[:24], str(rec.get("title"))[:60]))
+            level, _c = computed_force(pid, rec, records_by_id)
+            print("{:<8} {:<5} {:<16} {:<14} {:<14} {:<24} {}".format(
+                pid, rec.get("authority_tier"), rec.get("status"), "force={}".format(level),
+                rec.get("confirmation_status"), str(rec.get("subject"))[:24], str(rec.get("title"))[:60]))
     return 0
 
 
@@ -784,14 +1569,30 @@ def cmd_list(args):
 # --------------------------------------------------------------------------
 
 def _record_citation_tokens(rec):
+    """T-353, V1-45: walks `sources` in addition to the v1 field walk.
+    Dual-read safe: a schema_version-1 record simply has no `sources` key,
+    `.get()` yields None -> []."""
     tokens = list(rec.get("cites") or [])
     tokens.extend(rec.get("tier_evidence") or [])
+    tokens.extend(rec.get("sources") or [])
     for rel in (rec.get("relations") or []):
         if rel.get("target"):
             tokens.append(rel["target"])
         if rel.get("controlling_authority"):
             tokens.append(rel["controlling_authority"])
     return tokens
+
+
+def _cite_status_label(token, ok):
+    """T-353, V1-45: `doi:` tokens print EXTERNAL (unchecked) and never
+    count as dangling (V1-18); `decision:` tokens resolve on their T-NNN
+    half and print the fragment as unchecked (V1-19)."""
+    kind = token_kind(token)
+    if kind == "doi":
+        return "EXTERNAL (unchecked)"
+    if kind == "decision":
+        return ("OK (fragment unchecked)" if ok else "DANGLING (fragment unchecked)")
+    return "OK" if ok else "DANGLING"
 
 
 def iter_all_citation_resolutions(root, records=None):
@@ -809,7 +1610,8 @@ def iter_all_citation_resolutions(root, records=None):
 
 def cmd_cite(args):
     """SDR-23: three forms. Read-only -- never writes anything, including
-    events (C-2: signals are read-only queries)."""
+    events (C-2: signals are read-only queries). T-353/V1-45: doi:/decision:
+    tokens render via _cite_status_label; doi: never counts as dangling."""
     root = resolve_root(args)
     forms_given = sum([bool(args.all), bool(args.record), bool(args.tokens)])
     if forms_given == 0:
@@ -829,7 +1631,7 @@ def cmd_cite(args):
             return integrity_error(e.path, e)
         for pid, token, ok in iter_all_citation_resolutions(root, records):
             total += 1
-            print("{} cites {}: {}".format(pid, token, "OK" if ok else "DANGLING"))
+            print("{} cites {}: {}".format(pid, token, _cite_status_label(token, ok)))
             if not ok:
                 dangling += 1
     elif args.record:
@@ -844,14 +1646,14 @@ def cmd_cite(args):
         for token in _record_citation_tokens(rec):
             total += 1
             ok = resolve_citation(token, root)
-            print("{} cites {}: {}".format(args.record, token, "OK" if ok else "DANGLING"))
+            print("{} cites {}: {}".format(args.record, token, _cite_status_label(token, ok)))
             if not ok:
                 dangling += 1
     else:
         for token in args.tokens:
             total += 1
             ok = resolve_citation(token, root)
-            print("{}: {}".format(token, "OK" if ok else "DANGLING"))
+            print("{}: {}".format(token, _cite_status_label(token, ok)))
             if not ok:
                 dangling += 1
 
@@ -865,8 +1667,8 @@ def cmd_cite(args):
 # confirm
 # --------------------------------------------------------------------------
 
-def refuse_confirm(reason, pr_id, agent):
-    hc.log_event("precedent_confirm_refused", pr=pr_id, agent=agent, reason=reason)
+def refuse_confirm(reason, pr_id, agent, root):
+    emit_event(root, "precedent_confirm_refused", pr=pr_id, agent=agent, reason=reason)
     print("refused: " + reason, file=sys.stderr)
     return 1
 
@@ -886,7 +1688,7 @@ def cmd_confirm(args):
     if args.outcome not in VALID_CONFIRMATION_OUTCOMES:
         return refuse_confirm(
             "--outcome must be one of {} (validation, SDR-15)".format(", ".join(VALID_CONFIRMATION_OUTCOMES)),
-            args.pr_id, args.agent)
+            args.pr_id, args.agent, root)
 
     previous_status = None
     try:
@@ -901,21 +1703,21 @@ def cmd_confirm(args):
             if args.agent == rec.get("published_by"):
                 return refuse_confirm(
                     "the publishing author ({}) may never confirm/narrow/reject their own "
-                    "record's scope (SDR-24.1)".format(args.agent), args.pr_id, args.agent)
+                    "record's scope (SDR-24.1)".format(args.agent), args.pr_id, args.agent, root)
             # SDR-24.2: record must be active
             if rec.get("status") != "active":
                 return refuse_confirm(
                     "record {} status is '{}', not active (SDR-24.2)".format(args.pr_id, rec.get("status")),
-                    args.pr_id, args.agent)
+                    args.pr_id, args.agent, root)
             # SDR-24.3: narrowed requires a scope restatement
             if args.outcome == "narrowed" and not scope_list:
                 return refuse_confirm(
                     "--outcome narrowed requires a scope restatement via --scope/--scope-file "
-                    "(SDR-24.3)", args.pr_id, args.agent)
+                    "(SDR-24.3)", args.pr_id, args.agent, root)
             # SDR-24.4: mandatory reasoning
             if not note or not note.strip():
                 return refuse_confirm(
-                    "confirm requires --note or --note-file (SDR-24.4)", args.pr_id, args.agent)
+                    "confirm requires --note or --note-file (SDR-24.4)", args.pr_id, args.agent, root)
 
             previous_status = rec.get("confirmation_status")
             rec["confirmation_status"] = args.outcome
@@ -927,9 +1729,91 @@ def cmd_confirm(args):
     except RegistryIntegrityError as e:
         return integrity_error(e.path, e)
 
-    hc.log_event("precedent_scope_reviewed", pr=args.pr_id, agent=args.agent,
-                 outcome=args.outcome, previous_confirmation_status=previous_status)
+    emit_event(root, "precedent_scope_reviewed", pr=args.pr_id, agent=args.agent,
+               outcome=args.outcome, previous_confirmation_status=previous_status)
     print("confirmed {} scope outcome={} by {}".format(args.pr_id, args.outcome, args.agent))
+    return 0
+
+
+# --------------------------------------------------------------------------
+# migrate (T-353, V1-36..V1-40) -- schema_version 1 -> 2, mechanics only
+# --------------------------------------------------------------------------
+
+def cmd_migrate(args):
+    """V1-37: a CLI subcommand (not a one-shot script), content-free --
+    T-353 builds the VERB, T-355 supplies the CONTENT (--backfill) and
+    runs it against the live root. Inside ONE hc.guarded() block: scan for
+    schema_version==1 records, validate EVERY one's backfill entry before
+    writing ANY of them (all-or-nothing, V1-37), then write exactly the
+    four v2 fields (sources, validity_conditions, operation,
+    interpretive_code_version) plus schema_version=2 -- no other key is
+    added, removed, or altered. Idempotent: a second run finds zero v1
+    records and is a byte-identical no-op."""
+    root = resolve_root(args)
+    try:
+        backfill_text = read_file_text(args.backfill)
+    except FileArgError as e:
+        print("refused: {}".format(e), file=sys.stderr)
+        return 1
+    try:
+        backfill = json.loads(backfill_text)
+    except json.JSONDecodeError as e:
+        print("refused: --backfill file is not valid JSON: {}".format(e), file=sys.stderr)
+        return 1
+    if not isinstance(backfill, dict):
+        print("refused: --backfill JSON must be an object mapping PR-NNN -> "
+              "{sources, validity_conditions}", file=sys.stderr)
+        return 1
+
+    migrated = []
+    try:
+        with hc.guarded():
+            records = list(scan_registry(root))
+            to_migrate = [(pid, rec) for pid, rec in records if rec.get("schema_version") == 1]
+
+            # ---- validation pass: all-or-nothing (V1-37) ----
+            for pid, rec in to_migrate:
+                entry = backfill.get(pid)
+                if not isinstance(entry, dict):
+                    print("refused: --backfill has no entry for {} (schema_version 1, requires "
+                          "migration) -- writing nothing (V1-37 all-or-nothing)".format(pid),
+                          file=sys.stderr)
+                    return 1
+                sources_tok = entry.get("sources")
+                if (not isinstance(sources_tok, list) or not sources_tok
+                        or any(token_kind(t) is None for t in sources_tok)):
+                    print("refused: {}'s backfill 'sources' must be a non-empty list of "
+                          "grammar-valid citation tokens (V1-37)".format(pid), file=sys.stderr)
+                    return 1
+                if rec.get("authority_tier") in (1, 2, 3):
+                    vc = entry.get("validity_conditions")
+                    if not isinstance(vc, list) or not vc:
+                        print("refused: {}'s backfill 'validity_conditions' must be a non-empty "
+                              "list at tiers 1-3 (V1-37)".format(pid), file=sys.stderr)
+                        return 1
+
+            # ---- commit pass: exactly the four v2 fields, byte-identical
+            # otherwise (board T-355's own content-preservation contract) ----
+            for pid, rec in to_migrate:
+                entry = backfill[pid]
+                rec["sources"] = list(entry["sources"])
+                rec["validity_conditions"] = list(entry.get("validity_conditions") or [])
+                rec["operation"] = {"type": "determination", "subtype": None}
+                rec["interpretive_code_version"] = "pre-code"
+                rec["schema_version"] = SCHEMA_VERSION_V2
+                hc.atomic_write_json(record_path(root, pid), rec)
+                migrated.append(pid)
+    except RegistryIntegrityError as e:
+        return integrity_error(e.path, e)
+
+    for pid in migrated:
+        emit_event(root, "precedent_migrated", agent=args.agent, record=pid,
+                   from_version=1, to_version=2,
+                   authority="A1 (doi:10.22201/iij.24487937e.2026.20.20316#3) via A9.2")
+    if migrated:
+        print("migrated {} record(s): {}".format(len(migrated), ", ".join(migrated)))
+    else:
+        print("migrate: no schema_version 1 records found (no-op)")
     return 0
 
 
@@ -942,8 +1826,10 @@ def cmd_confirm(args):
 # blocks/gates/slows any other CLI call. Five detectors, T-342 AC-2:
 #   1. same-subject ratio contradiction between two ACTIVE records
 #   2. an ACTIVE record citing an OVERRULED record as binding support
-#   3. an overrules/voids relation by a lower-authority-tier acting record
-#      against a higher-tier target (illegitimate per D4/SDR-17.8)
+#   3. an overrules/voids/supersedes relation by a lower-authority-tier
+#      acting record against a higher-tier target (illegitimate per D4/
+#      SDR-17.8; supersedes added by T-353 per V1-03/V1-49, carried defect
+#      ii -- see the module docstring's AMENDED note)
 #   4. same-tier scope-condition overlap between two ACTIVE records with
 #      divergent ratio
 #   5. dangling citations (reuses iter_all_citation_resolutions, SDR-23/C-2)
@@ -1038,21 +1924,23 @@ def detect_overruled_cited_as_binding(records_by_id, active_ids):
 
 
 def detect_illegitimate_overrule_tier(records_by_id, all_ids):
-    """Detector 3 (T-342 AC-2 item 3): an overrules/voids relation recorded
-    by a LOWER-authority acting record (higher tier number) against a
+    """Detector 3 (T-342 AC-2 item 3; widened by T-353 per V1-03/V1-49,
+    carried defect ii): an overrules/voids/supersedes relation recorded by
+    a LOWER-authority acting record (higher tier number) against a
     HIGHER-authority target (lower tier number) -- illegitimate per D4 and
-    SDR-17.8. `publish` refuses this at write time, so this only fires
-    against data that reached the registry outside that path (a corrupted
-    or hand-edited record, or a legacy/tampered file) -- exactly the class
-    of defect a registry-wide sweep exists to catch after the fact.
-    Runs over every record regardless of current status: the illegitimacy
-    is a fact about how the relation was formed."""
+    SDR-17.8 (overrules/voids) or V1-03 (supersedes). `publish` refuses
+    this at write time, so this only fires against data that reached the
+    registry outside that path (a corrupted or hand-edited record, or a
+    legacy/tampered file) -- exactly the class of defect a registry-wide
+    sweep exists to catch after the fact. Runs over every record regardless
+    of current status: the illegitimacy is a fact about how the relation
+    was formed."""
     findings = []
     for pid in sorted(all_ids):
         rec = records_by_id[pid]
         acting_tier = rec.get("authority_tier")
         for rel in (rec.get("relations") or []):
-            if rel.get("type") not in ("overrules", "voids") or not rel.get("target"):
+            if rel.get("type") not in ("overrules", "voids", "supersedes") or not rel.get("target"):
                 continue
             trec = records_by_id.get(rel["target"])
             if trec is None:
@@ -1065,7 +1953,8 @@ def detect_illegitimate_overrule_tier(records_by_id, all_ids):
                     3, "illegitimate-overrule-lower-tier", [pid, rel["target"]],
                     "{} (tier {}) records relation type='{}' against {} (tier {}) -- a "
                     "higher tier number is LOWER authority, so a tier-{} record cannot "
-                    "legitimately {} a tier-{} record (D4; SDR-17.8)".format(
+                    "legitimately {} a tier-{} record (D4; SDR-17.8 for overrules/voids, "
+                    "V1-03/V1-49 for supersedes)".format(
                         pid, acting_tier, rel["type"], rel["target"], target_tier,
                         acting_tier, rel["type"], target_tier)))
     return findings
@@ -1115,7 +2004,7 @@ def detect_dangling_citations(root, records=None):
     entry of "P-023" never resolves, because `evolution.accepted_mutations`
     has no such entry (`.harness/context-brief-precedent-layer.md` sec 2.4,
     `state.json:791`) -- applied in code and prose, never logged in the
-    ledger."""
+    ledger. T-353/V1-18: `doi:` tokens never appear here (always resolve)."""
     findings = []
     for pid, token, ok in iter_all_citation_resolutions(root, records):
         if not ok:
@@ -1161,6 +2050,157 @@ def cmd_conflicts(args):
 
 
 # --------------------------------------------------------------------------
+# T-354: `stale` -- the validity-conditions staleness pass (A5, V1-34/V1-35)
+# --------------------------------------------------------------------------
+
+def _validity_entry_checkable_kind(entry):
+    """V1-35: classify a `validity_conditions` entry. Returns 'file-line',
+    'bare-path', or None (free text -- unchecked, never flagged)."""
+    if not isinstance(entry, str):
+        return None
+    if VALIDITY_FILE_LINE_RE.match(entry):
+        return "file-line"
+    if VALIDITY_BAREPATH_RE.match(entry):
+        return "bare-path"
+    return None
+
+
+def _check_validity_entry(entry):
+    """V1-35: evaluate one CHECKABLE entry. Returns (ok, reason|None). Only
+    meaningful when `_validity_entry_checkable_kind(entry)` is not None."""
+    m = VALIDITY_FILE_LINE_RE.match(entry)
+    if m:
+        relpath, rangepart = m.group(1), m.group(2)
+        p = Path(relpath)
+        if not p.is_absolute():
+            p = hc.ROOT / p
+        if not p.exists():
+            return False, "file does not exist"
+        upper = int(rangepart.split("-", 1)[1]) if "-" in rangepart else int(rangepart)
+        try:
+            with open(p, "r", encoding="utf-8", errors="replace") as f:
+                line_count = sum(1 for _ in f)
+        except OSError as e:
+            return False, "file could not be read: {}".format(e)
+        if line_count < upper:
+            return False, "file has {} line(s), fewer than the declared upper bound {}".format(
+                line_count, upper)
+        return True, None
+    m = VALIDITY_BAREPATH_RE.match(entry)
+    if m:
+        relpath = m.group(1)
+        p = Path(relpath)
+        if not p.is_absolute():
+            p = hc.ROOT / p
+        if not p.exists():
+            return False, "path does not exist"
+        return True, None
+    return True, None  # unreachable: callers gate on _validity_entry_checkable_kind first
+
+
+def check_validity_conditions(records_by_id):
+    """V1-34 check V: per ACTIVE record, evaluate each CHECKABLE
+    validity_conditions entry (V1-35); >=1 failing entry makes the record a
+    reconsideration candidate, one finding per failing entry. v1 records
+    under dual-read have no validity_conditions -- check V skips them
+    (V1-34: "never a finding, never an error"). Read-only: mutates nothing,
+    logs nothing (same class as `cite`/`conflicts`)."""
+    findings = []
+    for pid in sorted(records_by_id):
+        rec = records_by_id[pid]
+        if rec.get("status") != "active":
+            continue
+        for entry in (rec.get("validity_conditions") or []):
+            if _validity_entry_checkable_kind(entry) is None:
+                continue
+            ok, reason = _check_validity_entry(entry)
+            if not ok:
+                findings.append({"check": "V", "name": "validity-condition-failed",
+                                  "record": pid, "entry": entry, "reason": reason})
+    return findings
+
+
+def check_decay(records_by_id):
+    """V1-34 check D / V1-29: one finding per decay-candidate record."""
+    findings = []
+    for pid in sorted(records_by_id):
+        candidate, m = is_decay_candidate(records_by_id[pid], records_by_id)
+        if candidate:
+            findings.append({"check": "D", "name": "decay-candidate", "record": pid,
+                              "subsequent_publications": m, "threshold": DECAY_N})
+    return findings
+
+
+def list_unchecked_validity_entries(records_by_id):
+    """V1-35's own words, exact: free-text (non-checkable) validity_conditions
+    entries on ACTIVE records are "reported by `stale --json` as
+    `\"unchecked\": true`, never flagged, never an error". These are NOT
+    findings -- they never affect the exit code or the K counter in the text
+    summary (module docstring DECISION on K/R: "K = total finding LINES...",
+    which this deliberately excludes) -- so `cmd_stale` keeps them in a
+    separate list and only `--json` mode renders them, appended after the
+    real findings."""
+    entries = []
+    for pid in sorted(records_by_id):
+        rec = records_by_id[pid]
+        if rec.get("status") != "active":
+            continue
+        for entry in (rec.get("validity_conditions") or []):
+            if _validity_entry_checkable_kind(entry) is not None:
+                continue
+            entries.append({"check": "V", "name": "validity-condition-unchecked",
+                             "record": pid, "entry": entry, "unchecked": True})
+    return entries
+
+
+def render_stale_finding(f):
+    """V1-34's two greppable line shapes, verbatim."""
+    if f["check"] == "V":
+        return "STALE check=V [validity-condition-failed] {}: '{}' -- {}".format(
+            f["record"], f["entry"], f["reason"])
+    return ("STALE check=D [decay-candidate] {}: cited_by empty after {} subsequent "
+            "publications (threshold {})".format(
+                f["record"], f["subsequent_publications"], f["threshold"]))
+
+
+def cmd_stale(args):
+    """T-354, V1-34: the validity-conditions staleness pass -- a SIBLING
+    read verb, not a sixth `conflicts` detector (`conflicts` is record-vs-
+    record contradiction; `stale` is record-vs-ENVIRONMENT drift, A5).
+    READ-ONLY in the full cite/conflicts sense: mutates nothing, logs NO
+    event (module docstring DECISION) -- the registry is byte-identical
+    before and after any run (board T-354 AC-5). Findings FLAG
+    reconsideration candidates and nothing else: no status change, no
+    auto-expiry, ever (A5; addendum sec.6). Exit codes reuse SDR-15
+    verbatim: 0 clean, 3 findings, 2 usage (argparse native), 4 registry
+    integrity error."""
+    root = resolve_root(args)
+    try:
+        records = list(scan_registry(root))
+    except RegistryIntegrityError as e:
+        return integrity_error(e.path, e)
+    records_by_id = dict(records)
+
+    findings = check_validity_conditions(records_by_id) + check_decay(records_by_id)
+
+    if args.json:
+        # V1-35: free-text validity_conditions entries are reported in
+        # --json as "unchecked": true, appended after the real findings --
+        # they are never findings themselves (excluded from the exit code
+        # and from the text-mode K/R summary; see list_unchecked_validity_
+        # entries's own docstring).
+        unchecked = list_unchecked_validity_entries(records_by_id)
+        print(json.dumps(findings + unchecked, indent=2, ensure_ascii=False))
+    else:
+        for f in findings:
+            print(render_stale_finding(f))
+        print("stale: {} reconsideration candidate(s) across {} record(s)".format(
+            len(findings), len(records_by_id)))
+
+    return 3 if findings else 0
+
+
+# --------------------------------------------------------------------------
 # argparse wiring
 # --------------------------------------------------------------------------
 
@@ -1200,7 +2240,7 @@ def main(argv):
     p_pub.add_argument("--distinguishing-facts", dest="distinguishing_facts", action="append", default=None)
     p_pub.add_argument("--distinguishing-facts-file", dest="distinguishing_facts_file",
                         action="append", default=None)
-    p_pub.add_argument("--overrules", default=None)
+    p_pub.add_argument("--overrules", default=None, metavar="PR-NNN|decision:T-NNN#anchor")
     p_pub.add_argument("--factor", action="append", default=None,
                         help="one of {} (SDR-17.11)".format(", ".join(FACTOR_ENUM)))
     p_pub.add_argument("--factor-note", dest="factor_note", default=None)
@@ -1210,6 +2250,30 @@ def main(argv):
     p_pub.add_argument("--supersedes", default=None)
     p_pub.add_argument("--voids", default=None)
     p_pub.add_argument("--controlling-authority", dest="controlling_authority", default=None)
+    # ---- T-353 v2 additions ----
+    p_pub.add_argument("--sources", action="append", default=None,
+                        help="required >=1, any V1-02 citation-grammar token (A1, V1-11)")
+    validity_grp = p_pub.add_mutually_exclusive_group()
+    validity_grp.add_argument("--validity", action="append", default=None,
+                               help="required non-empty at tiers 1-3 (A5, V1-10 #28)")
+    validity_grp.add_argument("--validity-file", dest="validity_file", default=None)
+    p_pub.add_argument("--operation", default="determination",
+                        help="determination|reinterpretation|valuation, default determination "
+                             "(A4, V1-13)")
+    p_pub.add_argument("--operation-subtype", dest="operation_subtype", default=None,
+                        help="required iff --operation != determination (V1-13)")
+    p_pub.add_argument("--reinterprets", default=None, metavar="PR-NNN|decision:T-NNN#anchor",
+                        help="exactly one iff --operation reinterpretation (V1-14)")
+    p_pub.add_argument("--revalues", default=None, metavar="PR-NNN",
+                        help="exactly one iff --operation valuation; PR-NNN only (V1-14, V1-19)")
+    valnote_grp = p_pub.add_mutually_exclusive_group()
+    valnote_grp.add_argument("--valuation-note", dest="valuation_note", default=None)
+    valnote_grp.add_argument("--valuation-note-file", dest="valuation_note_file", default=None)
+    p_pub.add_argument("--code-version", dest="code_version", default=None,
+                        help="required, ^v\\d+$ -- names INTERPRETIVE-CODE.md's Version line "
+                             "(A3, V1-15)")
+    p_pub.add_argument("--target-tier", dest="target_tier", type=int, default=None,
+                        help="required iff any relation target is decision:-anchored (V1-32)")
     add_root_arg(p_pub)
     p_pub.set_defaults(func=cmd_publish)
 
@@ -1256,6 +2320,25 @@ def main(argv):
     p_conflicts.add_argument("--json", action="store_true", default=False)
     add_root_arg(p_conflicts)
     p_conflicts.set_defaults(func=cmd_conflicts)
+
+    # ---- migrate (T-353, V1-36..V1-40) ----
+    p_migrate = sub.add_parser(
+        "migrate", help="schema_version 1 -> 2 in-place migration (V1-37; once-only "
+                         "exception to SDR-01/V1-01)")
+    p_migrate.add_argument("--agent", default=hc.agent_id())
+    p_migrate.add_argument("--backfill", required=True, metavar="FILE.json",
+                            help="JSON object {'PR-NNN': {'sources': [...], "
+                                 "'validity_conditions': [...]}, ...}")
+    add_root_arg(p_migrate)
+    p_migrate.set_defaults(func=cmd_migrate)
+
+    # ---- stale (T-354, V1-34/V1-35) ----
+    p_stale = sub.add_parser(
+        "stale", help="validity-conditions staleness pass (A5/addendum sec.6; V1-34) -- "
+                       "read-only, flags reconsideration candidates, never auto-expiry")
+    p_stale.add_argument("--json", action="store_true", default=False)
+    add_root_arg(p_stale)
+    p_stale.set_defaults(func=cmd_stale)
 
     args = parser.parse_args(argv)
     return args.func(args)
