@@ -1,0 +1,61 @@
+{
+  "id": "PR-019",
+  "schema_version": 2,
+  "title": "The displacement bridge: an overruling record embeds the overruled ratio",
+  "subject": "displacement-bridge-embedding",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a3-1"
+  ],
+  "ratio": "(1) A rule displaced through the full overruling protocol leaves its author's standing intact; authorship credit and priority persist. (2) THE PROTOCOL CHANGE: every record published with an overrules relation must embed the overruled ratio verbatim together with its authorship (record id, published_by, issuing task) inside the superseding record, and a publish that does not is refused. (3) The embedded material is stored at relations[].overruled_predecessor, an object with exactly four keys record_id, ratio, published_by, issuing_task; the key is present on every relation object and null unless the relation type is overrules; it is an additive optional field, not a schema-version bump. (4) For a decision:T-NNN#anchor target there is no registry ratio and no published_by: the quoted predecessor text is supplied by the publisher, the issuing task is the T-NNN half of the anchor, and published_by is the fixed marker, verbatim: unavailable: decision-anchored target has no published_by. (5) The grandfather clause, verbatim: This rule is PROSPECTIVE: it governs publish calls made after this record publishes and reaches no record already in the registry. PR-009 is the worked ancestor this rule generalizes and is expressly not a counterexample to it: PR-009 published before the enforcement existed, and its overrule target is the task-anchored decision token decision:T-344#R-2, which has no registry ratio and no published_by to embed. PR-009 is not retrofitted: relations are immutable after publication under SDR-01, and the only immutability exception on record is the once-only schema migration, which alters no existing field's value. A future session that reads PR-009 as a counterexample to this rule is reading a record this ratio has already dispositioned. (6) The enforcement binds overrules ONLY; supersedes and voids are out of scope by this epic's own delimitation, named here rather than left to be discovered.\n",
+  "dicta": [
+    "PR-009 is the worked ancestor this rule generalizes and is expressly NOT a counterexample to it: PR-009 published before this enforcement existed, and its overrule target decision:T-344#R-2 is a task-anchored decision token with no registry ratio and no published_by to embed. PR-009 is grandfathered by the prospective clause in this ratio; its relations are immutable under SDR-01 and are not edited by this record or by any task in this epic."
+  ],
+  "scope_conditions": [
+    "publish calls carrying an overrules relation, made after this record publishes"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the relation grammar gains a fourth status-flipping type, or if a decision-anchored overrule target gains a resolvable authorship record",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-017",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [
+    "PR-009"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:46:59Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a3-1",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "precedent.py publish accepts --overrules with either a PR-NNN or a decision:T-NNN#anchor target",
+    "relation objects already carry per-relation optional keys that are present-but-null when unused"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "PR-023",
+  "schema_version": 2,
+  "title": "Phase B is gated on cryptographic identity with an external trust root",
+  "subject": "reputation-phase-b-gate",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a5"
+  ],
+  "ratio": "(1) Phase B (verification-burden discounts, quorum weight, charter contestability) is gated on cryptographic identity with an external trust root. (2) That prerequisite is structurally impossible to provide from inside the harness and belongs to the Westphalian layer. (3) Until an identity cannot cheaply mint three names, reputation with consequences is a counterfeiter's paradise. (4) Sybil minting is closed by this gate and by nothing else: nothing else closes it, do not pretend otherwise. (5) The gate is conjunctive with the A.8 currency-health indicator: even with the gate closed, Phase B does not ship if the currency is failing.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any proposal attaching consequence, weighting, quorum weight or charter contestability to standing"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when an external trust root becomes available to this harness, or when FORCE-IDENTITY-A is recorded closed",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "PR-015"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:30Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a5",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "no external trust root and no cryptographic identity primitive exists in this harness; agent identity is a self-asserted string"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -24,7 +24,9 @@
   "confirmation_note": null,
   "relations": [],
   "cites": [],
-  "cited_by": [],
+  "cited_by": [
+    "PR-017"
+  ],
   "overruled_by": null,
   "superseded_by": null,
   "voided_by": null,

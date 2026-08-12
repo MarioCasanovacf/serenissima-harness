@@ -1,0 +1,45 @@
+{
+  "id": "PR-025",
+  "schema_version": 2,
+  "title": "Pre-registered Phase B weighting: adversarial work pays more",
+  "subject": "phase-b-weighting",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a7"
+  ],
+  "ratio": "(1) Adversarial work is scarcer and must pay more: verification verdicts that catch real defects, sustained challenges and harm identification earn more standing per event than authorship or benefit declaration. (2) The measured basis is the declaration asymmetry (benefit attribution about 5x random, harm prediction about 2x). (3) The weighting is PRE-REGISTERED in Phase A and carries no operative effect now; pre-registration exists so the constituency that benefits from cheap authorship credit cannot write the exchange rate later. (4) No numeric weights are fixed by this record: fixing them would be Phase B machinery, and this record's whole function is to fix the ORDERING before the interests know their positions.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any future exchange rate assigning standing per event type"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when Phase B is proposed, or when a fresh measurement changes the benefit-versus-harm declaration asymmetry",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:46Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a7",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "the measured declaration asymmetry is on record in the corpus: benefit attribution about 5x random, harm prediction about 2x"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

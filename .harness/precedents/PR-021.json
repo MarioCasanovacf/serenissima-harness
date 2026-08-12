@@ -1,0 +1,47 @@
+{
+  "id": "PR-021",
+  "schema_version": 2,
+  "title": "Silent divergence is the only reputational crime; Phase A does not fine",
+  "subject": "silent-divergence",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a3-3"
+  ],
+  "ratio": "(1) The only reputational crime is silent divergence: departing from a binding rule without running the overruling or distinguishing protocol. (2) This makes the cheap path (ignore the registry) the expensive path, which is the entire point of a currency. (3) The crime is recorded as doctrine now; its reputational PRICE is Phase B material. Phase A counts and displays; it does not fine. (4) Divergence is observable only where a record or a relation is published: no verb parses free prose, so this record imposes no new detection duty and authorizes no new detector.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any departure from a binding rule that does not run the overruling or distinguishing protocol"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when a reputational price for silent divergence is proposed, or when any divergence detector is promoted from pass to gate",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "PR-016"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:14Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a3-3",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "divergence is recorded only where a record or a relation is published; no verb parses free prose for it"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

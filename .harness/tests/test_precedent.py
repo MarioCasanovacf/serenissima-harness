@@ -136,6 +136,22 @@ class PrecedentCLITestCase(unittest.TestCase):
         root = root if root is not None else self.root
         return json.loads((root / (pr_id + ".json")).read_text(encoding="utf-8"))
 
+    def overrule_embedding_args(self, target_id, root=None):
+        """T-370 amendment (PR-019, A.3.1): every successful `--overrules`
+        call now must embed the overruled record's ratio verbatim plus its
+        authorship (record id, published_by, issuing task) or the publish
+        is refused. Reads the target's own on-disk fields so the required
+        byte-exact ratio match holds regardless of this test's own
+        ratio/agent/task values -- see the amended-assertion list in this
+        task's handoff for which call sites need this."""
+        target = self.load(target_id, root=root)
+        ratio_file = pathlib.Path(self._tmp.name) / (target_id + "-overruled-ratio.txt")
+        ratio_file.write_text(target["ratio"], encoding="utf-8")
+        return ["--overruled-ratio-file", str(ratio_file),
+                "--overruled-record-id", target_id,
+                "--overruled-published-by", target["published_by"],
+                "--overruled-issuing-task", target["issuing_task"]]
+
 
 # ==========================================================================
 # CLI smoke
@@ -404,22 +420,36 @@ class OverruleVoidSupersedeTests(PrecedentCLITestCase):
         self.assertIn("acknowledge-reliance", result.stderr)
 
         # with the acknowledgement, it succeeds and flips the target's status
+        # T-370 AMENDMENT (PR-019, A.3.1): this call now also needs the
+        # displacement-bridge embedding to succeed -- see this task's
+        # handoff for the amended-assertion list.
         result2 = self.publish(task="T-213", subject="subj-cb3", tier=3,
                                 extra_args=["--overrules", target_id, "--factor", "reasoning_error",
                                             "--factor-note", "reasoning no longer holds",
-                                            "--acknowledge-reliance"])
+                                            "--acknowledge-reliance"]
+                                + self.overrule_embedding_args(target_id))
         self.assertEqual(result2.returncode, 0, result2.stderr)
         new_id = result2.stdout.strip().splitlines()[-1].split()[-1]
         target_rec = self.load(target_id)
         self.assertEqual(target_rec["status"], "overruled")
         self.assertEqual(target_rec["overruled_by"], new_id)
         self.assertIn(new_id, target_rec["cited_by"])
+        # the embedded predecessor material matches byte-for-byte (AD2-32/33).
+        new_rec = self.load(new_id)
+        embedded = new_rec["relations"][0]["overruled_predecessor"]
+        self.assertEqual(embedded["ratio"], target_rec["ratio"])
+        self.assertEqual(embedded["record_id"], target_id)
+        self.assertEqual(embedded["published_by"], target_rec["published_by"])
+        self.assertEqual(embedded["issuing_task"], target_rec["issuing_task"])
 
     def test_overrules_refuses_nonactive_target(self):
         target_id, _ = self.publish_ok(task="T-220", subject="subj-na", tier=3)
+        # T-370 AMENDMENT (PR-019, A.3.1): r1 is a successful --overrules
+        # publish and now needs the displacement-bridge embedding too.
         r1 = self.publish(task="T-221", subject="subj-na2", tier=3,
                           extra_args=["--overrules", target_id, "--factor", "unworkability",
-                                      "--factor-note", "note one"])
+                                      "--factor-note", "note one"]
+                          + self.overrule_embedding_args(target_id))
         self.assertEqual(r1.returncode, 0, r1.stderr)
         r2 = self.publish(task="T-222", subject="subj-na3", tier=3,
                           extra_args=["--overrules", target_id, "--factor", "unworkability",

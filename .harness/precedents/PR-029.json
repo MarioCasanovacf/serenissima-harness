@@ -1,0 +1,47 @@
+{
+  "id": "PR-029",
+  "schema_version": 2,
+  "title": "The Westphalia KPI: reconciliation cost, quarterly, operator baseline",
+  "subject": "westphalia-kpi",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-c5"
+  ],
+  "ratio": "(1) The load-bearing empirical question of the whole Part C layer is how expensive divergence repair is. (2) The operator baseline on record: approximately 3 months of human effort reconciling architecture and redundancy differences between two simple systems. (3) The measure: wall-clock hours PLUS tokens to reconcile two domain registries or two workstreams diverged for N weeks. (4) The cadence: quarterly, alongside the Part VI monitoring duty and the T-349 watch. (5) The interpretation rule: if reconciliation cost trends toward negligible, the containment architecture of Part C is over-engineered and should be simplified; if it stays expensive, Westphalia stands. (6) The metric is measurable only once two domain registries exist; until then it is recorded as not yet measurable with that reason, never as zero.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "the standing quarterly monitoring duty and any future report of divergence-repair cost"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when two domain registries or two long-diverged workstreams first require reconciliation, or once three quarterly measurements exist",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "PR-027"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:48:21Z",
+  "sources": [
+    "decision:T-368#addendum-ii-c5",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "only one domain registry exists, so this metric is defined but not yet measurable"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

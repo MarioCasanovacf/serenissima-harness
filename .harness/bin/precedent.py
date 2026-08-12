@@ -299,6 +299,78 @@ the K/R summary counter (the DECISION above) are both defined purely in
 terms of findings, so neither renders unchecked entries. They never affect
 the exit code (0/3 still keys off `findings` alone, never `findings +
 unchecked`).
+
+---- T-370 additions (the displacement bridge: overrule-path enforcement,
+AB5 / addendum II section A.3.1) ------------------------------------------
+
+Implements EXACTLY `docs/precedent-research/synthesis-addendum-ii-spec.md`
+section 3 (`AD2-30`..`AD2-39` below), enacted by the tier-1 record `PR-019`
+(subject `displacement-bridge-embedding`, published by T-369 BEFORE this
+code, per PR-017's record-before-code procedure -- confirmed active at
+T-370's start). Every branch below cites its `AD2-NN` id in a comment.
+
+AD2-30: five new, all-additive, argparse-optional `publish` flags --
+`--overruled-ratio`/`--overruled-ratio-file`, `--overruled-record-id`,
+`--overruled-published-by`, `--overruled-issuing-task`. No `choices=`, no
+`required=True`: absence and malformation both take the manual exit-1
+REFUSAL path, exactly the v0/T-353 DECISION at the top of this file.
+
+AD2-31: no `-stdin` variant for `--overruled-ratio` (`--ratio-stdin`
+already claims the one stdin stream `publish` can consume in a single
+call; planner judgment, disclosed).
+
+AD2-32: the stored field is `relations[i].overruled_predecessor`, an
+object with exactly the four keys `record_id`/`ratio`/`published_by`/
+`issuing_task`. `make_relation()` gains it with default `None` so it is
+PRESENT on every relation object (the file's existing present-but-null
+convention) and `null` unless `type == "overrules"`. Additive optional
+field, NOT a schema-version bump (AD2-36): `SCHEMA_VERSION`/
+`SCHEMA_VERSION_V2` are untouched.
+
+AD2-33: for a `PR-NNN` target, all three authorship elements plus the
+ratio are SUPPLIED by the publisher and VERIFIED against the target's own
+stored fields -- byte-for-byte on the ratio (no strip, no normalization),
+exact string match on `published_by`/`issuing_task`. Supplied-and-verified,
+never auto-stamped: A.3.1 places the payment duty on the overruler, and an
+auto-stamp would make the act free and unread (and would make the mandated
+"each authorship element missing in turn" tests unwritable).
+
+AD2-34: for a `decision:T-NNN#anchor` target (PR-009's own live target
+`decision:T-344#R-2` is exactly this shape) there is no registry ratio and
+no `published_by` to verify against, so the ruling is an ADAPTED embedding
+with the unavailable element MARKED rather than absent or fabricated:
+`--overruled-published-by` must be exactly the fixed marker string
+`DECISION_ANCHOR_PUBLISHED_BY_MARKER`; `--overruled-issuing-task` must be
+the anchor's own `T-NNN` half AND must resolve; the quoted ratio's fidelity
+is a JUDGMENT check for a verifier, not mechanized here.
+
+AD2-35: eleven refusal messages, verbatim, all routed through the existing
+`refuse()` helper (exit 1, `precedent_publish_refused` -- no new event
+kind, honoring V1-46's exhaustiveness claim).
+
+AD2-37 (CHECK PLACEMENT): the embedding checks run inside the existing
+`if rel["type"] == "overrules":` loop, immediately after the shipped
+SDR-17.12 reliance-acknowledgement check and before the SDR-17.13 `voids`
+controlling-authority loop -- so every shipped refusal keeps priority and
+no pre-existing test that refuses EARLIER in the sequence changes its
+message. DEVIATION, disclosed in the T-370 handoff: AD2-37 also claims "no
+existing test's expected message changes... T-370's licence to amend
+assertions stays unused on this path" -- that claim covers only tests that
+refuse before this point; several pre-existing tests that previously
+SUCCEEDED with `--overrules` now correctly require the new embedding flags
+too, and are amended (listed in the handoff, one file -- test_precedent_
+force.py -- outside the acceptance criteria's named three-file licence).
+
+AD2-38 (OUT OF SCOPE, by design): `supersedes`/`voids` are NOT enforced --
+AB5 delimits the enforcement to `--overrules` only; widening it is Phase-2
+material (forwarded to the join as OQ-1), not a worker's judgment.
+
+AD2-39: `conflicts` gains NO sixth detector for non-compliant historical
+overrules -- PR-009 is the sole historical instance and AD2-40 (this
+epic's own T-369/synthesis ruling) GRANDFATHERS it by name; a detector
+whose entire population is already dispositioned would report the same
+finding forever, the false-positive shape `PRECEDENT.md` section 9 already
+names as fatal. The five shipped detectors stay five.
 """
 import argparse
 import json
@@ -347,6 +419,13 @@ REITERATION_N = 3
 # ordinary code change WITH a DEVIATION note citing V1-29 -- calibration,
 # not doctrine.
 DECAY_N = 10
+
+# T-370, AD2-34 (PR-019, A.3.1): the fixed marker a decision:-anchored
+# overrule's --overruled-published-by must equal EXACTLY, character for
+# character -- the only accepted value, since a decision: target has no
+# registry published_by to embed and any other value would be a fabricated
+# identity.
+DECISION_ANCHOR_PUBLISHED_BY_MARKER = "unavailable: decision-anchored target has no published_by"
 
 # relation type -> (status it stamps on the target, backref field it fills)
 # NOTE: reinterprets/revalues are deliberately absent -- V1-07: "Neither ever
@@ -684,7 +763,7 @@ def refuse(event_kind, reason, root, **fields):
 
 def make_relation(rtype, target, distinguishing_facts=None, factors=None,
                    factor_note=None, controlling_authority=None,
-                   target_tier_declared=None):
+                   target_tier_declared=None, overruled_predecessor=None):
     return {
         "type": rtype,
         "target": target,
@@ -693,6 +772,11 @@ def make_relation(rtype, target, distinguishing_facts=None, factors=None,
         "factor_note": factor_note,
         "controlling_authority": controlling_authority,
         "target_tier_declared": target_tier_declared,  # V1-16, T-353
+        # T-370, AD2-32 (PR-019, A.3.1): present on every relation object,
+        # null unless type == "overrules" -- {record_id, ratio,
+        # published_by, issuing_task} once populated by build_overruled_
+        # predecessor() below. Additive optional field, not a schema bump.
+        "overruled_predecessor": overruled_predecessor,
         "below_target_tier": None,  # stamped by the CLI once the target's tier is known
     }
 
@@ -712,6 +796,18 @@ def resolve_ratio(args):
     if args.ratio_file:
         return read_file_text(args.ratio_file)
     return args.ratio or ""
+
+
+def resolve_overruled_ratio(args):
+    """T-370, AD2-30/AD2-31: bare plus -file only (no -stdin variant --
+    --ratio-stdin already claims the one stdin stream a publish call can
+    consume). Byte-exact utf-8 via the existing read_file_text, no
+    stripping, so "verbatim" (A.3.1's own word) is never paraphrased.
+    Returns None when neither flag is given (distinguished from an empty
+    string so the AD2-33 presence check below can name the right defect)."""
+    if args.overruled_ratio_file:
+        return read_file_text(args.overruled_ratio_file)
+    return args.overruled_ratio
 
 
 def resolve_scope(scope_list_arg, scope_file_arg):
@@ -805,6 +901,86 @@ def _target_tier_status(rel, target_cache):
     return trec.get("authority_tier"), trec.get("status")
 
 
+def build_overruled_predecessor(rel, target_cache, args, overruled_ratio, root):
+    """T-370, AD2-30..AD2-35 (PR-019, A.3.1): the displacement-bridge
+    embedding. `rel["type"]` is always "overrules" here (only caller-gated
+    context). Returns (predecessor_dict, None) on success or (None,
+    error_message) on the first violated check -- callers route the
+    message through refuse() unchanged, exactly like every other SDR-17
+    check in this file.
+
+    Check order matches AD2-35's own numbering exactly:
+      1-4: presence (ratio, record id, published_by, issuing task) --
+           shared by BOTH a PR-NNN and a decision:-anchored target (AD2-33
+           items 1-4; AD2-34's own item 1 restates check 1 for its case).
+      5:   record id must name the --overrules target byte-for-byte --
+           shared (AD2-33; also AD2-34 item 2, "the token IS the id").
+      6-8: PR-NNN-target-only verification against the registry (AD2-33):
+           ratio byte-exact, published_by exact, issuing_task exact.
+      9-11: decision:-anchored-target-only ruling (AD2-34): the fixed
+           marker, the T-NNN half, and its resolution.
+    """
+    target = rel["target"]
+    is_decision = DECISION_RE.match(target) is not None
+
+    # ---- checks 1-4 (AD2-33): presence, shared by both target kinds ----
+    if overruled_ratio is None or not overruled_ratio.strip():
+        return None, ("--overrules requires --overruled-ratio or --overruled-ratio-file: "
+                       "the overruled ratio must be embedded verbatim (AD2-33)")
+    if not args.overruled_record_id or not args.overruled_record_id.strip():
+        return None, ("--overrules requires --overruled-record-id: authorship element "
+                       "'record id' is missing (AD2-33)")
+    if not args.overruled_published_by or not args.overruled_published_by.strip():
+        return None, ("--overrules requires --overruled-published-by: authorship element "
+                       "'published_by' is missing (AD2-33)")
+    if not args.overruled_issuing_task or not args.overruled_issuing_task.strip():
+        return None, ("--overrules requires --overruled-issuing-task: authorship element "
+                       "'issuing task' is missing (AD2-33)")
+
+    # ---- check 5 (AD2-33; AD2-34 item 2): record id names the target ----
+    if args.overruled_record_id != target:
+        return None, ("--overruled-record-id '{}' does not name the --overrules target "
+                       "'{}' (AD2-33)".format(args.overruled_record_id, target))
+
+    if not is_decision:
+        # ---- checks 6-8 (AD2-33): PR-NNN target, byte-exact against the
+        # registry. target is a key of target_cache by construction (item 6
+        # already loaded every non-decision relation target before this
+        # loop runs).
+        target_rec = target_cache[target]
+        if overruled_ratio != target_rec.get("ratio"):
+            return None, ("embedded ratio does not match {}'s stored ratio byte-for-byte "
+                           "(AD2-33)".format(target))
+        if args.overruled_published_by != target_rec.get("published_by"):
+            return None, ("--overruled-published-by '{}' does not match {}'s published_by "
+                           "'{}' (AD2-33)".format(args.overruled_published_by, target,
+                                                    target_rec.get("published_by")))
+        if args.overruled_issuing_task != target_rec.get("issuing_task"):
+            return None, ("--overruled-issuing-task '{}' does not match {}'s issuing_task "
+                           "'{}' (AD2-33)".format(args.overruled_issuing_task, target,
+                                                    target_rec.get("issuing_task")))
+    else:
+        # ---- checks 9-11 (AD2-34): decision:-anchored target ruling ----
+        if args.overruled_published_by != DECISION_ANCHOR_PUBLISHED_BY_MARKER:
+            return None, ("--overruled-published-by for the decision-anchored target {} must "
+                           "be exactly: {} (AD2-34)".format(target, DECISION_ANCHOR_PUBLISHED_BY_MARKER))
+        task_half = DECISION_TASK_RE.match(target).group(1)
+        if args.overruled_issuing_task != task_half:
+            return None, ("--overruled-issuing-task '{}' must be the T-NNN half of the "
+                           "decision-anchored target {} (AD2-34)".format(
+                               args.overruled_issuing_task, target))
+        if not resolve_citation(args.overruled_issuing_task, root):
+            return None, ("--overruled-issuing-task '{}' does not resolve against the tasks "
+                           "store (AD2-34)".format(args.overruled_issuing_task))
+
+    return {
+        "record_id": args.overruled_record_id,
+        "ratio": overruled_ratio,
+        "published_by": args.overruled_published_by,
+        "issuing_task": args.overruled_issuing_task,
+    }, None
+
+
 def cmd_publish(args):
     root = resolve_root(args)
 
@@ -813,6 +989,7 @@ def cmd_publish(args):
         scope_list = resolve_scope(args.scope, args.scope_file)
         validity_list = resolve_validity(args.validity, args.validity_file)
         valuation_note = resolve_valuation_note(args)
+        overruled_ratio = resolve_overruled_ratio(args)  # T-370, AD2-30
         relations, rel_err = assemble_relations(args)
     except FileArgError as e:
         print("refused: {}".format(e), file=sys.stderr)
@@ -1126,6 +1303,16 @@ def cmd_publish(args):
                                            "--acknowledge-reliance after reviewing the blast radius "
                                            "(SDR-17.12)".format(rel["target"], tgt.get("cited_by")),
                                            root, task=args.task)
+
+                    # ---- T-370, AD2-30..AD2-35 (PR-019, A.3.1): the ----
+                    # displacement-bridge embedding. Runs immediately after
+                    # SDR-17.12 (reliance ack) and before SDR-17.13 (voids
+                    # controlling-authority), per AD2-37's check placement.
+                    predecessor, embed_err = build_overruled_predecessor(
+                        rel, target_cache, args, overruled_ratio, root)
+                    if embed_err:
+                        return refuse("precedent_publish_refused", embed_err, root, task=args.task)
+                    rel["overruled_predecessor"] = predecessor
                 if rel["type"] == "revalues" and rel["factors"] and not (rel.get("factor_note") or "").strip():
                     return refuse("precedent_publish_refused",
                                    "revalues with --factor requires --factor-note or "
@@ -2247,6 +2434,17 @@ def main(argv):
     p_pub.add_argument("--factor-note-file", dest="factor_note_file", default=None)
     p_pub.add_argument("--acknowledge-reliance", dest="acknowledge_reliance",
                         action="store_true", default=False)
+    # ---- T-370, AD2-30 (PR-019, A.3.1): the displacement-bridge embedding ----
+    p_pub.add_argument("--overruled-ratio", dest="overruled_ratio", default=None,
+                        help="the --overrules target's ratio, embedded verbatim (AD2-33)")
+    p_pub.add_argument("--overruled-ratio-file", dest="overruled_ratio_file", default=None,
+                        help="byte-exact utf-8, no stripping; no -stdin form (AD2-30/AD2-31)")
+    p_pub.add_argument("--overruled-record-id", dest="overruled_record_id", default=None,
+                        help="authorship element 'record id' (AD2-33)")
+    p_pub.add_argument("--overruled-published-by", dest="overruled_published_by", default=None,
+                        help="authorship element 'published_by' (AD2-33/AD2-34)")
+    p_pub.add_argument("--overruled-issuing-task", dest="overruled_issuing_task", default=None,
+                        help="authorship element 'issuing task' (AD2-33/AD2-34)")
     p_pub.add_argument("--supersedes", default=None)
     p_pub.add_argument("--voids", default=None)
     p_pub.add_argument("--controlling-authority", dest="controlling_authority", default=None)

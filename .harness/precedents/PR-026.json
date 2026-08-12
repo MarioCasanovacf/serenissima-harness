@@ -1,0 +1,45 @@
+{
+  "id": "PR-026",
+  "schema_version": 2,
+  "title": "What the reputation layer refuses: no leaderboard, no automatic demotion",
+  "subject": "reputation-refusals",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a9"
+  ],
+  "ratio": "Four refusals, each stated as a refusal and not as a preference. (1) No reputation for humans in the loop: the operator is sovereign, not a market participant. (2) No global leaderboard across organizations; premature ranking is premature war. (3) No automatic demotion, suspension or exclusion of any identity by computed standing alone. (4) A written, reasoned, tiered decision remains the only instrument that changes anyone's status: the machine flags, an agent decides, the record shows why. (5) Lifting any one of these requires a tier-1 act naming this record and the single refusal it lifts.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "every present and future consumer of any standing figure in this harness"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit only by a tier-1 act that names this record and the single refusal it lifts",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:52Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a9",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "the operator is the only tier-1 authority and is not a participant in any standing computation"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

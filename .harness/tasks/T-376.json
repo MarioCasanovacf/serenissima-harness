@@ -1,0 +1,8 @@
+{
+  "id": "T-376",
+  "title": "REPAIR: precedent.py silently discards extra --voids targets (non-accumulating flag)",
+  "description": "Discovered by the coordinator publishing PR-032: precedent.py publish accepts multiple --voids flags but keeps only the LAST, exiting 0 and recording one relation where two were requested - a silent discard of an explicit instruction, the same defect family as a false-green test. --dicta, --sources, --tier-evidence and --cites accumulate on the same subcommand, so the semantics are inconsistent and the trap is invisible. Fix: either make --voids (and any other single-value relation flag with the same shape: --overrules, --supersedes, --reinterprets, --revalues, --distinguishes, --follows, --cites where applicable) accumulate with paired --controlling-authority positional matching, OR refuse the publish with a clear message when more targets are supplied than the tool will honor. Refusing is acceptable and simpler; silent discard is not. Audit every relation flag on publish for the same shape and state the audit result in the handoff. Acceptance: python3 -m unittest discover -s .harness/tests -p 'test_precedent*.py' -v green with nonzero count plus a new test proving a two-target publish either records both relations or refuses; py_compile clean; PR-032 and PR-033's existing relations untouched (immutable class A).",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

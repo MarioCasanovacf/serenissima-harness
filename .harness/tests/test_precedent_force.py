@@ -159,6 +159,24 @@ class LiveCLIReiterationTests(unittest.TestCase):
     def show(self, pr_id):
         return run("show", pr_id, "--root", str(self.root))
 
+    def load(self, pr_id):
+        return json.loads((self.root / (pr_id + ".json")).read_text(encoding="utf-8"))
+
+    def overrule_embedding_args(self, target_id):
+        """T-370 amendment (PR-019, A.3.1): every successful `--overrules`
+        call now must embed the overruled record's ratio verbatim plus its
+        authorship (record id, published_by, issuing task) or the publish
+        is refused. Reads the target's own on-disk fields so the required
+        byte-exact ratio match holds -- see the amended-assertion list in
+        this task's handoff."""
+        target = self.load(target_id)
+        ratio_file = pathlib.Path(self._tmp.name) / (target_id + "-overruled-ratio.txt")
+        ratio_file.write_text(target["ratio"], encoding="utf-8")
+        return ["--overruled-ratio-file", str(ratio_file),
+                "--overruled-record-id", target_id,
+                "--overruled-published-by", target["published_by"],
+                "--overruled-issuing-task", target["issuing_task"]]
+
     def test_reiteration_threshold_at_n_minus_1_n_and_n_plus_1(self):
         """The board's mandatory reiteration test: N=3 (V1-22's disclosed
         R-2 threshold). Build up 2, 3, 4 qualifying `follows` applications
@@ -281,12 +299,22 @@ class LiveCLIReiterationTests(unittest.TestCase):
 
     def test_force_none_when_target_overruled(self):
         """V1-22 table: status != active -> force 'none', with the
-        '(status: <status>)' suffix (V1-43)."""
+        '(status: <status>)' suffix (V1-43).
+
+        T-370 AMENDMENT (PR-019, A.3.1), disclosed as a DEVIATION beyond
+        this task's named three-file amendment licence (test_precedent.py/
+        test_precedent_v2.py/test_precedent_conflicts.py): this file is not
+        in that licence, but the displacement-bridge enforcement correctly
+        refuses this call's --overrules exactly as it does everywhere else,
+        so the fix is the identical mechanical one -- embed the overruled
+        record's ratio verbatim plus its authorship. See this task's
+        handoff for the full reasoning."""
         target = self.publish_ok("author-ov", "T-670", "target-ov", tier=1)
         self.publish_ok("peer-1", "T-671", "app-ov-1", tier=3, extra_args=["--follows", target])
         result = self.publish("overruler", "T-672", "overrule-ov", tier=1,
                                extra_args=["--overrules", target, "--factor", "doctrinal_change",
-                                           "--factor-note", "note", "--acknowledge-reliance"])
+                                           "--factor-note", "note", "--acknowledge-reliance"]
+                               + self.overrule_embedding_args(target))
         self.assertEqual(result.returncode, 0, result.stderr)
         result = self.show(target)
         self.assertIn("force: none (status: overruled)", result.stdout)

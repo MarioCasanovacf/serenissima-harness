@@ -1,0 +1,70 @@
+{
+  "id": "PR-033",
+  "schema_version": 2,
+  "title": "PR-030 is void per incuriam: the companion duplicate",
+  "subject": "registry-hygiene-duplicates",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-369",
+    "T-373"
+  ],
+  "ratio": "PR-030 is void per incuriam on the same grounds PR-032 states for PR-031: it duplicates the Westphalia KPI doctrine already held by PR-029, the controlling authority it overlooked, and the T-368 spec ledger never authorized it. PR-029 remains the sole active record of that doctrine.",
+  "dicta": [
+    "This record exists as a separate act only because of a control-plane defect discovered while publishing PR-032: --voids is not an accumulating flag, unlike --dicta, --sources and --tier-evidence on the same subcommand, so a publish carrying two --voids targets silently kept the last and discarded the first, exiting 0 with no warning that an explicit instruction had been dropped. PR-032's own relations array records one relation where two were requested. A control-plane tool that silently discards an instruction is a correctness defect of the same family as a false-green test run; it is filed for repair as T-376 and the inconsistent flag semantics are named there."
+  ],
+  "scope_conditions": [
+    "duplicate or unauthorized records in the precedent registry"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when T-376 makes --voids accumulate or makes a dropped instruction a refusal.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-032",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    },
+    {
+      "type": "voids",
+      "target": "PR-030",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": "PR-029",
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-12T23:11:45Z",
+  "sources": [
+    "T-369",
+    "T-373"
+  ],
+  "validity_conditions": [
+    "the registry remains append-only; --voids accepts a single target per publish until T-376 lands"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

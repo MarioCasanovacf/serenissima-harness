@@ -1,0 +1,62 @@
+{
+  "id": "PR-022",
+  "schema_version": 2,
+  "title": "Phase A reputation is bookkeeping: derived on read, zero consequences",
+  "subject": "reputation-phase-a",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a4"
+  ],
+  "ratio": "(1) Reputation is derived, never stored as balances; standing is computed at read time from the existing archive, following PR-010's computed-on-read doctrine. (2) No new ledger: the reader references existing records rather than duplicating them, because stacking layers can subtract performance. (3) The event types are exactly six: rule authorship; load-bearing citations received; consolidations achieved; proper overrulings issued and sustained; verification verdicts upheld; adjudications not reversed (DEFERRED, present and empty, never fabricated). (4) NO CONSEQUENCE ATTACHES. NONE: no weighting, no gating, no privileges. (5) The caveat, verbatim, is the canonical string every output path of the reader prints: identities are self-asserted (FORCE-IDENTITY-A open); Phase A is bookkeeping, not currency; no consequence may cite these figures (A.4, A.9). (6) The neutrality clause, verbatim: Phase A is neutral on standing: no verification or confirmation burden varies by standing. The PR-015 confirmation burden is UNIFORM for every identity in Phase A. Section A.6.2's standing-scaled trust burden is Phase B material and is not operable now, by A.4's own words: no consequence attaches, none. A consumer that wires a consequence to a Phase A figure violates this tier-1 record, not a style guide.\n",
+  "dicta": [
+    "The reader's own source of truth for the caveat string is this record's ratio, not an untracked document: docs/serenissima-addendum-ii-reputation-westphalia.md sections A.4 and A.9 are the operator text this ratio enacts, named here in dicta because docs/ is gitignored and would dangle for every reader who clones."
+  ],
+  "scope_conditions": [
+    "any reader deriving standing figures from harness stores",
+    "any consumer of a Phase A standing figure"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when FORCE-IDENTITY-A is recorded closed, or when any consumer proposes to attach a consequence to a Phase A figure",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-010",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [
+    "PR-015"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:23Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a4",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "FORCE-IDENTITY-A is open: no cryptographic identity with an external trust root exists in this harness",
+    "no stored standing or balance field exists in any harness store"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

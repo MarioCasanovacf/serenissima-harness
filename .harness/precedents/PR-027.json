@@ -1,0 +1,53 @@
+{
+  "id": "PR-027",
+  "schema_version": 2,
+  "title": "Territorial law: precedents attach to domains, never to lineages",
+  "subject": "territorial-law",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-c3"
+  ],
+  "ratio": "(1) Precedents attach to domains, never to lineages; the unit of jurisdiction is the feature's bounded context, and a precedent created while working in domain X belongs to X's registry. (2) Lineages carry no patrimony: no agent or session lineage owns, inherits or transports precedent; a faction with no patrimony to defend is a duty shift, not a faction. (3) The one exception that travels with an identity is standing (addendum section A.2, the reputation-attachment-rules record). (4) Context maps are treaties and anti-corruption layers are customs posts: inter-domain contracts are explicit, versioned and negotiated at borders, never implied by shared lineage. (5) The founding-domain delimitation, verbatim: Until cells exist, .harness/precedents is delimited as the registry of the FOUNDING DOMAIN, which is the harness itself. C.3's territorial rule is satisfied degenerately by a single territory. This registry is not the personal-law patrimony of any lineage, session or identity, and no future epic may treat it as one: a lineage carries no patrimony, and the only thing that travels with an identity is standing. (6) This record authorizes NO construction: no cell, no domain registry, no charter is built by it or by any task in this epic.\n",
+  "dicta": [
+    "PARKED, per the operator's explicit deferral and AB1: the Brussels-effect / conformance-acquis strategy gets no record of its own and no construction. Build no standardization gravity until the operator's stated precondition holds -- the harness must demonstrably gate something cells cannot obtain elsewhere (merge rights, deployment, compute budget). This is a refusal with a named precondition, not a deferral of enthusiasm: a future session may not read it as satisfied by readiness, opportunity, or the mere existence of a second domain, and the only thing that lifts it is the precondition met on record.",
+    "The operator text this record enacts is docs/serenissima-addendum-ii-reputation-westphalia.md Part C, named here in dicta only: docs/ is gitignored, so a path citation in sources or cites would dangle for every reader who clones."
+  ],
+  "scope_conditions": [
+    "every future epic creating, splitting, merging or reassigning a domain or a registry"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit when a second domain registry is created, or when a context map between two domains is first published",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [
+    "PR-028",
+    "PR-029",
+    "PR-030",
+    "PR-031"
+  ],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:48:03Z",
+  "sources": [
+    "decision:T-368#addendum-ii-c3",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "one registry exists at .harness/precedents and no cell, no second domain registry and no charter exists"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

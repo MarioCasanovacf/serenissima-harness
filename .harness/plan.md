@@ -1156,6 +1156,409 @@ correction would re-cut):
   and T-362 is charged with producing its own comparison and forbidden to delegate it to a
   citation of T-359's verdict.
 
+## addendum-ii (reputation as constitutional currency, political economy, Westphalia)  [PUBLISHED 2026-08-12 — T-366..T-375 LIVE on the board]
+
+> STATUS: **PUBLISHED 2026-08-12** by `orchestration-planner`. Third epic of the precedent line,
+> over the shipped `precedent-layer` v0 (T-330…T-349) and `precedent-layer-v1` (T-350…T-362).
+> Tier-1 input: the operator's `docs/serenissima-addendum-ii-reputation-westphalia.md`, **binding
+> design input where marked DIRECTIVE**, which merges and supersedes the never-received separate
+> Addendum II/III texts and v1 of the unified document (only the unified v2 is on file; the
+> superseded versions never entered this environment, so there is no registry impact). Coordinator
+> intake decisions **AB1–AB10** (`.harness/coordinator-decisions-addendum-ii.md`) are BINDING for
+> this plan; the delimitations are the load-bearing part of that memo and they are what most of
+> this DAG's acceptance criteria enforce. Every BLOCKING known-unknown is closed below — five by
+> route (a) (the spec gate T-368 is a real `depends_on` of every node that needs the answer, so
+> the cascade gate mechanically prevents an early claim), two by route (b) (recorded answer with
+> cited repo evidence).
+
+### Why
+
+The addendum imports Mokyr's Republic of Letters and the Augsburg–Westphalia settlement as design
+schemas. The system already built half of the RoL without naming it: PR-016 ("what is cited
+governs; what is ignored degrades") is citation-as-payment for **rules**. What does not exist is
+the account for **authors** — and without it, overruling is war rather than jurisprudence, because
+the displaced author loses everything. Four things this epic actually changes:
+
+1. **Two currencies with two attachment rules** (§A.2, DIRECTIVE). Patrimony is territorial
+   (rules belong to the domain, §C.3); honor is personal (track record attaches to the identity
+   and travels). This is not a contradiction with territorial law — it is the completing half:
+   the *ius emigrandi* of §C.4.4 only disciplines a sovereign if leaving costs the leaver nothing
+   they earned.
+2. **The displacement bridge becomes enforcement, not courtesy** (§A.3.1, AB5). PR-009 already
+   preserved the defeated counterargument inside the superseding record. The DIRECTIVE
+   generalizes it: every overruling record embeds the overruled ratio **with authorship intact**,
+   or the publish is refused. The superseding record becomes a citation that keeps paying its
+   predecessor.
+3. **Reputation ships as bookkeeping with zero consequences** (§A.4, DIRECTIVE). Derived on read
+   from existing stores (PR-010's doctrine), never a new ledger. Phase B — burden discounts,
+   quorum weight, charter contestability — is **gated on cryptographic identity with an external
+   trust root** (§A.5), which FORCE-IDENTITY-A leaves open. The three-named actor who fabricated
+   "consolidada" in the demo was not a bug report; it was a preview of the monetary crisis.
+4. **Part C binds future construction without building anything** (AB1). Territorial law, the
+   sovereign cell charter and the Westphalia KPI enter the registry so future epics are *born
+   bound*. The Brussels-effect / conformance-acquis strategy is **PARKED** and gets no record of
+   its own — only a parking notice in the Part C record's dicta.
+
+The epic's reflexive discipline is unchanged and is the reason the build order looks
+counter-intuitive: **the records publish before the code** (PR-017 procedure). A protocol change
+enforced by code that no record authorizes is precisely the silent divergence §A.3.3 names as the
+only reputational crime.
+
+### The DAG (T-366 … T-375, epic `addendum-ii`, engine `claude` throughout)
+
+```mermaid
+graph TD
+  subgraph research["RESEARCH — 2 tasks, ZERO edges between them, both claimable at publication (p1)"]
+    T366["T-366 R1 Schumpeter-Mokyr validation<br/>12-schumpeter-mokyr-validation.md<br/>VALIDATES, does not gate"]
+    T367["T-367 R2 load-bearing citation<br/>13-load-bearing-citation.md<br/>ON THE CRITICAL PATH"]
+  end
+  T368["T-368 SPEC SYNTHESIS GATE (thinker, FRONTIER)<br/>synthesis-addendum-ii-spec.md<br/>record ledger + reputation surface<br/>+ enforcement spec + PR-009 ruling"]
+  T369["T-369 B1 PUBLISH the record set<br/>PR-018+ via the real CLI<br/>(record BEFORE code, PR-017)"]
+  subgraph build["BUILD — control-plane tier (P-024 full adversarial replay); B2 and B3 touch disjoint files"]
+    T370["T-370 B2 precedent.py overrule-path<br/>enforcement + test_precedent_bridge.py"]
+    T371["T-371 B3 reputation.py Phase A<br/>read-only + test_reputation.py"]
+  end
+  T372["T-372 B4 PRECEDENT.md section<br/>+ T-349 amendment note<br/>(quotes FROZEN surfaces only)"]
+  T373["T-373 V1 (rotation slot 1)<br/>records vs the addendum text"]
+  T374["T-374 V2 (rotation slot 2)<br/>adversarial replay of B2+B3"]
+  T375["T-375 EPIC JOIN (verifier, FRONTIER)<br/>full replay + R1 contradiction disposition<br/>+ ratification memo + U4 explainer<br/>then HANDOFF to a no-artifact identity"]
+
+  T367 --> T368
+  T368 --> T369
+  T369 --> T370
+  T369 --> T371
+  T369 --> T373
+  T370 --> T372
+  T371 --> T372
+  T370 --> T374
+  T371 --> T374
+  T366 --> T375
+  T367 --> T375
+  T368 --> T375
+  T369 --> T375
+  T370 --> T375
+  T371 --> T375
+  T372 --> T375
+  T373 --> T375
+  T374 --> T375
+```
+
+### Task table
+
+| ID | Role | Engine | Tier (P-030) | Prio | Depends on | Owns (sole writer) |
+|---|---|---|---|---|---|---|
+| T-366 | worker | claude | sonnet | 1 | — | `docs/precedent-research/12-schumpeter-mokyr-validation.md` |
+| T-367 | worker | claude | sonnet | 1 | — | `docs/precedent-research/13-load-bearing-citation.md` |
+| T-368 | thinker | claude | **frontier** | 2 | T-367 | `docs/precedent-research/synthesis-addendum-ii-spec.md` |
+| T-369 | worker | claude | sonnet | 3 | T-368 | the newly minted `.harness/precedents/PR-018+.json` |
+| T-370 | worker | claude | sonnet | 4 | T-369 | `.harness/bin/precedent.py`, `.harness/tests/test_precedent_bridge.py`, + assertion-only edits to `test_precedent.py` / `_v2.py` / `_conflicts.py` |
+| T-371 | worker | claude | sonnet | 4 | T-369 | `.harness/bin/reputation.py`, `.harness/tests/test_reputation.py` (both NEW) |
+| T-372 | worker | claude | sonnet | 5 | T-370,T-371 | `PRECEDENT.md` (new section), one note on `T-349` |
+| T-373 | verifier | claude | sonnet | 5 | T-369 | nothing (replay-only) |
+| T-374 | verifier | claude | sonnet | 6 | T-370,T-371 | nothing (replay-only) |
+| T-375 | verifier | claude | **frontier** | 7 | all 9 above | `docs/precedent-research/ratification-memo-addendum-ii.md`, `docs/addendum-ii-explainer.html`, `docs/precedent-research/README.md` |
+
+### Every edge is a real artifact-consumption (no false cascade)
+
+- `T-367 → T-368` — the spec must fix which subset of the load-bearing heuristic ships, and it can
+  only do that by reading T-367's numbered steps and their MECHANIZABLE/JUDGMENT labels. The
+  reputation surface's "load-bearing citations received" figure is literally defined by that
+  document. Real consumption of a real artifact.
+- `T-368 → T-369` — the record ledger (titles, subjects, tiers, operations, sources tokens,
+  relations) is the publish script. Without it the worker would be drafting constitutional text at
+  the keyboard, which AB1/AB8 forbid.
+- `T-369 → T-370` and `T-369 → T-371` — **the PR-017 ordering, promoted to a real edge.** Both
+  build tasks are required to quote the id of the record that authorizes them and show it active.
+  The dependency is not stylistic: code that enforces or reports an unpublished protocol change is
+  the silent divergence the layer forbids, so the record is a consumed artifact, not a courtesy.
+- `T-369 → T-373` — a verifier replays the artifacts it verdicts.
+- `T-370,T-371 → T-372` — B4 quotes CLI surfaces (flags, refusal messages, output lines) and greps
+  each one out of live `--help` output. You cannot quote a command that does not exist; this is the
+  same shape as v0's `T-342 → T-345`, and the drift lesson is now twice-learned (T-346 and T-360).
+- `T-370,T-371 → T-374` — the adversarial replay consumes both shipped CLIs.
+- `→ T-375` — all nine listed explicitly rather than by transitive closure (the v0/v1 convention):
+  the join genuinely consumes every artifact (it re-runs both suites, re-derives figures, audits
+  both research docs, dispositions R1's contradictions, indexes everything in `README.md`).
+
+**Edges deliberately NOT drawn, each with its reason** — the part worth auditing:
+
+- **`T-366 → T-368` (R1 → spec): ABSENT, by the coordinator's explicit instruction and on the
+  merits.** R1 *validates* the design against Aghion–Howitt, the QJE inverted U and Mokyr; it does
+  not *supply* it, because §A.3 already resolved the turnover-vs-continuity tension by design and
+  Part B carries **zero build authorization** (AB1). Drawing this edge would serialize the whole
+  epic behind an economics literature review and would invite the spec to smuggle Phase B material
+  in as a "finding". Instead R1's contradictions are escalated to the join, where T-375 must
+  disposition each one — ESCALATED or ABSORBED, never silently. Part B's own words: contradictions
+  are the payload.
+- **`T-370 ⟂ T-371`: the epic's genuine concurrency slot.** T-370 owns `precedent.py` plus
+  `test_precedent_bridge.py`; T-371 creates `reputation.py` plus `test_reputation.py`. Disjoint
+  files, disjoint test globs, disjoint acceptance commands. Each is forbidden the other's files by
+  name in its own criteria.
+- **`T-370 → T-371` (enforcement → reader): absent.** The reader derives figures from record
+  fields that already exist; nothing in it consumes the new embedding field. If T-368's ledger were
+  to make the reader depend on the new field, that would be a spec defect (criterion 14, the
+  publish-order invariant), not a missing edge.
+- **`T-372 → T-374`: absent.** T-374's charge is control-plane code, not documentation. T-372's
+  drift check is verified by its own doc-tier verdicter and re-run independently at the join.
+- **`T-373 → T-374`: absent.** Different artifacts, different lenses, deliberately different
+  identities. Serializing them would buy nothing and cost a wave.
+
+### The ordering invariant that is NOT an edge (F1's real shape here)
+
+`T-369` publishes against the **currently shipped CLI**, before `T-370`'s enforcement exists. So:
+
+- **No record in the ledger may use a flag `T-370` has not built yet.** This is written into T-368's
+  criterion 14 (the publish-order invariant) and into T-369's criteria; a ledger row that needs the
+  new field is a spec defect to be re-cut, not a worker's improvisation.
+- Conversely, `T-370`'s enforcement must not retroactively invalidate the records `T-369` just
+  minted. The PR-009 question is exactly this problem in its sharpest form (see Q1 below), which is
+  why T-368 must **decide and justify** retrofit-versus-grandfather rather than defer it.
+
+### Bootstrap / infra ownership (F1 — every shared file has exactly one owner)
+
+| Shared artifact | Sole owner | Race risk |
+|---|---|---|
+| `docs/precedent-research/` (directory) | already exists; both research tasks `mkdir -p` | **None** — idempotent, and each owns one distinct `NN-slug.md`. |
+| `docs/precedent-research/README.md` (index) | **T-375 only** | Explicitly forbidden to T-366/T-367 (the v0/v1 rule, carried). |
+| `.harness/bin/precedent.py` | **T-370 only** | T-371 forbidden by name; T-369 does not modify it and proves so with `py_compile`. |
+| `.harness/bin/reputation.py` (NEW) | **T-371 only** | T-370 forbidden by name. |
+| `.harness/tests/test_precedent_bridge.py` (NEW) | **T-370 only** | Distinct filename; discovered by the `test_precedent*.py` glob, which is why the count must exceed 229. |
+| `.harness/tests/test_reputation.py` (NEW) | **T-371 only** | Distinct glob (`test_reputation*.py`), so the two build tasks' acceptance commands cannot collide. |
+| `.harness/tests/test_precedent.py`, `_v2.py`, `_conflicts.py` | **T-370** (assertion-only edits, each listed with a reason) | None: single writer. |
+| `.harness/tests/test_precedent_seed.py` | **nobody in this epic** | Written into T-370's criteria as do-not-touch: its assertions run against the live registry, and a producer that edits it to make its own change pass destroys the evidence (the v1 lesson). |
+| `.harness/precedents/PR-018+.json` | **T-369 only**, all minted by the real CLI | Hand-writing a record is an automatic REJECT; id allocation is inside `hc.guarded()`. |
+| `.harness/precedents/PR-001…PR-017.json` | **nobody**, unless T-368 rules RETROFIT for PR-009 and assigns that single edit to T-369 | The only path to an existing-record edit runs through a written ruling naming the authorizing record — no worker may improvise it. |
+| `PRECEDENT.md` | **T-372 only** | T-369/T-370/T-371 forbidden by name. |
+| `INTERPRETIVE-CODE.md` | **nobody in this epic** | Constitutional rank (PR-017): amendable only through the overruling-grade protocol, which nothing here needs. |
+| `T-349` (the standing quarterly) | **T-372 only**, and only by **note** | Its `acceptance_criteria`, title and `open` status are untouchable — a standing duty never terminates (AB7). |
+| `.harness/state.json` | **nobody in this epic** | The P-023 `accepted_mutations` backfill stays a tier-2 constitutional act (§5A loop + human gate); T-375 escalates, no worker performs it. |
+| `claude.md` / `gemini.md` / `ORCHESTRATION.md` | **nobody in this epic** | Imposing a duty to cite, or wiring reputation into dispatch, is an NLAH mutation and a separate epic with a human gate. |
+
+### The three scopes, held mechanically (AB1)
+
+| Scope | What the DAG does | The criterion that enforces it |
+|---|---|---|
+| **BUILD NOW** — Part A, Phase A only | T-370 (enforcement), T-371 (read-only reader) | Both are gated on a published record and forbidden any consequence, weighting or gate. |
+| **RESEARCH ONLY** — Part B + §A.6.3 | T-366, T-367 | Zero build authorization; T-366's criterion 11 makes a build recommendation an over-reach, and T-368's criterion 17 refuses economics findings as spec input. |
+| **RECORDS ONLY, FUTURE-BINDING** — Part C | T-369 mints the Part C records; nothing builds | T-373 criterion 4(b): a Part C record that authorizes *building* a cell, registry or charter is a REJECT. |
+| **PARKED** — Brussels effect | One dicta sentence inside the Part C record, nowhere else | T-373 criterion 5 reads every record's subject and dicta to confirm no record of its own exists. |
+
+### Dispatch notes (tiers per P-030, `ORCHESTRATION.md:136-160`)
+
+**Frontier tier — 2 of 10 tasks:** `T-368` (the spec gate) and `T-375` (the epic join). Both are
+low-verifiability judgment: no adversarial replay catches a spec that is merely imprecise, and none
+catches a ratification memo that presents constitutional material misleadingly. Everything else runs
+**sonnet**: the two research tasks (cited reading, with the source spot-check at their doc-tier
+verdict and again at the join as the adversarial gate), the four build tasks (gated by exact test
+commands with nonzero-count assertions), and both cluster verifiers (adversarial replay is
+high-verifiability execution with replayable evidence). The coordinator may override `T-374` alone
+to frontier if the neutrality question (AB4) or the PR-009 ruling proves contested
+(`state.json cost_policy` rules 3–4, P-024). `haiku` is used nowhere.
+
+**Wave order (`max_parallel_workers = 3`):**
+
+1. **Wave 1 — T-366 + T-367 (2 workers, p1).** Both claimable at publication; they share no file.
+   T-367 is on the critical path, T-366 is not — dispatch T-367 first if only one slot is free.
+2. **Wave 2 — T-368 (frontier thinker), while T-366 may still be running.** The epic's one gate.
+3. **Wave 3 — T-369 alone (p3).** The constitutional act; single writer into the live registry.
+4. **Wave 4 — T-370 + T-371 in parallel (2 workers), and T-373 (verifier) concurrently.** Three
+   concurrent claims, at the cap, with disjoint files.
+5. **Wave 5 — T-372 (p5) and T-374 (p6).** T-372 must not start before both build tasks are done,
+   because its whole job is quoting frozen surfaces.
+6. **Wave 6 — T-375 epic join (frontier), then its verdict by a distinct no-artifact identity.**
+
+**Engine routing. Nothing is bridged to Gemini in this epic, deliberately** — same reasoning as v0
+and v1, and it still holds: the two research tasks need **web retrieval** (the session's
+WebSearch/WebFetch are local environment tools; the no-external-LLM rule concerns model APIs, not
+retrieval), and the Gemini route is a human-pasted prompt bridge (`ORCHESTRATION.md:168-174`) with
+no web tools. The build tasks are surgical edits to one large file plus one new ~300-line CLI, not
+long-context digestion. The one future node that would justify `--engine gemini` remains the
+deferred **full retrofit of the ~30 P-numbers** into the schema (bulk long-context digestion against
+a fixed schema); still out of scope.
+
+### Verifier rotation plan (F6 — no sole approver, no cross-epic monoculture)
+
+Burned identities that must not be approvers here: `verifier-final` and every `verifier-v1-*`
+identity (they verdicted the two epics this one amends — reusing them would make the ratification
+trail a three-epic monoculture, exactly what `ORCHESTRATION.md:119-126` forbids), plus
+`verifier-join`, `verifier-build-a/b/c`, `verifier-research-a..d`, `verifier-synthesis`,
+`verifier-refinement`. Fresh identities are recommended for all five slots below.
+
+| Verdict scope | Reviewer slot | Constraint |
+|---|---|---|
+| T-366, T-367 (doc tier) | one identity, brief replay (P-024) | must not be the identity that verdicts T-368 |
+| T-368 spec gate | a second identity | doc/contract tier; the real adversarial test of the spec is T-374's requirement-by-requirement conformance pass |
+| T-369 (the records) | **executor of T-373** (rotation slot 1) | produced no artifact in this epic; P-022 self-done applies (role=verifier, `--agent` ≠ creator) |
+| T-370 + T-371 (control plane) | **executor of T-374** (rotation slot 2) | must differ from T-373's identity; verdicts the two build tasks separately, with its own note each |
+| T-372 (doc tier + drift check) | a third identity | not a rubber stamp: it re-runs T-372's drift greps itself. **Must be verdicted before T-375 becomes claimable** (cascade gate) |
+| **T-375 epic join** | executed by an identity that produced **no** artifact anywhere in this epic; **verdicted by yet another** such identity | P-022 self-done is **forbidden** on T-375 (it produces artifacts), so the authorship guard enforces producer ≠ approver mechanically |
+
+Note on the cascade gate, learned while cutting this DAG: because `claim` refuses unmet
+`depends_on`, **the join cannot be the verdicter of its own dependencies.** T-366 and T-372 must
+therefore be verdicted by rotation identities *before* T-375 is claimable; the join's charge is to
+re-derive their evidence independently, not to award their verdicts.
+
+### Scope boundaries held (what this epic must not do)
+
+- **No Phase B, anywhere.** No consequence, no weighting, no gating, no privilege, no burden that
+  varies by standing (AB4 — §A.6.2 is Phase B material even though its wording reads operable).
+  Phase B additionally requires FORCE-IDENTITY-A closed, which is a foreign-ministry problem
+  (§A.5), not something this epic can grant itself.
+- **No new ledger and no stored balances.** Derived on read (PR-010's doctrine); the audit's own
+  finding is that stacking layers subtracts performance.
+- **No reputation for humans in the loop**; no leaderboard across organizations; no automatic
+  demotion, suspension or exclusion by computed standing alone (§A.9). The machine flags, an agent
+  decides, the record shows why.
+- **No cell, no domain registry, no charter built** (AB1). Part C is records only.
+- **No Brussels-effect construction.** One dicta sentence, with the operator's precondition.
+- **No NLAH mutation** (`claude.md` / `gemini.md` untouched, no duty to cite imposed), **no
+  `state.json` write** (including the P-023 backfill — escalated at the join), **no
+  `ORCHESTRATION.md` edit**, **no `INTERPRETIVE-CODE.md` edit** (PR-017 rank).
+- **Conflicts stays an on-demand pass, never a gate or a hook** (D6): engine parity preserved.
+- **No hand-written record.** Every record in this epic is minted by running the real CLI.
+
+## Unknowns — Epic: `addendum-ii` (populated per orchestration-planner.md steps 5-6, U1+U3)
+
+> Populated BEFORE the DAG was published. Five BLOCKING known-unknowns are closed by **route (a)** —
+> converted into numbered charges on the spec gate T-368, which is a real (transitive) `depends_on`
+> of every build node, so the cascade gate mechanically prevents those nodes from being claimed
+> early. Two are closed by **route (b)** — a recorded answer grounded in cited repo evidence. The U3
+> blindspot interview questions are listed with the planner's recorded default answer and the single
+> node a correction would re-cut.
+
+**Known knowns** (verified this session, with the evidence):
+
+- The live registry holds **PR-001…PR-017**, all tracked by git, and `python3
+  .harness/bin/precedent.py conflicts` reports exactly **1 finding** — PR-001's dangling `P-023`
+  token, the layer correctly reporting a real constitutional gap — exiting **3**. `cite --all`
+  reports **1 of 94 citation(s) dangling**, also exiting 3. Both numbers are quoted into T-369,
+  T-373 and T-375 so no verifier can absorb a new finding as background noise.
+- The precedent suite is **229 tests green** across six files (`test_precedent.py`,
+  `_conflicts.py`, `_seed.py`, `_v2.py`, `_force.py`, `_migration.py`), measured this session. That
+  is the floor every replay criterion asserts against, and it is why T-370's criterion demands
+  N **>** 229 rather than N ≥ 229 (its new tests must be demonstrably discovered).
+- `docs/` is **gitignored** (`.gitignore:33`, confirmed). Both research documents, the spec, the
+  ratification memo and the explainer therefore ship **operator-local and untracked**, exactly as
+  the prior thirteen research artifacts did. Consequence baked into three criteria: every record,
+  and `PRECEDENT.md`, must anchor by **decision token**, never by a `docs/` path, or the citation
+  dangles for every reader who clones.
+- **This addendum has no DOI** (unlike the v1 addendum's `10.22201/iij.24487937e.2026.20.20316`).
+  AB8 therefore fixes task-anchored decision tokens (`decision:T-NNN#addendum-ii-<section>`) as the
+  anchoring grammar, with the local path allowed in dicta only.
+- **`title` is hard-capped at 80 characters** by the CLI (`.harness/bin/precedent.py:843`, exit 1).
+  T-368 must state the character count for every ledger row; a 92-character title is a spec defect,
+  not a worker problem.
+- **`cite`, `conflicts` and `stale` write nothing, including events** (SDR-23, quoted verbatim in
+  `precedent.py`'s own module docstring, with the DECISION note that logging one would make it the
+  only read verb in the file with a side effect). `reputation.py` joins that verb class, which is
+  why T-371's read-only requirement is a repo convention rather than a new invention.
+- **SDR-01 immutability**: `ratio`, `dicta`, `scope_conditions`, `declared_width`, `tier_evidence`,
+  `cites`, `subject`, `title`, `issuing_task` and **`relations`** are immutable after publication.
+  `relations` being on that list is precisely what makes the PR-009 retrofit question hard.
+- **PR-009's overrule target is `decision:T-344#R-2`** — a decision anchor, not a PR record, so it
+  has no `published_by` and no registry ratio. The live registry therefore already contains the
+  exact edge case the new enforcement must rule on.
+- `blackboard.py update <task> --note-file` on an **unclaimed, open** task is permitted: the
+  producer-≠-approver guard fires only on `--status done`. So T-372 can amend T-349 by note without
+  claiming it and without touching its status (AB7 requires exactly that).
+- P-022: a `role=='verifier'` task may go straight to `done` with no handoff provided `--agent`
+  differs from its creator. T-373 and T-374 produce no artifacts and use that path; **T-375 produces
+  artifacts and is therefore forbidden it**, which is what makes the join's final verdict
+  mechanically a different identity's act.
+- `max_parallel_workers = 3`, `max_steps_per_task = 50` (`state.json limits`). The widest sibling
+  fan-out here is 2 workers plus 1 verifier.
+
+**Known unknowns** (each classified BLOCKING / NON-BLOCKING; all BLOCKING ones CLOSED):
+
+- **Q1 [BLOCKING → CLOSED, route (a): T-368 criterion 11]. Does PR-009 get retrofitted or
+  grandfathered?** Blocking because it decides whether `.harness/precedents/PR-009.json` is edited
+  at all (which would collide with `test_precedent_seed.py`, owned by nobody here) and whether the
+  new enforcement is retroactive. Recorded default the spec may overrule only with reasoning:
+  **grandfather, with an explicit clause in the record set**, because `relations` is on SDR-01's
+  immutable list and PR-009's target is a decision anchor with no registry ratio to embed. If the
+  spec rules RETROFIT it must assign the single edit to T-369, name the seed-test impact, and name
+  the record authorizing the immutability exception.
+- **Q2 [BLOCKING → CLOSED, route (a): T-368 criterion 10]. What does "embed the overruled ratio
+  with authorship" mean for a `decision:`-anchored target?** There is no `published_by` and no ratio
+  in the registry for `decision:T-344#R-2`. Without a ruling, T-370 cannot implement the refusal
+  branch and would invent one. The spec must fix the flag surface, the stored field path, and this
+  case explicitly.
+- **Q3 [BLOCKING → CLOSED, route (a): T-368 criterion 10]. Is the embedded-predecessor field a
+  schema-version bump or an additive optional field?** Blocking because a bump obliges an amendment
+  record and changes what T-369 must publish *before* T-370 runs. Recorded default: **additive
+  optional field, no bump** — the v2 schema already tolerates additive relation fields, and a bump
+  would drag the dual-read migration machinery back into an epic that does not need it.
+- **Q4 [BLOCKING → CLOSED, route (a): T-368 criteria 6 and 7]. Which store actually carries
+  "consolidations achieved", and which field carries "who confirmed"?** `confirmed_by` (one
+  confirmation record) and the publishers of the qualifying applications counted by
+  `qualifying_applications_count` are **different data**, and AB9-1's whole mitigation depends on
+  displaying the right one. Blocking for T-371, which cannot guess. The spec must choose one and say
+  why.
+- **Q5 [BLOCKING → CLOSED, route (a): T-368 criterion 8]. What is reputation.py's isolation
+  mechanism, given that it reads four stores?** `precedent.py` needed one root (`--root` /
+  `PRECEDENT_ROOT`, flag wins, SDR-13); the reader also needs `tasks/`, `blackboard.json` and
+  `logs/events.jsonl`. Blocking for T-371's zero-writes proof and for T-374's attack. Recorded
+  default: **a single `--root` naming a harness-root-like directory, with SDR-13's precedence**, so
+  the convention is inherited rather than reinvented.
+- **Q6 [NON-BLOCKING]. How much of T-367's v1 heuristic is mechanizable at all?** Possibly very
+  little. Handled by construction rather than by a ruling: T-367 must label every step
+  MECHANIZABLE or JUDGMENT, T-371 implements only the mechanizable subset and prints the rest as
+  not-computed, and AB2's empty-never-fabricated rule covers the remainder. If the mechanizable
+  subset turns out to be empty, that is a finding for the join, not a blocker for the build.
+- **Q7 [NON-BLOCKING]. Does U4 apply?** Planner ruling: **yes** — the join asks the operator to
+  ratify constitutional-tier material, and asking for ratification of something the operator has not
+  been made to understand is exactly what U4 forbids (`ORCHESTRATION.md:105-110`). The coordinator's
+  dispatch independently mandates it. T-375 produces a 3-question explainer.
+
+**Unknown knowns** (U3 blindspot interview — assumptions the planner was about to bake into the DAG,
+put to the coordinator; recorded default answers below, each with the single node a correction would
+re-cut):
+
+1. **PR-009 is grandfathered, not retrofitted** (Q1). Assumed because `relations` is immutable under
+   SDR-01 and PR-009's target is a decision anchor with no ratio to embed. → re-cuts T-368
+   criterion 11 and adds one record edit to T-369. *Awaiting confirmation.*
+2. **The embedded-predecessor field is additive and optional, with no schema-version bump** (Q3). →
+   re-cuts T-368 criterion 10 and T-370; a bump would also add an amendment row to T-369's ledger.
+   *Awaiting confirmation.*
+3. **`reputation.py` is a single new CLI with one `--root`, not a subcommand added to
+   `precedent.py`.** Assumed because AB2 describes a separate reader and because adding a write-free
+   verb to a file another task is concurrently editing would destroy the T-370/T-371 concurrency
+   slot. → re-cuts T-371 and the F1 ownership table. *Awaiting confirmation.*
+4. **The Part C records are published in the same batch as the Part A records, by T-369.** Assumed
+   because they are records-only and share the anchoring grammar; splitting them into a second
+   publish task would buy nothing and would double the registry-baseline accounting. → re-cuts
+   T-369 only. *Awaiting confirmation.*
+5. **Untracked research output is acceptable**, as in v0 and v1: `docs/` is gitignored, so both
+   research documents, the spec, the memo and the explainer ship operator-local while
+   `PRECEDENT.md`, `reputation.py` and the records are tracked and anchor by decision token. →
+   re-cuts nothing if confirmed; if the operator wants this research tracked, it re-cuts the output
+   paths of T-366, T-367, T-368 and T-375. *Awaiting confirmation.*
+6. **The U3 interview is recorded as defaults and the DAG published in the same turn**, because the
+   coordinator's dispatch ordered publication now. Disclosed as a procedural DEVIATION from
+   `orchestration-planner.md` step 5's blocking read; the mitigation is that each assumption names
+   the single node a correction re-cuts, and nothing downstream of T-368 is claimable for hours.
+   *Awaiting confirmation.*
+
+**Unknown unknowns** (structural hedges, not predictions):
+
+- The spec gate is again the epic's single point of failure — four of ten tasks read it and nothing
+  else fixes the surfaces. The hedge is T-368's self-check criterion (write the exact command an
+  implementer would produce; if you cannot, the requirement is not precise enough) plus T-374's
+  requirement-by-requirement conformance pass, which converts vagueness into a nameable
+  NOT-IMPLEMENTED rather than a build that quietly invents constitutional material.
+- The genuinely new failure mode this epic introduces is **a reputation figure that is attributed
+  and wrong**. Attribution is what makes a number believable, so a mis-derived figure with a
+  confident source label is worse than an unattributed one. The hedge is T-374's requirement to
+  recompute at least one figure by hand from the raw records, and the join's requirement to produce
+  its own real invocation rather than quote the verifier's.
+- The second new failure mode is **a record that cites a DIRECTIVE and then says something weaker or
+  wider**. No test suite catches it; the hedge is T-373's side-by-side text audit, which is the
+  T-361 pattern that already caught this class once.
+- Phase A's stated purpose is to surface gaming attempts *while they are still free to attempt*. If
+  the reader ships and nobody looks at it, the epic delivers bookkeeping nobody reads. The hedge is
+  AB7: the T-349 quarterly gains the A.8 convergence indicator by note, so the watch — not a human's
+  memory — is what carries the observation forward.
+
 ## Standing design rules
 1. Default to parallel: only add a `depends_on` edge when a task literally consumes another task's artifact.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).

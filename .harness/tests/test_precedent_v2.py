@@ -121,6 +121,22 @@ class V2TestCase(unittest.TestCase):
         root = root if root is not None else self.root
         return json.loads((root / (pr_id + ".json")).read_text(encoding="utf-8"))
 
+    def overrule_embedding_args(self, target_id, root=None):
+        """T-370 amendment (PR-019, A.3.1): every successful `--overrules`
+        call against a PR-NNN target now must embed the overruled record's
+        ratio verbatim plus its authorship (record id, published_by,
+        issuing task) or the publish is refused. Reads the target's own
+        on-disk fields so the required byte-exact ratio match holds
+        regardless of this test's own ratio/agent/task values -- see the
+        amended-assertion list in this task's handoff."""
+        target = self.load(target_id, root=root)
+        ratio_file = pathlib.Path(self._tmp.name) / (target_id + "-overruled-ratio.txt")
+        ratio_file.write_text(target["ratio"], encoding="utf-8")
+        return ["--overruled-ratio-file", str(ratio_file),
+                "--overruled-record-id", target_id,
+                "--overruled-published-by", target["published_by"],
+                "--overruled-issuing-task", target["issuing_task"]]
+
     def record_files(self, root=None):
         root = root if root is not None else self.root
         if not root.exists():
@@ -493,17 +509,35 @@ class OverrulingAnchorTests(V2TestCase):
     def test_decision_anchored_overrules_success_no_side_effects(self):
         """V1-32: no status flip (no record), no cited_by side effect, no
         --acknowledge-reliance needed, below_target_tier stamped against
-        target_tier_declared."""
+        target_tier_declared.
+
+        T-370 AMENDMENT (PR-019, A.3.1; AD2-34): a decision:-anchored
+        overrule now also needs the adapted embedding -- the publisher's
+        own quotation, the anchor token as the record id, the fixed
+        unavailable-published_by marker, and the T-NNN half as the issuing
+        task."""
         pr_id, _ = self.publish_ok(
             tier=1, tier_evidence=[REAL_TASK_A],
             extra_args=["--overrules", self._decision_token(), "--target-tier", "3",
-                        "--factor", "doctrinal_change", "--factor-note", "the doctrine changed"])
+                        "--factor", "doctrinal_change", "--factor-note", "the doctrine changed",
+                        "--overruled-ratio", "quoted text of decision:T-344#R-2's framing",
+                        "--overruled-record-id", self._decision_token(),
+                        "--overruled-published-by",
+                        "unavailable: decision-anchored target has no published_by",
+                        "--overruled-issuing-task", REAL_TASK_B])
         rec = self.load(pr_id)
         rel = rec["relations"][0]
         self.assertEqual(rel["type"], "overrules")
         self.assertEqual(rel["target"], self._decision_token())
         self.assertEqual(rel["target_tier_declared"], 3)
         self.assertFalse(rel["below_target_tier"])  # acting tier 1 <= declared tier 3
+        # AD2-32: the embedded predecessor material, decision-anchor shape.
+        embedded = rel["overruled_predecessor"]
+        self.assertEqual(sorted(embedded), ["issuing_task", "published_by", "ratio", "record_id"])
+        self.assertEqual(embedded["record_id"], self._decision_token())
+        self.assertEqual(embedded["published_by"],
+                          "unavailable: decision-anchored target has no published_by")
+        self.assertEqual(embedded["issuing_task"], REAL_TASK_B)
         # no PR file exists for the decision: target -- nothing else was touched.
         self.assertEqual(self.record_files(), {pr_id + ".json"})
 
@@ -667,9 +701,12 @@ class TestEventIsolationTests(V2TestCase):
                               "--outcome", "confirmed", "--note", "scope confirmed under isolated root")
         self.assertEqual(confirm_result.returncode, 0, confirm_result.stderr)
 
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         overrule_id, r2 = self.publish_ok(task="T-541", subject="subj-iso-overrule", tier=3,
                                            extra_args=["--overrules", target_id, "--factor",
-                                                       "unworkability", "--factor-note", "note"])
+                                                       "unworkability", "--factor-note", "note"]
+                                           + self.overrule_embedding_args(target_id))
         self.assertEqual(r2.returncode, 0, r2.stderr)
 
         # also exercise a refusal (event-logged too) entirely under the override root

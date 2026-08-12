@@ -35,7 +35,10 @@
     }
   ],
   "cites": [],
-  "cited_by": [],
+  "cited_by": [
+    "PR-016",
+    "PR-022"
+  ],
   "overruled_by": null,
   "superseded_by": null,
   "voided_by": null,

@@ -1,0 +1,56 @@
+{
+  "id": "PR-028",
+  "schema_version": 2,
+  "title": "The sovereign cell charter: five clauses binding future construction",
+  "subject": "sovereign-cell-charter",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-c4"
+  ],
+  "ratio": "The five charter clauses, each as its own numbered proposition: (1) jurisdiction is one bounded context or a small named set, with scope, border contracts and validity conditions stated; (2) internal autonomy: the cell chooses its internal workflow, decomposition and conventions freely, provided border contracts and the shared interpretive code are honoured; internal heterodoxy is tolerated, border violation is not; (3) mutual recognition: cells treat each other's outputs as legitimate when border contracts are met, and no cell audits another's internals; (4) ius emigrandi: agents and tasks are reassignable without friction, reassignment transfers no precedent baggage, and what makes exit meaningful is that standing travels (addendum section A.2, the reputation-attachment-rules record); (5) resources follow feature outcomes, never doctrinal conformity metrics, because radicalization thrives exactly where purity pays better than performance. (6) This charter authorizes no cell now.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "every future epic chartering a cell or negotiating a border contract between domains"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when the first cell charter is drafted, or when two cells first contest an adjacent jurisdiction",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-027",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:48:12Z",
+  "sources": [
+    "decision:T-368#addendum-ii-c4",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "no cell exists; agents are dispatched against a flat task board with no jurisdictional unit"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

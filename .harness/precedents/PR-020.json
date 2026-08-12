@@ -1,0 +1,60 @@
+{
+  "id": "PR-020",
+  "schema_version": 2,
+  "title": "Overruling credit accrues on sustained; consolidation pays the author",
+  "subject": "displacement-bridge-credit",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a3-2-a3-4"
+  ],
+  "ratio": "(1) Overruling credit accrues when the displacement survives verification AND subsequent citation, never on publication. (2) Mechanically, for Phase A: survived verification means the overruling record's issuing task carries a producer-distinct done verdict not later reopened; subsequent citation means at least one citing record whose published_by differs from the overruling record's own. (3) Consolidation pays the author: when a rule reaches the C threshold under PR-015's distinct-identity floor, its author's record notes it. (4) Writing rules that others can follow consistently is the system's most valuable labour and the currency must say so. (5) The visibility mitigation is part of the rule, not a display nicety: every consolidation figure displays WHO supplied the qualifying applications, so the author-recruits-confirmers pattern is visible while it is still free to attempt. (6) No price attaches to any of these counts in Phase A.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any reader deriving overruling credit or consolidation credit for an identity"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when REITERATION_N changes, or when a reputational price first attaches to any credit figure",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-015",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [
+    "PR-009",
+    "PR-016"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:47:07Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a3-2-a3-4",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "the C counter in precedent.py excludes same-publisher applications and below-target-tier relations",
+    "cited_by is appended by the CLI at publish time and is the registry's only citation index"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

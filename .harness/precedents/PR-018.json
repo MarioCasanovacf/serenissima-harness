@@ -1,0 +1,49 @@
+{
+  "id": "PR-018",
+  "schema_version": 2,
+  "title": "Two currencies: patrimony is territorial, honor is personal",
+  "subject": "reputation-attachment-rules",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-368",
+    "decision:T-368#addendum-ii-a2"
+  ],
+  "ratio": "(1) Patrimony is territorial: rules, registries, and doctrine belong to the domain (addendum section C.3). (2) Honor is personal: track record attaches to the identity and travels with it across cells, domains, and reassignments. (3) The split is a deliberate exception to territorial law and its completing half, not a contradiction: a right of exit disciplines a sovereign only if leaving costs the leaver nothing they earned (addendum section C.4.4's ius emigrandi). (4) Nothing in this record authorizes a consequence attaching to standing; that is the province of the Phase A ledger record (addendum section A.4) and the Phase B identity-gate record (addendum section A.5).\n",
+  "dicta": [],
+  "scope_conditions": [
+    "any mechanism attaching a track record to an identity",
+    "any mechanism assigning a rule, registry or doctrine to a domain"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when a second domain registry exists, or when an identity string is first retired or reassigned across cells",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "PR-016"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-369",
+  "published_by": "worker-a2-3",
+  "published_at": "2026-08-12T20:46:50Z",
+  "sources": [
+    "decision:T-368#addendum-ii-a2",
+    "T-368"
+  ],
+  "validity_conditions": [
+    "no cell and no second domain registry exists; the founding domain is the only territory",
+    "no stored reputation balance field exists in any harness store"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

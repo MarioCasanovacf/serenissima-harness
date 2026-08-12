@@ -1228,6 +1228,29 @@ contract is reused verbatim by every v2 verb, including the new `migrate`/`stale
 (equal adversarial weight still suffices for a tier-3 overrule — section 8's open question
 stands, re-confirmed against fresh sources); and every SDR/S/R item not named above, en bloc.
 
+### 16.2 v2 amendment ledger (addendum II, T-370) — extends this same ledger, does not invent a third one
+
+Two rules changed by this epic's displacement-bridge enforcement in the overrule path, both
+authorized by the single tier-1 record `PR-019` (subject `displacement-bridge-embedding`,
+addendum section A.3.1) under the PR-017 record-before-code procedure: `PR-019` published and
+was verified `active` before `.harness/bin/precedent.py` gained a line of the enforcement code
+(section 22.3 states the mechanism in full; this row only records the amendment, matching
+16.1's own division of labor between this ledger and the sections it reconciles).
+
+| Rule amended | Old text (quoted) | New text | Authority | Classification |
+|---|---|---|---|---|
+| Relation-object shape (section 2.2's `relations[]` row; the present-but-null convention section 7's required-reasoning table documents for `distinguishing_facts`/`factor_note`/`controlling_authority`) | A relation object carried no field recording an overruled predecessor's own ratio or authorship — an `overrules` relation stored only `type`, `target`, and the section 7 reasoning fields (`factor`, `factor_note`, `controlling_authority`, `target_tier_declared`). | Every relation object gains `overruled_predecessor`, an object with exactly four keys `record_id`, `ratio`, `published_by`, `issuing_task` — present-but-`null` on every relation regardless of type, populated only when `type == "overrules"`. Verified live in a throwaway `--root`: after a compliant `--overrules decision:T-344#R-2` publish, `sorted(relations[0]["overruled_predecessor"])` returns exactly `['issuing_task', 'published_by', 'ratio', 'record_id']`. | `PR-019` | determination — a new primitive on directive, not a re-reading of an old rule (following V1-07's own precedent for `reinterprets`/`revalues`) |
+| The required-reasoning table (section 7): what `--overrules` demands | Target `status == active`; `--factor`/`--factor-note` where the target's tier is 3; `--acknowledge-reliance` where the target's `cited_by` is non-empty. No requirement to embed the overruled ratio or its authorship. | `--overrules` additionally requires `--overruled-ratio`/`--overruled-ratio-file` plus three authorship flags, `--overruled-record-id`, `--overruled-published-by`, `--overruled-issuing-task` — all five confirmed present in `precedent.py publish --help` (section 22.3). A `PR-NNN` target's supplied ratio, `published_by` and `issuing_task` must equal the target's stored values byte-for-byte (no strip, no normalization); a `decision:T-NNN#anchor` target instead requires a publisher-supplied quotation, the anchor token as `--overruled-record-id`, the anchor's `T-NNN` half (resolved against the tasks store) as `--overruled-issuing-task`, and the fixed marker string `unavailable: decision-anchored target has no published_by` as `--overruled-published-by`. Absence or mismatch on any check REFUSES, exit 1, with a named message (section 22.3 quotes five, each reproduced live in this task's own replay). The two shipped refusals named in the left column keep priority and fire first, unchanged — reproduced live in this task's replay too. | `PR-019` | determination — a new primitive on directive, not a re-reading of an old rule (following V1-07's own precedent for `reinterprets`/`revalues`) |
+
+**Confirmed UNCHANGED, for citation completeness (not amendments, so no old/new pair applies):**
+SDR-01 (the new `overruled_predecessor` key is written at publication and never mutated
+in place afterward — no immutability exception was needed, and none was minted); SDR-15 (the
+exit-code contract — 0/1/2/3/4 — is reused verbatim, no new code); SDR-17.8/V1-03 (`supersedes`
+is untouched by this epic — the embedding duty binds `overrules` only, by delimitation, not by
+omission — section 22.3); SDR-23 (`cite` still writes nothing, and `reputation.py` joins that
+same read-only verb class, section 22.4); and the five-detector count in `conflicts` (unchanged
+— no sixth detector was added for non-compliant historical overrules, section 22.3).
+
 ## 17. THE HYBRID RATIO MODEL
 
 **The question this section answers, stated as the external legal-theory input poses it: does
@@ -1567,3 +1590,347 @@ party check's own gap on `distinguishes`/`overrules` publication** (section 11 i
 names this; it remains open in v1, forwarded to the same join). Both are named here, not
 resolved, because resolving either would itself be a mechanism-design decision this worker task
 does not have standing to make.
+
+## 22. REPUTATION AS CONSTITUTIONAL CURRENCY, AND TERRITORIAL LAW (ADDENDUM II)
+
+### 22.1 What authorizes this section, and how it cites
+
+This section restates twelve tier-1 records; **the records are the authority, and this
+section is a reader's convenience over them, never a substitute for `precedent.py show`.**
+Where this section and a record disagree, the record is correct and this section has drifted
+— the same tie-break this document's own intro already fixes for the CLI (`--help` output over
+prose), applied here to records instead of code.
+
+The twelve records, the addendum-II section each enacts, and the anchor token each carries:
+
+| Addendum section | Record | Subject | Anchor token |
+|---|---|---|---|
+| A.2 | `PR-018` | `reputation-attachment-rules` | `decision:T-368#addendum-ii-a2` |
+| A.3.1 | `PR-019` | `displacement-bridge-embedding` | `decision:T-368#addendum-ii-a3-1` |
+| A.3.2 + A.3.4 | `PR-020` | `displacement-bridge-credit` | `decision:T-368#addendum-ii-a3-2-a3-4` |
+| A.3.3 | `PR-021` | `silent-divergence` | `decision:T-368#addendum-ii-a3-3` |
+| A.4 (+ AB3, AB4) | `PR-022` | `reputation-phase-a` | `decision:T-368#addendum-ii-a4` |
+| A.5 | `PR-023` | `reputation-phase-b-gate` | `decision:T-368#addendum-ii-a5` |
+| A.6.3 | `PR-024` | `load-bearing-citation` | `decision:T-368#addendum-ii-a6-3` |
+| A.7 | `PR-025` | `phase-b-weighting` | `decision:T-368#addendum-ii-a7` |
+| A.9 | `PR-026` | `reputation-refusals` | `decision:T-368#addendum-ii-a9` |
+| C.3 (+ AB10, AB1) | `PR-027` | `territorial-law` | `decision:T-368#addendum-ii-c3` |
+| C.4 | `PR-028` | `sovereign-cell-charter` | `decision:T-368#addendum-ii-c4` |
+| C.5 (+ AB7) | `PR-029` | `westphalia-kpi` | `decision:T-368#addendum-ii-c5` |
+
+This addendum has **no DOI**: every record above anchors instead via a task-anchored decision
+token of the exact form `decision:T-NNN#fragment` (section 5.1's ninth grammar kind), naming the
+thinker task that reasoned the delimitation with the operator, `T-368`. One token, quoted exactly
+as it resolves on a live record: `decision:T-368#addendum-ii-a2` — the `T-368` half resolves
+against `.harness/tasks/T-368.json`, which exists and is tracked; the fragment is unchecked by
+design (section 5.1). The operator-supplied source document,
+`docs/serenissima-addendum-ii-reputation-westphalia.md`, is gitignored and therefore names itself
+only inside record `dicta` (persuasive prose), never as a `sources`/`cites`/`tier_evidence`
+anchor — the same discipline section 15 and the intro already hold this document itself to for
+its own external DOI citation.
+
+**No agent is placed under any duty by this section.** Restated from this document's own STATUS
+box: incorporating a duty to consult, cite, or publish to this registry would itself be an NLAH
+mutation (the §5A loop plus the human gate covering `claude.md`/`gemini.md`), and neither this
+section nor any record it restates claims to have done that.
+
+### 22.2 The two currencies and their two attachment rules
+
+`PR-018` states the deliberate exception to territorial law (section 22.9): **patrimony is
+territorial** — rules, registries, and doctrine belong to the domain — while **honor is
+personal** — track record attaches to the identity and travels with it across cells, domains,
+and reassignments. The split is not a contradiction; it is territorial law's completing half,
+because a right of exit disciplines a sovereign only if leaving costs the leaver nothing they
+earned — this is what gives the sovereign-cell charter's *ius emigrandi* clause (`PR-028`) its
+teeth. `PR-018`'s own ratio is explicit that it authorizes no consequence: nothing in it, and
+nothing in `PR-027`'s territorial-law record, moves, weights, or gates on standing. No mechanism
+that moves standing across a cell or a reassignment is built by this section or by any task in
+this epic — the exception is stated as doctrine, not wired as code.
+
+### 22.3 The displacement bridge, and the enforcement as shipped
+
+**The four A.3 rules**, each a numbered proposition of `PR-019`/`PR-020`/`PR-021`: (1) a rule
+displaced through the full overruling protocol leaves its author's standing intact — authorship
+credit and priority persist (`PR-019`). (2) Overruling credit accrues only when the displacement
+survives verification **and** subsequent citation, never on publication (`PR-020`). (3) The only
+reputational crime is silent divergence — departing from a binding rule without running the
+overruling or distinguishing protocol; Phase A records this as doctrine now and imposes no price,
+which is Phase B material (`PR-021`). (4) Consolidation pays the author: when a rule reaches the
+C threshold under PR-015's distinct-identity floor, its author's record notes it, with the
+qualifying identities displayed alongside the count so the author-recruits-confirmers pattern
+stays visible while still free to attempt (`PR-020`).
+
+**The enforcement, as shipped, run and reproduced live by this task in a throwaway `--root`, not
+paraphrased.** `precedent.py publish --help` confirms, live, exactly five new flags, all
+additive and optional:
+
+```
+--overrules PR-NNN|decision:T-NNN#anchor
+--overruled-ratio OVERRULED_RATIO
+--overruled-ratio-file OVERRULED_RATIO_FILE
+--overruled-record-id OVERRULED_RECORD_ID
+--overruled-published-by OVERRULED_PUBLISHED_BY
+--overruled-issuing-task OVERRULED_ISSUING_TASK
+```
+
+`--overruled-ratio-file` has no `-stdin` companion — `publish` already spends its one stdin
+stream on `--ratio-stdin`, and a second stdin-consuming flag in the same call is unsatisfiable.
+The four authorship elements are stored, present-but-`null` on every relation and populated only
+on `overrules`, at `relations[].overruled_predecessor`, an object with exactly the four keys
+`record_id`, `ratio`, `published_by`, `issuing_task` (section 16.2's row states this as the
+amendment; `PR-019`'s ratio proposition 3 states it as doctrine).
+
+Five refusal paths, each reproduced live in this task's own replay against a throwaway `--root`
+seeded from the live registry, all exit `1`:
+
+```
+$ precedent.py publish ... --overrules decision:T-344#R-2 --target-tier 3   (no embedding flags)
+refused: --overrules requires --overruled-ratio or --overruled-ratio-file: the overruled ratio must be embedded verbatim (AD2-33)
+
+$ precedent.py publish ... --overrules PR-016 --acknowledge-reliance --overruled-ratio-file ... --overruled-published-by coordinator-fable --overruled-issuing-task T-362   (no --overruled-record-id)
+refused: --overrules requires --overruled-record-id: authorship element 'record id' is missing (AD2-33)
+
+$ precedent.py publish ... --overrules PR-016 --acknowledge-reliance --overruled-ratio-file <one character changed> --overruled-record-id PR-016 --overruled-published-by coordinator-fable --overruled-issuing-task T-362
+refused: embedded ratio does not match PR-016's stored ratio byte-for-byte (AD2-33)
+
+$ precedent.py publish ... --overrules decision:T-344#R-2 --target-tier 3 --overruled-ratio-file ... --overruled-record-id decision:T-344#R-2 --overruled-published-by some-agent-name --overruled-issuing-task T-344
+refused: --overruled-published-by for the decision-anchored target decision:T-344#R-2 must be exactly: unavailable: decision-anchored target has no published_by (AD2-34)
+```
+
+The compliant forms of the first and last calls above both publish clean, exit `0`
+(`published PR-0NN` in the throwaway root), and the stored record's
+`relations[0].overruled_predecessor` carries all four keys as specified.
+
+**The two shipped, pre-existing refusals keep priority and fire first, unchanged — also
+reproduced live.** Overruling `PR-016` (which `cited_by` now names, post-batch) without
+`--acknowledge-reliance` still refuses `overrules of PR-016 refused: target is cited_by
+[...] -- pass --acknowledge-reliance after reviewing the blast radius (SDR-17.12)`; overruling an
+already-overruled target still refuses on `target status is '...', not active (SDR-17.10)`. No
+existing test's expected message changed and no reordering happened.
+
+**The decision-anchor ruling.** A `decision:T-NNN#anchor` target has no registry ratio and no
+`published_by` to embed byte-exact. The publisher instead supplies a quotation (required,
+non-empty), the anchor token as `--overruled-record-id`, the anchor's `T-NNN` half as
+`--overruled-issuing-task` (resolved against the tasks store), and the **fixed marker string**,
+verbatim, as `--overruled-published-by`:
+
+```
+unavailable: decision-anchored target has no published_by
+```
+
+Any other value for that flag is refused, closing the fabrication channel — a publisher cannot
+invent an identity for a decision-anchored target. The fidelity of the quotation itself is a
+verifier's judgment, not a mechanical check — named as a residual weakness, not hidden.
+
+**`supersedes` and `voids` are out of scope, by delimitation, not omission.** The embedding duty
+binds `--overrules` only (`PR-019`'s ratio proposition 6). `conflicts` gained **no sixth
+detector** for non-compliant historical overrules — the only non-compliant historical overrule on
+file, `PR-009`, is grandfathered by `PR-019`'s own prospective clause (below), so a detector's
+entire possible population is a set a tier-1 record has already dispositioned.
+
+**`PR-009` is grandfathered, not retrofitted.** `PR-019`'s ratio states this as its own
+prospective clause: the embedding duty governs publish calls made **after** `PR-019` publishes
+and reaches no record already in the registry. `PR-009`'s overrule target,
+`decision:T-344#R-2`, has no registry ratio and no `published_by` to embed, and `relations` are
+immutable after publication (section 2.2) with no immutability exception authorizing a retrofit.
+`PR-009` keeps its credit: `reputation.py standing --identity worker-v1-6` (section 22.4) shows
+it live as a SUSTAINED overrule today.
+
+### 22.4 Phase A: bookkeeping, derived on read, zero consequences
+
+`PR-022` states Phase A's rule: reputation is **derived, never stored as balances** — standing is
+computed at read time from the existing archive, following `PR-010`'s computed-on-read doctrine
+for rule-force. No new ledger; the reader references existing records rather than duplicating
+them. The event types are exactly six: rule authorship; load-bearing citations received;
+consolidations achieved; proper overrulings issued and sustained; verification verdicts upheld;
+adjudications not reversed — the last DEFERRED, present and empty, never fabricated, because the
+appellate verb does not exist yet. **No consequence attaches. None**: no weighting, no gating, no
+privileges.
+
+The caveat, quoted character-for-character from `PR-022`'s own ratio, and printed by the shipped
+reader on every path — verified live via `reputation.py caveat`, exit `0`:
+
+```
+identities are self-asserted (FORCE-IDENTITY-A open); Phase A is bookkeeping, not currency; no consequence may cite these figures (A.4, A.9).
+```
+
+The uniform-burden neutrality clause, also `PR-022`'s ratio, verbatim: "Phase A is neutral on
+standing: no verification or confirmation burden varies by standing. The PR-015 confirmation
+burden is UNIFORM for every identity in Phase A. ... A consumer that wires a consequence to a
+Phase A figure violates this tier-1 record, not a style guide."
+
+**`reputation.py` — the shipped surface, run live, not paraphrased.** Three subcommands, exactly:
+`standing`, `identities`, `caveat` (`reputation.py --help`, confirmed live). Flags, confirmed live
+against each subcommand's own `--help`:
+
+```
+standing:    --identity IDENTITY   --root ROOT   --json
+identities:  --root ROOT   --json
+caveat:      --json
+```
+
+`--identity` is manually checked, not argparse-required, so its absence is exit `1` (a REFUSAL
+the caveat still prints ahead of) rather than argparse's exit `2` — reproduced live:
+`reputation.py standing` (no `--identity`) prints the caveat line to stdout, then
+`refused: --identity is required and must be non-empty (AD2-51)` to stderr, exit `1`. Exit codes:
+`0` success, `1` REFUSAL, `2` argparse-native usage error only, `4` REGISTRY INTEGRITY ERROR; `3`
+is reserved and never returned — a reader reports figures, not findings.
+
+One live invocation against the current registry (root elided; the reader always echoes it back
+on a `root:` line so no reader is confused about which stores produced a figure):
+
+```
+$ reputation.py standing --identity worker-v1-6
+caveat: identities are self-asserted (FORCE-IDENTITY-A open); Phase A is bookkeeping, not currency; no consequence may cite these figures (A.4, A.9).
+root: <elided>
+identity: worker-v1-6
+rule_authorship: 9 (active 9, overruled 0, superseded 0, void_per_incuriam 0) [source: precedents/PR-*.json:published_by]
+load_bearing_citations_received: 4 ELIGIBLE-UPPER-BOUND (steps 1-4 only; load-bearing not confirmed) [source: precedents/PR-*.json:relations[]+published_by]
+consolidations_achieved: 0 (threshold C>=3) [source: precedents/PR-*.json:relations[]+published_by via precedent.qualifying_applications_count]
+overrulings_sustained: 1 of 1 issued [source: precedents/PR-*.json:relations[]+cited_by; blackboard.json:tasks[].completed_by]
+  overrule PR-009 -> decision:T-344#R-2: verification=upheld distinct_identity_citations=PR-015,PR-019,PR-020 sustained=yes
+verification_verdicts_upheld: 0 [...]
+adjudications_not_reversed: unavailable (the appellate verb does not exist; the field is present and never fabricated)
+```
+
+Two properties this run demonstrates, not asserted: `PR-009`'s overrule of `decision:T-344#R-2`
+computes SUSTAINED today, live, off the real stores (section 22.3's grandfather clause pays out
+exactly as stated); and `load_bearing_citations_received` prints labelled
+**ELIGIBLE-UPPER-BOUND**, never as a load-bearing count — steps 1-4 of T-367's seven-step
+heuristic only (section 22.6), with the load-bearing verdict itself printed as `not computed`
+on a separate line. **No figure this reader prints is a measurement of trust, quality, or
+authority** — it is a citation and event count, labelled by its own source store on every line,
+under the caveat that governs the whole surface.
+
+### 22.5 The Phase B gate: identity before consequence
+
+`PR-023` states the gate: Phase B — verification-burden discounts, quorum weight, charter
+contestability — is gated on **cryptographic identity with an external trust root**, a
+prerequisite structurally impossible to provide from inside this harness and which belongs to
+the Westphalian layer (section 22.9). Sybil minting closes at this gate and **nowhere else**;
+`PR-023`'s own ratio states this directly and refuses to pretend otherwise. The gate is
+conjunctive with the A.8 currency-health indicator carried into `T-349`'s standing quarterly duty
+(section 7 of this epic's amendment note; not restated here): even with the identity gate closed,
+Phase B does not ship if the currency is failing.
+
+### 22.6 The load-bearing citation: provisional doctrine with a decay clock
+
+`PR-024` states that a citation counts as a reputation event only when it is **load-bearing** —
+the cited ratio actually constrained the citing decision, confirmed at verification time, not
+merely named in prose. The v1 operationalization is T-367's seven-step heuristic, and it is
+**PROVISIONAL DOCTRINE** by the addendum's own instruction: only steps 1-4 are MECHANIZABLE and
+only they ship in Phase A (a typed relation, not a bare `cites`; routing that excludes
+`distinguishes` and the out-of-scope status-flipping types; the same-publisher exclusion; the
+`below_target_tier` exclusion); steps 5-7 are exhibit-or-judgment and print as `not computed`,
+never guessed. `cited_by`'s raw count is the crudest possible any-mention measure and must never
+stand in for a load-bearing count — verified live and stated in `PR-024`'s own ratio,
+`cited_by` is appended identically for a bare `cites` token and for a typed relation.
+
+The decay clock is `PR-024`'s own `revisit_trigger`, its own terms, not an aspiration: either
+crossing retires v1 and routes to the adjudication mechanism for a v2. Neither crossing
+auto-demotes any citation, record, or identity — Phase A flags, it never fines.
+
+### 22.7 The pre-registered Phase B weighting
+
+`PR-025` states the ordering, pre-registered now precisely so it cannot be gamed later:
+adversarial work is scarcer and must pay more — verification verdicts that catch real defects,
+sustained challenges, and harm identification earn more standing per event than authorship or
+benefit declaration, on the measured basis that benefit attribution runs roughly 5x random while
+harm prediction runs roughly 2x. **No numeric weight is fixed by this record.** Fixing a number
+would be Phase B machinery; this record's whole function is to fix the ordering before the
+interests who would benefit from a cheap authorship-credit exchange rate know their positions.
+
+### 22.8 What this layer refuses
+
+`PR-026` states four refusals, each stated as a refusal, not a preference: (1) no reputation for
+humans in the loop — the operator is sovereign, not a market participant. (2) No global
+leaderboard across organizations — premature ranking is premature war. (3) No automatic
+demotion, suspension, or exclusion of any identity by computed standing alone. (4) A written,
+reasoned, tiered decision remains the only instrument that changes anyone's status: the machine
+flags, an agent decides, the record shows why. Lifting any one of these four requires a tier-1 act
+naming `PR-026` and the single refusal it lifts — not a worker's judgment call.
+
+The shipped reader enforces refusal (2) mechanically rather than by intention: `standing` takes
+exactly one `--identity` with no `--all`, so no single call can emit more than one identity's
+figures, and `identities` prints lexicographic order with no figures at all, plus a greppable
+marker line — reproduced live: `note: lexicographic order, never ranked (A.9 refuses a
+leaderboard)`.
+
+### 22.9 Part C: territorial law, the sovereign cell, and the Westphalia KPI
+
+**Territorial law.** `PR-027` states: precedents attach to domains, never to lineages — the unit
+of jurisdiction is the feature's bounded context, and a precedent created while working in domain
+X belongs to X's registry. Lineages carry no patrimony: no agent or session lineage owns,
+inherits, or transports precedent; a faction with no patrimony to defend is a duty shift, not a
+faction. The one exception that travels with an identity is standing (`PR-018`, section 22.2).
+Context maps are treaties and anti-corruption layers are customs posts — inter-domain contracts
+are explicit, versioned, and negotiated at borders, never implied by shared lineage.
+
+`PR-027`'s founding-domain delimitation, quoted verbatim from its own ratio:
+
+> Until cells exist, .harness/precedents is delimited as the registry of the FOUNDING DOMAIN,
+> which is the harness itself. C.3's territorial rule is satisfied degenerately by a single
+> territory. This registry is not the personal-law patrimony of any lineage, session or
+> identity, and no future epic may treat it as one: a lineage carries no patrimony, and the only
+> thing that travels with an identity is standing.
+
+The Brussels-effect / conformance-acquis strategy is **PARKED**, quoted verbatim from `PR-027`'s
+own dicta, and named nowhere else in this section:
+
+> PARKED, per the operator's explicit deferral and AB1: the Brussels-effect / conformance-acquis
+> strategy gets no record of its own and no construction. Build no standardization gravity until
+> the operator's stated precondition holds -- the harness must demonstrably gate something cells
+> cannot obtain elsewhere (merge rights, deployment, compute budget). This is a refusal with a
+> named precondition, not a deferral of enthusiasm: a future session may not read it as satisfied
+> by readiness, opportunity, or the mere existence of a second domain, and the only thing that
+> lifts it is the precondition met on record.
+
+**The sovereign cell charter (`PR-028`), five clauses binding future construction, no cell built
+by this record or by any task in this epic:** (1) jurisdiction is one bounded context or a small
+named set, with scope, border contracts, and validity conditions stated; (2) internal autonomy —
+the cell chooses its internal workflow, decomposition, and conventions freely, provided border
+contracts and the shared interpretive code are honored; internal heterodoxy is tolerated, border
+violation is not; (3) mutual recognition — cells treat each other's outputs as legitimate when
+border contracts are met, and no cell audits another's internals; (4) *ius emigrandi* — agents
+and tasks are reassignable without friction, reassignment transfers no precedent baggage, and
+what makes exit meaningful is that standing travels (`PR-018`); (5) resources follow feature
+outcomes, never doctrinal conformity metrics, because radicalization thrives exactly where purity
+pays better than performance.
+
+**The Westphalia KPI (`PR-029`).** The load-bearing empirical question of the whole Part C layer:
+how expensive is divergence repair? The operator baseline on record: approximately 3 months of
+human effort reconciling architecture and redundancy differences between two simple systems —
+the cost regime this layer exists to eliminate. Measure: wall-clock hours **plus** tokens to
+reconcile two domain registries or two workstreams diverged for N weeks. Cadence: quarterly,
+alongside the Part VI monitoring duty and the `T-349` watch (this epic's amendment note to
+`T-349`, section 7). Interpretation rule: if reconciliation cost trends toward negligible, the
+containment architecture of Part C is over-engineered and should be simplified — heresy has
+become cheap, so tolerance is free; if it stays expensive, Westphalia stands. The metric is
+measurable only once two domain registries exist; one registry exists today, and it is the
+founding domain (`PR-027`) — until a second exists, the KPI is recorded as not yet measurable
+with that reason, never as zero.
+
+### 22.10 What this section does NOT do
+
+Matching section 14's own convention, so no downstream reader invents any of the following by
+assuming it is implied:
+
+- **No Phase B and no consequence.** No weighting, gating, privilege, quorum weight, or
+  standing-scaled verification burden is operable — `PR-022`, `PR-023`.
+- **No duty to cite, consult, or publish is imposed on any agent** by this section or by any
+  record it restates — section 22.1.
+- **No cell, no domain registry, and no charter is built.** `PR-027`, `PR-028`, and `PR-029` bind
+  future construction; none authorizes present construction.
+- **The Brussels-effect / conformance-acquis strategy stays PARKED**, with the operator's stated
+  precondition quoted in full above (section 22.9) — not satisfied by readiness, opportunity, or
+  a second domain's mere existence.
+- **No reputation for humans in the loop.** The operator is sovereign, not a market participant —
+  `PR-026`.
+- **No leaderboard, and no ranked output of any kind** — `PR-026`, enforced mechanically by the
+  shipped reader (section 22.8).
+- **No automatic demotion, suspension, or exclusion of any identity by computed standing alone**
+  — `PR-026`.
+- **No sixth conflict detector.** Five `detect_*` functions exist; none was added for
+  non-compliant historical overrules (section 22.3).
+- **No `.harness/state.json` write**, by this task or by any task in this epic.
+- **No `ORCHESTRATION.md`, `claude.md`, or `gemini.md` edit** — no NLAH mutation of any kind.

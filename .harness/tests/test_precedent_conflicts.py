@@ -123,6 +123,26 @@ class ConflictsTestCase(unittest.TestCase):
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]
         return pr_id, result
 
+    def load(self, pr_id, root=None):
+        root = root if root is not None else self.root
+        return json.loads((root / (pr_id + ".json")).read_text(encoding="utf-8"))
+
+    def overrule_embedding_args(self, target_id, root=None):
+        """T-370 amendment (PR-019, A.3.1): every successful `--overrules`
+        call now must embed the overruled record's ratio verbatim plus its
+        authorship (record id, published_by, issuing task) or the publish
+        is refused. Reads the target's own on-disk fields so the required
+        byte-exact ratio match holds regardless of this test's own
+        ratio/agent/task values -- see the amended-assertion list in this
+        task's handoff."""
+        target = self.load(target_id, root=root)
+        ratio_file = pathlib.Path(self._tmp.name) / (target_id + "-overruled-ratio.txt")
+        ratio_file.write_text(target["ratio"], encoding="utf-8")
+        return ["--overruled-ratio-file", str(ratio_file),
+                "--overruled-record-id", target_id,
+                "--overruled-published-by", target["published_by"],
+                "--overruled-issuing-task", target["issuing_task"]]
+
     def conflicts_json(self, root=None):
         root = root if root is not None else self.root
         result = run("conflicts", "--root", str(root), "--json")
@@ -247,10 +267,13 @@ class FullyCleanRegistryTests(ConflictsTestCase):
         # overlap role:worker.
         overruled_id, _ = self.publish_ok(task="T-602", subject="clean-to-overrule", tier=3,
                                            ratio="soon overruled", scope=["role:overrule-track"])
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         self.publish_ok(task="T-603", subject="clean-overrule-successor", tier=3,
                          ratio="successor ratio", scope=["role:overrule-track"],
                          extra_args=["--overrules", overruled_id, "--factor", "unworkability",
-                                     "--factor-note", "no longer workable"])
+                                     "--factor-note", "no longer workable"]
+                         + self.overrule_embedding_args(overruled_id))
         # a resolvable citation to a real, permanent task in this repo.
         self.publish_ok(task="T-604", subject="clean-cites-real-task", tier=4,
                          extra_args=["--cites", "T-330"])
@@ -303,10 +326,13 @@ class Detector1SubjectRatioTests(ConflictsTestCase):
         detectors 1/4 only consider live, currently-active law."""
         a_id, _ = self.publish_ok(task="T-616", subject="d1-reconciled", tier=3,
                                    ratio="ratio A")
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         self.publish_ok(task="T-617", subject="d1-reconciled", tier=3,
                          ratio="ratio B superseding A",
                          extra_args=["--overrules", a_id, "--factor", "doctrinal_change",
-                                     "--factor-note", "changed"])
+                                     "--factor-note", "changed"]
+                         + self.overrule_embedding_args(a_id))
         result, payload = self.conflicts_json()
         self.assertEqual(result.returncode, 0, payload)
         self.assertEqual(self.findings_for(payload, 1), [])
@@ -319,9 +345,12 @@ class Detector1SubjectRatioTests(ConflictsTestCase):
 class Detector2OverruledCitedTests(ConflictsTestCase):
     def _make_overruled(self):
         g_id, _ = self.publish_ok(task="T-620", subject="d2-subject", tier=3, ratio="G ratio")
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         h_id, _ = self.publish_ok(task="T-621", subject="d2-subject-h", tier=3, ratio="H ratio",
                                    extra_args=["--overrules", g_id, "--factor", "reasoning_error",
-                                               "--factor-note", "G's reasoning no longer holds"])
+                                               "--factor-note", "G's reasoning no longer holds"]
+                                   + self.overrule_embedding_args(g_id))
         return g_id, h_id
 
     def test_flags_follows_of_overruled_record(self):
@@ -433,9 +462,12 @@ class Detector3IllegitimateOverruleTests(ConflictsTestCase):
         real `publish` CLI (which enforces SDR-17.8 at write time) must
         never trigger detector 3."""
         target_id, _ = self.publish_ok(task="T-630", subject="d3-real-target", tier=3)
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         self.publish_ok(task="T-631", subject="d3-real-successor", tier=3,
                          extra_args=["--overrules", target_id, "--factor", "unworkability",
-                                     "--factor-note", "note"])
+                                     "--factor-note", "note"]
+                         + self.overrule_embedding_args(target_id))
         result, payload = self.conflicts_json()
         self.assertEqual(self.findings_for(payload, 3), [])
 
@@ -595,9 +627,12 @@ class RootIsolationTests(ConflictsTestCase):
         before = self._live_pr_files()
 
         g_id, _ = self.publish_ok(task="T-670", subject="iso-d2", tier=3, ratio="G")
+        # T-370 AMENDMENT (PR-019, A.3.1): a successful --overrules publish
+        # now also needs the displacement-bridge embedding.
         self.publish_ok(task="T-671", subject="iso-d2b", tier=3, ratio="H",
                          extra_args=["--overrules", g_id, "--factor", "reasoning_error",
-                                     "--factor-note", "n"])
+                                     "--factor-note", "n"]
+                         + self.overrule_embedding_args(g_id))
         self.publish_ok(task="T-672", subject="iso-d1", tier=3, ratio="A")
         self.publish_ok(task="T-673", subject="iso-d1", tier=1, tier_evidence=["T-673"],
                          ratio="B contradicts A")
