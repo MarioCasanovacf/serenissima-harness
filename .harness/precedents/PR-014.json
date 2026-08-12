@@ -1,0 +1,47 @@
+{
+  "id": "PR-014",
+  "schema_version": 2,
+  "title": "Fleet-first: an epic that duplicates an existing operator system dies here",
+  "subject": "capability-duplication",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-329",
+    "decision:T-329#operator-kill-directive-2026-08-12"
+  ],
+  "ratio": "When a harness epic's deliverable substantially duplicates a system that already exists in the operator's fleet (measured by artifact identity, not by theme: byte-level diff of the packages, shared upstream pins, provable derivation direction), the epic's unfinished tasks are closed as failed with reasoned notes, its done tasks remain done as history, and any capability the harness version has that the fleet system lacks is contributed to the fleet system rather than developed here in parallel. The fleet system is the canonical line of development.",
+  "dicta": [
+    "Applied 2026-08-12 to the design-taste epic (T-318..T-329): recursive diff found 2 differing files of 20 (one differing only in the name: frontmatter field); the operator's standalone repository proved to be this epic's own extraction, renamed, and further evolved (12 additional validator checks). Six deltas identified and dispatched for upstream contribution. Naming note: the fleet system is referenced obliquely in this tracked record by standing repository policy (no sibling-project names in tracked artifacts); the operator kill directive is recorded as a note on T-329 dated 2026-08-12."
+  ],
+  "scope_conditions": [
+    "coordinator or planner evaluating a new or in-flight epic whose deliverable overlaps an operator-fleet capability"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the operator designates this repository as the canonical home for a previously-fleet capability, or if the no-sibling-names policy changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-329",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-12T02:53:00Z",
+  "sources": [
+    "T-329",
+    "decision:T-329#operator-kill-directive-2026-08-12"
+  ],
+  "validity_conditions": [
+    "the operator maintains fleet systems outside this repository; the no-sibling-names policy for tracked artifacts remains in force"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}
