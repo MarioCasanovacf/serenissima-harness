@@ -99,6 +99,28 @@ outcomes. When cells can hire, portable standing plus outcome pay recreates the 
 market. Likely intended (the RoL architecture); flagged so the Part B validation memo
 checks Mokyr for how the RoL priced mobile stars, and whether rent extraction followed.
 
+AMENDMENT TO OQ2 (2026-08-13, operator ruling 5 on ratification memo v2, T-375 notes).
+The reasoning record, in full, so the amendment is auditable rather than silent:
+(1) DEFECT: as originally written, OQ2 named only the Mokyr strand as its required check.
+(2) SOURCE MANDATE: the addendum's own Part B assigns the same question - how many cells
+share adjacent jurisdictions, and what mobility does to rent extraction - to BOTH the
+Mokyr fragmentation thesis AND the QJE-2005 inverted-U (Part B items 2 and 3). A memo
+that checks one of two mandated channels diverges from the instruction it implements.
+(3) PRACTICE ALREADY CORRECT: the T-375 join answered OQ2 through both channels
+(patronage-competition pricing per Mokyr; rent dissipation past the neck-and-neck crest
+per QJE-2005), so the divergence was doctrine-versus-practice, precisely the class
+PR-021 names as the only reputational crime when left silent. This amendment aligns the
+recorded question with the executed method.
+(4) AMENDED TEXT, operative: OQ2 requires checking BOTH channels - (a) how patron
+competition priced mobile stars and whether rent extraction followed (Mokyr), and
+(b) whether contestability past the inverted-U crest dissipates the rents that would
+finance a laggard cell's catch-up effort (QJE 2005) - and any future answer that draws
+on only one channel is incomplete on its face.
+(5) AUTHORITY: escalated as contradiction 5 by the R1 validation memo (doc 12), carried
+by the T-375 join section 5, ruled by the operator 2026-08-13: "si lo congruente es
+enmendar, se enmienda dejando un registro argumentativo logico bastante solido y
+auditable." This section is that record.
+
 ## AB10. Current registry is the founding domain
 
 DECISION: until cells exist, `.harness/precedents/` is delimited as the registry of the

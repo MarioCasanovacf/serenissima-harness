@@ -1,0 +1,59 @@
+{
+  "id": "PR-034",
+  "schema_version": 2,
+  "title": "The displacement bar scales with registry maturity: a Republic, not a fortress",
+  "subject": "displacement-bar-maturity",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-375",
+    "decision:T-375#operator-ruling-3-2026-08-13"
+  ],
+  "ratio": "PR-019's embed requirement gains a maturity axis: before Phase B activates, the reasoning burden for displacing an incumbent rule must be calibrated against registry maturity, so that entry never becomes harder merely because the registry grew. The calibration - the maturity measure and its thresholds - is fixed at Phase B design time through the overruling-grade protocol. Until calibrated, the current fixed bar stands as a floor that is explicitly provisional on this axis.",
+  "dicta": [
+    "Operator ruling 3, 2026-08-13, wording preserved: es un sistema evolutivo como toda Republica. Enacts the escalated contradiction 1 of the R1 validation memo (AAH2013 Prediction 3: a fixed-form entry barrier grows more damaging as the registry matures - exactly when Phase B would activate). The join's finding that PR-019's revisit_trigger had no maturity axis is hereby cured: this record IS that axis's anchor."
+  ],
+  "scope_conditions": [
+    "the displacement-bridge enforcement in precedent.py and any future recalibration of its reasoning burden"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit at Phase B design time, when the maturity measure and thresholds must be fixed through the overruling-grade protocol.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-019",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-375",
+  "published_by": "coordinator-fable",
+  "published_at": "2026-08-14T04:44:03Z",
+  "sources": [
+    "T-375",
+    "decision:T-375#operator-ruling-3-2026-08-13"
+  ],
+  "validity_conditions": [
+    "PR-019 active with its prospective embed rule; Phase B not yet designed"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}
