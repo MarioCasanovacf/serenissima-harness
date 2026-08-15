@@ -525,3 +525,111 @@ OPERATOR ANSWERS RECORDED:
 STANDING CORRECTION TO THE COORDINATOR: "te haces muchas bolas." Recorded because it is
 accurate. Questions were shipped without first checking which the operator had already
 answered from a different direction.
+
+---
+
+# Ruling round 2.8 — the identity gate, 2026-08-15
+
+Operator instruction: *"Hay que solucionar esto sin romper el registro del PR-023 porque
+si nos rechazaron la apelación no hay nada que argumentar de la regla sino de cómo
+nosotros construimos un mecanismo que sea aceptable por la regla."*
+
+## D-16. The posture is COMPLIANCE, not amendment
+
+PR-023 clause 1 states a PREREQUISITE, not a prohibition: Phase B is gated on
+cryptographic identity with an external trust root. A gate opens when its condition is
+met. We supply the condition. Nothing is appealed, narrowed, or amended:
+`scope_conditions` stay immutable per SDR-01 and PR-007, the ratio stays verbatim, and
+PR-023 remains binding with the coordinator in compliance rather than in opposition.
+
+Clause 2 says the prerequisite "belongs to the Westphalian layer". The operator IS the
+Westphalian layer. The harness is not granting itself the key; it is receiving one.
+
+## D-17. The structural finding that sizes the whole design
+
+Every agent runs as the same OS user on the same filesystem. There is no isolation
+boundary between agents. **Therefore no agent can hold a secret another agent cannot
+read, and therefore no agent can have an unforgeable identity.** This, and not the
+absence of a crypto library, is why PR-023 called the prerequisite structurally
+impossible from inside.
+
+Consequence, stated as an architectural law:
+
+> The only unstealable key in this system is the operator's. Put the unforgeable
+> boundary exactly at MINTING, and nowhere else, because minting is the only place the
+> system can afford a human.
+
+Everything downstream of minting is forgeable-but-detectable. The design must be honest
+about which side of that line each guarantee sits on.
+
+## D-18. What is closed and what is not
+
+CLOSED, cryptographically: **Sybil minting.** A name exists only if it appears in a
+warrant signed by the root. An agent may generate a thousand keypairs and enroll none.
+This is exactly PR-023 clause 3's concern ("until an identity cannot cheaply mint three
+names"), and it is the concern the simulation actually has: phantom parties corrupt an
+auditable transcript, whereas an agent that lies about who it is is content, adjudicable
+on the record by an agentic judge.
+
+NOT CLOSED: **impersonation.** Per D-17 it cannot be closed without per-agent process
+isolation (separate OS users, containers, or hosts). Named here so no later document can
+imply otherwise. PR-022 clause 5's verbatim caveat — "identities are self-asserted" —
+therefore stays TRUE and stays unmodified.
+
+## D-19. Operator decisions, taken 2026-08-15
+
+**Key custody: ssh-agent with confirm-on-use (`ssh-add -c`).** Every signature opens a
+dialog the operator approves. Theft of the key file does not confer the power to sign.
+Friction lands where the operator's own design already placed a human: granting plazas
+per epic, before the work exists. Roughly one confirmation per epic.
+
+**v1 scope: warrants AND agent-signed acts, plus a mechanism that DISINCENTIVISES an
+agent signing as another.** The operator accepts the D-17 limitation explicitly and asks
+for economic and evidentiary pressure where prevention is unavailable.
+
+## D-20. The disincentive package
+
+Prevention is off the table (D-17). These five make forgery unprofitable, self-evident,
+and adjudicable, without an automatic consequence (PR-022 clause 4) and without waiting
+on a sleeping operator (AF-5).
+
+**DIS-1. Fork detection is mechanical, not a judgement.** Every act signed by name N
+embeds the hash of N's previous act. Two acts sharing one predecessor is a FORK, which
+is unforgeable proof that two parties held the key. Nobody has to believe anybody. This
+is the detector the refused appeal's G2 promised and never built; it is now cryptographic
+instead of procedural.
+
+**DIS-2. Credit follows the signature, always.** Every reputational and economic effect
+accrues to the SIGNING name. Forging as A therefore credits A. Forgery cannot enrich the
+forger, only damage the victim, which removes the economic motive entirely and leaves
+only sabotage. This is free to implement and is the strongest single disincentive.
+
+**DIS-3. A fork never freezes the epic (AF-5).** The forked branch is marked CONTESTED
+and both branches survive in the record. No re-anchoring by the operator is required and
+no work stalls. A saboteur cannot halt a rival by forging.
+
+**DIS-4. A contested act carries no weight until adjudicated, including the forger's.**
+Sabotage costs the saboteur the act it spent, and gains it nothing observable, because of
+DIS-2.
+
+**DIS-5. A false accusation costs the accuser, scaled (AF-3).** The claim that "someone
+forged as me" is, from outside, indistinguishable from "I leaked my own key". Standing
+follows AF-4: only a name with a live binding may file. Without this, forgery-accusation
+becomes the cheapest griefing verb in the system.
+
+Where DIS-1 through DIS-5 leave a genuine dispute, it goes to an agentic court on the
+record. That is not a gap in the design; it is the operator's stated success condition
+reached by mechanism: a case with real names, unforgeable evidence, and a reconstructible
+history.
+
+## D-21. Sequencing, binding on this epic
+
+1. The mechanism ships INERT. It changes what no rule computes from, so it is not yet a
+   constitutional act.
+2. PR-022 clause 4 ("NO CONSEQUENCE ATTACHES. NONE") continues to hold. Closing identity
+   does not by itself license a consequence.
+3. PR-017 governs: the record lands BEFORE anything keys a consequence to a warrant, a
+   chain, or a fork. This is the exact discipline that failed with `roster.py`, where a
+   docstring claimed constitutional work the code had not earned.
+4. PR-023 clause 5 remains conjunctive: even with the gate open, Phase B does not ship
+   while the A.8 currency-health indicator is failing.
