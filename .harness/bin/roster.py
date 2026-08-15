@@ -169,26 +169,55 @@ def is_enrolled(root) -> bool:
     return (pathlib.Path(root) / "trust" / "root.pub").exists()
 
 
-def require_warrant(root, by: str, verb: str) -> None:
-    """Once a trust root exists, the roll accepts writes only from a verified warrant.
+def require_warrant(root, by: str, verb: str, subject=None) -> None:
+    """Once a trust root exists, the roll accepts writes only from a VERIFIED warrant
+    that actually authorizes THIS mutation.
 
-    Before enrollment this is a no-op and roster.py stays the accident-only bookkeeping
-    roll it has always been, so there is no flag day and the existing suite still
-    describes real behaviour. After enrollment, minting is closed: a name, a plaza and a
-    charter exist only inside a document the operator signed (D-16, D-17).
+    HISTORY, because the previous version of this function was the whole defect. It read
 
-    This is NOT a defence against an agent that edits roster.py. Nothing on a shared
-    filesystem is. It is the enforcement point for a boundary whose actual strength
-    comes from the operator holding the only unstealable key.
+        if not str(by).startswith(WARRANT_PREFIX): raise ...
+
+    which is a string test on an attacker-supplied CLI flag. A blind panel typed
+    `--by "warrant:ME-LO-INVENTE"` and minted five names and sixty-four plazas against a
+    harness with a real enrolled root, and `warrant.py audit` reported everything clean
+    afterwards. That is precisely the "string comparison an attacker controls both sides
+    of" this module's own docstring disclaims, reintroduced one line below the disclaimer.
+
+    The repair is that `by` now names a warrant that must exist on disk, must verify
+    against the anchored root, must not be expired, and must CONTAIN the thing being
+    written. A forged `by` no longer costs eight characters; it costs the operator's
+    private key.
+
+    Still NOT a defence against an agent that rewrites this file or deletes the trust
+    root -- see `warrant.py reconcile`, which is the detector for that, and D-17 for why
+    no in-process check can be one.
     """
     if not is_enrolled(root):
         return
-    if not str(by).startswith(WARRANT_PREFIX):
+    by = str(by)
+    if not by.startswith(WARRANT_PREFIX):
         raise KeyError(
             f"{verb} refused: this harness has an enrolled trust root, so the roll "
             f"accepts writes only from a verified warrant. Draft one with "
             f"`warrant.py draft`, have the operator sign it, then `warrant.py apply`. "
             f"(by={by!r} is self-asserted and cannot mint.)")
+
+    wid = by[len(WARRANT_PREFIX):].strip()
+    if not wid:
+        raise KeyError(f"{verb} refused: by={by!r} names no warrant")
+
+    import warrant as _w  # lazy: warrant.py imports this module lazily too, no cycle
+
+    try:
+        payload = _w.verify_warrant(root, wid)["payload"]
+    except Exception as exc:                      # TrustError and anything ssh raises
+        raise KeyError(f"{verb} refused: warrant {wid!r} does not verify -- {exc}")
+
+    if not _w.authorizes(payload, verb, subject):
+        raise KeyError(
+            f"{verb} refused: warrant {wid} verifies, but does not authorize "
+            f"{verb} of {subject!r}. A signed document authorizes what it says and "
+            f"nothing else.")
 
 
 def _empty() -> dict:
@@ -216,7 +245,7 @@ def charter(colegiado: str, incentive: str, by: str, root=None) -> dict:
     willing to type the original author's name still gets through.
     """
     root = resolve_root() if root is None else pathlib.Path(root)
-    require_warrant(root, by, "charter")
+    require_warrant(root, by, "charter", norm(colegiado))
     colegiado = norm(colegiado)
     incentive = str(incentive).strip()
     if not incentive:
@@ -249,7 +278,8 @@ def plazas(epic: str, colegiado: str, role: str, count: int, by: str, root=None)
     the agents exist is a description; announced before, it is a constraint.
     """
     root = resolve_root() if root is None else pathlib.Path(root)
-    require_warrant(root, by, "plazas")
+    require_warrant(root, by, "plazas",
+                    f"{norm(epic)}|{norm(colegiado)}/{norm(role)}")
     epic, colegiado, role = norm(epic), norm(colegiado), norm(role)
     if not isinstance(count, int) or isinstance(count, bool):
         raise ValueError("count must be an integer")
@@ -289,7 +319,7 @@ def issue(name: str, colegiado: str, role: str, epic: str, by: str,
     the roll. That is the defect this guard exists to close.
     """
     root = resolve_root() if root is None else pathlib.Path(root)
-    require_warrant(root, by, "issue")
+    require_warrant(root, by, "issue", f"{norm(epic)}|{norm(name)}")
     name, colegiado, role, epic = norm(name), norm(colegiado), norm(role), norm(epic)
     persona = str(persona).strip()
     if len(persona) > PERSONA_MAX:

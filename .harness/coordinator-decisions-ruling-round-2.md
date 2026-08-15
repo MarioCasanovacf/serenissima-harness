@@ -631,5 +631,11 @@ history.
 3. PR-017 governs: the record lands BEFORE anything keys a consequence to a warrant, a
    chain, or a fork. This is the exact discipline that failed with `roster.py`, where a
    docstring claimed constitutional work the code had not earned.
-4. PR-023 clause 5 remains conjunctive: even with the gate open, Phase B does not ship
-   while the A.8 currency-health indicator is failing.
+4. PR-023 clause 5 remains conjunctive, quoted in the record's own polarity: "even with
+   the gate closed, Phase B does not ship if the currency is failing." NOTE ON WORDING,
+   added after a panel caught it: this document elsewhere says "a gate opens when its
+   condition is met", which is the OPPOSITE metaphor to the record's, where clause 4's
+   "Sybil minting is closed by this gate" makes CLOSED the satisfied state. The
+   substance is unaffected -- satisfying the prerequisite does not release the A.8
+   condition -- but a compliance argument that misquotes the record it complies with has
+   no business being trusted on the rest, so the record's wording governs here.

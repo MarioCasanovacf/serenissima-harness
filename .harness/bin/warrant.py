@@ -26,14 +26,33 @@ generate a thousand keypairs and enroll none. Everything downstream of minting i
 forgeable-but-detectable, which `attest.py` handles. PR-022 clause 5's verbatim caveat
 ("identities are self-asserted") stays TRUE for impersonation and stays unmodified.
 
-THE TRUST ROOT, AND THE ONE THING A HUMAN MUST DO. A probe of `ssh-keygen -Y verify`
-found the real hole: an attacker who can append to an `allowed_signers` file enrolls
-itself and its signature verifies cleanly. So this module keeps NO allowed_signers file.
-It rebuilds one in a temp dir at every verification, from `trust/root.pub`, and only
-after checking that root.pub's fingerprint equals the string anchored in
-`trust/root.fingerprint`. An attacker who swaps root.pub breaks the anchor. An attacker
-who swaps both has changed the one string the operator verifies OUT OF BAND. That string
-is the entire external trust root, and there is no cheaper way to buy one.
+THE TRUST ROOT, AND THE ONE THING A HUMAN MUST DO. This paragraph is the second draft;
+the first described a closure a blind panel then walked straight through, and the
+corrections are load-bearing rather than cosmetic.
+
+No `allowed_signers` file is stored. One is rebuilt in a temp dir at every verification
+from `trust/root.pub`, after THREE checks, each of which exists because the panel
+defeated the build that lacked it:
+
+  1. root.pub must hold EXACTLY ONE key. The panel appended a second line whose
+     principal was also `operator`; `ssh-keygen -lf` reports only the FIRST key, so the
+     anchored fingerprint still matched and warrants signed by the attacker verified.
+  2. root.pub's fingerprint must equal `trust/root.fingerprint`.
+  3. The fingerprint ssh-keygen NAMES as the actual signer must equal the anchor, and a
+     verification that names no signer is refused. This check existed but was
+     conditional (`if seen and ...`), undocumented, and covered by no test; deleting it
+     left all 36 tests passing while a 20-name forged warrant applied cleanly.
+
+WHAT THE ANCHOR STILL CANNOT DO, and the detector that answers it. Any agent can move
+`trust/root.pub` aside, mint freely through roster.py, and move it back; D-17 says so and
+no in-process check can prevent it. `reconcile` is the answer: every colegiado, plaza and
+name on the roll must trace to a VERIFIED warrant, or it is reported as an orphan, and
+`audit` now runs it and raises an ALARM. The panel ran the un-enroll/mint/re-enroll
+sequence against the previous build and `audit` called it clean, because audit verified
+warrants and never looked at the roll.
+
+The irreducible human step remains one fingerprint, verified OUT OF BAND. That string is
+the entire external trust root and there is no cheaper way to buy one.
 
 INERT ON PURPOSE (D-21). Nothing here varies a burden, a weight, a quorum or a
 permission. PR-022 clause 4 ("NO CONSEQUENCE ATTACHES. NONE") holds, and PR-017 requires
@@ -69,7 +88,8 @@ MAX_PLAZA = 64                          # mirrors roster.PLAZA_MAX
 FINGERPRINT_RE = re.compile(r"SHA256:[A-Za-z0-9+/=]{43}")
 
 PUBLIC_API = ("resolve_root", "trust_dir", "anchored_fingerprint", "verify_signature",
-              "draft", "verify_warrant", "apply_warrant", "audit", "payload_digest")
+              "draft", "verify_warrant", "apply_warrant", "audit", "payload_digest",
+              "authorizes", "reconcile")
 
 
 class TrustError(Exception):
@@ -132,6 +152,13 @@ def check_anchor(root) -> str:
     pub = trust_dir(root) / "root.pub"
     if not pub.exists():
         raise TrustError("no trust root enrolled; the harness is un-enrolled")
+    lines = [ln for ln in pub.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if len(lines) != 1:
+        raise TrustError(
+            f"TRUST ROOT TAMPERED: trust/root.pub holds {len(lines)} keys, not 1. "
+            "A blind panel appended a second line whose principal was also `operator`, "
+            "left the anchor's fingerprint untouched (ssh-keygen -lf reports the FIRST "
+            "key) and had its own warrants verify. One anchor, one key, or nothing.")
     actual = key_fingerprint(pub)
     expected = anchored_fingerprint(root)
     if actual != expected:
@@ -154,6 +181,14 @@ def init(root, root_pub_path) -> dict:
         raise TrustError("that is a PRIVATE key. Enroll the .pub file, never the key "
                          "itself; this process must remain unable to sign.")
     td = trust_dir(root)
+    if (td / "root.fingerprint").exists():
+        prior = (td / "root.fingerprint").read_text(encoding="utf-8").strip()
+        if prior != fp:
+            raise TrustError(
+                f"ALREADY ENROLLED to {prior}. Re-anchoring to {fp} would silently "
+                "replace the trust root, which is how an attacker becomes the operator. "
+                "If this is deliberate, remove trust/ by hand after verifying the new "
+                "fingerprint out of band, and re-apply every warrant.")
     td.mkdir(parents=True, exist_ok=True)
     (td / "root.pub").write_text(body + "\n", encoding="utf-8")
     (td / "root.fingerprint").write_text(fp + "\n", encoding="utf-8")
@@ -207,9 +242,15 @@ def verify_signature(root, payload_path, sig_path) -> str:
         raise TrustError(f"SIGNATURE DOES NOT VERIFY for {payload_path.name}: "
                          f"{(r.stderr or r.stdout).strip()}")
     seen = FINGERPRINT_RE.search(r.stdout or "")
-    if seen and seen.group(0) != fp:
-        raise TrustError(f"signed by {seen.group(0)}, which is not the anchored root {fp}")
-    return fp
+    if not seen:
+        raise TrustError(
+            "ssh-keygen reported success without naming a signing key; refusing rather "
+            f"than assuming it was the anchored root. stdout={r.stdout!r}")
+    if seen.group(0) != fp:
+        raise TrustError(
+            f"SIGNED BY THE WRONG KEY: {seen.group(0)} is not the anchored root {fp}. "
+            "This is the append-a-second-operator-line attack; see check_anchor.")
+    return seen.group(0)
 
 
 def payload_digest(payload_path) -> str:
@@ -327,6 +368,99 @@ def draft(root, epic, colegiados, plaza_specs, name_specs, valid_until=None) -> 
         "note": "This process cannot sign. Run the command above; ssh-agent will ask "
                 "you to confirm (ssh-add -c).",
     }
+
+
+
+# ------------------------------------------------------- authorization and reconcile
+
+def _norm(token):
+    """Same canonical form roster.norm applies, so a warrant written with `Judge`
+    authorizes a roll row normalised to `judge`."""
+    return " ".join(str(token).split()).casefold()
+
+
+def authorizes(payload, verb, subject) -> bool:
+    """Does this warrant's CONTENT authorize this specific mutation?
+
+    A verified signature says the operator signed SOMETHING. It does not say the
+    operator signed THIS. The previous build conflated the two: any string beginning
+    `warrant:` passed, so a panel typed `warrant:ME-LO-INVENTE` and minted five names
+    against a harness with a genuine enrolled root. A signed document authorizes what it
+    says and nothing else.
+    """
+    if subject is None:
+        return False
+    subject = _norm(subject)
+    epic = _norm(payload.get("epic", ""))
+    if verb == "charter":
+        return subject in {_norm(c) for c in payload.get("colegiados", {})}
+    if verb == "plazas":
+        want_epic, _, key = subject.partition("|")
+        return want_epic == epic and key in {_norm(k) for k in payload.get("plazas", {})}
+    if verb == "issue":
+        want_epic, _, name = subject.partition("|")
+        return want_epic == epic and name in {_norm(n["name"])
+                                              for n in payload.get("names", [])}
+    return False
+
+
+def reconcile(root) -> dict:
+    """Can EVERY row on the roll be traced to a verified warrant? Reports, never repairs.
+
+    This is the detector for the attacks no in-process check can stop (D-17): an agent
+    that moves `trust/root.pub` aside, mints freely and moves it back; an agent that
+    edits `roster.json` directly; an agent that rewrites roster.py. None of those is
+    prevented. All of them leave a row the warrants cannot explain, and this finds it.
+
+    A blind panel ran exactly the un-enroll/mint/re-enroll sequence and `audit` reported
+    everything clean, because audit only verified warrants and never looked at the roll.
+    """
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import roster
+
+    out = {"enrolled": is_enrolled(root), "orphans": [], "checked": 0,
+           "warrants_verified": [], "warrants_invalid": []}
+    if not out["enrolled"]:
+        out["note"] = "un-enrolled: every row is bookkeeping and nothing is claimed"
+        return out
+
+    authorized = {"charter": set(), "plazas": set(), "issue": set()}
+    wd = warrants_dir(root)
+    for path in sorted(wd.glob("W-*.json")) if wd.exists() else []:
+        try:
+            payload = verify_warrant(root, path.stem)["payload"]
+        except TrustError as exc:
+            out["warrants_invalid"].append({"id": path.stem, "reason": str(exc)})
+            continue
+        out["warrants_verified"].append(path.stem)
+        epic = _norm(payload.get("epic", ""))
+        for c in payload.get("colegiados", {}):
+            authorized["charter"].add(_norm(c))
+        for k in payload.get("plazas", {}):
+            authorized["plazas"].add(f"{epic}|{_norm(k)}")
+        for n in payload.get("names", []):
+            authorized["issue"].add(f"{epic}|{_norm(n['name'])}")
+
+    data = roster.load(root)
+    for c in data.get("colegiados", {}):
+        out["checked"] += 1
+        if _norm(c) not in authorized["charter"]:
+            out["orphans"].append({"kind": "colegiado", "id": c,
+                                   "reason": "no verified warrant charters it"})
+    for epic, bucket in data.get("plazas", {}).items():
+        for key in bucket:
+            out["checked"] += 1
+            if f"{_norm(epic)}|{_norm(key)}" not in authorized["plazas"]:
+                out["orphans"].append({"kind": "plaza", "id": f"{epic}/{key}",
+                                       "reason": "no verified warrant publishes it"})
+    for name, entry in data.get("names", {}).items():
+        out["checked"] += 1
+        if f"{_norm(entry.get('epic',''))}|{_norm(name)}" not in authorized["issue"]:
+            out["orphans"].append({"kind": "name", "id": name,
+                                   "issued_by": entry.get("issued_by"),
+                                   "reason": "no verified warrant issues it"})
+    out["clean"] = not out["orphans"] and not out["warrants_invalid"]
+    return out
 
 
 # --------------------------------------------------------------------------- apply
@@ -447,6 +581,12 @@ def audit(root) -> dict:
         except TrustError as exc:
             (out["unsigned"] if "unsigned" in str(exc) else out["invalid"]).append(
                 {"id": wid, "reason": str(exc)})
+    rec = reconcile(root)
+    out["roll_orphans"] = rec["orphans"]
+    out["roll_clean"] = rec.get("clean", False)
+    if rec["orphans"]:
+        out["ALARM"] = (f"{len(rec['orphans'])} row(s) on the roll trace to no verified "
+                        "warrant. Something wrote the roll outside the gate.")
     return out
 
 
@@ -479,7 +619,8 @@ def main(argv=None) -> int:
     a = sub.add_parser("apply", help="verify then write the warrant into the roll")
     a.add_argument("--warrant", required=True)
 
-    sub.add_parser("audit", help="verify every warrant; report, never repair")
+    sub.add_parser("audit", help="verify every warrant AND reconcile the roll")
+    sub.add_parser("reconcile", help="can every roll row be traced to a warrant?")
     sub.add_parser("anchor", help="print the fingerprint to verify out of band")
 
     args = ap.parse_args(argv)
@@ -503,6 +644,11 @@ def main(argv=None) -> int:
                              ensure_ascii=False))
         elif args.cmd == "audit":
             print(json.dumps(audit(root), indent=2, ensure_ascii=False))
+        elif args.cmd == "reconcile":
+            out = reconcile(root)
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+            if out.get("orphans"):
+                return 3
         elif args.cmd == "anchor":
             print(check_anchor(root))
     except (TrustError, ValueError) as exc:

@@ -300,8 +300,9 @@ class ForkDetection(GateCase):
         first = attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit")
         self.forge("aurelia", keys["aurelia"], first["prev"], 99)
         fork = attest.forks(self.root)[0]
-        self.assertIn("two acts share one predecessor", fork["PROOF"])
-        self.assertIn("mechanical", fork["PROOF"])
+        self.assertTrue(fork["all_branches_verified"])
+        self.assertIn("two parties held that key", fork["PROOF"])
+        self.assertIn("Mechanical, not a judgement", fork["PROOF"])
 
     def test_a_fork_freezes_nothing(self):
         """DIS-3 and AF-5: a saboteur must not be able to halt a rival, and no mechanism
@@ -381,8 +382,11 @@ class StatedLimits(GateCase):
     def test_verify_all_prints_the_self_asserted_caveat(self):
         self.full_warrant()
         out = attest.verify_all(self.root)
-        self.assertIn("identities are self-asserted", out["CAVEAT"])
-        self.assertIn("What IS closed is minting", out["CAVEAT"])
+        self.assertIn("identities remain self-asserted", out["NOTE"])
+        self.assertIn("NOT a quotation of PR-022 clause 5", out["NOTE"])
+        self.assertNotIn("CAVEAT", out,
+                         "PR-022 clause 5 designates a canonical string; this module "
+                         "must not paraphrase it and call the result a caveat")
 
     def test_a_stolen_agent_key_forges_successfully(self):
         """The limit, proven rather than asserted. Any agent can read any key on this
@@ -478,6 +482,216 @@ class NoPrivateKeyIsEverTracked(unittest.TestCase):
                 self.assertNotIn("PRIVATE KEY-----",
                                  path.read_text(encoding="utf-8", errors="replace"),
                                  f"{path} holds a private key")
+
+
+# ---------------------------------------------------------------------------------
+# EVERY TEST BELOW EXISTS BECAUSE A BLIND PANEL BROKE THE BUILD THESE FILES SHIPPED.
+# The panel also proved the ORIGINAL suite was vacuous: replacing the whole warrant
+# check with `if by == "mallory"` left 71 tests passing, because no test had ever
+# passed a `warrant:`-prefixed string as an attack input. These do.
+# ---------------------------------------------------------------------------------
+
+class TheWarrantPrefixIsNotAnAuthorization(GateCase):
+
+    def test_an_invented_warrant_id_mints_nothing(self):
+        """The finding that refuted the whole build: `--by warrant:ME-LO-INVENTE`
+        minted five names and sixty-four plazas against a genuinely enrolled root."""
+        self.full_warrant()
+        for forged in ("warrant:ME-LO-INVENTE", "warrant:", "warrant:W-999",
+                       "warrant: W-001", "warrant:W-001 "):
+            with self.assertRaises(KeyError, msg=f"{forged!r} was accepted"):
+                roster.charter("sybil", "minteo", forged, self.root)
+            with self.assertRaises(KeyError, msg=f"{forged!r} was accepted"):
+                roster.issue("phantom", "banco", "judge", "e-1", forged, "", self.root)
+        self.assertEqual(sorted(roster.load(self.root)["names"]), ["aurelia", "orso"])
+
+    def test_a_real_warrant_does_not_authorize_what_it_does_not_say(self):
+        """A verified signature says the operator signed SOMETHING, not THIS."""
+        wid, _ = self.full_warrant()
+        by = f"warrant:{wid}"
+        with self.assertRaises(KeyError) as cm:
+            roster.charter("gremio-que-nadie-firmo", "minteo", by, self.root)
+        self.assertIn("does not authorize", str(cm.exception))
+        with self.assertRaises(KeyError):
+            roster.issue("phantom", "banco", "judge", "e-1", by, "", self.root)
+        with self.assertRaises(KeyError):
+            roster.plazas("e-1", "banco", "notary", 64, by, self.root)
+
+    def test_a_real_warrant_does_authorize_what_it_does_say(self):
+        """The gate must not be a brick: re-applying a verified warrant is idempotent,
+        not refused for the wrong reason."""
+        wid, _ = self.full_warrant()
+        out = w.apply_warrant(self.root, wid)
+        self.assertEqual(out["names"], [])
+        self.assertTrue(out["already"])
+
+    def test_the_warrant_check_is_not_a_denylist(self):
+        """Mutation guard. The panel replaced the check with `if by == "mallory"` and
+        the whole suite still passed. Any authorization that only refuses one literal
+        string must fail here."""
+        self.full_warrant()
+        for by in ("mallory", "warrant:mallory", "coordinator", "", "warrant",
+                   "WARRANT:W-001", "warrant:W-001/../W-001"):
+            with self.assertRaises(KeyError, msg=f"{by!r} was accepted"):
+                roster.charter("sybil", "x", by, self.root)
+
+
+class TheRollIsReconciledAgainstTheWarrants(GateCase):
+
+    def test_un_enrolling_minting_and_re_enrolling_leaves_orphans(self):
+        """No in-process check can stop this (D-17); the point is that it is FOUND.
+        The panel ran exactly this sequence and `audit` reported everything clean."""
+        wid, _ = self.full_warrant()
+        pub = w.trust_dir(self.root) / "root.pub"
+        stashed = pub.parent / "root.pub.stashed"
+        pub.rename(stashed)
+        roster.charter("evil", "sybils", "mallory", self.root)
+        roster.plazas("e-1", "evil", "judge", 64, "mallory", self.root)
+        roster.issue("ghost-1", "evil", "judge", "e-1", "mallory", "", self.root)
+        stashed.rename(pub)
+
+        rec = w.reconcile(self.root)
+        self.assertFalse(rec["clean"])
+        self.assertEqual({o["kind"] for o in rec["orphans"]},
+                         {"colegiado", "plaza", "name"})
+        self.assertIn("ghost-1", [o["id"] for o in rec["orphans"]])
+
+    def test_a_hand_edited_roll_leaves_orphans(self):
+        self.full_warrant()
+        path = self.root / "roster.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["names"]["colado"] = {"colegiado": "banco", "role": "judge",
+                                   "epic": "e-1", "persona": "",
+                                   "issued_by": "warrant:W-001",
+                                   "issued_at": "2026-08-15T00:00:00Z"}
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        rec = w.reconcile(self.root)
+        self.assertFalse(rec["clean"])
+        self.assertEqual([o["id"] for o in rec["orphans"]], ["colado"])
+
+    def test_a_clean_roll_reconciles(self):
+        self.full_warrant()
+        rec = w.reconcile(self.root)
+        self.assertTrue(rec["clean"], rec["orphans"])
+        self.assertGreater(rec["checked"], 0)
+
+    def test_audit_surfaces_the_alarm(self):
+        self.full_warrant()
+        (self.root / "roster.json").write_text(json.dumps({
+            "schema_version": 1, "colegiados": {}, "plazas": {},
+            "names": {"colado": {"colegiado": "x", "role": "y", "epic": "e-1",
+                                 "persona": "", "issued_by": "warrant:W-001",
+                                 "issued_at": "2026-08-15T00:00:00Z"}}}),
+            encoding="utf-8")
+        out = w.audit(self.root)
+        self.assertFalse(out["roll_clean"])
+        self.assertIn("ALARM", out)
+
+
+class TheAnchorAfterThePanel(GateCase):
+
+    def test_a_second_operator_line_in_root_pub_is_refused(self):
+        """The panel appended a second `operator` line, left the fingerprint untouched
+        because ssh-keygen -lf reports only the FIRST key, and had Mallory's warrants
+        verify cleanly."""
+        wid, _ = self.full_warrant()
+        evil = self.keys / "evil"
+        evil_pub = keygen(evil, "mallory")
+        pub = w.trust_dir(self.root) / "root.pub"
+        pub.write_text(pub.read_text(encoding="utf-8").rstrip() + "\n"
+                       + evil_pub.read_text(encoding="utf-8"), encoding="utf-8")
+        with self.assertRaises(w.TrustError) as cm:
+            w.check_anchor(self.root)
+        self.assertIn("holds 2 keys", str(cm.exception))
+        with self.assertRaises(w.TrustError):
+            w.verify_warrant(self.root, wid)
+
+    def test_verify_reports_the_actual_signer_not_the_anchor(self):
+        """verify_signature used to return the ANCHORED fingerprint regardless of who
+        signed, so the audit trail actively misattributed."""
+        wid, _ = self.full_warrant()
+        self.assertEqual(w.verify_warrant(self.root, wid)["signed_by"],
+                         w.key_fingerprint(self.root_pub))
+
+    def test_init_refuses_to_re_anchor_an_enrolled_harness(self):
+        self.enroll()
+        evil = self.keys / "evil"
+        evil_pub = keygen(evil, "mallory")
+        with self.assertRaises(w.TrustError) as cm:
+            w.init(self.root, evil_pub)
+        self.assertIn("ALREADY ENROLLED", str(cm.exception))
+        self.assertEqual(w.check_anchor(self.root), w.key_fingerprint(self.root_pub))
+
+    def test_re_enrolling_the_same_key_is_harmless(self):
+        self.enroll()
+        self.assertEqual(w.init(self.root, self.root_pub)["fingerprint"],
+                         w.key_fingerprint(self.root_pub))
+
+
+class ActsSurviveConcurrency(GateCase):
+
+    def test_concurrent_acts_lose_nothing(self):
+        """Measured against the shipped build: 37 of 50 acts silently lost and 1 fork
+        detected in 10 trials. sign_act had no guard at all, in the module that IS the
+        evidentiary record."""
+        import concurrent.futures
+        wid, keys = self.full_warrant()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+            results = list(pool.map(
+                lambda i: attest.sign_act(self.root, "aurelia", keys["aurelia"],
+                                          "commit", f"ref-{i}"), range(5)))
+        on_disk = sorted(p.name for p in
+                         attest.acts_dir(self.root, "aurelia").glob("*.json"))
+        self.assertEqual(len(results), 5)
+        self.assertEqual(len(on_disk), 5, f"silent lost writes: {on_disk}")
+        self.assertEqual(attest.verify_name(self.root, "aurelia")["signature_failures"],
+                         [])
+
+    def test_a_removed_act_does_not_cause_a_seq_overwrite(self):
+        """Seq used to be len(glob), so removing act 0 made the next act reuse its path
+        and overwrite a signed record."""
+        wid, keys = self.full_warrant()
+        a0 = attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "one")
+        a1 = attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "two")
+        os.remove(a0["path"])
+        a2 = attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "three")
+        self.assertNotEqual(a2["path"], a1["path"])
+        self.assertTrue(pathlib.Path(a1["path"]).exists())
+
+
+class WhatForkDetectionDoesNotCatch(GateCase):
+    """The limits, asserted so no future edit can quietly re-inflate the claim."""
+
+    def test_a_forger_using_the_shipped_verb_leaves_no_fork(self):
+        """Measured. DIS-1 detects concurrent signing and retroactive insertion, NOT
+        forgery in general, and the docstring must keep saying so."""
+        wid, keys = self.full_warrant()
+        attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "honest-1")
+        attest.sign_act(self.root, "aurelia", keys["aurelia"], "verdict", "FORGED")
+        attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "honest-2")
+        rep = attest.verify_name(self.root, "aurelia")
+        self.assertEqual(rep["forks"], [], "if this ever passes, update the docstring")
+        self.assertFalse(rep["contested"])
+        self.assertIn("WHAT IT DOES NOT CATCH", attest.__doc__)
+        self.assertIn("leaves NO fork", attest.__doc__)
+
+    def test_a_keyless_fabricated_fork_is_not_reported_as_proof(self):
+        """Two write_text calls used to produce a CONTESTED verdict with an
+        unconditional PROOF string claiming two parties held the key."""
+        wid, keys = self.full_warrant()
+        attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "honest")
+        d = attest.acts_dir(self.root, "aurelia")
+        for seq in (50, 51):
+            (d / f"{seq:03d}.json").write_text(json.dumps({
+                "schema_version": 1, "name": "aurelia", "seq": seq, "kind": "basura",
+                "ref": "", "body": {}, "prev": "genesis",
+                "ts": "2026-08-15T00:00:00Z", "namespace": attest.NAMESPACE}) + "\n",
+                encoding="utf-8")
+        fork = attest.forks(self.root)[0]
+        self.assertFalse(fork["all_branches_verified"])
+        self.assertEqual(fork["STATUS"], "UNVERIFIED-DIVERGENCE")
+        self.assertIn("NOT PROOF", fork["PROOF"])
+        self.assertIn("no key at all", fork["PROOF"])
 
 
 if __name__ == "__main__":

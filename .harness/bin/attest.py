@@ -11,12 +11,20 @@ self-asserted", remains true at the point of use and remains unmodified.
 WHAT IT DOES INSTEAD (operator decision D-20). Prevention is unavailable, so forgery is
 made unprofitable, self-evident and adjudicable:
 
-  DIS-1  FORK DETECTION IS MECHANICAL, NOT A JUDGEMENT. Every act by name N embeds the
-         hash of N's previous act. Two acts sharing one predecessor is a FORK, and a
-         fork is unforgeable proof that two parties held the key. Nobody has to believe
-         anybody, and no verifier has to be trusted: `verify` computes it. This is the
-         two-claimants detector the refused PR-023 appeal promised in its G2 and never
-         built. It is now cryptographic rather than procedural.
+  DIS-1  FORK DETECTION IS MECHANICAL, NOT A JUDGEMENT -- AND IT CATCHES LESS THAN THE
+         FIRST VERSION OF THIS PARAGRAPH CLAIMED. Every act by name N embeds the hash of
+         N's previous act, so two acts sharing one predecessor is a FORK. Where BOTH
+         branches carry a valid signature, that is proof two parties held the key.
+         Where they do not, it is divergence and nothing more: a blind panel fabricated
+         a fork with no key at all, for two write_text calls.
+
+         WHAT IT DOES NOT CATCH, measured: a forger who uses the shipped `sign` verb
+         appends at the current tip like everyone else and leaves NO fork. Four acts,
+         one of them forged by a second party using the victim's key, verified clean
+         with zero forks. So this detects CONCURRENT signing and RETROACTIVE insertion,
+         not forgery in general. The refused PR-023 appeal's G2 promised a
+         two-claimants detector; this is a narrower instrument than that promise, and
+         the promise should not be re-made on its behalf.
 
   DIS-2  CREDIT FOLLOWS THE SIGNATURE, ALWAYS. Every effect this module reports accrues
          to the SIGNING name. Forging as A therefore credits A. Forgery cannot enrich
@@ -117,9 +125,14 @@ def chain(root, name) -> list:
 def head(root, name) -> str:
     """The digest the next act must point at. GENESIS when the chain is empty.
 
-    With a fork present there is no single head, so this returns the LONGEST branch's
-    tip and `verify` reports the ambiguity. Refusing to append during a contest would
-    freeze the epic, which DIS-3 forbids.
+    With a fork present there is no single head. This walks from GENESIS taking the
+    FIRST child in filename order at each step, which is arbitrary but deterministic --
+    an earlier docstring called it the longest branch, which a panel disproved and which
+    was never true. `verify` reports the ambiguity; refusing to append during a contest
+    would freeze the epic, which DIS-3 forbids. It deliberately ignores signatures, so
+    an unsigned act CAN steer a name's future `prev` values; that is a known weakness
+    with no in-process fix (D-17) and is why `verify` reports unverified branches
+    separately rather than treating them as evidence.
     """
     acts = [a for a in chain(root, name) if "_unparseable" not in a]
     if not acts:
@@ -158,9 +171,30 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
     if not key.exists():
         raise AttestError(f"no such private key: {key}")
 
+    import roster  # lazy, for the guard; roster imports warrant lazily too, no cycle
+
     d = acts_dir(root, name)
     d.mkdir(parents=True, exist_ok=True)
-    seq = len(list(d.glob("*.json")))
+    # The whole read-decide-create runs under the same guard roster.issue uses. The
+    # first build of this module had none, and a blind panel measured 75 of 100
+    # concurrent acts silently lost -- verbatim the defect roster.py had just repaired,
+    # reintroduced in the module that is supposed to BE the evidentiary record. Worse,
+    # the collisions overwrote each other's files, so the forks DIS-1 exists to catch
+    # were destroyed by the same bug: 0 detections in 20 trials.
+    with roster._guard(root):
+        seq = 1 + max((int(q.stem) for q in d.glob("*.json") if q.stem.isdigit()),
+                      default=-1)
+        prev = head(root, name)
+        while True:
+            path = d / f"{seq:03d}.json"
+            try:
+                # O_EXCL: never silently overwrite an existing act, even after a
+                # deletion renumbers the directory
+                fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            except FileExistsError:
+                seq += 1
+                continue
+            break
     act = {
         "schema_version": SCHEMA_VERSION,
         "name": name,
@@ -168,15 +202,14 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
         "kind": kind,
         "ref": ref,
         "body": body if body is not None else {},
-        "prev": head(root, name),
+        "prev": prev,
         "ts": hc.now_iso(),
         "namespace": NAMESPACE,
         "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to "
                                         "the signing name, never to the process",
     }
-    path = d / f"{seq:03d}.json"
-    path.write_text(json.dumps(act, indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8")
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(act, indent=2, ensure_ascii=False) + "\n")
     r = subprocess.run(["ssh-keygen", "-Y", "sign", "-f", str(key), "-n", NAMESPACE,
                         str(path)], text=True, capture_output=True)
     if r.returncode != 0:
@@ -234,21 +267,32 @@ def verify_name(root, name) -> dict:
             bad.append({"path": a["_path"], "seq": a.get("seq"), "reason": why})
         by_prev[a.get("prev")].append(a)
 
+    unverified = {b["path"] for b in bad}
     forks_found = []
     for prev, siblings in by_prev.items():
-        if len(siblings) > 1:
-            forks_found.append({
-                "prev": prev,
-                "branches": [{"seq": s.get("seq"), "kind": s.get("kind"),
-                              "ts": s.get("ts"), "digest": s["_digest"]}
-                             for s in siblings],
-                "PROOF": "two acts share one predecessor, so two parties held this "
-                         "key. DIS-1: mechanical, not a judgement.",
-                "STATUS": "CONTESTED",
-                "NO_CONSEQUENCE": "DIS-4 and PR-022 clause 4: contested acts carry no "
-                                  "weight until adjudicated, including the forger's. "
-                                  "Nothing is frozen (DIS-3).",
-            })
+        if len(siblings) <= 1:
+            continue
+        all_verified = all(s["_path"] not in unverified for s in siblings)
+        forks_found.append({
+            "prev": prev,
+            "branches": [{"seq": s.get("seq"), "kind": s.get("kind"),
+                          "ts": s.get("ts"), "digest": s["_digest"],
+                          "verified": s["_path"] not in unverified}
+                         for s in siblings],
+            "all_branches_verified": all_verified,
+            "PROOF": (
+                "every branch carries a valid signature by this name's enrolled key, so "
+                "two parties held that key. Mechanical, not a judgement (DIS-1)."
+                if all_verified else
+                "DIVERGENCE ONLY, NOT PROOF: at least one branch does not verify, and "
+                "anyone can write an unsigned file with no key at all. A blind panel "
+                "fabricated a fork for the cost of two write_text calls, so an "
+                "unverified branch establishes nothing about who held a key."),
+            "STATUS": "CONTESTED" if all_verified else "UNVERIFIED-DIVERGENCE",
+            "NO_CONSEQUENCE": "DIS-4 and PR-022 clause 4: contested acts carry no "
+                              "weight until adjudicated, including the forger's. "
+                              "Nothing is frozen (DIS-3).",
+        })
     return {"name": name, "enrolled": True, "acts": len(acts),
             "signature_failures": bad, "forks": forks_found,
             "contested": bool(forks_found)}
@@ -265,9 +309,13 @@ def verify_all(root) -> dict:
         "contested": [r["name"] for r in reports if r.get("contested")],
         "signature_failures": sum(len(r.get("signature_failures", [])) for r in reports),
         "reports": reports,
-        "CAVEAT": "identities are self-asserted at the point of use (PR-022 clause 5, "
-                  "FORCE-IDENTITY-A open for impersonation). What IS closed is minting: "
-                  "a name exists only inside a root-signed warrant.",
+        "NOTE": "This is attest.py's own note, NOT a quotation of PR-022 clause 5's "
+                "canonical caveat -- a panel caught the previous version paraphrasing "
+                "that string and appending a claim to it. Read the canonical text via "
+                "reputation.py. On the merits: identities remain self-asserted at the "
+                "point of use, FORCE-IDENTITY-A stays open for impersonation, and what "
+                "the warrant layer closes is MINTING, subject to warrant.py reconcile "
+                "coming back clean.",
     }
 
 
@@ -368,7 +416,7 @@ def _render(out) -> None:
             for b in f["branches"]:
                 print(f"    seq {b['seq']:>3}  {b['kind']:12s} {b['ts']}")
             print(f"    {f['PROOF']}")
-    print(f"\n{out['CAVEAT']}")
+    print(f"\n{out['NOTE']}")
 
 
 if __name__ == "__main__":
