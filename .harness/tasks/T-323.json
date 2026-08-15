@@ -1,0 +1,34 @@
+{
+  "id": "T-323",
+  "title": "Add conditional Mario profile, semantic color grammar, and executive presentation mode",
+  "description": "Update projects/<retired-skill> skill only. Add directly routed references for conditional personal:operator activation, Mario aesthetic invariants, data/color semantics, surface translation, executive presentations, and calibration. Do not make Mario the universal default. Encode forest=positive, ochre=warning, oxblood=negative/critical, warm-grey=neutral, ink=structure/reference/total plus non-color redundancy and CTA collision rules. Update agents/openai.yaml only if stale. Acceptance: quick_validate passes; benchmark static tests from T-322 execute nonzero and pass; generic no-flag behavior remains brand-neutral.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-16T06:23:21Z",
+      "agent": "codex-worker-mario-skill",
+      "note": "plan: add an explicit personal:operator mode and six directly routed references, preserve generic brand neutrality, then validate activation/routing statically and run the skill-creator quick validator plus the T-322 nonzero benchmark validator"
+    },
+    {
+      "ts": "2026-07-18T01:10:57Z",
+      "agent": "main",
+      "note": "DECISION: Add six concise, one-hop Mario references plus a deterministic profile validator; keep personal:operator orthogonal to the primary surface mode and brand-neutral when absent; update the existing intentional-files test and run exact nonzero suites."
+    },
+    {
+      "ts": "2026-07-18T01:13:31Z",
+      "agent": "main",
+      "note": "DECISION: agents/openai.yaml remains current because the UI contract still centers production UI; the personal profile is intentionally conditional. Expected canonical validation plus nonzero benchmark and repository suites; actual Skill is valid, contract 34/34, profile 45/45, unittest 13/13."
+    },
+    {
+      "ts": "2026-07-18T01:13:38Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: Replay from repo root: python3 <operator-home>/.codex/skills/.system/skill-creator/scripts/quick_validate.py projects/<retired-skill> => Skill is valid; python3 evaluations/<retired-skill>/mario-ab/validate.py => PASS 34/34; python3 evaluations/<retired-skill>/mario-ab/validate_skill.py => PASS 45/45; python3 -m unittest discover -s .harness/tests -p test_design_taste_production.py -v => Ran 13 tests, OK. Verify exact personal:operator activation, no-flag brand neutrality, six direct references, semantic mapping with non-color redundancy and CTA collision rules, surface translation, five-stage executive memo, and controlled-pair calibration. No Taste skill mirror or benchmark variant was touched."
+    },
+    {
+      "ts": "2026-07-18T01:15:51Z",
+      "agent": "codex-verifier-mario-profile",
+      "note": "VERIFIED: independent verifier codex-verifier-mario-profile accepted T-323. Exact replay from repo root: canonical quick_validate.py projects/<retired-skill> returned Skill is valid; evaluations/<retired-skill>/mario-ab/validate.py returned PASS 34/34 named assertions; validate_skill.py returned PASS 45/45 named assertions; unittest discovery for test_design_taste_production.py ran 13 tests, all OK. Independent static inspection confirmed exact personal:operator-only activation and generic no-flag brand neutrality; the complete forest positive, ochre warning, oxblood negative or critical, warm-grey neutral, and ink structure or reference or total map; required direct labels plus redundant sign, marker, pattern, line, position, or annotation; CTA/status collision prevention; light warm-paper scope only while the profile is active; distinct dashboard, personal landing, case-study/report, and executive-presentation grammar; five-stage executive memo; and controlled-pair calibration. All six Mario references are linked directly from SKILL.md and contain zero nested reference links. Scope audit found the nine T-323 implementation locks exactly match its declared artifacts; no Taste skill mirror path or variant path was locked or changed by T-323, agents/openai.yaml predates the implementation and remains valid, frozen benchmark contract/fixture/rubric/validator files predate T-323, and active variant-a locks belong to T-324. No project files edited by verifier. Housekeeping: lock status showed 17 live T-324 variant-a locks; lock sweep removed 0 expired locks.\n"
+    }
+  ]
+}

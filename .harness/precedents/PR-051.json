@@ -1,0 +1,57 @@
+{
+  "id": "PR-051",
+  "schema_version": 2,
+  "title": "Observability integrity: the event layer must not silently lose events",
+  "subject": "observability-event-integrity",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-005",
+    "P-006",
+    "P-008"
+  ],
+  "ratio": "The observability layer must not silently lose events. Every refusal, contention and boundary crossing logs a structured event; timestamps compare at equal precision; logged paths are normalized repo-relative. A control-plane change that lets an event vanish silently, a comparison mix precision, or an absolute path reach the logs is a defect to fix before it ships.\n",
+  "dicta": [
+    "The generalizable rule, not the bug stories: the CD5 consolidated-record option exercised, member fixes named in tier_evidence as the ledger requires. P-005 (TTL-floor comparison: floor both sides so truncation cancels), P-006 (lock-busy refusals log a structured event), P-008 (path normalization at the log boundary); applied at T-013 and T-014, verdicted by harness-verifier. No standing prose home exists for the generalized rule, stated honestly per CD6: it lives as enforced code behavior plus the audit_gen2.md diagnosis, its primary home, carried as a path: validity entry. Cites the hook-fed-logging record published earlier in this wave: channel and integrity are siblings. Frozen by the codification ledger row decision:T-377#cd-17."
+  ],
+  "scope_conditions": [
+    "role:worker modifying control-plane logging or refusal paths",
+    "role:thinker auditing event completeness in a generation audit"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a refusal or contention path is found returning without a logged event, or absolute paths reappear in events.jsonl.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [
+    "PR-042"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:59Z",
+  "sources": [
+    "decision:T-377#cd-17",
+    "P-005",
+    "P-006",
+    "P-008",
+    "T-013",
+    "T-014"
+  ],
+  "validity_conditions": [
+    "path:.harness/logs/events.jsonl",
+    "path:.harness/logs/audit_gen2.md",
+    "lock-busy refusals and boundary crossings continue to log structured events"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

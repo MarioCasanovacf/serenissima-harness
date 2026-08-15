@@ -1,0 +1,50 @@
+{
+  "id": "PR-043",
+  "schema_version": 2,
+  "title": "Coordinator is a role, not a model: normative text names no vendor model",
+  "subject": "coordinator-model-agnostic",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-010",
+    "T-034"
+  ],
+  "ratio": "The coordinator is a role, not a model: the main session running the strongest available model. Normative harness text names no specific vendor model as the coordinator; any agent writing or amending normative text keeps model names out of role definitions, confining them to provenance notes. The role definition survives every model change unedited.\n",
+  "dicta": [
+    "Tier 2 on P-010, whose accepted_mutations entry records the gate satisfied by direct operator instruction 2026-07-05; applied at T-034, verdicted done by rotated verifier-b (events.jsonl ts 2026-07-05T02:52:04Z). The operator-local explainer home is listed in the ledger row but never anchored: an operator-local path would dangle for clones. NLAH homes listed, never anchored (CD2). Frozen by the codification ledger row decision:T-377#cd-09."
+  ],
+  "scope_conditions": [
+    "role:any agent writing or amending normative harness text"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a vendor model name reappears in normative coordinator text outside provenance notes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:25Z",
+  "sources": [
+    "decision:T-377#cd-09",
+    "ORCHESTRATION.md:115-118",
+    "P-010",
+    "T-034"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:113-118",
+    "normative text defines the coordinator as strongest-available, not by vendor model name"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

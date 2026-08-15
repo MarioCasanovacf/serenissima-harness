@@ -1,0 +1,99 @@
+{
+  "id": "T-322",
+  "title": "Freeze Mario A/B benchmark contract and Subscriber Feedback fixture",
+  "description": "Create projects/<retired-skill>/evaluations/mario-ab/contract.json, fixture.json, rubric.md and README.md. Freeze identical source data/copy/viewports/deliverables for A and B; record activation flag personal:operator; hard gates, 100-point rubric, B-without-flag negative control, provenance and exact replay commands. Acceptance: JSON parses; no invented claims beyond labeled fixture; all four surfaces and semantic mappings are specified; a deterministic validation script or test executes a nonzero count.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-16T06:10:33Z",
+      "agent": "main",
+      "note": "DECISION: Freeze one synthetic, explicitly labeled Subscriber Feedback fixture; four identical A/B surface briefs; personal:operator activation boundary; semantic color plus non-color redundancy; automated gates and 100-point rubric, with Mario publishability retained as a human-only gate."
+    },
+    {
+      "ts": "2026-07-16T06:13:42Z",
+      "agent": "main",
+      "note": "DEVIATION: first worker was interrupted after locking files but producing no artifacts; redispatching with a minimal isolated prompt."
+    },
+    {
+      "ts": "2026-07-16T06:14:26Z",
+      "agent": "main",
+      "note": "plan: freeze deterministic synthetic fixture and four-surface A/B contract; codify 100-point rubric, activation boundary, automated gates, and validate with a nonzero assertion count"
+    },
+    {
+      "ts": "2026-07-16T06:16:06Z",
+      "agent": "main",
+      "note": "DEVIATION: second delegated worker also acquired locks without producing artifacts; coordinator is taking the bounded worker role to unblock the frontier, with an independent verifier still required."
+    },
+    {
+      "ts": "2026-07-16T06:16:07Z",
+      "agent": "codex-worker-root",
+      "note": "plan: implement the minimal frozen fixture, contract, rubric and nonzero validator exactly as scoped, then hand off for independent replay."
+    },
+    {
+      "ts": "2026-07-16T06:17:36Z",
+      "agent": "codex-worker-root",
+      "note": "DECISION: actual result freezes one disclosed synthetic eight-week fixture, four surface briefs, stable semantics, negative control and a 100-point rubric; validator passed 27/27 named assertions."
+    },
+    {
+      "ts": "2026-07-16T06:17:36Z",
+      "agent": "codex-worker-root",
+      "note": "HANDOFF -> verifier: Replay: python3 projects/<retired-skill>/evaluations/mario-ab/validate.py => PASS 27/27; also parse both JSON files with python3 -m json.tool. Inspect the disclosed synthetic label, four surfaces, activation boundary, semantic map, promotion rule and pending human gate."
+    },
+    {
+      "ts": "2026-07-16T06:19:39Z",
+      "agent": "main",
+      "note": "REJECTED: Exact replay passed (python3 projects/<retired-skill>/evaluations/mario-ab/validate.py -> PASS 27/27; both python3 -m json.tool parses passed), and an independent 10/10 audit confirmed fixture arithmetic, four surfaces, semantic redundancy, negative control, rubric total, and promotion rule. However the central A/B freeze criterion is not met: contract.json:31-35 merely lists 'visible copy language' and 'viewport' as identical inputs but supplies no frozen per-surface visible-copy payload; fixture.json:34-42 supplies only four allowed derived claims, a question, recommendation, and source note. Also contract.json:51-55 defines the decision memo as five-slide PPTX plus 'full-size' PNGs without slide size/aspect ratio or exact render dimensions, unlike the explicit web viewports at lines 48, 60, and 66. Thus independent T-324/T-325 producers can vary copy and deck viewport, confounding the comparison. validate.py:34-47 does not detect either omission and its rubric-total assertion is a hard-coded tuple rather than rubric.md content. Freeze concrete shared copy and deck viewport/render dimensions (and validate them) before review. Housekeeping: no active locks; sweep removed 0 expired locks."
+    },
+    {
+      "ts": "2026-07-16T06:20:06Z",
+      "agent": "codex-worker-root",
+      "note": "plan: address verifier rejection by freezing exact per-surface visible copy, exact slide/render dimensions, and data-driven rubric weight validation."
+    },
+    {
+      "ts": "2026-07-16T06:20:49Z",
+      "agent": "codex-worker-root",
+      "note": "DECISION: verifier rejection addressed by freezing exact visible copy for all four surfaces, exact 16:9 slide inches and 1600x900 render dimensions, and rubric weights in contract data; validator now passes 34/34."
+    },
+    {
+      "ts": "2026-07-16T06:20:49Z",
+      "agent": "codex-worker-root",
+      "note": "HANDOFF -> verifier: Replay validator now PASS 34/34 and JSON parses. Specifically verify fixture copy_payloads for four surfaces and five slides, contract slide_size 13.333x7.5 at 16:9, render_size 1600x900, and rubric_weights sum from JSON rather than hard-coded validator values."
+    },
+    {
+      "ts": "2026-07-16T06:21:45Z",
+      "agent": "main",
+      "note": "VERIFIED: Reverification passed exact replay: python3 projects/<retired-skill>/evaluations/mario-ab/validate.py -> PASS 34/34 named assertions; python3 -m json.tool passed for contract.json and fixture.json. Independent static audit confirmed four nonempty frozen copy payloads, five structured decision-memo slide payloads, exact 16:9 / 13.333x7.5in slide dimensions, exact 1600x900 render dimensions, and seven contract.json rubric_weights totaling 100 and matching rubric.md after label normalization. Previously rejected control gaps are closed; all five artifacts satisfy T-322. Housekeeping: no active locks; sweep removed 0 expired locks."
+    },
+    {
+      "ts": "2026-07-18T01:07:27Z",
+      "agent": "main",
+      "note": "REOPEN (was done): DEVIATION: executive status review found benchmark files inside the distributable skill directory, failing the intentional-file test. Relocate the unchanged benchmark to a top-level evaluations tree before continuing; no benchmark content or user data is deleted."
+    },
+    {
+      "ts": "2026-07-18T01:07:34Z",
+      "agent": "codex-worker-root-relocate",
+      "note": "plan: move the unchanged A/B suite outside the skill package, replay 34/34 validator, quick_validate, and the 12-test skill suite, then hand off for independent verification."
+    },
+    {
+      "ts": "2026-07-18T01:07:55Z",
+      "agent": "codex-worker-root-relocate",
+      "note": "DECISION: benchmark content was relocated unchanged to evaluations/<retired-skill>/mario-ab so the distributable skill contains only intentional files. Result: benchmark PASS 34/34, quick_validate valid, and skill suite 12/12."
+    },
+    {
+      "ts": "2026-07-18T01:07:55Z",
+      "agent": "codex-worker-root-relocate",
+      "note": "HANDOFF -> verifier: Replay: python3 evaluations/<retired-skill>/mario-ab/validate.py => PASS 34/34; quick_validate projects/<retired-skill> => valid; python3 -m unittest discover -s .harness/tests -p test_design_taste_production.py -v => 12/12. Confirm no files remain under projects/<retired-skill>/evaluations and benchmark content exists at the new top-level evaluation path."
+    },
+    {
+      "ts": "2026-07-18T01:08:30Z",
+      "agent": "codex-verifier-mario-relocation",
+      "note": "plan: replay all three exact validation commands with nonzero test counts; verify relocation shape, five-file manifest, and content integrity without project edits"
+    },
+    {
+      "ts": "2026-07-18T01:09:35Z",
+      "agent": "codex-verifier-mario-relocation",
+      "note": "VERIFIED relocation independently. Replay 1: python3 evaluations/<retired-skill>/mario-ab/validate.py executed 34 named assertions and returned PASS 34/34. Replay 2: bare quick_validate was unavailable on this shell PATH, exit 127; the canonical installed quick_validate.py entry point against projects/<retired-skill> returned Skill is valid with exit 0. Replay 3: python3 -m unittest discover -s .harness/tests -p test_design_taste_production.py -v executed 12 tests, all OK. Replay 4: old projects/<retired-skill>/evaluations subtree is absent; destination contains exactly README.md, contract.json, fixture.json, rubric.md, and validate.py. Independent full-content inspection and SHA-256 inventory confirmed all five files are nonempty and retain the previously accepted contract: synthetic eight-week fixture, four frozen surface copy payloads, five memo slides, 16:9 and 1600x900 dimensions, activation and negative control, stable redundant semantic map, seven 100-point rubric dimensions, and human publishability gate. No project files edited. Housekeeping: no active locks; sweep removed 0 expired locks."
+    }
+  ]
+}

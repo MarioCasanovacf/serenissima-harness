@@ -1,0 +1,49 @@
+{
+  "id": "PR-036",
+  "schema_version": 2,
+  "title": "Cascade gate: claim refuses unmet depends_on",
+  "subject": "cascade-gate",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-054",
+    "T-000"
+  ],
+  "ratio": "The cascade gate is mechanical, not advisory: blackboard.py claim refuses any task whose depends_on tasks are not all done. No agent may begin a dependent task before its dependencies verdict done; an agent needing a gated task works the unblocked frontier instead. There is no sanctioned bypass verb.\n",
+  "dicta": [
+    "Bootstrap-seeded at generation 0; no P-number, so tier 2 is not honestly available (CD6); tier 3 rests on T-054, the swarm coordination smoke that independently replayed the multi-process concurrent claim and lock protocol, verdicted done by verifier-d via an audited producer-check override (producer fable-5-coordinator, approver verifier-d, distinct identities; events.jsonl ts 2026-07-05T05:34:27Z, event producer_check_overridden immediately followed by task_updated status done at that same ts), and T-000, which exercised the full guarded lifecycle. Frozen by the codification ledger row decision:T-377#cd-02."
+  ],
+  "scope_conditions": [
+    "role:worker or role:verifier claiming any task carrying depends_on"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if claim ever succeeds against an unmet dependency, or a bypass verb is added without a recorded decision.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:07Z",
+  "sources": [
+    "decision:T-377#cd-02",
+    "ORCHESTRATION.md:97",
+    "T-054"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "blackboard.py claim refuses unmet depends_on"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

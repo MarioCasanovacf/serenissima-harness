@@ -1,0 +1,50 @@
+{
+  "id": "PR-040",
+  "schema_version": 2,
+  "title": "Human gates: four operations always require explicit human approval",
+  "subject": "human-gates",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-007",
+    "T-041"
+  ],
+  "ratio": "Four operations always require explicit human approval, regardless of role or autonomy level. Quoted verbatim from state.json human_gates.require_human_approval_for: (1) \"git push or any network publication of workspace content\"; (2) \"deleting files outside .harness/ scratch areas\"; (3) \"activating or sending remote webhook notifications (T-005) for the first time\"; (4) \"mutating claude.md or gemini.md (harness generation bump via the §5A verification gate)\". No agent, at any autonomy level, may perform any of the four gated operations without explicit human approval first.\n",
+  "dicta": [
+    "Tier 1 on recorded gate firings as the observable enforcement facts: T-007, the gen-1 NLAH apply executed under a recorded human approval, and T-041, the P-018 apply under a human gate pre-approved by the operator 2026-07-05. Primary home is the state.json enumeration itself, the list the gates fire from (CD1); ORCHESTRATION.md:101 is the invariant-row restatement, and the wave-3 census item for this enumeration is subsumed by this record (CD8). Frozen by the codification ledger row decision:T-377#cd-06."
+  ],
+  "scope_conditions": [
+    "role:any agent, at any autonomy level, contemplating one of the four gated operations"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit when the gate list changes via the §5A loop, or a gate firing is shown bypassed.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:25Z",
+  "sources": [
+    "decision:T-377#cd-06",
+    "ORCHESTRATION.md:101",
+    "T-007",
+    "T-041"
+  ],
+  "validity_conditions": [
+    "path:.harness/state.json",
+    "the require_human_approval_for list still enumerates exactly the four quoted items"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

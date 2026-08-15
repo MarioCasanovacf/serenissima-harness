@@ -1,0 +1,19 @@
+{
+  "id": "T-319",
+  "title": "Adversarial universal Taste integration join",
+  "description": "Independently replay the exact integration tests, inspect recursive parity and licensing, and forward-test four prompt classes: non-React redesign, conditional Next/Tailwind, offline/no-imagegen fallback, and dashboard scope routing. Do not edit production files.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-15T00:45:52Z",
+      "agent": "codex-verifier-taste",
+      "note": "DECISION: executing the adversarial join from the just-verified T-318 structural replay and the two fresh raw prompt-route passes. Production skill bytes are unchanged from those passes, so no rerun is needed."
+    },
+    {
+      "ts": "2026-07-15T00:45:52Z",
+      "agent": "codex-verifier-taste",
+      "note": "VERIFIED adversarial join. Structural replay: Python 3.12 targeted integration 9/9 and full harness 55/55 with zero skips; quick_validate 3/3 under the PyYAML-equipped system Python; three eight-file skill trees recursively byte-identical; MIT license matches upstream; pinned upstream worktree clean; git diff --check clean. Forward prompt 1, existing Vue marketing redesign: PASS, route taste-rules plus redesign and preflight, preserve Vue and existing stack, do not load React branch unless Tailwind is actually present. Prompt 2, greenfield Next.js plus Tailwind with motion: PASS, route taste-rules, react-next-tailwind, motion-patterns, and preflight; authorization of the stack does not automatically authorize an extra animation package. Prompt 3, offline campaign with no image generation or web: PASS, route taste-rules and preflight, use repository or user assets then explicit placeholders, never require web, image generation, or external LLM access. Prompt 4, dense admin dashboard: PASS by correct refusal and re-scope, because the skill explicitly rejects dashboard use as the primary workflow and routes to the domain design system, allowing this skill only for a surrounding marketing or brand surface. upstream-provenance is not loaded for any of the four prompts. Fresh route reports remain valid because canonical SKILL.md hash is unchanged at 820c1cdd39a071f2b1e90db59854bdb4ffdfff3e86a3d3e19c35a46adcf9318c."
+    }
+  ]
+}

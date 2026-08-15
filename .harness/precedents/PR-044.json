@@ -1,0 +1,49 @@
+{
+  "id": "PR-044",
+  "schema_version": 2,
+  "title": "Session-holder registration requires coordinator ambient identity",
+  "subject": "session-identity-authorization",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-019",
+    "T-053"
+  ],
+  "ratio": "Session-holder register and unregister are mechanically authorized: they succeed only when the ambient identity - never the --by flag, never the name being registered - is a coordinator identity (main, or a registry agent whose role is coordinator, read live from state.json; fail-closed on a missing or malformed registry). Cross-session self-registration is refused with exit 1 and logged as session_holder_register_refused. Registration is a deliberate, explicit coordinator act; nothing else in the harness may auto-register a holder.\n",
+  "dicta": [
+    "Tier 2 on P-019, the accepted_mutations entry born from the T-042 forensic investigation plus the coordinator design decision; applied at T-053, verdicted done by verifier-b (done-event verified in events.jsonl). Primary home is the session.py module docstring, the trust-boundary statement; carried as the path: validity entry because a bare path is not a resolvable citation token. Frozen by the codification ledger row decision:T-377#cd-10."
+  ],
+  "scope_conditions": [
+    "role:any agent invoking session.py register or unregister"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if the coordinator-identity set definition changes or a non-coordinator registration path is sanctioned.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:25Z",
+  "sources": [
+    "decision:T-377#cd-10",
+    "P-019",
+    "T-053"
+  ],
+  "validity_conditions": [
+    "path:.harness/bin/session.py",
+    "register refuses non-coordinator ambient identities and logs the refusal"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

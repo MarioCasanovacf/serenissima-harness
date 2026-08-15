@@ -1559,6 +1559,453 @@ re-cut):
   AB7: the T-349 quarterly gains the A.8 convergence indicator by note, so the watch — not a human's
   memory — is what carries the observation forward.
 
+## codification (the full constitution enters the precedent registry)  [PUBLISHED 2026-08-13 — T-377..T-392 LIVE on the board]
+
+> STATUS: **PUBLISHED 2026-08-13** by `orchestration-planner`. Fourth epic of the precedent line,
+> over `precedent-layer` v0 (T-330…T-349), `precedent-layer-v1` (T-350…T-362) and `addendum-ii`
+> (T-366…T-375). Tier-1 input: **operator ruling 9** (T-375 notes, 2026-08-13) — *"no lo limitaría
+> a 30-P. Hay que ser más ambiciosos, es una constitución."* Pre-planning input:
+> `.harness/context-brief-codification.md` (context-scout census + hazard map). Coordinator
+> delimitations **CD1–CD8** (`.harness/coordinator-decisions-codification.md`) are BINDING for this
+> plan; most of this DAG's acceptance criteria exist to enforce them. Every BLOCKING known-unknown
+> is closed below — six by route (a) (the census freeze T-377 is a real `depends_on` of every
+> drafting and publishing node, so the cascade gate mechanically prevents an early claim), one by
+> route (b) (a recorded planner ruling with cited repo evidence).
+
+### Why
+
+This is not a fresh idea. Decision **D2** of the v0 epic
+(`.harness/coordinator-decisions-precedent-layer.md:33-41`) set a boundary — *seed migration now,
+full retrofit later, gated on the schema surviving adversarial verification* — and `PRECEDENT.md`
+restated it as live across two schema generations (`:977-979`, `:1047`). The operator's ruling
+pulls the trigger on this project's own gate, and widens it: not the ~30 P-numbers, the whole
+normative corpus. **The D2 gate is assessed, not silently superseded**: the schema has now survived
+two full adversarial cycles (293 tests green across `test_precedent*.py` + `test_reputation*.py`,
+two ratification memos, 34 live records with exactly one known, deliberate `conflicts` finding).
+D2 itself named that judgment *"coordinator judgment, not operator-ratified"* — so the coordinator
+declaring it satisfied is procedurally clean, and the join carries it to the operator anyway.
+
+Four things this epic actually changes:
+
+1. **The registry stops being a footnote.** Today it holds the precedent layer's own doctrine plus
+   four exemplar codifications (PR-001 = P-023's reopen rule, PR-002 = P-025, PR-003 = P-026,
+   PR-004 = F6). After this epic it holds the invariants, the standing P-numbers, the audit-born
+   norms and the `state.json` structures that bind agents *today* — one system of record for what
+   binds, at what strength, with what evidence.
+2. **Anchoring gets honest (CD6).** Every codification record's `tier_evidence` names a fact a CLI
+   or git can check: the `accepted_mutations` entry, the issuing `T-NNN`, an `events.jsonl`
+   timestamp, the audit file section. Historical norms have verifiable histories precisely because
+   the archive is append-only. This is the partial repair of the carried **TIER-EVIDENCE-A** defect
+   for the new corpus; where no anchor exists, the record says so and takes the lower tier.
+3. **The prose stays canonical, and gains backlinks (CD1 + CD8).** The registry is a *cited
+   mirror*; `ORCHESTRATION.md` gains `(PR-NNN)` markers next to codified rules and not one word of
+   rule text changes. Canonicity — demoting prose to commentary — is a distinct constitutional act
+   reserved for the operator and presented at the join, never assumed.
+4. **The boundary is chosen, not accidental (CD5).** Anti-completionism is a *column in the
+   ledger*: every census item either mints a record or appears in the NOT-CODIFIED column with its
+   reason. AD2-39's reasoning generalizes past its literal subject — re-litigating material that
+   was already correctly disposed of manufactures findings, and the P-027/P-028 correction (they
+   are a complete historical record of two rejected proposals, not ledger gaps) is adopted verbatim.
+
+The reflexive discipline that makes this epic hard is mechanical, not stylistic: **publish is not
+idempotent**. `allocate_next_id` is max+1 with no duplicate-content check
+(`.harness/bin/precedent.py:683-696`) and `conflicts` cannot see a perfect clone by design
+(detector 1 skips identical-ratio pairs, `:2074`). That pair produced PR-030/PR-031 — *"minted
+minutes apart by the same agent on the same task through retry inadvertence"* (PR-032's own ratio).
+At three-record scale nothing caught it; at forty-record scale nothing would either. Hence the
+wave-0 census freeze: a fixed target with expected arithmetic, and a census-versus-ledger check
+after every batch. **The census check is the only instrument in this system that can catch a
+duplicate record.**
+
+### The DAG (T-377 … T-392, epic `codification`, engine `claude` throughout)
+
+```mermaid
+graph TD
+  T377["T-377 W0 CENSUS FREEZE (thinker, FRONTIER)<br/>codification-ledger.md<br/>rows, tiers, NOT-CODIFIED reasons,<br/>expected arithmetic N1/N2/N3"]
+  subgraph w1["WAVE 1 — invariants + ledger-anchored P-numbers"]
+    T378["T-378 draft (thinker, FRONTIER)"]
+    T379["T-379 publish (worker, real CLI)"]
+    T380["T-380 verify census + integrity"]
+    T381["T-381 verify text-against-source"]
+  end
+  subgraph w2["WAVE 2 — audit-born norms (F6/U2/U4 vs F1/U1/U3)"]
+    T382["T-382 draft (thinker, FRONTIER)"]
+    T383["T-383 publish (worker, real CLI)"]
+    T384["T-384 verify census + integrity"]
+    T385["T-385 verify text-against-source"]
+  end
+  subgraph w3["WAVE 3 — state.json normative structures"]
+    T388["T-388 draft (thinker, FRONTIER)"]
+    T389["T-389 publish (worker, real CLI)"]
+    T390["T-390 verify census + integrity"]
+    T391["T-391 verify text-against-source"]
+  end
+  T386["T-386 BACKLINKS (worker)<br/>ORCHESTRATION.md (PR-NNN) markers<br/>locked file, marker-only"]
+  T387["T-387 verify backlinks (marker-only diff)"]
+  T392["T-392 EPIC JOIN (verifier, FRONTIER)<br/>census proof + CD1/CD2 ratification items<br/>+ memo + U4 explainer + README<br/>then HANDOFF to a no-artifact identity"]
+
+  T377 --> T378
+  T378 --> T379
+  T379 --> T380
+  T380 --> T381
+  T381 --> T382
+  T382 --> T383
+  T383 --> T384
+  T384 --> T385
+  T381 --> T386
+  T385 --> T386
+  T386 --> T387
+  T385 --> T388
+  T388 --> T389
+  T389 --> T390
+  T390 --> T391
+  T377 --> T392
+  T379 --> T392
+  T381 --> T392
+  T383 --> T392
+  T385 --> T392
+  T387 --> T392
+  T389 --> T392
+  T391 --> T392
+```
+
+*(the join's `depends_on` lists all fifteen prior tasks explicitly, per the v0/v1/addendum-ii
+convention; the mermaid edges above are drawn from the cluster tails for readability)*
+
+### Task table
+
+| ID | Role | Engine | Tier (P-030) | Prio | Depends on | Owns (sole writer) |
+|---|---|---|---|---|---|---|
+| T-377 | thinker | claude | **frontier** | 1 | — | `docs/precedent-research/codification-ledger.md` |
+| T-378 | thinker | claude | **frontier** | 2 | T-377 | `docs/precedent-research/codification-wave1-ratios.md` + its ratio text files |
+| T-379 | worker | claude | sonnet | 3 | T-378 | the wave-1 `.harness/precedents/PR-NNN.json` it mints |
+| T-380 | verifier | claude | sonnet | 4 | T-379 | nothing (replay-only); verdicts T-379 |
+| T-381 | verifier | claude | sonnet | 5 | T-380 | nothing (replay-only) |
+| T-382 | thinker | claude | **frontier** | 5 | T-381 | `docs/precedent-research/codification-wave2-ratios.md` + its ratio text files |
+| T-383 | worker | claude | sonnet | 6 | T-382 | the wave-2 records it mints |
+| T-384 | verifier | claude | sonnet | 7 | T-383 | nothing; verdicts T-383 |
+| T-385 | verifier | claude | sonnet | 8 | T-384 | nothing |
+| T-386 | worker | claude | sonnet | 9 | T-381, T-385 | `ORCHESTRATION.md` (markers only, locked) |
+| T-387 | verifier | claude | sonnet | 10 | T-386 | nothing; verdicts T-386 |
+| T-388 | thinker | claude | **frontier** | 9 | T-385 | `docs/precedent-research/codification-wave3-ratios.md` + its ratio text files |
+| T-389 | worker | claude | sonnet | 10 | T-388 | the wave-3 records it mints |
+| T-390 | verifier | claude | sonnet | 11 | T-389 | nothing; verdicts T-389 |
+| T-391 | verifier | claude | sonnet | 12 | T-390 | nothing |
+| T-392 | verifier | claude | **frontier** | 13 | all 15 | `docs/precedent-research/ratification-memo-codification.md`, `docs/codification-explainer.html`, `docs/precedent-research/README.md`, optionally `.harness/precedents/README.md` |
+
+### Every edge is a real artifact-consumption (no false cascade)
+
+- `T-377 → T-378` (and transitively every later node) — the frozen ledger IS the publish script's
+  source: rows, tiers, tier-evidence tokens, subjects, titles with character counts, and the
+  expected arithmetic every census check compares against. Without it a drafter would be choosing
+  what the constitution contains at the keyboard, which is the one thing CD5 and CD7 forbid.
+- `T-378 → T-379`, `T-382 → T-383`, `T-388 → T-389` — the publish task runs the drafter's exact
+  commands verbatim. A publisher that re-drafts a ratio is drafting constitutional text without a
+  ratio-determination act behind it.
+- `T-379 → T-380`, `T-383 → T-384`, `T-389 → T-390` — a verifier replays the artifacts it verdicts.
+  Mechanically, the census verifier **verdicts the publish task first** (that is what lifts its own
+  cascade gate) and only then claims its own task; this is written into each verifier's criteria
+  because the T-373 DEVIATION shows agents hit this ordering blind.
+- `T-380 → T-381` (and its two siblings) — **the wave's canonical id list is a real artifact.** The
+  census verifier ends its note with the authoritative record-id set plus anything the text auditor
+  must NOT read as legitimate. Auditing the raw directory instead is exactly how a clone would be
+  read as doctrine. Census before text is also the right order on the merits: auditing the wording
+  of records that should not exist is wasted work.
+- `T-381 → T-382`, `T-385 → T-388` — **CD7's verified-wave gate, and a real consumption twice
+  over**: (i) ids are allocated at publish time (max+1), so a later wave's records cannot cite an
+  earlier wave's PR ids until those ids exist and are verified — the id-shift hazard T-369's
+  handoff had to disclaim; (ii) each drafter must state which defect found in the previous wave's
+  verdicts its rows avoid.
+- `T-381, T-385 → T-386` — the backlink worker places markers for records from **both** waves, so
+  both verified sets are consumed inputs. Listed explicitly rather than relying on transitivity,
+  because the marker count is checked against both waves' rows.
+- `T-386 → T-387` — the verifier diffs the file the worker edited.
+- `→ T-392` — all fifteen listed explicitly (the house convention): the join genuinely re-runs
+  every check, re-derives the census across the whole registry, re-runs the marker diff itself, and
+  dispositions every `OPEN-QUESTION:` note from all fifteen.
+
+**Edges deliberately NOT drawn, each with its reason** — the part worth auditing:
+
+- **`T-377 → T-386` only transitively.** The backlink worker consumes the ledger's ORCH-HOME flag,
+  but it also needs published records to point at; the wave edges already carry the ledger forward.
+- **`T-386 ⟂ T-388`: the epic's one genuine concurrency slot.** Once wave 2 is verified, the
+  backlink worker (`ORCHESTRATION.md`) and the wave-3 drafter (`docs/`) share no file, no lock and
+  no acceptance command. Two concurrent claims, under `max_parallel_workers = 3`.
+- **`T-387 → T-388/T-389`: absent.** Wave 3 mints records; it does not read `ORCHESTRATION.md`
+  markers. Serializing them would cost a wave and buy nothing.
+- **No edge from any wave to `T-365` or `T-376`, in either direction.** T-365 owns the P-023
+  backfill path (CD3) and T-376 owns the `--voids` silent-discard repair; both are live and
+  claimable independently. This epic must survive either landing mid-flight, so both are handled as
+  *criteria* (below), never as dependencies — a dependency would let an unrelated open task stall
+  the constitution.
+
+### The ordering invariant that is NOT an edge
+
+Waves publish against the **currently shipped CLI**. No ledger row may use a flag that does not
+exist, and no row may pass a single-value relation flag twice (`--overrules`, `--supersedes`,
+`--voids`, `--reinterprets`, `--revalues` keep only the LAST occurrence — the silent-discard defect
+**T-376** owns and has not yet repaired). The accumulating flags are `--tier-evidence`, `--dicta`,
+`--scope`, `--cites`, `--follows`, `--sources`, `--validity`, `--factor`: repeat the flag once per
+value, since a comma-joined string is ONE value. This is written into T-377's self-check and into
+every publish task's criteria.
+
+### Bootstrap / infra ownership (F1 — every shared file has exactly one owner)
+
+| Shared artifact | Sole owner | Race risk |
+|---|---|---|
+| `docs/precedent-research/` (directory) | already exists; every doc task `mkdir -p` | **None** — idempotent, each owns one distinct filename. |
+| `docs/precedent-research/codification-ledger.md` | **T-377 only** | Read by all six later drafting/publishing tasks; written by none of them. |
+| `docs/precedent-research/codification-wave{1,2,3}-ratios.md` | **T-378 / T-382 / T-388**, one each | Distinct filenames; the waves are serialized anyway. |
+| `.harness/precedents/PR-NNN.json` (new) | **the wave's publish task only**, all minted by the real CLI | Hand-writing a record is an automatic REJECT; id allocation runs inside `hc.guarded()`; the directory is locked for the duration of each publish. |
+| `.harness/precedents/PR-001…PR-034.json` (existing) | **nobody** | Records are immutable (SDR-01) and `.harness/precedents` is in `state.json protected_paths`. No task in this epic edits an existing record for any reason. |
+| `ORCHESTRATION.md` | **T-386 only**, under `lock.py`, markers only | Every other task is forbidden it by name. |
+| `.harness/state.json` | **nobody** | Wave 3 codifies it and writes nothing to it; that asymmetry is proven key-by-key in three separate criteria. The P-023 `accepted_mutations` backfill stays a tier-2 act (§5A + human gate) owned by T-365. |
+| `claude.md` / `gemini.md` | **nobody** (CD2) | Their mutation path is the §5A loop plus the operator's own gate; codifying their text would create a second authority track around that gate. |
+| `PRECEDENT.md` / `INTERPRETIVE-CODE.md` | **nobody in this epic** | INTERPRETIVE-CODE.md is amendable only through the overruling-grade protocol (IC-13); nothing here needs either file changed. |
+| `.harness/bin/*.py`, `.harness/tests/*` | **nobody** | Proven by `git status --porcelain` in every task's criteria. T-376's repair may land concurrently — that raises the suite floor, which is why the criterion is `N >= 252` with the delta to be *named*, never absorbed. |
+| `docs/precedent-research/README.md` | **T-392 only** | The v0/v1/addendum-ii rule, carried. |
+| `.harness/precedents/README.md` | **T-392 only, optionally** | Its closing sentence ("No live record has been published into this directory by T-340") is false as of PR-001. The join may repair that single paragraph or report it as a finding; nobody else may touch it. |
+| `docs/codification-explainer.html` | **T-392 only** | New file, U4 artifact. |
+
+### Measured baselines this DAG is written against (2026-08-13, planner's own runs)
+
+| Command | Result | Where it is enforced |
+|---|---|---|
+| `ls .harness/precedents/PR-*.json \| wc -l` | **34** | every publish + census-verify criterion |
+| `precedent.py conflicts` | `1 conflict finding(s) across 34 record(s)`, exit **3** (PR-001's dangling `P-023`) | every wave; **zero findings is a STOP**, not a pass |
+| `precedent.py cite --all \| tail -1` | `1 of 185 citation(s) dangling`, exit **3** | every wave; a new dangling token means a malformed source token, never a finding to absorb |
+| `precedent.py stale \| tail -1` | `17 reconsideration candidate(s) across 34 record(s)`, exit **3** | expected to RISE per wave by construction; dispositioned at the join |
+| `python3 -m unittest discover -s .harness/tests -p "test_precedent*.py"` | `Ran 252 tests`, OK | floor `N >= 252` in every task (P-025) |
+| `... -p "test_reputation*.py"` | `Ran 41 tests`, OK | not touched by this epic; quoted for the join's scope audit |
+| `token_share.py` (T-375 measurements) | 33.8% raw / 42.0% output, then 35.1 / 43.5 — **below** the 53–65 band | wave 3's frontier-budget record carries the measured number; the join re-measures |
+
+### Dispatch notes (tiers per P-030, `ORCHESTRATION.md:136-160`)
+
+**Frontier tier — 5 of 16 tasks**: `T-377` (the census freeze) and the three ratio drafters
+(`T-378`, `T-382`, `T-388`), plus `T-392` (the join). The rule is verifiability, not seniority:
+deciding *what binds* and *what a ratio says* is low-verifiability judgment — no adversarial replay
+catches a ratio that is merely imprecise, which is exactly why the coordinator split drafting from
+publishing. Everything else runs **sonnet**: the three publish tasks are high-verifiability
+execution (exact commands, exact expected census counts), the seven verifiers are adversarial
+replay with replayable evidence, and the backlink worker's whole output is checkable by `git diff`.
+`haiku` is used nowhere. Note that the frontier share has read **below band for two consecutive
+epics**, so a drafting-heavy frontier allocation here is budget-consistent rather than a breach;
+the join re-measures either way.
+
+**Wave order (`max_parallel_workers = 3`, and this DAG is deliberately mostly serial):**
+
+1. **T-377 alone.** Nothing else in the epic is claimable, by design: an unfrozen census means
+   every downstream target is negotiable.
+2. **Wave 1** — T-378 → T-379 → T-380 → T-381, one at a time.
+3. **Wave 2** — T-382 → T-383 → T-384 → T-385.
+4. **T-386 + T-388 concurrently** (the one parallel slot), then T-387 and T-389 → T-390 → T-391.
+5. **T-392**, then its verdict by a distinct no-artifact identity.
+
+**Engine routing. Nothing is bridged to Gemini, and this one deserves a note** because the
+addendum-ii plan named *"the deferred full retrofit of the ~30 P-numbers (bulk long-context
+digestion against a fixed schema)"* as the single future node that would justify `--engine gemini`.
+That node is this epic — and the routing still does not apply. The Gemini route is a human-pasted
+prompt bridge (`ORCHESTRATION.md:168-174`) with no CLI access to the registry, no `precedent.py`,
+and no ability to run the census check that is this epic's central control. A Gemini-digested
+census would come back as prose a Claude agent must re-derive against the live CLI anyway, which is
+work duplicated rather than delegated. The coordinator's dispatch independently fixed `engine
+claude`; this is the reasoning behind agreeing with it rather than merely complying.
+
+### Verifier rotation plan (F6 — no sole approver, no cross-epic monoculture)
+
+Seven verifier slots plus the final verdict. Burned identities that must not approve here:
+`verifier-final`, `verifier-a2-final`, `verifier-a2-join`, every `verifier-a2-*` and
+`verifier-v1-*` identity (they verdicted the three epics this one extends — reusing them would make
+the ratification trail a four-epic monoculture), plus `verifier-join`, `verifier-build-a/b/c`,
+`verifier-research-a..d`, `verifier-synthesis`, `verifier-refinement`. **Fresh `verifier-cod-*`
+identities are recommended for all eight slots.** Hard constraints written into the criteria:
+
+| Verdict scope | Slot | Constraint |
+|---|---|---|
+| T-377 (the freeze) | rotation slot 0 | doc/contract tier; must not be the identity that verdicts any wave |
+| T-378 / T-382 / T-388 (the drafts) | one identity per wave | must differ from that wave's two verifiers |
+| T-379 → T-380, T-383 → T-384, T-389 → T-390 | the census verifier verdicts the publish task | produced no artifact in this epic; P-022 self-done then applies to its own task |
+| T-381 / T-385 / T-391 (text audits) | one identity each | distinct from that wave's census verifier and from every producer |
+| T-386 → T-387 | backlink verifier | distinct from every producer and from the wave verifiers |
+| **T-392 epic join** | executed by a no-artifact identity; **verdicted by yet another** | T-392 produces three artifacts, so P-022 self-done is FORBIDDEN and the authorship guard enforces producer ≠ approver mechanically |
+
+### Scope boundaries held (what this epic must not do)
+
+- **No `state.json` write of any kind** — including, especially, the P-023 `accepted_mutations`
+  backfill. Third-then-fourth epic with the same alarm ringing; T-365 owns the exit and the
+  operator's ESCA-01 ruling is explicit: *no hay backfill unilateral, nunca*.
+- **No silencing of PR-001's dangling `P-023` finding.** `conflicts` reporting zero is a STOP
+  condition in three separate tasks: either T-365 landed the ledger entry (with evidence) or a
+  constitutional gap was hidden.
+- **No NLAH mutation, no NLAH codification** (CD2).
+- **No `ORCHESTRATION.md` rule-text change** — markers only, diffed line by line, with the
+  terminal-state reopen paragraph excluded on purpose (planner ruling under CD3: a marker there
+  reads as "settled" while the gap it depends on is open).
+- **No existing record edited, ever** (SDR-01 immutability + `protected_paths`).
+- **No sixth `conflicts` detector and no new mechanism** (AD2-39). The census-versus-ledger check
+  is a different instrument — a comparison against an authorized ledger, not a registry-internal
+  detector — and is explicitly in scope per CD8.
+- **No hand-written record.** Every record is minted by running the real CLI.
+- **No self-confirmation.** Every record publishes `unconfirmed` with `confirmed_by` null; scope
+  claims stay persuasive until a distinct identity confirms them.
+- **No completionism.** Every census item either mints or appears in the NOT-CODIFIED column with
+  its reason (CD5).
+
+## Unknowns — Epic: `codification` (populated per orchestration-planner.md steps 5-6, U1+U3)
+
+> Populated BEFORE the DAG was published. Six BLOCKING known-unknowns are closed by **route (a)** —
+> converted into numbered charges on the census freeze T-377, which is a real (transitive)
+> `depends_on` of every drafting and publishing node, so the cascade gate mechanically prevents
+> those nodes from being claimed early. One is closed by **route (b)** — a recorded planner ruling
+> grounded in cited repo evidence. The U3 blindspot-interview questions are listed with the
+> planner's recorded default answer and the single node a correction would re-cut.
+
+**Known knowns** (verified this session, with the evidence):
+
+- The live registry holds **PR-001…PR-034**, 34 files on disk. `conflicts` reports exactly **1
+  finding** (PR-001's dangling `P-023`), exit 3; `cite --all` reports **1 of 185 citation(s)
+  dangling**, exit 3; `stale` reports **17 reconsideration candidate(s) across 34 record(s)**, exit
+  3. All four numbers are quoted into every publish and verify task so no verifier can absorb a new
+  finding as background noise.
+- **The precedent suite is 252 tests green** (`unittest discover -p "test_precedent*.py"`, measured
+  this session), and `test_reputation*.py` is 41. 252 is the floor every criterion asserts against,
+  as `N >= 252` rather than `N == 252`, because **T-376 is open and will add tests when it lands**.
+- **Publish is not idempotent**: `allocate_next_id` is max+1 with no duplicate-content check
+  (`.harness/bin/precedent.py:683-696`), and **`conflicts` is clone-blind by design** (detector 1
+  skips identical-ratio pairs, `:2074`). PR-030/PR-031 are the live proof; PR-032 voided them per
+  incuriam. Nothing in the tooling compares the live registry against an authorized ledger — that
+  gap is why T-377 exists.
+- **Flag accumulation is asymmetric**: `--tier-evidence`, `--dicta`, `--scope`, `--cites`,
+  `--follows`, `--sources`, `--validity`, `--factor` are `action="append"`; the single-value
+  relation flags (`--overrules`, `--supersedes`, `--voids`, `--reinterprets`, `--revalues`) keep
+  only the LAST occurrence — an open silent-discard defect owned by **T-376**.
+- **`title` is hard-capped at 80 characters** (`precedent.py:1020`, exit 1). Every ledger row states
+  its character count.
+- **Mandatory publish fields, replayed from the code**: non-empty `ratio`; `subject` matching
+  `^[a-z0-9-]+$`; `tier` in 1–4 with the tier-specific `tier_evidence` KIND (tier 1 needs an
+  `event:` or `T-NNN` token, tier 2 needs a `P-NNN` token, tiers 3–4 need a `T-NNN`); non-empty
+  `scope_conditions`, `revisit_trigger` and `validity_conditions` at tiers 1–3; non-empty `sources`
+  always; `--code-version` matching `^v\d+$` (`v1` today) and never the `pre-code` sentinel.
+- **`stale` only checks validity entries in file-line or bare-path form**; everything else is
+  reported `unchecked` and never flagged. Hence the "at least one CHECKABLE validity entry per
+  record" criterion in all three drafting tasks.
+- **A `path:lines` citation resolves on file EXISTENCE alone** (`PRECEDENT.md` §5.1) — a stale line
+  range never dangles and is invisible to `cite` and `conflicts`. The `state.json:352/356/358`
+  anchors for F6/U2/U4 are already stale and are the worked example. Only the text audits catch it.
+- `docs/` is **gitignored** (`.gitignore:33`): the ledger, the three ratio documents, the memo and
+  the explainer ship operator-local, so no record may cite them by path — anchoring is by
+  `decision:T-NNN#anchor` token (the AB8 grammar, `DECISION_RE` in `precedent.py`).
+- **P-022** lets a `role=verifier` task go straight to `done` when `--agent` differs from its
+  creator; the seven cluster verifiers use that path, and **T-392 is forbidden it** because it
+  produces artifacts.
+- `max_parallel_workers = 3`, `max_steps_per_task = 50` (`state.json limits`). The widest concurrent
+  slot in this DAG is 2.
+
+**Known unknowns** (each classified BLOCKING / NON-BLOCKING; all BLOCKING ones CLOSED):
+
+- **Q1 [BLOCKING → CLOSED, route (a): T-377 criteria 2, 4, 10]. Which norms mint records and which
+  are deliberately left uncodified?** Blocking because it is the epic's target, and because a
+  drafter improvising it at the keyboard is exactly the completionism CD5/AD2-39 forbid. The freeze
+  produces a row-per-norm ledger with a NOT-CODIFIED column that carries a reason per excluded item.
+- **Q2 [BLOCKING → CLOSED, route (a): T-377 criteria 3, 11]. What tier can each norm honestly
+  take?** The CLI enforces token KINDS per tier: tier 2 requires a `P-NNN` token, so a
+  bootstrap-seeded invariant with no accepted-mutation entry **cannot** publish at tier 2 no matter
+  how constitutional it reads. Blocking because it changes the record shape and the evidence a
+  verifier checks. The ledger assigns tier plus exact tokens per row; a NO-VERIFIABLE-ANCHOR row
+  takes the lower tier and says so (CD6).
+- **Q3 [BLOCKING → CLOSED, route (a): T-377 criterion 5]. Which wave owns a norm whose homes span
+  two waves?** `P-024` vs `cost_policy` rule 4, `P-030` vs rule 1 + `frontier_budget`, `P-020` vs
+  rule 3, `P-029` vs `protected_paths`, the "bounded everything" invariant vs `limits.*`, the
+  "human gates" invariant vs `human_gates.require_human_approval_for`, "producer ≠ approver" vs
+  `P-009` and its six homes. Blocking because an unassigned collision is a duplicate record minted
+  by two different waves — PR-030/031's failure repeated at doctrine level. Every norm gets exactly
+  one minting row; second appearances are marked SUBSUMED-BY.
+- **Q4 [BLOCKING → CLOSED, route (a): T-377 criterion 6]. Can the backlink task, running after wave
+  2, cover every rule that deserves a marker?** Blocking because the coordinator fixed the backlink
+  task's position and a wave-3 norm with an `ORCHESTRATION.md` home would be left permanently
+  unmarked. Closed mechanically rather than by hope: the ledger flags ORCH-HOME per row and an
+  ORCH-HOME row **must** sit in wave 1 or wave 2; a wave-3 row carrying one is a ledger defect to
+  reassign. T-386 and T-387 both check the ORCH-HOME count against the marker count.
+- **Q5 [BLOCKING → CLOSED, route (a): T-377 criterion 10 + recorded default]. Do the entangled
+  point-fix P-numbers mint at all?** `P-002/005/006/007/008/011/012/013` are `gate: code-level`
+  fixes whose normative content is inseparable from the bug they fixed; forcing a ratio out of one
+  manufactures a rule that never existed as a rule. Recorded default the freeze may overrule with
+  reasoning: **no individual records**, with the option of ONE consolidated record for the shared
+  observability theme whose ratio states the generalizable rule and names its members in
+  `tier_evidence`.
+- **Q6 [BLOCKING → CLOSED, route (a): T-377 criterion 4 + T-388's granularity criterion]. One
+  record per invariant row, or one per numeric constant?** No existing precedent decides it: none of
+  PR-001…PR-034 codifies a bare constant. Blocking for wave 3's shape. Recorded default: **one
+  record per NORM**, never per constant — a configured constant is not a decision with reasoning
+  attached (the D1 distinction, `coordinator-decisions-precedent-layer.md:14-21`), and the values in
+  force appear inside the ratio, cited by KEY PATH rather than line number.
+- **Q7 [NON-BLOCKING]. What happens to the decay clock after a bulk publication?** `stale`'s check D
+  flags a record whose `cited_by` is empty after 10 subsequent publications, so mass codification
+  inflates every uncited record's counter mechanically. Handled by construction, not by a ruling:
+  the ledger states the expected direction, every publish task quotes the new number without
+  "fixing" it, and T-392 dispositions the final count and escalates the threshold question to the
+  gen-6 audit.
+- **Q8 [NON-BLOCKING]. Does U4 apply?** Planner ruling: **yes** — the join asks the operator to
+  ratify constitutional-tier material, and asking for ratification of something the operator has not
+  been made to understand is precisely what U4 forbids. The coordinator's dispatch independently
+  mandates it: 3 comprehension questions, `meta charset` as line 1, dated title.
+- **Q9 [NON-BLOCKING]. What if T-365 or T-376 lands mid-epic?** Neither is a dependency (a live open
+  task must never stall the constitution). Handled as criteria: the suite floor is `N >= 252` with
+  the delta to be *named*; a `conflicts` run reporting zero findings is a STOP that must be resolved
+  by checking `accepted_mutations` for a T-365 landing before anything else.
+
+**Unknown knowns** (U3 blindspot interview — assumptions the planner was about to bake into the DAG,
+put to the coordinator; recorded defaults below, each naming the single node a correction re-cuts):
+
+1. **The frozen ledger lives at `docs/precedent-research/codification-ledger.md`, operator-local and
+   untracked**, like every prior spec artifact, with records anchoring by `decision:T-377#…` token
+   rather than by path. → re-cuts T-377's output path and every record's `sources` token if the
+   operator wants the ledger tracked. *Awaiting confirmation.*
+2. **The `ORCHESTRATION.md` backlink marker is the bare token ` (PR-NNN)` appended to an existing
+   rule's lead-in or table cell**, adding no sentence and no line. Assumed because CD8 authorizes
+   markers "without altering rule text" and because equal added/deleted line counts make the
+   marker-only claim mechanically checkable. → re-cuts T-386 and T-387 only. *Awaiting confirmation.*
+3. **No marker is placed beside the terminal-state reopen paragraph**, even though PR-001 exists,
+   because a marker there reads as "codified and settled" while the `P-023` ledger gap is open and
+   owned by T-365 (CD3). Planner ruling, disclosed rather than silent. → re-cuts T-386's coverage
+   count and T-387's check. *Awaiting confirmation.*
+4. **Each wave's verify cluster is two tasks, census first and text second**, with the census
+   verifier verdicting the publish task and forwarding a canonical id list the text auditor
+   consumes. Assumed because auditing the wording of records that should not exist is wasted work,
+   and because the duplicate hazard is the one this epic is most exposed to. → re-cuts the six
+   verify nodes' edges if the coordinator wants them concurrent. *Awaiting confirmation.*
+5. **`.harness/precedents/README.md`'s false closing sentence is the join's optional repair**, not a
+   wave's job. Assumed because it is a tracked file adjacent to the registry and single-ownership
+   matters more than tidiness. → re-cuts T-392's ownership row. *Awaiting confirmation.*
+6. **The U3 interview is recorded as defaults and the DAG published in the same turn**, because the
+   coordinator's dispatch ordered publication now. Disclosed as a procedural DEVIATION from
+   `orchestration-planner.md` step 5's blocking read; the mitigation is that each assumption names
+   the single node a correction re-cuts, and nothing downstream of T-377 is claimable for hours.
+   *Awaiting confirmation.*
+
+**Unknown unknowns** (structural hedges, not predictions):
+
+- The census freeze is this epic's single point of failure — every other task reads it and nothing
+  else fixes the target. The hedge is T-377's self-check criterion (write the complete publish
+  command for the first row of each wave; if you cannot, the row is underspecified) plus the fact
+  that a ledger defect surfaces as a *census mismatch* at the very next verify, not as a silent
+  drift.
+- The genuinely new failure mode this epic introduces is **a record that is correct in every
+  mechanical respect and wrong about what the rule means**. No test, no `conflicts` detector and no
+  census catches it. The hedge is the three text-against-source audits with their four-way verdict
+  (ENACTS / NARROWS / WIDENS / DRIFTS) and side-by-side quotation, the T-361 pattern that has
+  already caught this class once.
+- The second is **a constitution that is codified and inert**: `INTERPRETIVE-CODE.md` §8 already
+  states that no agent is under a duty to consult it, and CD1 keeps the registry a mirror. The hedge
+  is not a mechanism (imposing a duty to cite would be an NLAH mutation, CD2) but disclosure: the
+  join must argue CD1 *against* itself with this exact evidence, so the operator ratifies a mirror
+  knowingly or converts it.
+- Forty-odd records published in three batches by three identities is the largest publication event
+  this registry has seen, at roughly triple the scale of the one that produced PR-030/PR-031. The
+  hedge is the per-batch census check plus the clone hunt at every verify, and the standing
+  instruction that a duplicate is escalated with costed options, never quietly deleted — records are
+  immutable and `.harness/precedents` is guarded.
+
 ## Standing design rules
 1. Default to parallel: only add a `depends_on` edge when a task literally consumes another task's artifact.
 2. Every worker chain terminates in a verifier join (producer ≠ approver).

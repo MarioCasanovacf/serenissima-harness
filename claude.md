@@ -50,6 +50,7 @@ Claude interacts with the environment through local CLI tools.
 *   **Goal Mode Loop**: Automate iterative test-fix cycles locally via `python3 .harness/bin/goal_mode.py run --cmd "<test command>"` — the iteration bound is enforced mechanically (exit 3 = bound reached: stop and mark the task `blocked`).
 *   **AST Semantic Indexing**: `python3 .harness/bin/ast_index.py query <symbol>` (after `build`) finds function, class, and variable definitions without reading entire files.
 *   **Remote Hook Notifications**: Trigger script webhooks (integrating with WeChat, Feishu, or Telegram) to report long-running task completions or request human validation.
+*   **Usage Telemetry**: `python3 .harness/bin/usage_report.py [--json]` reduces the runner's transcripts to per-run, per-role and per-model consumption; `token_share.py` answers only the frontier-share question. The harness writes no usage counters of its own — treat both as harvesters, and read the cache split before treating raw tokens as cost. Frozen audit: `.harness/logs/audit_telemetry_2026-08-14.html`.
 
 ### B. Handling Tool Failures
 * If a command returns a non-zero exit code, capture the stderr. Analyze the error within a `<debugging>` block and formulate a correction before retrying.

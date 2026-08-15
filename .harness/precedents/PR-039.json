@@ -1,0 +1,49 @@
+{
+  "id": "PR-039",
+  "schema_version": 2,
+  "title": "Replay, don't trust: verifiers re-run handoff commands themselves",
+  "subject": "replay-dont-trust",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-052",
+    "T-054"
+  ],
+  "ratio": "Verifiers re-run handoff commands themselves. Producer logs, notes and claims of green runs are inputs to replay, never substitutes for it: a verdict rests on commands the verifier executed and output the verifier saw. Accepting unreplayed producer evidence at a verdict is a protocol violation.\n",
+  "dicta": [
+    "Bootstrap-seeded at generation 0; no P-number, so tier 2 is not honestly available (CD6); tier 3 rests on T-052 (cronsplain epic final join: full-suite replay before verdict, done by harness-verifier, distinct from the epic producers) and T-054 (swarm replay verdicted by verifier-d). The PRECEDENT.md section 3 preamble names replay-dont-trust as the tier system basis. Frozen by the codification ledger row decision:T-377#cd-05."
+  ],
+  "scope_conditions": [
+    "role:verifier evaluating any handoff evidence before a verdict"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a verdict based on unreplayed producer logs is accepted at an epic join.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:08Z",
+  "sources": [
+    "decision:T-377#cd-05",
+    "ORCHESTRATION.md:100",
+    "T-052"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "verifier verdicts require replayed commands with executed-output evidence"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

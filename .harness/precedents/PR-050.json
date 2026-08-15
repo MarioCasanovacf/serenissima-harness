@@ -1,0 +1,51 @@
+{
+  "id": "PR-050",
+  "schema_version": 2,
+  "title": "Model floor by verifiability: judgment stays frontier, execution runs cheap",
+  "subject": "model-floor-verifiability",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-020",
+    "P-030"
+  ],
+  "ratio": "The model-tier partition is by verifiability. Low-verifiability judgment work - goal decomposition, DAG design, join synthesis, direction - stays frontier, and the orchestration-planner stays opus. High-verifiability execution work - code gated by tests, audits with replayable evidence, page-cited corpus reading - runs sonnet, with quality protected by producer-not-approver adversarial replay, not by model tier. Haiku is only for bounded mechanical tasks, never long-horizon or strategic work.\n",
+  "dicta": [
+    "Tier 2 on P-020 and P-030: the floor entered in the P-020 cost_policy block and was re-amended by P-030 per the operator ontology (frontier orchestrates, plans and directs; the cheap tier executes). The fullest single statement lives at state.json cost_policy.rules entry 7, including the haiku evidence citation; ORCHESTRATION.md:149-161 is the contract-prose restatement and primary home (CD1). Recorded census correction (ledger OPEN-QUESTION 3): the scout census and T-388 criterion 10 called rule 7 a state.json-only orphan; the live read found the ORCHESTRATION.md restatement, so the row moved to wave 1 and rule 7 is subsumed by this record. Frozen by the codification ledger row decision:T-377#cd-16."
+  ],
+  "scope_conditions": [
+    "role:coordinator assigning model tiers to dispatched tasks"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if planner or analyst output quality at the assigned tiers degrades in a generation audit, or the operator ontology changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:59Z",
+  "sources": [
+    "decision:T-377#cd-16",
+    "ORCHESTRATION.md:149-161",
+    "P-020",
+    "P-030"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:149-161",
+    "path:.harness/state.json",
+    "cost_policy.rules still carries the model-floor rule as rule 7"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

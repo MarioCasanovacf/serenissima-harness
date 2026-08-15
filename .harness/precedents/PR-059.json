@@ -1,0 +1,49 @@
+{
+  "id": "PR-059",
+  "schema_version": 2,
+  "title": "Session hygiene: close paused coordination sessions; the substrate resumes",
+  "subject": "session-hygiene",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-020"
+  ],
+  "ratio": "The substrate is resumable by design, and that design is only worth having if it is used: close a coordination session when the mission pauses instead of keeping an 8-hour-plus session alive to hold context. A fresh session picks the board up cold - ORCHESTRATION.md for the contract, blackboard.py status for the live state - and that cold-start path, not a long-lived session, is the sanctioned way to carry a mission across a pause. Session length is not a measure of continuity here; the written state is.\n",
+  "dicta": [
+    "This rule exists in no contract prose document at all; it is drafted from the state.json text itself, cost_policy.rules entry 6, its only home, stated per the wave-3 drafting charge rather than implying a contract home that does not exist. Verified by the drafter: ORCHESTRATION.md carries no session-lifetime rule, and the only other copy of the text in the repository is hf-space/data/state.json, a dated pre-P-030 publish snapshot where the same rule sits at a different ordinal, which is why entry 6 is carried as the value in force and not as the rule's identity. Tier 2 on P-020, whose accepted_mutations entry is the verifiable anchor and whose summary names session hygiene explicitly; the operator directive of 2026-07-05 rests on the usage report that measured 79 percent of usage in 8h-plus sessions, which is the fact this rule answers.",
+    "CD6 honesty, stated in both wave-3 records in the same words so that neither sibling discloses less than the other (the wave-2 text verifier's recorded defect D1): under a strict reading of PRECEDENT.md section 3, an operator-directed config change applied inline by the coordinator is weaker evidence than an NLAH mutation carried through the section 5A human gate. Unlike the wave-2 rows there is no verdict T-NNN to fall back to, because P-020 was applied inline per its own gate note, so the strict-reading fallback is the ledger's OPEN-QUESTION 5 and not a tier this record can assert for itself. This record deliberately asserts no producer or verdict identity at all, which is how it avoids the wave-2 defect D2 (an identity claim stated more strongly than the event log names it).",
+    "Note what the rule assumes and this record does not re-promulgate: the cold-start path works only because the board, the locks and the event log are the memory, and those substrate norms are codified in wave 1 - the single guarded index (PR-035) and the hook-fed observability floor (PR-042) - named here in prose alone, with no relation field asserted. Live frontier share measured by the drafter at drafting time, 2026-08-15: 43.5 percent raw tokens, 57.2 percent output tokens, below the 53-65 percent band on raw tokens. Frozen by the codification ledger row decision:T-377#cd-26."
+  ],
+  "scope_conditions": [
+    "role:coordinator ending or pausing a mission's coordination session"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if 8h-plus session share rises again in a usage report, or the rule text changes in cost_policy.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-389",
+  "published_by": "worker-cod-p3",
+  "published_at": "2026-08-15T01:09:48Z",
+  "sources": [
+    "decision:T-377#cd-26",
+    "P-020"
+  ],
+  "validity_conditions": [
+    "path:.harness/state.json",
+    "cost_policy.rules still contains the session-hygiene rule as rule 6"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "T-395",
+  "title": "R3 RESEARCH: judicial review that improves vs blocks - French model, California counterexample (F8)",
+  "description": "Operator mandate (ruling F8): appellate verb approved, epic gated on this research. Cover: how French institutions make review IMPROVEMENT-oriented - Conseil d'Etat dual advisory+litigation role (ex-ante correction of bills), Conseil constitutionnel a priori review, QPC (2010) channeling challenges with strict filters and deadlines, reserves d'interpretation (upholding a law WITH a binding corrective reading); contrast with California vetocracy - CEQA litigation, the high-speed-rail record, open-ended standing and no deadlines producing blocking without improving. Deliverable: docs/precedent-research/16-judicial-review-improvement.md with sources and mechanism hooks: design properties for the harness appellate verb (deadlines, filtered standing, corrective-reading outcomes, deference tiers) so appeal improves records instead of freezing the registry. Writer claims, locks, U2 note, handoff; verifier reads text against strand data.",
+  "acceptance_criteria": [
+    "docs/precedent-research/16-judicial-review-improvement.md exists with sections: French improvement-oriented review, California vetocracy counterexample, comparative diagnosis, mechanism hooks for the appellate verb",
+    "at least 8 distinct external sources cited inline; no absolute user paths; no emojis",
+    "mechanism hooks include deadlines, standing filters, corrective-reading outcome, deference tiers - each tied to a researched instrument",
+    "verifier (non-producer) replayed doc against strand findings and found no fabricated citation"
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-14T06:31:30Z",
+      "agent": "writer-r3-french",
+      "note": "writer composing doc 16 from 2 strand findings"
+    },
+    {
+      "ts": "2026-08-14T06:39:22Z",
+      "agent": "writer-r3-french",
+      "note": "DECISION: composed from 2 strand findings; French remedy menu (avis, QPC double filter+3-month auto-forward clocks, reserves d'interpretation, deferred abrogation) vs CEQA vetocracy (open anonymous standing, no sanctioned deadlines, vacatur+injunction remedy) distilled into 12 mechanism hooks H1-H12 for the appellate verb, 11 strand contradictions carried verbatim, 30 external sources"
+    },
+    {
+      "ts": "2026-08-14T06:42:30Z",
+      "agent": "verifier-r3-french",
+      "note": "verified: replayed all sections against 2 strand findings (S1 f1-19, S2 f1-23); 11 contradictions carried unsmoothed; H1-H12 each instrument-tied; corpus refs exist. Web spot-checks 5/5: QPC360 bilan (1011/1128/501/627, 526/109/132/70/19 exact), QPC360 deadlines (3mo + auto-transmission on silence), Benzina JP Blog (25% vs 10-12%, >37% no useful effect, Italy 128 vs 61, 44%/24.4%/60.5% all verbatim), CE Advising page (avis non-binding largely followed, amendment-voting; 2024 itemization divergence already flagged as contradiction 5), Seven County via SCOTUSblog/Columbia (23-975, 2025-05-29, 8-0, substantial deference). Hygiene: no emojis, no /Users/ paths, 30 external sources, required sections present. No fabricated citation found."
+    }
+  ]
+}

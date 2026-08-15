@@ -1,0 +1,14 @@
+{
+  "id": "T-327",
+  "title": "Integrate calibration verdict and synchronize final skill mirror",
+  "description": "Consume T-326 findings, make only evidence-backed corrections to projects/<retired-skill>, rerun validation and benchmark tests, then synchronize byte-identically to <operator-home>/Documents/Taste skill/skills/<retired-skill>. Preserve upstream license/provenance. Acceptance: quick_validate passes; nonzero benchmark tests pass; diff -qr between canonical and mirror is empty; record exact hashes and any human-pending aesthetic choices.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-12T02:51:09Z",
+      "agent": "coordinator-fable",
+      "note": "DECISION: epic killed by operator directive 2026-08-12 (fleet-first duplicate resolution). Adversarial comparison proved the epic's artifact and the operator's standalone design-taste repository are the same files (recursive diff: 2 differing files of 20, one only in the name: field; same upstream MIT pin b1774273) and that the standalone repo is the extraction of this epic (its git history opens 24 minutes after this epic's last write) and is AHEAD (12 validator checks this epic lacked, covering exactly the geometry fixes T-324 was blocked on). T-329's own PR #2 was already closed as belongs-in-its-own-repo. Six deltas identified for upstream contribution; port dispatched separately. Done tasks T-318..T-323 remain done: history is not rewritten. See PR-014."
+    }
+  ]
+}

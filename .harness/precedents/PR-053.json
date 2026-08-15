@@ -1,0 +1,51 @@
+{
+  "id": "PR-053",
+  "schema_version": 2,
+  "title": "Single-owner bootstrap files: every shared bootstrap artifact has one owner",
+  "subject": "single-owner-bootstrap-files",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-014",
+    "T-037"
+  ],
+  "ratio": "Every shared bootstrap or infra artifact an epic's tests or build will require - test package markers such as tests/__init__.py, fixtures directories, conftest-like scaffolding, build config - is enumerated in the epic plan and assigned to exactly ONE task as an explicit owned artifact, or to a dedicated bootstrap task that every consumer lists in depends_on, before any worker starts. No infra file may be left unowned across parallel sibling tasks; when two siblings would otherwise both need to create the same file, that is the signal to split out a bootstrap task, not to leave the file implicit. Reach, stated exactly: this rule binds plan-drafting protocol - the orchestration-planner and any coordinator or thinker acting as planner - and its home is the Bootstrap/infra ownership checklist rule in the planner's agent-definition file (.claude/agents/orchestration-planner.md, Decomposition rules). The per-epic Bootstrap / infra ownership table in .harness/plan.md is where the rule is applied, not a second home of the duty. It was never generalized into an all-agents ORCHESTRATION.md rule, and this record does not widen it: its reach is deliberately narrower than that of the verifier-rotation rule born of the same audit (F6, already codified as PR-004), which did reach ORCHESTRATION.md and the registry. Reach and authority tier are different axes and this record claims only the first: the tier states how well the norm is evidenced, never how far it binds.\n",
+  "dicta": [
+    "Origin: audit_gen3.md section 5.4 (the F1 finding) and section 4 row 5. NUMBERING CAUTION, stated so no reader mis-resolves it: the audit DOCUMENT calls this proposal P-013, while the accepted-mutation ledger entry in state.json evolution.accepted_mutations carries id P-014 - the two numberings are offset by one across this audit run, so P-014 is the citable token and section 5.4 is the readable text. Generalized into the planner Decomposition rule Bootstrap/infra ownership (F1) and applied at T-037, verdicted done by harness-verifier (events.jsonl ts 2026-07-05T03:13:57Z), an identity distinct from the producer substrate-worker-2 - rotated review under the then-new F6 rule. REACH, NOT TIER: this record binds plan-drafting protocol only and is deliberately narrower than PR-004, the verifier-rotation rule born of the same audit, which did reach ORCHESTRATION.md; PR-004 is named here by prose reference and is not re-minted under any subject. The two axes run opposite ways in that comparison: this record carries tier 2 and PR-004 carries tier 3, yet PR-004 binds far wider - tier measures how well a norm is evidenced, width measures how far it binds. CD6 HONESTY: the tier-2 anchor P-014 is a code-level agent-definition mutation whose recorded gate is code-level with no human gate, not an NLAH mutation through the section 5A loop, so under a strict reading of PRECEDENT.md section 3 this record would fall to tier 3 on T-037; the frozen ledger row chose tier 2 and the ledger's OPEN-QUESTION 5 names that fallback explicitly. LINE-ANCHOR HYGIENE: the gen-3 audit sourced this finding from a state.json LINE NUMBER that no longer points at that content - evolution.next_audit_inputs now holds a six-item gen-5 backlog and those lines fall inside agents.reputation - so this record anchors to audit_gen3.md by section, to the planner file by a live line range, and to the mutation by ledger key P-014, never to a state.json line. Frozen by the codification ledger row decision:T-377#cd-20."
+  ],
+  "scope_conditions": [
+    "role:thinker or role:coordinator drafting an epic plan that touches shared bootstrap files"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a created-shared-bootstrap deviation note recurs after this rule, or the norm is promoted into ORCHESTRATION.md (which would change its reach).",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-383",
+  "published_by": "worker-cod-p2",
+  "published_at": "2026-08-15T00:29:43Z",
+  "sources": [
+    "decision:T-377#cd-20",
+    ".claude/agents/orchestration-planner.md:60-67",
+    "P-014",
+    "T-037"
+  ],
+  "validity_conditions": [
+    "path:.claude/agents/orchestration-planner.md",
+    "path:.harness/logs/audit_gen3.md",
+    "the planner checklist still requires owner enumeration of shared bootstrap files"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

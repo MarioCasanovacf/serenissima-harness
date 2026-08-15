@@ -1,0 +1,50 @@
+{
+  "id": "PR-055",
+  "schema_version": 2,
+  "title": "Note taxonomy: DECISION, DEVIATION, TRADEOFF, OPEN-QUESTION prefixes",
+  "subject": "note-taxonomy",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-017",
+    "T-040"
+  ],
+  "ratio": "Task notes SHOULD carry one of four prefixes - DECISION:, DEVIATION:, TRADEOFF:, OPEN-QUESTION: - so evolution audits can grep them mechanically instead of re-reading prose. DECISION: marks a choice made where more than one valid option existed; DEVIATION: marks work that diverged from the plan or spec, disclosed rather than hidden; TRADEOFF: marks a benefit traded for a cost; OPEN-QUESTION: marks an unresolved ambiguity for the join or the next audit to chase. Evolution audits count and chase every OPEN-QUESTION: note to closure before a generation is declared clean. Reach, stated exactly: this is an all-agents rule - it binds any agent writing task notes on the blackboard, in any role and any session - and the duty lives in the standing Note taxonomy (U2) rule inside ORCHESTRATION.md's lifecycle section (section 2, The lifecycle, identical for every engine). That standing, all-agents home is what distinguishes this rule from the planner-only norms born of the same audit generation, and ORCHESTRATION.md is the same contract document the verifier-rotation rule (F6, already codified as PR-004) reached, in its own section 4. The prefix duty is promulgated as SHOULD; the audit's count-and-chase duty on OPEN-QUESTION: notes is stated indicatively in the source and practised as mandatory at generation joins, and this record does not upgrade the first or downgrade the second.\n",
+  "dicta": [
+    "Origin: audit_gen3.md section 5.7 and section 4 row 14, cited by section and row, never by line, per CD6. Promulgated into ORCHESTRATION.md by the accepted mutation recorded in state.json under the key path evolution.accepted_mutations, entry id P-017; applied at T-040 and verdicted done by harness-verifier (events.jsonl ts 2026-07-05T03:29:52Z), an identity distinct from the producer substrate-worker-2. Tier 2 rests on that P-number plus that distinct-identity verdict. ONE P-NUMBER, THREE NORMS: P-017's summary bundles the note taxonomy (U2), the pre-gate ritual (U4) and verifier rotation (F6). This record codifies U2 alone. U4 is codified separately in this same wave as the pre-gate-ritual record, and F6 is ALREADY codified as PR-004 and is not re-minted here or anywhere in this wave; PR-004 is named in the ratio as the standing benchmark by prose reference only. P-NUMBER HAZARD, STATED: audit_gen3.md's internal draft numbering calls this same mutation P-016; the operative ledger entry carries id P-017. The token P-016 resolves, but it names the blindspot-interview mutation (U3), so P-017 is the only tier-evidence token that proves what this record claims. EVIDENTIARY ASYMMETRY, STATED: P-017's target array names ORCHESTRATION.md itself, the standing all-agents contract document, whereas the planner-only norms of the same audit generation are anchored to mutations targeting agent-definition files. The tier number is the same; what the token proves is not. STALE-ANCHOR HAZARD, STATED: the ORCHESTRATION.md paragraph and the audit row both cite a state.json LINE NUMBER for this audit input, and that line no longer points at it; this record cites state.json by key path only, and the standing nit is itself recorded at state.json evolution.next_audit_inputs entry 0 as doc-only nits with volatile line citations. The path-and-lines token in sources resolves on FILE EXISTENCE ONLY (PRECEDENT.md section 5.1), so a range that goes stale never dangles and can only be caught by eye. Frozen by the codification ledger row decision:T-377#cd-22."
+  ],
+  "scope_conditions": [
+    "role:any agent writing task notes on the blackboard"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a generation audit finds the taxonomy ignored at scale, or a fifth tag enters practice without a recorded decision.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-383",
+  "published_by": "worker-cod-p2",
+  "published_at": "2026-08-15T00:29:43Z",
+  "sources": [
+    "decision:T-377#cd-22",
+    "ORCHESTRATION.md:69-80",
+    "P-017",
+    "T-040"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:69-80",
+    "evolution audits still count and chase OPEN-QUESTION: notes to closure"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,49 @@
+{
+  "id": "PR-058",
+  "schema_version": 2,
+  "title": "Consolidate spawns: batch sibling verdicts, resume agents over fresh spawns",
+  "subject": "consolidate-spawns",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-020"
+  ],
+  "ratio": "Spawn volume is a cost lever the coordinator manages deliberately, not an emergent side effect of dispatch. Three consolidations are standing practice. First, batch sibling verdicts into one verifier run instead of spawning one verifier per sibling task. Second, resume an existing agent run instead of spawning fresh when accumulated context helps - the source names SendMessage as the mechanism in force, and the norm is the resume-over-respawn preference, not the affordance. Third, a verdict and a dependent execute-task may share one agent run when the role rules permit it. That roles-permit proviso is load-bearing and it defers outward: the producer-not-approver rule, codified as PR-038, is what decides when the roles permit, and no consolidation may relax it to save a spawn.\n",
+  "dicta": [
+    "This rule exists in no contract prose document at all. It is drafted from the state.json text itself, cost_policy.rules entry 5, which is its only home; stated here per the wave-3 drafting charge rather than implying a contract home that does not exist. Verified by the drafter rather than assumed: a grep over ORCHESTRATION.md returns no consolidation, batching or resume rule (its only spawn mention is the in-session fan-out line in the pattern menu), and a repository-wide search for the rule text outside state.json finds only this epic's own task and board text plus hf-space/data/state.json, a dated pre-P-030 publish snapshot in which the same rule sits at a different ordinal. That ordinal drift is why this record names the rule and treats entry 5 as the value in force, never as the rule's identity. Tier 2 on P-020, whose accepted_mutations entry is the verifiable anchor: the rule entered as part of P-020's operator-directed cost_policy block (human-directed, operator 2026-07-05, usage report 95 percent subagent-heavy sessions and 79 percent 8h-plus sessions), and P-020's summary names spawn consolidation explicitly. The operator provenance lives here in dicta, not in a tier claim the token kinds cannot carry.",
+    "CD6 honesty, stated in both wave-3 records in the same words so that neither sibling discloses less than the other (the wave-2 text verifier's recorded defect D1): under a strict reading of PRECEDENT.md section 3, an operator-directed config change applied inline by the coordinator is weaker evidence than an NLAH mutation carried through the section 5A human gate. Unlike the wave-2 rows there is no verdict T-NNN to fall back to, because P-020 was applied inline per its own gate note, so the strict-reading fallback is the ledger's OPEN-QUESTION 5 and not a tier this record can assert for itself. This record deliberately asserts no producer or verdict identity at all, which is how it avoids the wave-2 defect D2 (an identity claim stated more strongly than the event log names it).",
+    "Live frontier share measured by the drafter at drafting time, 2026-08-15: 43.5 percent raw tokens, 57.2 percent output tokens, against the 53-65 percent band - still below band on raw tokens, a third consecutive below-band reading after 33.8/42.0 at T-375 and 35.1/43.5 at its verdict. Recorded here under the ledger's OPEN-QUESTION 4 routing; the band's provenance and the below-band finding itself belong to PR-049, which is not re-promulgated here. The lever this rule pulls is spawn count, not tier mix, and the two are reported separately. PR-038 (producer-not-approver) is named in prose only, with no relation field asserted: it supplies the roles-permit proviso and is not re-promulgated here. Frozen by the codification ledger row decision:T-377#cd-25."
+  ],
+  "scope_conditions": [
+    "role:coordinator planning agent spawns and verdict batching"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if spawn volume dominates cost again in a generation audit despite batching, or the rule text changes in cost_policy.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-389",
+  "published_by": "worker-cod-p3",
+  "published_at": "2026-08-15T01:09:48Z",
+  "sources": [
+    "decision:T-377#cd-25",
+    "P-020"
+  ],
+  "validity_conditions": [
+    "path:.harness/state.json",
+    "cost_policy.rules still contains the consolidate-spawns rule as rule 5"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

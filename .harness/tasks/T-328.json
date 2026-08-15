@@ -1,0 +1,14 @@
+{
+  "id": "T-328",
+  "title": "Adversarial final join for Mario taste calibration",
+  "description": "Replay T-322 through T-327 evidence as an independent verifier. Inspect every final slide at full size and representative HTML renders; confirm producer != approver, activation boundary, semantic color mappings, no regression in generic mode, byte-identical mirror and exact nonzero validation counts. Acceptance: verdict done only with replayable commands and visible artifacts; otherwise reopen the responsible task with precise rejection. Do not self-resolve the human gate: Mario's publishability judgment remains the final calibration input.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-12T02:51:09Z",
+      "agent": "coordinator-fable",
+      "note": "DECISION: epic killed by operator directive 2026-08-12 (fleet-first duplicate resolution). Adversarial comparison proved the epic's artifact and the operator's standalone design-taste repository are the same files (recursive diff: 2 differing files of 20, one only in the name: field; same upstream MIT pin b1774273) and that the standalone repo is the extraction of this epic (its git history opens 24 minutes after this epic's last write) and is AHEAD (12 validator checks this epic lacked, covering exactly the geometry fixes T-324 was blocked on). T-329's own PR #2 was already closed as belongs-in-its-own-repo. Six deltas identified for upstream contribution; port dispatched separately. Done tasks T-318..T-323 remain done: history is not rewritten. See PR-014."
+    }
+  ]
+}

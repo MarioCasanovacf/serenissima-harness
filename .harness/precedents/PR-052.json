@@ -1,0 +1,48 @@
+{
+  "id": "PR-052",
+  "schema_version": 2,
+  "title": "Gen-5 intake history: Shepherd and Opik proposals rejected (DESCARTAR)",
+  "subject": "rejected-proposal-gen5-intake",
+  "status": "active",
+  "authority_tier": 4,
+  "tier_evidence": [
+    "T-377",
+    "P-027",
+    "P-028",
+    "event:2026-07-05T17:37:02Z"
+  ],
+  "ratio": "History, not doctrine: the gen-5 intake evaluated two externally-sourced candidates evidence-first and rejected both, verdict DESCARTAR (evolution-analyst, 2026-07-05, audit_gen5.md). Shepherd (git-as-checkpoint, revert-to-last-good-tree; the P-027 proposal) fell because zero non-synthetic goal_abandoned events existed and no working tree was ever contaminated: the problem never manifested locally. Opik/Ollie (auto-regression; the P-028 proposal) fell because zero regression signatures existed, the useful mechanical core already exists as convention, and the LLM half is disqualified by the no-external-LLM rule. The operator bar was explicit: a well-argued DESCARTAR outranks an enthusiastic ADOPTAR. These entries need no addition; state.json pending_proposals is already their complete and correct record. This record is negative precedent, persuasive only, never active-as-doctrine.\n",
+  "dicta": [
+    "Tier 4, the honest tier: rejected proposals produced no binding ratio, no distinct-verifier verdict task exists, and the intake ran under the ad-hoc label gen5-intake, outside the T-NNN grammar; T-377 is the tier-4 anchor because the note this record captures IS the ledger CD4 determination. The event token is the audit_gen5.md lock_acquired entry (holder evolution-analyst, task gen5-intake), grepped live from events.jsonl. Cheap revisit triggers quoted from audit_gen5.md section 5: re-evaluate if a real contaminated-abandonment or a real regression signature ever appears. Frozen by the codification ledger row decision:T-377#cd-18."
+  ],
+  "scope_conditions": [],
+  "declared_width": "narrow",
+  "revisit_trigger": null,
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:59Z",
+  "sources": [
+    "decision:T-377#cd-18",
+    "P-027",
+    "P-028"
+  ],
+  "validity_conditions": [
+    "path:.harness/logs/audit_gen5.md"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

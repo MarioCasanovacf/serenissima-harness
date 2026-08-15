@@ -1,0 +1,50 @@
+{
+  "id": "PR-057",
+  "schema_version": 2,
+  "title": "Pre-gate ritual: explainer plus three comprehension questions before gates",
+  "subject": "pre-gate-ritual",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-017",
+    "T-040"
+  ],
+  "ratio": "Before any heavyweight human gate fires - the first git push, the first messenger or notify activation - the epic join MUST produce an explainer artifact plus exactly 3 comprehension questions for the human, and the gate request cites them: nothing is published that is not understood. Reach, stated exactly: this is a standing rule on epic joins that precede heavyweight human gates - it binds the coordinator and the verifier running such a join, whichever identity that is - and the duty lives in the Pre-gate ritual (U4) rule inside ORCHESTRATION.md's invariants section (section 3, Invariants and the risks they neutralize). Its home is the standing, all-agents contract document, the same contract document the verifier-rotation rule (F6, already codified as PR-004) reached, in its own section 4, and the one the planner-only norms of the same audit generation never did; its narrow width is the occasion it fires on, not a narrower class of bound agents. It does not bind ordinary joins that precede no heavyweight gate, and this record does not widen it.\n",
+  "dicta": [
+    "Origin: audit_gen3.md section 5.7 and section 4 row 16, cited by section and row, never by line, per CD6. Promulgated into ORCHESTRATION.md by the accepted mutation recorded in state.json under the key path evolution.accepted_mutations, entry id P-017; applied at T-040 and verdicted done by harness-verifier (events.jsonl ts 2026-07-05T03:29:52Z), an identity distinct from the producer substrate-worker-2. Tier 2 rests on that P-number plus that distinct-identity verdict, the same evidence the note-taxonomy record of this wave rests on. SECOND HALF OF THE P-017 SPLIT: P-017's summary bundles three norms - note taxonomy (U2), pre-gate ritual (U4) and verifier rotation (F6). This record codifies U4 alone; U2 is the note-taxonomy record of this same wave; F6 is ALREADY codified as PR-004 and is not re-minted here or anywhere in this wave, and PR-004 is named in the ratio by prose reference only. Flattening U2 and U4 into one record because they share a P-number would collapse two distinct duties, bound at different occasions, into a single ratio. P-017's recorded gate names U4 by name, so the token proves this record's claim and not merely its sibling's. The operator rule the source quotes for this duty is, in the original Spanish, no publicar lo que no se entiende; the ratio publishes the English gloss. The heavyweight gates it fires before are the state.json human_gates entries for network publication and for first webhook activation; that gate list is codified separately in this codification epic and is not restated here. P-NUMBER HAZARD, STATED: audit_gen3.md's draft numbering calls this mutation P-016, which resolves but names the blindspot-interview mutation (U3); P-017 is the only honest tier-evidence token. STALE-ANCHOR HAZARD, STATED: the ORCHESTRATION.md paragraph and the audit row both cite a state.json LINE NUMBER for this audit input and that line no longer points at it; this record cites state.json by key path only, and the standing nit is recorded at state.json evolution.next_audit_inputs entry 0 as doc-only nits with volatile line citations. The path-and-lines token in sources resolves on FILE EXISTENCE ONLY (PRECEDENT.md section 5.1), so a stale range never dangles and can only be caught by eye. Frozen by the codification ledger row decision:T-377#cd-24."
+  ],
+  "scope_conditions": [
+    "role:coordinator or role:verifier at an epic join preceding a heavyweight human gate"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a heavyweight gate is requested without the explainer and the three questions, or the gate list definition of heavyweight changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-383",
+  "published_by": "worker-cod-p2",
+  "published_at": "2026-08-15T00:29:43Z",
+  "sources": [
+    "decision:T-377#cd-24",
+    "ORCHESTRATION.md:105-109",
+    "P-017",
+    "T-040"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:105-109",
+    "epic joins preceding heavyweight gates still owe the explainer plus three comprehension questions"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

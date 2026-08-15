@@ -1,0 +1,30 @@
+{
+  "id": "T-396",
+  "title": "F7 CAUTIOUS REVIEW: ground-truth + red-team of the enforcement ladder before any proposal",
+  "description": "Operator order (ruling 2.1, .harness/coordinator-decisions-ruling-round-2.md): review the F7 enforcement dossier v1 (docs/precedent-research/memo-v3-coordinator-dossiers.md, seccion F7) thoroughly BEFORE proposing anything. Three strands feed a writer: (1) ground-truth inventory of the REAL guard surface (mechanical vs instruction-only, file:line); (2) blind red-team of the three principles, four-rung ladder and two-key rule assuming a capable adversary with repo read access; (3) external containment evidence (least privilege, OS sandboxing, canary/honeytoken practice, detection engineering) with real sources. Deliverable: docs/precedent-research/17-guard-enforcement-review.md - dossier v2 where every v1 element is verdicted SURVIVES / CUT / DEFERRED (naming the gate, e.g. FORCE-IDENTITY-A) with the attack or evidence that decided it. Writer claims, locks, U2 note, handoff; non-producer verifier replays against strand data.",
+  "acceptance_criteria": [
+    "docs/precedent-research/17-guard-enforcement-review.md exists with sections: ground truth of the guard surface (file:line), red-team findings by severity, external evidence, dossier v2 with per-element verdicts SURVIVES/CUT/DEFERRED",
+    "every v1 element of the F7 dossier (3 principles, 4 ladder rungs, two-key rule, honeytokens, conduct-ledger separation from Phase A) receives an explicit verdict with the attack or evidence that decided it",
+    "identity-dependent enforcement is checked against FORCE-IDENTITY-A (self-asserted identities) and any element that presumes identity integrity is CUT or DEFERRED, never SURVIVES silently",
+    "at least 6 distinct external sources cited inline; no emojis; no absolute user paths",
+    "verifier (non-producer) replayed doc against strand findings before verdict"
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-14T14:45:07Z",
+      "agent": "writer-f7-review",
+      "note": "PLAN: compose 17-guard-enforcement-review.md from 3 strand outputs + 3 coordinator worries (red-team rank); sections: ground truth (file:line), red-team by severity with rediscovery marks, external evidence, dossier v2 with per-element SURVIVES/CUT/DEFERRED(gate) verdicts"
+    },
+    {
+      "ts": "2026-08-14T14:51:58Z",
+      "agent": "writer-f7-review",
+      "note": "DECISION: composed from 3 strands + coordinator worries (all 3 worries independently rediscovered by blind red-team); verdicts on 14 v1 elements: 7 SURVIVES, 4 CUT (bitacora-as-convention, guard-config-as-list-entry, in-repo honeytokens, Phase-A separation fiat claim), 3 DEFERRED (conduct record, identity quarantine, agent+agent two-key; gates FORCE-IDENTITY-A / PR-022 adjudication named)"
+    },
+    {
+      "ts": "2026-08-14T14:55:26Z",
+      "agent": "verifier-f7-review",
+      "note": "verified: replayed 17-guard-enforcement-review.md adversarially against the 3 strand outputs. All 16 red-team attacks (R1-R16) present with strand severities preserved; all 14 verdicts trace to a named attack, gap, coordinator worry, or external finding via the Decided-by column; identity-presuming elements (conduct record, quarantine, agent+agent two-key, honeytoken auto-coupling) are DEFERRED/CUT with FORCE-IDENTITY-A or PR-022 gates named - no silent SURVIVES. Spot-verified live: blackboard.py:287-296 cascade gate, guard_paths.py:134-140 self-serve refusal text, harness_common.py:52-56 env-var identity, prevent_data_loss.py:150-158 fail-closed; events.jsonl:12660 and :12845 quoted verbatim; all 8 refusal counts exact (34/31/28/14/8/6/5/4). Web spot-checked 2 citations: PyPI Project Quarantine (reversibility quote, ~140/1 figures, two-signal rule confirmed, presented there as proposed framework - minor nuance) and Anthropic sandboxing post (bubblewrap/Seatbelt, dual boundary, 84 pct, approval fatigue - all verbatim). No emojis, no absolute user paths in the doc; 15 external sources (AC minimum 6)."
+    }
+  ]
+}

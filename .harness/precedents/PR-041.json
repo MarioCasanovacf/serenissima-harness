@@ -1,0 +1,49 @@
+{
+  "id": "PR-041",
+  "schema_version": 2,
+  "title": "Bounded everything: the six state.json limits bind every agent",
+  "subject": "bounded-everything",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-004",
+    "T-010"
+  ],
+  "ratio": "Every agent operates under the six state.json bounds, cited by key path: limits.max_steps_per_task (50), limits.max_seconds_per_command (300), limits.max_retries_per_failure (3), limits.lock_ttl_seconds_default (900), limits.claim_lease_seconds_default (3600), limits.max_parallel_workers (3). The values in force are configured facts and may change; the norm is the bounding itself: no unbounded steps, retries, command time, lock or lease lifetime, or worker fan-out. Hitting a bound is a stop-and-report condition, not a license to bypass it.\n",
+  "dicta": [
+    "One record for the bounding norm, never one per constant: a configured constant is not a decision with reasoning attached (the D1 distinction; plan Unknowns Q6 recorded default, adopted). The six-bound list is bootstrap-seeded (research digest section 3A); no P-number, so tier 2 is not honestly available (CD6); tier 3 rests on T-004 (goal_mode iteration bound, exit 3 at bound; done-verdict by harness-verifier, events.jsonl ts 2026-07-04T02:14:54Z) and T-010 (TTL and lease bounds under contention). The wave-3 census item limits subsumed by this record (CD8). Frozen by the codification ledger row decision:T-377#cd-07."
+  ],
+  "scope_conditions": [
+    "role:any agent executing steps, retries, timed commands, or spawning parallel workers"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit when any limits value changes, or a new unbounded execution primitive ships.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:25Z",
+  "sources": [
+    "decision:T-377#cd-07",
+    "ORCHESTRATION.md:102",
+    "T-004"
+  ],
+  "validity_conditions": [
+    "path:.harness/state.json",
+    "limits still contains exactly the six bounds named by key path in the ratio"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

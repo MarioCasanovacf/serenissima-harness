@@ -1,0 +1,56 @@
+{
+  "id": "PR-038",
+  "schema_version": 2,
+  "title": "Producer never approves: a different agent verdicts every handoff",
+  "subject": "producer-not-approver",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-009",
+    "T-031"
+  ],
+  "ratio": "A producer never approves its own work. A worker finishing a task can only hand off; the done verdict belongs to a different agent, and the check is mechanical in blackboard.py, not advisory: update --status done is refused unless a handoff record exists and the acting agent differs from the handoff producer. Authorship governs, not current status: only the original producer of record is blocked from verdicting. The single sanctioned exception, the P-022 verifier-execute path for verifier-role tasks, is codified in its own record and does not widen this rule.\n",
+  "dicta": [
+    "The census worst multi-homing case: seven homes verified live - ORCHESTRATION.md:99 (primary) and :7 (headline), AGENTS.md:34, :60, :111 and :138, .harness/README.md:56, PRECEDENT.md:178 (the tier-3 definition leans on it), plus the NLAH statements in claude.md sections 2A and 4B and gemini.md:33, listed per CD8 and never anchored per CD2. One record, every home cited, primary named (CD8); any second appearance of this norm is subsumed by this record. Tier 2 on P-009, the accepted_mutations entry that made the check mechanical; T-031 is the guardrail task, verdicted by rotated verifier-b (ORCHESTRATION.md:119-127 cites events.jsonl:585). Frozen by the codification ledger row decision:T-377#cd-04."
+  ],
+  "scope_conditions": [
+    "role:worker handing off any produced task",
+    "role:verifier verdicting any produced task"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if the mechanical done-guard is weakened, or a sanctioned self-approval path other than the P-022 verifier-execute exception appears.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [
+    "PR-045"
+  ],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:08Z",
+  "sources": [
+    "decision:T-377#cd-04",
+    "ORCHESTRATION.md:99",
+    "P-009",
+    "T-031",
+    ".harness/README.md:56",
+    "AGENTS.md:60"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "path:.harness/bin/blackboard.py",
+    "the done-guard refuses update --status done when acting agent equals handoff producer"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

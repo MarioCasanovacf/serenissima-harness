@@ -1,0 +1,54 @@
+{
+  "id": "PR-042",
+  "schema_version": 2,
+  "title": "Hook-fed logging: every tool call and CLI event leaves a structured trace",
+  "subject": "hook-fed-logging",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-003",
+    "T-011"
+  ],
+  "ratio": "Observability is hook-fed and mandatory. In sessions rooted in this repo, the PostToolUse hook appends every tool call to transcript.jsonl; events.jsonl, written by the CLIs themselves, is the engine-agnostic floor that holds for every engine and session shape. No agent may bypass, disable, or rescope the logging channel, and an unobservable trajectory is a harness defect to report, not a private convenience.\n",
+  "dicta": [
+    "Tier 2 on P-003, the gen-1 accepted_mutations entry (bundled through the human-gated T-007 apply) that scoped the hook to repo-rooted sessions and made the pillar real; T-011 is the hook liveness smoke. The P-003 hook-scoping census item is subsumed by this record (CD8). Distinct from the observability-integrity record published later in this wave: this record mandates the channel, that one mandates completeness and integrity of what flows through it. Frozen by the codification ledger row decision:T-377#cd-08."
+  ],
+  "scope_conditions": [
+    "role:any agent operating in a session rooted in this repo",
+    "role:thinker running evolution audits over the logs"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if the PostToolUse hook is removed or rescoped, or events.jsonl stops being the CLI-written floor.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [
+    "PR-051"
+  ],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:25Z",
+  "sources": [
+    "decision:T-377#cd-08",
+    "ORCHESTRATION.md:103",
+    "P-003",
+    "T-011"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "path:.claude/settings.json",
+    "transcript.jsonl grows by at least one line per tool call in sessions rooted in this repo"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

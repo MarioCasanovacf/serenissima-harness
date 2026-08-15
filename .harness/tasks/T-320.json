@@ -1,0 +1,24 @@
+{
+  "id": "T-320",
+  "title": "Build standalone <retired-skill> skill",
+  "description": "Create a new standalone skill at projects/<retired-skill> using skill-creator init. Router under 250 lines; frontmatter only name+description; agents/openai.yaml; full upstream MIT license; one-level references for brief/direction, interface quality, marketing, product+transaction, redesign preservation, reference-to-code, image concepts, style lenses, production preflight, and upstream provenance. Stack-neutral; preserve product contracts; no mandatory React/Tailwind/GSAP/imagegen/dark-mode/fonts/editorial bans; no scripts unless deterministic value is proven. Add exact tests at .harness/tests/test_design_taste_production.py with nonzero count. Do not touch source Taste repo.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-15T00:50:58Z",
+      "agent": "main",
+      "note": "DECISION: Initialize a standalone reference-only <retired-skill> skill with the requested mode router, product-contract preservation, stack neutrality, provenance, and replayable tests."
+    },
+    {
+      "ts": "2026-07-15T00:56:05Z",
+      "agent": "codex-worker-taste-production",
+      "note": "HANDOFF -> verifier: HANDOFF -> verifier: Standalone skill created with skill-creator init at projects/<retired-skill>. Router is 102 lines with exact name+description frontmatter, eight locked operating modes, stack-neutral product-contract preservation, dashboard and multi-step transaction coverage, conditional motion/image capabilities, mobile multi-frame image contract, and deliverable completeness discipline. Ten one-level references, generated agents/openai.yaml, exact MIT LICENSE.upstream, no scripts/assets/extraneous files. REPLAY: python3.12 .harness/tests/test_design_taste_production.py -v ran 12 tests, all OK. python3.12 -m unittest discover -s .harness/tests -p 'test_*.py' -v ran 67 tests, all OK, zero skips. python3 <operator-home>/.codex/skills/.system/skill-creator/scripts/quick_validate.py projects/<retired-skill> reports Skill is valid. Link check resolves all 10 direct references and finds no nested reference links. git diff --check plus no-index checks for every new artifact report clean. Upstream Taste repo is clean at b17742737e796305d829b3ad39eda3add0d79060; LICENSE.upstream byte-matches upstream LICENSE. SHA256: SKILL 3d176bc8dcdace23035734258d2a5649d258159a33f4359e38d1b2923faa66f3; test 06efdce6a5847d1809eea671f2a61eea68f637b3c4745bc30cdacf7d217d696e. Producer did not mark done.\n"
+    },
+    {
+      "ts": "2026-07-15T00:57:55Z",
+      "agent": "codex-verifier-taste-production",
+      "note": "VERIFIED independently: targeted Python 3.12 run executed 12/12 tests OK; full Python 3.12 unittest discovery executed 67/67 OK with zero skips; skill-creator quick_validate returned \"Skill is valid!\". Exact tree contains 13 intentional files only: SKILL.md (102 lines), LICENSE.upstream, agents/openai.yaml, and 10 one-level references; no scripts, assets, README, nested reference directories, missing direct reference targets, or nested markdown links. Frontmatter has exactly name+description; openai.yaml has only the requested interface metadata. All 13 skill artifacts pass git diff --no-index --check; harness git diff --check is clean. Provenance names Leonxlnx/taste-skill and pins b17742737e796305d829b3ad39eda3add0d79060. LICENSE.upstream byte-matches upstream LICENSE (both SHA-256 4575a543ab88dad12ccea7d97e563d0bce5b448b06072e65d3264497dad326df). Upstream source repo HEAD is exactly b17742737e796305d829b3ad39eda3add0d79060, git status --short and diff outputs empty. Independent static read confirms stack neutrality, product-contract preservation, first-class dashboard/transaction routes, evidence-vs-inference reference handling, conditional motion/images, mobile raw-screen/no-device-mockup contract, accessibility/responsive/state completeness, and no mandatory brittle packages or aesthetics. Producer digests replay exactly: SKILL 3d176bc8dcdace23035734258d2a5649d258159a33f4359e38d1b2923faa66f3; test 06efdce6a5847d1809eea671f2a61eea68f637b3c4745bc30cdacf7d217d696e. Housekeeping before review: 0 active locks, 0 expired locks swept.\n"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "PR-048",
+  "schema_version": 2,
+  "title": "Protected paths: destructive commands against guarded paths are refused",
+  "subject": "protected-paths-guardrail",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-029",
+    "T-303"
+  ],
+  "ratio": "Destructive Bash commands - the remove, move, shred, truncate and shell-redirect class - against paths matching state.json protected_paths are refused by the PreToolUse guard, and every block logs a protected_path_blocked event to events.jsonl. The protected list lives at state.json protected_paths and currently reads [\".harness/precedents\", \".harness/precedents/*\"]; the list is operator-configured and default-empty, and with an empty list the guard is a strict no-op. A blocked command is a stop-and-report condition; agents do not route around the guard.\n",
+  "dicta": [
+    "Tier 2 on P-029, whose accepted_mutations entry records the human gate required and recorded at apply; the intake audit T-303 (audit_t303_protected_paths.md, analyst-a) was verdicted done by verifier-c (events.jsonl ts 2026-07-06T16:21:38Z). Irony carried with the row per the ledger: the one guarded path class is the registry this epic is filling. The wave-3 census item protected_paths is subsumed by this record (CD8). Frozen by the codification ledger row decision:T-377#cd-14."
+  ],
+  "scope_conditions": [
+    "role:any agent issuing filesystem-destructive Bash commands in a hooked session"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit when the protected_paths list changes, or a destructive command against a listed path is shown passing the guard.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:45Z",
+  "sources": [
+    "decision:T-377#cd-14",
+    "P-029",
+    "T-303"
+  ],
+  "validity_conditions": [
+    "path:.harness/bin/guard_paths.py",
+    "path:.harness/state.json",
+    "protected_paths still lists the registry directory and its glob"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

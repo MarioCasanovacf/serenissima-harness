@@ -1,0 +1,49 @@
+{
+  "id": "PR-046",
+  "schema_version": 2,
+  "title": "Verifier tier defaults to sonnet; opus only per-dispatch for high stakes",
+  "subject": "verifier-tier-default",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-020"
+  ],
+  "ratio": "harness-verifier defaults to sonnet tier. The coordinator overrides to opus per-dispatch ONLY for high-stakes verdicts: NLAH mutations, guardrail changes, epic joins, tournament promotions. The default is the rule; the override is per-dispatch and category-bounded, never a standing upgrade.\n",
+  "dicta": [
+    "Tier 2 on the P-020 accepted_mutations entry. Provenance stated per CD6: human-directed (operator 2026-07-05; usage report: 95 percent of token usage traced to subagent-heavy sessions, 79 percent to 8h-plus sessions) and applied inline by the coordinator per its gate note, so no verdict T-NNN exists; the P-number ledger entry is the verifiable anchor and the operator provenance lives here in dicta, not in a tier-1 claim the token kinds cannot carry. Storage home state.json cost_policy.rules entry 3 is subsumed by this record (CD8). Frozen by the codification ledger row decision:T-377#cd-12."
+  ],
+  "scope_conditions": [
+    "role:coordinator dispatching verifier agents"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if verdict quality at sonnet tier degrades in a generation audit, or the high-stakes category list changes.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:45Z",
+  "sources": [
+    "decision:T-377#cd-12",
+    "ORCHESTRATION.md:128-135",
+    "P-020"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:128-135",
+    "path:.harness/state.json",
+    "cost_policy.rules still contains the verifier-tier rule as rule 3"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

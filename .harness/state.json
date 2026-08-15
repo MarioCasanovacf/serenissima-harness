@@ -493,6 +493,166 @@
         "tasks_done": 0,
         "tasks_failed": 1,
         "last_outcome_at": "2026-08-12T02:51:09Z"
+      },
+      "worker-a2-1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T19:48:34Z"
+      },
+      "worker-a2-2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T19:48:51Z"
+      },
+      "thinker-a2-spec": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T20:41:43Z"
+      },
+      "worker-a2-3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T21:16:22Z"
+      },
+      "verifier-a2-b": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T21:17:21Z"
+      },
+      "worker-a2-4": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T21:59:38Z"
+      },
+      "worker-a2-5": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T21:59:46Z"
+      },
+      "verifier-a2-c": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T22:00:56Z"
+      },
+      "worker-a2-6": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T22:27:00Z"
+      },
+      "verifier-a2-join": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-12T23:04:08Z"
+      },
+      "writer-r3-french": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T06:42:30Z"
+      },
+      "writer-r3-recusal": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T06:46:29Z"
+      },
+      "writer-r3-swiss": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T06:48:58Z"
+      },
+      "repair-T-377": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T14:47:41Z"
+      },
+      "writer-f7-review": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T14:55:26Z"
+      },
+      "writer-f7-values": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T15:19:08Z"
+      },
+      "thinker-cod-w1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T15:23:40Z"
+      },
+      "worker-cod-p1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T16:03:40Z"
+      },
+      "verifier-cod-c1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T16:05:46Z"
+      },
+      "verifier-cod-t1": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-14T16:20:45Z"
+      },
+      "thinker-cod-w2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T00:27:52Z"
+      },
+      "worker-cod-p2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T00:37:27Z"
+      },
+      "verifier-cod-c2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T00:38:19Z"
+      },
+      "verifier-cod-t2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T00:46:28Z"
+      },
+      "worker-cod-links": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:00:02Z"
+      },
+      "verifier-cod-links": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:00:43Z"
+      },
+      "thinker-cod-w3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:08:20Z"
+      },
+      "worker-cod-p3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:17:53Z"
+      },
+      "verifier-cod-c3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:19:20Z"
+      },
+      "verifier-cod-t3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T01:30:15Z"
+      },
+      "verifier-cod-join": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T02:12:51Z"
+      },
+      "writer-f8bis": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-15T07:20:03Z"
       }
     }
   },

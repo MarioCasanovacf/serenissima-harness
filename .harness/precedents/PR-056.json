@@ -1,0 +1,50 @@
+{
+  "id": "PR-056",
+  "schema_version": 2,
+  "title": "Blindspot interview: planner assumptions surfaced before the DAG publishes",
+  "subject": "blindspot-interview",
+  "status": "active",
+  "authority_tier": 2,
+  "tier_evidence": [
+    "P-016",
+    "T-037"
+  ],
+  "ratio": "Before publishing a new epic's DAG, the planner writes down 3-5 concrete, specific assumptions (unknown-knowns - things the human or operator likely knows but has not been asked to state) that it is about to bake into the DAG, puts them to the human or coordinator to confirm or correct, and records each assumption with its confirmed or corrected answer in the plan's Unknowns section, all before tasks publish. Reach, stated exactly: this duty lives ONLY in agent-definition files, never in ORCHESTRATION.md - the operative home is the orchestration-planner's protocol step 5 (.claude/agents/orchestration-planner.md), and it binds planner protocol, not all agents. Downstream feeds exist and are feeds, not homes of the duty: the bench table in AGENTS.md and the context-scout agent definition route scout-surfaced human-only questions into this interview. This record does not widen the duty's reach: it is deliberately narrower than that of the verifier-rotation rule born of the same audit (F6, already codified as PR-004), which did reach ORCHESTRATION.md and the registry. Reach and authority tier are different axes and this record claims only the first: the tier states how well the norm is evidenced, never how far it binds.\n",
+  "dicta": [
+    "Origin: audit_gen3.md section 5.6 (the U3 proposal) and section 4 row 15. NUMBERING CAUTION: the audit DOCUMENT calls this proposal P-015, while the accepted-mutation ledger entry in state.json evolution.accepted_mutations carries id P-016 - the two numberings are offset by one across this audit run, so P-016 is the citable token and section 5.6 is the readable text. U3 was pre-approved by the operator and applied at T-037, verdicted done by harness-verifier (events.jsonl ts 2026-07-05T03:13:57Z), an identity distinct from the producer substrate-worker-2. REACH, NOT TIER: the duty is homed in the orchestration-planner agent definition, protocol step 5, and nowhere else operative. ORCHESTRATION.md never received it - the audit's own pre-mutation grep for blindspot, AskUserQuestion and interview across both the planner file and ORCHESTRATION.md returned zero, and P-016's target list names only the planner file. The two downstream surfaces are feeds, not homes: the AGENTS.md bench row describes the context-scout as feeding U3, and the context-scout definition routes human-only clarifying questions into this interview; neither obliges any agent but the planner. This record is deliberately narrower than PR-004, the verifier-rotation rule born of the same audit, which did reach ORCHESTRATION.md; PR-004 is named by prose reference and is not re-minted. CD6 HONESTY: P-016 is a code-level agent-definition mutation whose recorded gate reads code-level with U3 pre-approved, not an NLAH mutation through the section 5A human gate, so under a strict reading of PRECEDENT.md section 3 this record would fall to tier 3 on T-037; the frozen ledger row chose tier 2 and the ledger's OPEN-QUESTION 5 names that fallback. LINE-ANCHOR HYGIENE: the gen-3 audit sourced U3 from a state.json LINE NUMBER that no longer points at that content, so this record anchors to the agent definitions by live line ranges and to the mutation by ledger key P-016, never to a state.json line. The audit's own target note for U3 reads Protocol section 15-19, a range in the pre-mutation planner file that no longer locates step 5; it is quoted in the research document as history and is not used as an anchor here. Frozen by the codification ledger row decision:T-377#cd-23."
+  ],
+  "scope_conditions": [
+    "role:thinker (orchestration-planner) closing a new epic's plan before DAG publication"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit if a DAG ships on unconfirmed assumptions that a blindspot interview would have caught (a plan.md unknown-known 6-class deviation recurring).",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-383",
+  "published_by": "worker-cod-p2",
+  "published_at": "2026-08-15T00:29:43Z",
+  "sources": [
+    "decision:T-377#cd-23",
+    ".claude/agents/orchestration-planner.md:27-35",
+    "P-016",
+    "T-037"
+  ],
+  "validity_conditions": [
+    "path:.claude/agents/orchestration-planner.md",
+    "step 5 still requires the pre-DAG assumption interview"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

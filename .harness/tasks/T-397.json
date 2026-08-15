@@ -1,0 +1,35 @@
+{
+  "id": "T-397",
+  "title": "F7 VALUES-COHERENCE LAYER: Nordic/Swiss norm internalization - think it and measure it",
+  "description": "Operator directive (ruling 2.2): evaluate a values-coherence layer where collective values make misconduct INCOHERENT to agents, on the Nordic/Swiss model. Three strands feed a writer: (1) legitimacy and social-trust evidence (Tyler procedural fairness, Levi contingent consent, Rothstein QoG, Kleven Denmark tax compliance, WVS/ESS trust series, Swiss militia/communal embedding, plus the dark side: conformity costs, insider/outsider boundaries); (2) institutional theory of norms+sanctions complementarity (Ostrom design principles and graduated sanctions, Ellickson, Axelrod, Fehr-Gaechter punishment experiments, conditional cooperation); (3) in-harness measurement: define coherence metrics computable from events.jsonl/tasks/git TODAY and COMPUTE the baseline (voluntary DEVIATION disclosures vs discovered silent divergences, refusal events per volume, overrides with reasoned notes, unforced protocol compliance). Deliverable: docs/precedent-research/18-values-coherence-layer.md with theory, evidence, why in-context agents are unusually norm-sensitive, measured baseline, and the synthesis hypothesis for F7 v2 (values as rung zero, mechanical ladder as rarely-fired backstop). Writer claims, locks, U2 note, handoff; non-producer verifier replays.",
+  "acceptance_criteria": [
+    "docs/precedent-research/18-values-coherence-layer.md exists with sections: legitimacy/trust evidence, norms+sanctions complementarity, the in-context-agent argument, measured in-harness baseline with method, honest limits (conformity costs; values do not stop a determined adversary), synthesis hypothesis for F7 v2",
+    "at least 10 distinct external sources cited inline; no emojis; no absolute user paths",
+    "the baseline section reports ACTUAL numbers computed from events.jsonl/tasks/git with the exact commands or method stated, plus the telemetry gaps that block a fuller index",
+    "the doc states explicitly what the values layer CANNOT do (determined adversary, sybil identities) so it cannot be read as replacing the mechanical ladder",
+    "verifier (non-producer) replayed doc against strand findings and re-ran at least two baseline computations before verdict"
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-14T15:03:50Z",
+      "agent": "writer-f7-values",
+      "note": "DECISION: composed from 3 strands. Baseline COMPUTED, not pending: strand 3 died, writer measured directly from events.jsonl snapshot 2026-08-14T14:52:44Z + 193 task files. Headline: 49 labeled DEVIATION disclosures vs 2 discovered silent divergences (T-353 exit-4, T-365 GUARD-BYPASS-A), 4 production producer-check overrides all reasoned, 1 guard route-around in 42 days, 70 VERIFIED / 13 REJECT verdicts. Six telemetry gaps G1-G6 named in section 5.6. 32 external sources cited inline. Doc fills the rung-zero slot doc 17 section 4.3 reserves."
+    },
+    {
+      "ts": "2026-08-14T15:03:59Z",
+      "agent": "writer-f7-values",
+      "note": "HANDOFF -> verifier: REPLAY: (1) re-run at least two of the four commands in section 5.5 against the live events.jsonl and compare to section 5's figures (live log grows; expect equal-or-higher counts, distinct-ids should stay near 36). (2) Replay doc text against the strand findings: every ESTABLISHED claim must trace to a Sources entry, every MEASURED figure to a 5.5 command. (3) Check acceptance criteria in .harness/tasks/T-397.json: 7 sections present, 10+ external sources inline (32 listed), no emojis, no absolute user paths, explicit cannot-do section 6. Producer=writer-f7-values; non-producer verdict required."
+    },
+    {
+      "ts": "2026-08-14T15:05:00Z",
+      "agent": "verifier-f7-values",
+      "note": "DECISION: verifier replay started: greps, 5.5 recomputations, strand traceback, citation spot-checks"
+    },
+    {
+      "ts": "2026-08-14T15:19:08Z",
+      "agent": "verifier-f7-values",
+      "note": "VERIFIED (non-producer verdict, verifier-f7-values). Replayed: (1) re-ran ALL FOUR section 5.5 commands against live events.jsonl (13,000 events vs snapshot 12,985): event counters match exactly (34 refused/8 overridden/31 data-loss/617 locks/46 swept/5 busy) or live-higher within the doc's stated lower-bound caveat (protected_path 29 vs 28, claims 311 vs 310, handoffs 166 vs 164, dones 148 vs 147); distinct precedent ids 5161/36 EXACT; note taxonomy 733/211/89/50/70/13 vs 727/208/87/49/70/13, all equal-or-higher, disclosure ratio holds ~25:1; producer-check split EXACT incl. the 4 named production overrides (verifier-c x2, verifier-d, harness-verifier). Derived figures re-verified: 34 registry files exact, 162 agents vs 159 (live growth), 2.7 and 15.7 percent arithmetic correct. (2) In-repo evidence: PR-021 ratio quote verbatim; T-353 exit-4 'not enforced and not disclosed as a DEVIATION' verbatim; T-365 GUARD-BYPASS-A coordinator note present — both silent-divergence classifications genuine. (3) Strand traceback: every ESTABLISHED claim in sections 2-3 traces to a strand finding with matching numbers; sole non-strand external claim (Bai et al. Constitutional AI) spot-checked accurate. (4) Web spot-checks x3: Kleven w15769 (0.3/37/95, threats move self-reported only) CONFIRMED; arXiv:2212.08073 CONFIRMED; GRS Science 2008 (50-period welfare reversal) CONFIRMED. (5) Crowding-out tension surfaced not smoothed (3.2 names the operator posture, 7.3 binds five corrosion conditions, falsifier iii); limits section real (adversary, sybil, drift, member-relative, no-substitute-for-verification). (6) Greps: zero /Users/ paths, zero emojis (only em dashes). Acceptance criteria 1-5 all met; conformity costs carried in 2.4 as weakly-measured per strand instruction rather than repeated in section 6 — substance present, noted, not a defect."
+    }
+  ]
+}

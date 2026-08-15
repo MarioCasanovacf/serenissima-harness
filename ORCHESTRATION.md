@@ -66,7 +66,7 @@ means no reopen, refusing silent resurrection, (3) logs a `task_reopened` event 
 claim/handoff/completion state so it re-enters the claimable frontier cleanly (cascade gate
 re-evaluates `depends_on` normally on the next claim).
 
-**Note taxonomy (U2)**: task notes SHOULD be prefixed with one of four tags so evolution
+**Note taxonomy (U2) (PR-055)**: task notes SHOULD be prefixed with one of four tags so evolution
 audits can `grep` them mechanically instead of re-reading prose:
 
 | Prefix | Use for |
@@ -82,7 +82,7 @@ generation is declared clean (`audit_gen3.md` §5.7, input U2 — `state.json:35
 **Test-discovery precision (P-025)**: acceptance criteria MUST carry the exact,
 layout-matching test command — not a generic invocation that silently discovers zero
 tests against a mismatched file layout. Verifiers MUST assert a **nonzero executed-test
-count** before trusting a green run; exit 0 alone is not evidence. Precedent this
+count** before trusting a green run; exit 0 alone is not evidence. (PR-002) Precedent this
 codifies: a bare `node --test` returned exit 0 with 0 tests executed against the
 cronsplain `tests/test_*.js` layout (node's default discovery pattern doesn't match it)
 — a false-green a less careful verifier could have rubber-stamped; the corrected,
@@ -93,16 +93,16 @@ layout-matching criterion command is `node --test tests/*.js` (T-044/T-052 join 
 
 | Invariant | Mechanism | Risk neutralized (digest §3A) |
 |---|---|---|
-| Single guarded index | Only `blackboard.py` writes `blackboard.json`, serialized by flock | Write collisions on shared state |
-| Cascade gate | `claim` refuses unmet `depends_on` | Chaotic parallelism / premature work |
-| Leases + TTLs | Claims and locks auto-expire; sweeps release them | Serial stagnation, agentic traps (infinite loops holding resources) |
-| Producer ≠ approver | Workers can only `handoff`; a different agent verdicts | Cognitive monoculture, self-graded homework |
-| Replay, don't trust | Verifiers re-run hand-off commands themselves | Dynamic cloaking (falsified logs) |
-| Human gates | `state.json human_gates` list (push, NLAH mutation, webhooks, deletions) | Automation bias |
-| Bounded everything | `state.json limits` (steps, retries, timeouts, fan-out) | Runaway loops, rate-limit burn |
-| Hook-fed logging | PostToolUse hook appends tool calls to `transcript.jsonl` in sessions rooted in this repo; `events.jsonl` (CLI-written) is the engine-agnostic floor | Unobservable trajectories (no evolution evidence) |
+| Single guarded index (PR-035) | Only `blackboard.py` writes `blackboard.json`, serialized by flock | Write collisions on shared state |
+| Cascade gate (PR-036) | `claim` refuses unmet `depends_on` | Chaotic parallelism / premature work |
+| Leases + TTLs (PR-037) | Claims and locks auto-expire; sweeps release them | Serial stagnation, agentic traps (infinite loops holding resources) |
+| Producer ≠ approver (PR-038) | Workers can only `handoff`; a different agent verdicts | Cognitive monoculture, self-graded homework |
+| Replay, don't trust (PR-039) | Verifiers re-run hand-off commands themselves | Dynamic cloaking (falsified logs) |
+| Human gates (PR-040) | `state.json human_gates` list (push, NLAH mutation, webhooks, deletions) | Automation bias |
+| Bounded everything (PR-041) | `state.json limits` (steps, retries, timeouts, fan-out) | Runaway loops, rate-limit burn |
+| Hook-fed logging (PR-042) | PostToolUse hook appends tool calls to `transcript.jsonl` in sessions rooted in this repo; `events.jsonl` (CLI-written) is the engine-agnostic floor | Unobservable trajectories (no evolution evidence) |
 
-**Pre-gate ritual (U4)**: before any heavyweight human gate fires (first `git push`, first
+**Pre-gate ritual (U4) (PR-057)**: before any heavyweight human gate fires (first `git push`, first
 messenger/notify activation), the epic join MUST produce an explainer artifact plus exactly
 3 comprehension questions for the human, and the gate request cites them — "no publicar lo
 que no se entiende" (`audit_gen3.md` §5.7, input U4 — `state.json:358`; worked example:
@@ -112,20 +112,20 @@ que no se entiende" (`audit_gen3.md` §5.7, input U4 — `state.json:358`; worke
 
 **Roles** (claude.md §2B): `thinker` (plans, decomposes, audits — no source edits),
 `worker` (claims, locks, implements, hands off), `verifier` (replays, verdicts, sweeps).
-**Coordinator** (main session, strongest available model): decomposes goals into the DAG (or delegates that to the
+**Coordinator (PR-043)** (main session, strongest available model): decomposes goals into the DAG (or delegates that to the
 planner), dispatches the frontier, synthesizes at joins, governs evolution. The
 coordinator does not hog worker tasks on multi-task builds.
 
 **Verifier rotation (F6)**: no single reviewer identity may be the sole approver of an
 entire epic. Epic joins and guardrail changes require a reviewer distinct from every
 producer in the epic — rotate identities or bring in a second reviewer with a different
-lens. Precedent this codifies: T-031's guardrail was verdicted by a rotated `verifier-b`
+lens. (PR-004) Precedent this codifies: T-031's guardrail was verdicted by a rotated `verifier-b`
 (`events.jsonl:585`) and T-032/T-033 rotated in `verifier-c`. Counter-example this rule
 forecloses: the mdtoc epic (T-021..T-029), where a single `harness-verifier` identity
 claimed and approved all 9 producer tasks (`events.jsonl:312-481`) — exactly the
 monoculture risk the §5A loop flagged (`audit_gen3.md` §4 row F6, input `state.json:352`).
 
-**Proportional verification (P-024)**: verification effort scales with blast radius —
+**Proportional verification (P-024) (PR-046, PR-047)**: verification effort scales with blast radius —
 doc/scratch tasks get a brief replay, control-plane/contract tasks get full adversarial
 replay; do not spend 20 tool calls verifying a README. Reviewer tier defaults to
 `sonnet`; the coordinator overrides to `opus` per-dispatch ONLY for high-stakes
@@ -133,7 +133,7 @@ categories — NLAH mutations, guardrail changes, epic joins, tournament promoti
 (`state.json cost_policy` rules 3–4, operator directive 2026-07-05: 95% of token usage
 traced to subagent-heavy sessions, 79% to 8h+ sessions).
 
-**Frontier budget (P-030)**: frontier-tier (fable/opus) raw-token share across the
+**Frontier budget (P-030) (PR-049)**: frontier-tier (fable/opus) raw-token share across the
 coordinator session plus all subagent transcripts targets **53–65% per mission window**,
 measured by `python3 .harness/bin/token_share.py` (dedup by `message.id`; exit 2 above
 band; a breach is a mandatory finding at the next §5A audit). Provenance, stated
@@ -147,7 +147,7 @@ frontier/cheap split percentage.
 The partition that implements the budget is by **verifiability**
 (`intelligent_ai_delegation.pdf` p.2), which coincides with the operator's ontology —
 *the frontier model orchestrates, plans, and directs; the cheap tier executes*:
-**low-verifiability judgment work stays frontier** (goal decomposition, DAG design, join
+**low-verifiability judgment work stays frontier (PR-050)** (goal decomposition, DAG design, join
 synthesis, direction — no adversarial replay can catch a bad decomposition, so
 `orchestration-planner` stays `opus`; the cheap-coordinator pattern in
 `trinity.pdf`/`conductor.pdf`/`sakana_fugu_tech_report.pdf` uses RL-*trained* routers
@@ -212,7 +212,7 @@ write; this is auditable protocol discipline, not a claim that the host intercep
   means algorithm **byte-identical** PLUS legitimate decoupling from its candidate
   harness — candidate-identifying strings/prefixes renamed, the candidate's own
   self-test/`__main__` block stripped, and zero runtime `require`/`import` of anything
-  under `candidates/`. Precedent: T-049's promoted `lib/schedule.js` is byte-identical to
+  under `candidates/`. (PR-003) Precedent: T-049's promoted `lib/schedule.js` is byte-identical to
   `schedule_b.js` except two renamed error-message prefixes (`schedule_b:` →
   `schedule:`), with the self-check guard dropped and no runtime dependency on
   `candidates/` (`events.jsonl` T-049 verdict note, "PROMOTION FIDELITY").

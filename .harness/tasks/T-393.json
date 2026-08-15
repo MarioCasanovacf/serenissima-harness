@@ -1,0 +1,29 @@
+{
+  "id": "T-393",
+  "title": "R3 RESEARCH: Swiss cantonal fiscal federalism as mechanism template (F4)",
+  "description": "Operator mandate (ruling F4, .harness/coordinator-decisions-ruling-round-2.md): research how Switzerland keeps the fiscal wedge efficient so workers capitalize (cantonal/communal tax competition, the NFA 2008 fiscal equalization, low labor taxation, second-pillar capitalization), how capital returns fund strong-state infrastructure, and how Konkordanz/referendum/communal politics condition actors into fiscal exchange rather than monopoly capture. Deliverable: docs/precedent-research/14-swiss-fiscal-federalism.md composed from strand findings with sources; must end with mechanism hooks mapping each Swiss instrument to a candidate harness rule (progressive confirmation burden that consolidated identities cannot weaponize against innovators). Writer claims, locks doc path, U2 note, handoff to verifier; verifier reads text against strand data before verdict.",
+  "acceptance_criteria": [
+    "docs/precedent-research/14-swiss-fiscal-federalism.md exists with sections: fiscal wedge mechanics, NFA equalization, capital-funds-infrastructure, conditioning via joint governance, mechanism hooks for the harness",
+    "at least 8 distinct external sources cited inline (institution or publication + year); no absolute user paths; no emojis",
+    "every mechanism hook names the Swiss instrument it derives from and the harness rule it would bind",
+    "verifier (non-producer) replayed doc against strand findings and found no fabricated citation"
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-14T06:34:40Z",
+      "agent": "writer-r3-swiss",
+      "note": "PLAN: compose doc 14 from 2 strand findings in corpus style (doc 12 format read); sections per task AC; mechanism hooks map Swiss instruments to F4 progressive-burden rules"
+    },
+    {
+      "ts": "2026-08-14T06:43:16Z",
+      "agent": "writer-r3-swiss",
+      "note": "DECISION: composed from 2 strand findings; 29 external sources, 14-item contradiction ledger, 23 mechanism hooks mapping Swiss instruments (NFA potential levy, 86.5 floor, StHG base-not-rate, debt brake, FinoeV/BIF funds, BVG, wealth-tax-no-CGT, referendum threat, concordats, IUV, KG 1995/2003/2021, TRAF) to F4 progressive-burden rules; verification tags preserved as strand-reported, never upgraded"
+    },
+    {
+      "ts": "2026-08-14T06:48:58Z",
+      "agent": "verifier-r3-swiss",
+      "note": "verified: replayed doc 14 adversarially against both strand findings (full claim trace, no orphan claims; 14-item contradiction ledger intact; verification tags preserved, never upgraded; 23 hooks cover all 24 strand hooks, two Cartel Act warnings merged into H-18). Spot-checked 4 primary sources by fetching the PDFs: (1) OECD Taxing Wages 2026 CH note - 23.0 vs 35.1 5th lowest of 38, 10.8 vs 26.2 3rd lowest, 12.1 vs 8.9 points, 22.9 (2000) to 23.0 (2025) vs OECD 36.1 to 35.1, all exact; (2) FFA 2020 brochure - 86.5 percent guaranteed minimum for cantons below 70 index points (p4 verbatim), 60/40 financing, one-third reduction, non-earmarked (p2), 0.8 percent GDP with 81/14/5 split and CHF 4.6bn (p10), statutory sizing since 2020, page references in doc all accurate; (3) IWP WP 01/2024 - Zug 2676 CHF pc / 23.1 percent (p5), Jura 25 and Schwyz 5 absorption (fn2), 'financially hardly worthwhile' quote (pp6-7), 40 percent weakening (abstract), corporate tax burden not lowered (p24 verbatim), Leisibach/Schaltegger 2019 relay confirmed in-line (p24); (4) Heinemann 25 Jahre KG - wettbewerbsfeindliche Sichtweise, BBl 1937 II 833 (889) quote, department petition used exactly twice, Saldotheorie letzte Zahn / Interessen jeder Art, Art. 49a 2003 direct sanctions, Voldemort/Verbotsprinzip, 2021 relative Marktmacht Art. 4 Abs. 2bis and Art. 7 Abs. 2 lit. g, all verbatim. Hygiene: no emojis, no absolute user paths, no unexpected non-ASCII; all 5 required sections present; 29 external sources with inline institution+year; every hook names Swiss instrument and Binds target. Sole nit (trivial): IWP quote drops the word 'the'. All acceptance criteria met."
+    }
+  ]
+}

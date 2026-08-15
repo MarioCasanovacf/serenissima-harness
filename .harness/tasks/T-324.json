@@ -1,0 +1,49 @@
+{
+  "id": "T-324",
+  "title": "Produce blind baseline A from prior taste skill and existing demo",
+  "description": "Under evaluations/mario-ab/variant-a, preserve/reuse the existing Taste skill demo as baseline evidence and generate missing comparable artifacts for the frozen fixture, including a 5-slide decision-memo PPTX or rendered equivalent where required by the contract. Do not read variant B or its intended diagnosis. Record prompt, skill hash, assumptions, screenshots/renders and QA. Acceptance: all four surfaces are represented; deck renders all slides; baseline provenance is explicit; no source files outside owned variant-a paths are modified.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-18T01:12:40Z",
+      "agent": "main",
+      "note": "DECISION: Baseline A follows prior Taste skill and demo-showcase provenance with profile none; implement one responsive inspectable index exposing landing, dashboard, and case-study views, plus a real five-slide decision memo and deterministic QA."
+    },
+    {
+      "ts": "2026-07-18T01:24:10Z",
+      "agent": "main",
+      "note": "expected validator nonzero and slides_test clean; got goal_mode iteration 1/3 PASS with 161 checks, 0 failures, 5 slides, 5 renders, 6 screenshots; slides_test: Test passed. No overflow detected."
+    },
+    {
+      "ts": "2026-07-18T01:24:18Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: Replay from repo root: (1) node evaluations/<retired-skill>/mario-ab/variant-a/validate.mjs => 161 checks, 0 failures, slide_count=5, render_count=5, screenshot_count=6. (2) uv run --with lxml --with pdf2image --with pillow --with python-pptx python <operator-home>/.codex/plugins/cache/openai-primary-runtime/presentations/26.715.12143/skills/presentations/container_tools/slides_test.py evaluations/<retired-skill>/mario-ab/variant-a/decision-memo.pptx => Test passed, no overflow. (3) inspect qa-ledger.json and provenance.json for exact commands/hashes. Full-size 1600x900 renders are in renders/; responsive full-page captures are in screenshots/. Producer visually inspected all five slides and all six responsive captures."
+    },
+    {
+      "ts": "2026-07-18T01:28:40Z",
+      "agent": "main",
+      "note": "REJECTED: Exact replay passed: node evaluations/<retired-skill>/mario-ab/variant-a/validate.mjs executed 161 checks with 0 failures and reported 5 slides/5 renders/6 screenshots; current presentations slides_test.py returned Test passed, no overflow. Independent QA confirmed a real 5-slide 13.333333x7.5in 16:9 PPTX, five 1600x900 renders, responsive captures at 1440px/390px widths, and original-resolution inspection of all 5 slides plus all 6 screenshots found no clipping or data loss. Provenance hashes match the prior Taste skill, all three demo-showcase files, contract, fixture, and rubric; profile_flag is null, only variant-A artifacts were inspected, and the baseline is visually plausible rather than sabotaged. However exact frozen-copy acceptance fails: fixture.json freezes copy_payloads.decision_memo.deck_title as Subscriber feedback — decision memo, but an independent scan of every UTF-8 PPTX part returned deck_title_hits=[] and the title is absent from all five rendered slides. validate.mjs checks only each slide title/body/annotation, so its 161-check green result does not catch this missing frozen string. Add the exact deck title to the memo and extend the validator to assert it, then replay both commands and refresh affected render/QA evidence. Housekeeping: lock status showed only live T-325 locks; sweep removed 0 expired locks."
+    },
+    {
+      "ts": "2026-07-18T01:30:04Z",
+      "agent": "main",
+      "note": "plan: add the exact frozen global deck title visibly to the existing memo chrome, extend PPTX validation for that string, regenerate five renders, refresh artifact hashes/QA, then replay validator and slides_test."
+    },
+    {
+      "ts": "2026-07-26T08:31:25Z",
+      "agent": "codex-worker-mario-feedback",
+      "note": "DECISION: Preserve A as the approved general deployable profile; integrate Mario's human feedback only as universal data-legibility fixes: lining numerals, one visible grey data series, and labels anchored to actual chart geometry."
+    },
+    {
+      "ts": "2026-07-26T08:35:04Z",
+      "agent": "codex-worker-mario-feedback",
+      "note": "OPEN-QUESTION: HTML and deck checks pass (177/177; slides_test clean), and Mario approved every visible aspect except numeric placement, now corrected mathematically. Existing six responsive screenshots predate the final numeral/grey/segment-label fixes. Browser policy blocks agent capture of file:// pages, so post-fix visual evidence needs a user-supplied capture or a separately authorized safe rendering surface."
+    },
+    {
+      "ts": "2026-08-12T02:51:09Z",
+      "agent": "coordinator-fable",
+      "note": "DECISION: epic killed by operator directive 2026-08-12 (fleet-first duplicate resolution). Adversarial comparison proved the epic's artifact and the operator's standalone design-taste repository are the same files (recursive diff: 2 differing files of 20, one only in the name: field; same upstream MIT pin b1774273) and that the standalone repo is the extraction of this epic (its git history opens 24 minutes after this epic's last write) and is AHEAD (12 validator checks this epic lacked, covering exactly the geometry fixes T-324 was blocked on). T-329's own PR #2 was already closed as belongs-in-its-own-repo. Six deltas identified for upstream contribution; port dispatched separately. Done tasks T-318..T-323 remain done: history is not rewritten. See PR-014."
+    }
+  ]
+}

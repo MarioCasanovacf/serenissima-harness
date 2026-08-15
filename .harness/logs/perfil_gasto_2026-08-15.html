@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil de gasto del Universal Agent Harness &mdash; corte 15-08-2026</title>
+<style>
+:root{
+  color-scheme:light;
+  --surface:#f6f7f9; --panel:#ffffff; --ink:#0f1319; --ink2:#555d6b;
+  --ink3:#828b99; --rule:#dee3ea; --rule2:#eef1f5;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --warn:#b4530f;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  color-scheme:dark;
+  --surface:#131519; --panel:#191c21; --ink:#eef1f6; --ink2:#a3abb8; --ink3:#7d8593;
+  --rule:#272b32; --rule2:#20242a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --warn:#e08a4a;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --surface:#131519; --panel:#191c21; --ink:#eef1f6; --ink2:#a3abb8; --ink3:#7d8593;
+  --rule:#272b32; --rule2:#20242a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --warn:#e08a4a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:0 24px 96px}
+h1,h2,h3{font-family:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+  font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:2.35rem;line-height:1.14;letter-spacing:-.015em}
+h2{font-size:1.6rem;line-height:1.2;letter-spacing:-.01em}
+h3{font-size:1.06rem;line-height:1.35}
+p{margin:0;max-width:68ch}
+.mono,.eyebrow,.val,.ax,code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
+header{padding:72px 0 40px;border-bottom:1px solid var(--rule)}
+header .meta{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px 22px;
+  font-family:ui-monospace,Menlo,monospace;font-size:.76rem;color:var(--ink3)}
+.lede{margin-top:20px;font-size:1.12rem;color:var(--ink2);max-width:64ch}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin:40px 0 8px}
+.tile{background:var(--panel);padding:18px 16px 16px;display:flex;flex-direction:column;gap:5px}
+.tile .n{font-family:ui-monospace,Menlo,monospace;font-size:1.72rem;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tile .k{font-size:.78rem;color:var(--ink2);line-height:1.35}
+section{padding:56px 0 8px;border-bottom:1px solid var(--rule2)}
+section>.eyebrow{display:block;margin-bottom:10px}
+.q{margin:18px 0 0;padding:14px 18px;border-left:2px solid var(--s1);background:var(--panel);
+  font-size:.95rem;color:var(--ink2);max-width:66ch}
+.a{margin-top:24px;font-size:1.06rem}
+.a strong{font-weight:650;color:var(--ink)}
+figure{margin:34px 0 0;background:var(--panel);border:1px solid var(--rule);padding:20px 18px 16px}
+figcaption{margin-bottom:16px;display:flex;flex-direction:column;gap:4px}
+figcaption .t{font-weight:600;font-size:.95rem}
+figcaption .d{font-size:.82rem;color:var(--ink2);max-width:70ch}
+.cv{width:100%;height:auto;display:block;overflow:visible}
+.ax{font-size:11px;fill:var(--ink3)}
+.ax.sm{font-size:10px}
+.r{text-anchor:end}.mid{text-anchor:middle}.end{text-anchor:end}
+.val{font-size:11px;fill:var(--ink2);font-weight:600}
+.grid{stroke:var(--rule);stroke-width:1}
+.grid.dash{stroke-dasharray:3 4}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px}
+.lgi{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:var(--ink2)}
+.lgi i{width:11px;height:11px;border-radius:3px;flex:none}
+.tv{margin-top:16px;border-top:1px solid var(--rule2);padding-top:10px}
+.tv summary{cursor:pointer;font-size:.78rem;color:var(--ink3);
+  font-family:ui-monospace,Menlo,monospace}
+.tv summary:focus-visible{outline:2px solid var(--s1);outline-offset:3px}
+.tw{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;font-size:.78rem;width:100%;
+  font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:5px 12px 5px 0;border-bottom:1px solid var(--rule2);white-space:nowrap}
+th{color:var(--ink3);font-weight:600;text-align:right}
+th:first-child,td:first-child{text-align:left}
+.note{margin-top:26px;font-size:.9rem;color:var(--ink2);max-width:68ch}
+.note b{color:var(--ink);font-weight:640}
+.flag{margin-top:26px;border:1px solid var(--rule);border-left:2px solid var(--warn);
+  background:var(--panel);padding:16px 18px;font-size:.92rem;color:var(--ink2);max-width:70ch}
+.flag .h{color:var(--warn);font-family:ui-monospace,Menlo,monospace;font-size:.7rem;
+  letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:7px}
+ul{margin:14px 0 0;padding-left:20px;max-width:68ch;color:var(--ink2);font-size:.95rem}
+li{margin-bottom:7px}
+li b{color:var(--ink);font-weight:640}
+code{font-size:.85em;background:var(--rule2);padding:1px 5px;border-radius:3px;color:var(--ink)}
+footer{padding:44px 0 0;color:var(--ink3);font-size:.82rem;max-width:68ch}
+@media (max-width:640px){h1{font-size:1.85rem}.wrap{padding:0 18px 64px}header{padding:48px 0 32px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="eyebrow">Perfil de gasto &nbsp;/&nbsp; corte 15-08-2026</span>
+  <h1>Donde se va el consumo,<br>y por que el numero grande miente</h1>
+  <p class="lede">Doce corridas reconstruidas desde los transcripts del runner. El harness sigue sin
+  escribir un solo contador propio: cada cifra de este documento la deriva
+  <code>usage_report.py</code> del mismo material que Claude Code genera por su cuenta.</p>
+  <div class="meta">
+    <span>182 agentes</span><span>12 corridas</span>
+    <span>134 tareas</span>
+    <span>27 horas de reloj</span>
+    <span>corte 15-08-2026</span>
+  </div>
+</header>
+
+<div class="tiles">
+  <div class="tile"><span class="n">721 M</span><span class="k">tokens crudos acumulados</span></div>
+  <div class="tile"><span class="n">94.98%</span><span class="k">de la entrada es re-lectura de cache</span></div>
+  <div class="tile"><span class="n">1.33 M</span><span class="k">tokens de salida &mdash; la generacion real</span></div>
+  <div class="tile"><span class="n">37%</span><span class="k">del raw en modelos frontera</span></div>
+  <div class="tile"><span class="n">33.7%</span><span class="k">del costo vive en el decil superior de agentes</span></div>
+</div>
+
+<section>
+<span class="eyebrow">01 &nbsp;/&nbsp; La cifra que no hay que usar</span>
+<h2>721 M de tokens crudos, y casi ninguno se factura.</h2>
+<p class="a">El total crudo suma entrada nueva, escritura de cache, lectura de cache y salida.
+<strong>El 94.98% de esa entrada es re-lectura de cache</strong>, que en la practica se cobra a una
+fraccion del precio de entrada. Leer el numero crudo como costo infla el gasto por un factor cercano
+a veinte. La barra naranja de abajo es lo unico que se genera o se escribe de nuevo en cada corrida.</p>
+
+<figure>
+<figcaption><span class="t">Tokens crudos contra tokens no-cacheados, por corrida</span>
+<span class="d">Azul: total crudo. Naranja: entrada nueva + escritura de cache + salida, es decir todo
+lo que no es re-lectura. Misma escala en ambas series.</span></figcaption>
+<svg viewBox="0 0 760 434" role="img" class="cv"><text x="108" y="21" class="ax r">08-11 04:01</text><rect x="118" y="12" width="566.0" height="9" rx="4" fill="var(--s1)"><title>08-11 04:01: 151 211 945 tokens crudos</title></rect><rect x="118" y="25" width="40.7" height="9" rx="4" fill="var(--s2)"><title>08-11 04:01: 10 886 489 tokens no-cacheados</title></rect><text x="692.0" y="20" class="val">151.2 M</text><text x="166.74911392747444" y="33" class="val" fill="var(--ink3)">10.89 M</text><text x="108" y="55" class="ax r">08-11 18:06</text><rect x="118" y="46" width="260.6" height="9" rx="4" fill="var(--s1)"><title>08-11 18:06: 69 633 032 tokens crudos</title></rect><rect x="118" y="59" width="13.8" height="9" rx="4" fill="var(--s2)"><title>08-11 18:06: 3 684 952 tokens no-cacheados</title></rect><text x="386.64274295261527" y="54" class="val">69.6 M</text><text x="139.79310895048667" y="67" class="val" fill="var(--ink3)">3.68 M</text><text x="108" y="89" class="ax r">08-11 22:04</text><rect x="118" y="80" width="123.8" height="9" rx="4" fill="var(--s1)"><title>08-11 22:04: 33 082 079 tokens crudos</title></rect><rect x="118" y="93" width="2.7" height="9" rx="4" fill="var(--s2)"><title>08-11 22:04: 730 142 tokens no-cacheados</title></rect><text x="249.82921675929768" y="88" class="val">33.1 M</text><text x="128.73298760888235" y="101" class="val" fill="var(--ink3)">0.73 M</text><text x="108" y="123" class="ax r">08-12 00:03</text><rect x="118" y="114" width="183.9" height="9" rx="4" fill="var(--s1)"><title>08-12 00:03: 49 123 462 tokens crudos</title></rect><rect x="118" y="127" width="6.7" height="9" rx="4" fill="var(--s2)"><title>08-12 00:03: 1 782 672 tokens no-cacheados</title></rect><text x="309.87356562340364" y="122" class="val">49.1 M</text><text x="132.67270268893108" y="135" class="val" fill="var(--ink3)">1.78 M</text><text x="108" y="157" class="ax r">08-12 02:37</text><rect x="118" y="148" width="124.3" height="9" rx="4" fill="var(--s1)"><title>08-12 02:37: 33 218 008 tokens crudos</title></rect><rect x="118" y="161" width="3.0" height="9" rx="4" fill="var(--s2)"><title>08-12 02:37: 811 406 tokens no-cacheados</title></rect><text x="250.33801131253222" y="156" class="val">33.2 M</text><text x="129.03716611806033" y="169" class="val" fill="var(--ink3)">0.81 M</text><text x="108" y="191" class="ax r">08-12 05:17</text><rect x="118" y="182" width="93.5" height="9" rx="4" fill="var(--s1)"><title>08-12 05:17: 24 986 372 tokens crudos</title></rect><rect x="118" y="195" width="7.0" height="9" rx="4" fill="var(--s2)"><title>08-12 05:17: 1 862 035 tokens no-cacheados</title></rect><text x="219.5262525192702" y="190" class="val">25.0 M</text><text x="132.96976558300338" y="203" class="val" fill="var(--ink3)">1.86 M</text><text x="108" y="225" class="ax r">08-12 14:02</text><rect x="118" y="216" width="37.7" height="9" rx="4" fill="var(--s1)"><title>08-12 14:02: 10 064 098 tokens crudos</title></rect><rect x="118" y="229" width="1.9" height="9" rx="4" fill="var(--s2)"><title>08-12 14:02: 504 811 tokens no-cacheados</title></rect><text x="163.67082995989503" y="224" class="val">10.1 M</text><text x="127.88955327570186" y="237" class="val" fill="var(--ink3)">0.50 M</text><text x="108" y="259" class="ax r">08-12 19:20</text><rect x="118" y="250" width="459.1" height="9" rx="4" fill="var(--s1)"><title>08-12 19:20: 122 659 577 tokens crudos</title></rect><rect x="118" y="263" width="19.6" height="9" rx="4" fill="var(--s2)"><title>08-12 19:20: 5 225 298 tokens no-cacheados</title></rect><text x="585.1259016078393" y="258" class="val">122.7 M</text><text x="145.55876348260713" y="271" class="val" fill="var(--ink3)">5.23 M</text><text x="108" y="293" class="ax r">08-14 04:44</text><rect x="118" y="284" width="207.2" height="9" rx="4" fill="var(--s1)"><title>08-14 04:44: 55 347 151 tokens crudos</title></rect><rect x="118" y="297" width="16.4" height="9" rx="4" fill="var(--s2)"><title>08-14 04:44: 4 375 190 tokens no-cacheados</title></rect><text x="333.16939700762396" y="292" class="val">55.3 M</text><text x="142.376732274689" y="305" class="val" fill="var(--ink3)">4.38 M</text><text x="108" y="327" class="ax r">08-14 14:42</text><rect x="118" y="318" width="196.9" height="9" rx="4" fill="var(--s1)"><title>08-14 14:42: 52 599 897 tokens crudos</title></rect><rect x="118" y="331" width="9.4" height="9" rx="4" fill="var(--s2)"><title>08-14 14:42: 2 518 830 tokens no-cacheados</title></rect><text x="322.88617656495325" y="326" class="val">52.6 M</text><text x="135.4282087304677" y="339" class="val" fill="var(--ink3)">2.52 M</text><text x="108" y="361" class="ax r">08-14 23:47</text><rect x="118" y="352" width="357.4" height="9" rx="4" fill="var(--s1)"><title>08-14 23:47: 95 471 448 tokens crudos</title></rect><rect x="118" y="365" width="14.9" height="9" rx="4" fill="var(--s2)"><title>08-14 23:47: 3 984 425 tokens no-cacheados</title></rect><text x="483.358273303078" y="360" class="val">95.5 M</text><text x="140.91406350205997" y="373" class="val" fill="var(--ink3)">3.98 M</text><text x="108" y="395" class="ax r">08-15 06:29</text><rect x="118" y="386" width="88.6" height="9" rx="4" fill="var(--s1)"><title>08-15 06:29: 23 676 074 tokens crudos</title></rect><rect x="118" y="399" width="6.0" height="9" rx="4" fill="var(--s2)"><title>08-15 06:29: 1 604 384 tokens no-cacheados</title></rect><text x="214.62168847838046" y="394" class="val">23.7 M</text><text x="132.00535456375485" y="407" class="val" fill="var(--ink3)">1.60 M</text></svg>
+<div class="lg"><span class="lgi"><i style="background:var(--s1)"></i>tokens crudos</span>
+<span class="lgi"><i style="background:var(--s2)"></i>no-cacheado</span></div>
+<div class="tv"><details><summary>ver tabla</summary><div class="tw"><table><thead><tr><th>corrida</th><th>agentes</th><th>tareas</th><th>crudos</th><th>no-cacheado</th><th>salida</th><th>reloj</th></tr></thead><tbody><tr><td>08-11 04:01</td><td>48</td><td>22</td><td>151 211 945</td><td>10 886 489</td><td>230 809</td><td>337 min</td></tr><tr><td>08-11 18:06</td><td>10</td><td>13</td><td>69 633 032</td><td>3 684 952</td><td>82 888</td><td>142 min</td></tr><tr><td>08-11 22:04</td><td>4</td><td>4</td><td>33 082 079</td><td>730 142</td><td>29 871</td><td>62 min</td></tr><tr><td>08-12 00:03</td><td>10</td><td>13</td><td>49 123 462</td><td>1 782 672</td><td>73 024</td><td>99 min</td></tr><tr><td>08-12 02:37</td><td>7</td><td>11</td><td>33 218 008</td><td>811 406</td><td>102 450</td><td>46 min</td></tr><tr><td>08-12 05:17</td><td>8</td><td>5</td><td>24 986 372</td><td>1 862 035</td><td>55 265</td><td>206 min</td></tr><tr><td>08-12 14:02</td><td>3</td><td>2</td><td>10 064 098</td><td>504 811</td><td>7 933</td><td>61 min</td></tr><tr><td>08-12 19:20</td><td>17</td><td>15</td><td>122 659 577</td><td>5 225 298</td><td>125 906</td><td>223 min</td></tr><tr><td>08-14 04:44</td><td>29</td><td>13</td><td>55 347 151</td><td>4 375 190</td><td>220 524</td><td>136 min</td></tr><tr><td>08-14 14:42</td><td>16</td><td>11</td><td>52 599 897</td><td>2 518 830</td><td>133 379</td><td>111 min</td></tr><tr><td>08-14 23:47</td><td>22</td><td>24</td><td>95 471 448</td><td>3 984 425</td><td>220 622</td><td>145 min</td></tr><tr><td>08-15 06:29</td><td>8</td><td>1</td><td>23 676 074</td><td>1 604 384</td><td>46 665</td><td>51 min</td></tr></tbody></table></div></details></div>
+</figure>
+
+<figure>
+<figcaption><span class="t">Composicion de la entrada acumulada</span>
+<span class="d">Una sola barra al 100%. La entrada nueva &mdash; contenido que el modelo jamas habia
+visto &mdash; es 0.018% del total.</span></figcaption>
+<svg viewBox="0 0 760 128" role="img" class="cv"><rect x="8.0" y="26" width="704.7" height="34" rx="4" fill="var(--s1)"><title>lectura de cache: 94.98%</title></rect><rect x="714.7" y="26" width="35.3" height="34" rx="4" fill="var(--s2)"><title>escritura de cache: 5.01%</title></rect><rect x="751.9" y="26" width="2.0" height="34" rx="4" fill="var(--s3)"><title>entrada nueva: 0.0181%</title></rect><text x="8" y="18" class="val">94.98% lectura de cache</text><text x="752.0" y="80" class="val end" fill="var(--ink3)">5.01% escritura + 0.0181% entrada nueva</text><line x1="8" y1="98" x2="752.0" y2="98" class="grid"/><text x="8" y="118" class="ax">entrada total acumulada: 628 427 544 tokens</text></svg>
+<div class="lg"><span class="lgi"><i style="background:var(--s1)"></i>lectura de cache 94.98%</span>
+<span class="lgi"><i style="background:var(--s2)"></i>escritura de cache 5.01%</span>
+<span class="lgi"><i style="background:var(--s3)"></i>entrada nueva 0.0181%</span></div>
+</figure>
+</section>
+
+<section>
+<span class="eyebrow">02 &nbsp;/&nbsp; Generacion</span>
+<h2>El orden por salida no es el orden por crudo.</h2>
+<p class="a">La corrida 5 gasto 33 M crudos y produjo 102 k de salida; la corrida 3 gasto los mismos
+33 M y produjo 30 k. <strong>El crudo mide cuanto contexto se arrastro, la salida mide cuanto se
+penso.</strong> Las corridas del 14 de agosto son las mas productivas por token arrastrado: 29 y 22
+agentes generando arriba de 220 k cada una.</p>
+
+<figure>
+<figcaption><span class="t">Tokens de salida por corrida</span>
+<span class="d">Coordinador y subagentes sumados. La etiqueta derecha da el tamano del abanico.</span></figcaption>
+<svg viewBox="0 0 760 332" role="img" class="cv"><text x="108" y="21" class="ax r">08-11 04:01</text><rect x="118" y="10" width="430.0" height="14" rx="4" fill="var(--s2)"><title>08-11 04:01: 230 809 tokens de salida en 48 agentes</title></rect><text x="556.0" y="22" class="val">231 k</text><text x="752" y="22" class="ax end sm">48 agts &middot; 22 tareas</text><text x="108" y="47" class="ax r">08-11 18:06</text><rect x="118" y="36" width="154.4" height="14" rx="4" fill="var(--s2)"><title>08-11 18:06: 82 888 tokens de salida en 10 agentes</title></rect><text x="280.4213613853879" y="48" class="val">83 k</text><text x="752" y="48" class="ax end sm">10 agts &middot; 13 tareas</text><text x="108" y="73" class="ax r">08-11 22:04</text><rect x="118" y="62" width="55.7" height="14" rx="4" fill="var(--s2)"><title>08-11 22:04: 29 871 tokens de salida en 4 agentes</title></rect><text x="181.65003964316816" y="74" class="val">30 k</text><text x="752" y="74" class="ax end sm">4 agts &middot; 4 tareas</text><text x="108" y="99" class="ax r">08-12 00:03</text><rect x="118" y="88" width="136.0" height="14" rx="4" fill="var(--s2)"><title>08-12 00:03: 73 024 tokens de salida en 10 agentes</title></rect><text x="262.0446083125008" y="100" class="val">73 k</text><text x="752" y="100" class="ax end sm">10 agts &middot; 13 tareas</text><text x="108" y="125" class="ax r">08-12 02:37</text><rect x="118" y="114" width="190.9" height="14" rx="4" fill="var(--s2)"><title>08-12 02:37: 102 450 tokens de salida en 7 agentes</title></rect><text x="316.86560749364196" y="126" class="val">102 k</text><text x="752" y="126" class="ax end sm">7 agts &middot; 11 tareas</text><text x="108" y="151" class="ax r">08-12 05:17</text><rect x="118" y="140" width="103.0" height="14" rx="4" fill="var(--s2)"><title>08-12 05:17: 55 265 tokens de salida en 8 agentes</title></rect><text x="228.959373334662" y="152" class="val">55 k</text><text x="752" y="152" class="ax end sm">8 agts &middot; 5 tareas</text><text x="108" y="177" class="ax r">08-12 14:02</text><rect x="118" y="166" width="14.8" height="14" rx="4" fill="var(--s2)"><title>08-12 14:02: 7 933 tokens de salida en 3 agentes</title></rect><text x="140.779276371372" y="178" class="val">8 k</text><text x="752" y="178" class="ax end sm">3 agts &middot; 2 tareas</text><text x="108" y="203" class="ax r">08-12 19:20</text><rect x="118" y="192" width="234.6" height="14" rx="4" fill="var(--s2)"><title>08-12 19:20: 125 906 tokens de salida en 17 agentes</title></rect><text x="360.56442339770115" y="204" class="val">126 k</text><text x="752" y="204" class="ax end sm">17 agts &middot; 15 tareas</text><text x="108" y="229" class="ax r">08-14 04:44</text><rect x="118" y="218" width="410.8" height="14" rx="4" fill="var(--s2)"><title>08-14 04:44: 220 524 tokens de salida en 29 agentes</title></rect><text x="536.8389187596671" y="230" class="val">221 k</text><text x="752" y="230" class="ax end sm">29 agts &middot; 13 tareas</text><text x="108" y="255" class="ax r">08-14 14:42</text><rect x="118" y="244" width="248.5" height="14" rx="4" fill="var(--s2)"><title>08-14 14:42: 133 379 tokens de salida en 16 agentes</title></rect><text x="374.4867141229328" y="256" class="val">133 k</text><text x="752" y="256" class="ax end sm">16 agts &middot; 11 tareas</text><text x="108" y="281" class="ax r">08-14 23:47</text><rect x="118" y="270" width="411.0" height="14" rx="4" fill="var(--s2)"><title>08-14 23:47: 220 622 tokens de salida en 22 agentes</title></rect><text x="537.0214939625405" y="282" class="val">221 k</text><text x="752" y="282" class="ax end sm">22 agts &middot; 24 tareas</text><text x="108" y="307" class="ax r">08-15 06:29</text><rect x="118" y="296" width="86.9" height="14" rx="4" fill="var(--s2)"><title>08-15 06:29: 46 665 tokens de salida en 8 agentes</title></rect><text x="212.93746777638654" y="308" class="val">47 k</text><text x="752" y="308" class="ax end sm">8 agts &middot; 1 tareas</text></svg>
+</figure>
+</section>
+
+<section>
+<span class="eyebrow">03 &nbsp;/&nbsp; Paralelismo</span>
+<h2>El DAG dice paralelo. El reloj dice 54&ndash;89% en serie.</h2>
+<p class="a">La concurrencia media nunca llega a 2x. Con picos de hasta 8 agentes simultaneos, el
+promedio ponderado por minuto ocupado se queda entre 1.11x y 1.81x, y la fraccion de tiempo con un
+solo agente activo va del 54% al 89%. <strong>El harness paga latencia de topologia paralela y
+cobra rendimiento casi secuencial.</strong> Las dos corridas con mas abanico &mdash; 48 y 29
+agentes &mdash; son tambien las unicas arriba de 1.6x, lo que sugiere que el cuello no es el DAG
+sino el tamano del lote que se despacha por vez.</p>
+
+<figure>
+<figcaption><span class="t">Concurrencia media por corrida</span>
+<span class="d">Eje forzado de 1.00x a 2.00x, el rango real de variacion. La linea gris mide la
+distancia contra ejecucion estrictamente secuencial.</span></figcaption>
+<svg viewBox="0 0 760 250" role="img" class="cv"><line x1="118.0" y1="14" x2="118.0" y2="208.0" class="grid dash"/><text x="118.0" y="224" class="ax mid sm">1.00x</text><line x1="268.0" y1="14" x2="268.0" y2="208.0" class="grid dash"/><text x="268.0" y="224" class="ax mid sm">1.25x</text><line x1="418.0" y1="14" x2="418.0" y2="208.0" class="grid dash"/><text x="418.0" y="224" class="ax mid sm">1.50x</text><line x1="568.0" y1="14" x2="568.0" y2="208.0" class="grid dash"/><text x="568.0" y="224" class="ax mid sm">1.75x</text><line x1="718.0" y1="14" x2="718.0" y2="208.0" class="grid dash"/><text x="718.0" y="224" class="ax mid sm">2.00x</text><text x="108" y="26.0" class="ax r sm">08-11 04:01</text><line x1="118" y1="22.0" x2="490.0" y2="22.0" stroke="var(--rule)" stroke-width="2"/><circle cx="490.0" cy="22.0" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-11 04:01: concurrencia media 1.62x, 72.6% del tiempo en serie</title></circle><text x="734" y="26.0" class="val">73% serial</text><text x="108" y="41.833333333333336" class="ax r sm">08-11 18:06</text><line x1="118" y1="37.8" x2="334.0" y2="37.8" stroke="var(--rule)" stroke-width="2"/><circle cx="334.0" cy="37.8" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-11 18:06: concurrencia media 1.36x, 71.2% del tiempo en serie</title></circle><text x="734" y="41.833333333333336" class="val">71% serial</text><text x="108" y="57.66666666666667" class="ax r sm">08-11 22:04</text><line x1="118" y1="53.7" x2="394.0" y2="53.7" stroke="var(--rule)" stroke-width="2"/><circle cx="394.0" cy="53.7" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-11 22:04: concurrencia media 1.46x, 54.5% del tiempo en serie</title></circle><text x="734" y="57.66666666666667" class="val">54% serial</text><text x="108" y="73.5" class="ax r sm">08-12 00:03</text><line x1="118" y1="69.5" x2="292.0" y2="69.5" stroke="var(--rule)" stroke-width="2"/><circle cx="292.0" cy="69.5" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-12 00:03: concurrencia media 1.29x, 83.3% del tiempo en serie</title></circle><text x="734" y="73.5" class="val">83% serial</text><text x="108" y="89.33333333333334" class="ax r sm">08-12 02:37</text><line x1="118" y1="85.3" x2="232.0" y2="85.3" stroke="var(--rule)" stroke-width="2"/><circle cx="232.0" cy="85.3" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-12 02:37: concurrencia media 1.19x, 80.6% del tiempo en serie</title></circle><text x="734" y="89.33333333333334" class="val">81% serial</text><text x="108" y="105.16666666666667" class="ax r sm">08-12 05:17</text><line x1="118" y1="101.2" x2="184.0" y2="101.2" stroke="var(--rule)" stroke-width="2"/><circle cx="184.0" cy="101.2" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-12 05:17: concurrencia media 1.11x, 89.2% del tiempo en serie</title></circle><text x="734" y="105.16666666666667" class="val">89% serial</text><text x="108" y="121.0" class="ax r sm">08-12 14:02</text><line x1="118" y1="117.0" x2="280.0" y2="117.0" stroke="var(--rule)" stroke-width="2"/><circle cx="280.0" cy="117.0" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-12 14:02: concurrencia media 1.27x, 73.2% del tiempo en serie</title></circle><text x="734" y="121.0" class="val">73% serial</text><text x="108" y="136.83333333333334" class="ax r sm">08-12 19:20</text><line x1="118" y1="132.8" x2="202.0" y2="132.8" stroke="var(--rule)" stroke-width="2"/><circle cx="202.0" cy="132.8" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-12 19:20: concurrencia media 1.14x, 88.1% del tiempo en serie</title></circle><text x="734" y="136.83333333333334" class="val">88% serial</text><text x="108" y="152.66666666666669" class="ax r sm">08-14 04:44</text><line x1="118" y1="148.7" x2="604.0" y2="148.7" stroke="var(--rule)" stroke-width="2"/><circle cx="604.0" cy="148.7" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-14 04:44: concurrencia media 1.81x, 74.0% del tiempo en serie</title></circle><text x="734" y="152.66666666666669" class="val">74% serial</text><text x="108" y="168.5" class="ax r sm">08-14 14:42</text><line x1="118" y1="164.5" x2="382.0" y2="164.5" stroke="var(--rule)" stroke-width="2"/><circle cx="382.0" cy="164.5" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-14 14:42: concurrencia media 1.44x, 67.9% del tiempo en serie</title></circle><text x="734" y="168.5" class="val">68% serial</text><text x="108" y="184.33333333333334" class="ax r sm">08-14 23:47</text><line x1="118" y1="180.3" x2="358.0" y2="180.3" stroke="var(--rule)" stroke-width="2"/><circle cx="358.0" cy="180.3" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-14 23:47: concurrencia media 1.4x, 74.9% del tiempo en serie</title></circle><text x="734" y="184.33333333333334" class="val">75% serial</text><text x="108" y="200.16666666666669" class="ax r sm">08-15 06:29</text><line x1="118" y1="196.2" x2="406.0" y2="196.2" stroke="var(--rule)" stroke-width="2"/><circle cx="406.0" cy="196.2" r="5" fill="var(--s4)" stroke="var(--panel)" stroke-width="2"><title>08-15 06:29: concurrencia media 1.48x, 74.8% del tiempo en serie</title></circle><text x="734" y="200.16666666666669" class="val">75% serial</text><text x="118" y="244" class="ax sm">concurrencia media = agentes activos por minuto ocupado; 1.00x = un agente a la vez</text></svg>
+<div class="tv"><details><summary>ver tabla</summary><div class="tw"><table><thead><tr><th>corrida</th><th>agentes</th><th>concurrencia media</th><th>% serial</th><th>reloj</th></tr></thead><tbody><tr><td>08-11 04:01</td><td>48</td><td>1.62x</td><td>72.6%</td><td>337 min</td></tr><tr><td>08-11 18:06</td><td>10</td><td>1.36x</td><td>71.2%</td><td>142 min</td></tr><tr><td>08-11 22:04</td><td>4</td><td>1.46x</td><td>54.5%</td><td>62 min</td></tr><tr><td>08-12 00:03</td><td>10</td><td>1.29x</td><td>83.3%</td><td>99 min</td></tr><tr><td>08-12 02:37</td><td>7</td><td>1.19x</td><td>80.6%</td><td>46 min</td></tr><tr><td>08-12 05:17</td><td>8</td><td>1.11x</td><td>89.2%</td><td>206 min</td></tr><tr><td>08-12 14:02</td><td>3</td><td>1.27x</td><td>73.2%</td><td>61 min</td></tr><tr><td>08-12 19:20</td><td>17</td><td>1.14x</td><td>88.1%</td><td>223 min</td></tr><tr><td>08-14 04:44</td><td>29</td><td>1.81x</td><td>74.0%</td><td>136 min</td></tr><tr><td>08-14 14:42</td><td>16</td><td>1.44x</td><td>67.9%</td><td>111 min</td></tr><tr><td>08-14 23:47</td><td>22</td><td>1.40x</td><td>74.9%</td><td>145 min</td></tr><tr><td>08-15 06:29</td><td>8</td><td>1.48x</td><td>74.8%</td><td>51 min</td></tr></tbody></table></div></details></div>
+</figure>
+</section>
+
+<section>
+<span class="eyebrow">04 &nbsp;/&nbsp; Roles</span>
+<h2>Verificar cuesta poco contexto y mucha generacion.</h2>
+<p class="a">El worker domina el arrastre de contexto: 264 740 645 crudos en
+45 agentes. Pero el verifier, con 73 agentes
+&mdash; el rol mas numeroso del harness &mdash; produce 241 485 tokens de
+salida, <strong>60% mas generacion que el worker con menos contexto por agente</strong>. La
+proporcion de 73 verifiers contra 45 workers
+tampoco es gratuita: es el precio del guardarrail de que ningun productor cierra su propia tarea.</p>
+
+<figure>
+<figcaption><span class="t">Contexto arrastrado contra generacion, por rol</span>
+<span class="d">Cada serie normalizada a su propio maximo &mdash; las dos barras de una fila no son
+comparables entre si, solo contra las de su color.</span></figcaption>
+<svg viewBox="0 0 760 328" role="img" class="cv"><text x="90" y="22" class="ax r">worker</text><text x="90" y="36" class="ax r sm">45 agentes</text><rect x="100" y="12" width="420.0" height="10" rx="4" fill="var(--s1)"><title>worker: 264 740 645 tokens crudos</title></rect><rect x="100" y="26" width="263.4" height="10" rx="4" fill="var(--s2)"><title>worker: 151 463 tokens de salida</title></rect><text x="528.0" y="21" class="val">264.7 M</text><text x="371.43027517237095" y="35" class="val" fill="var(--ink3)">151 463</text><text x="90" y="66" class="ax r">verifier</text><text x="90" y="80" class="ax r sm">73 agentes</text><rect x="100" y="56" width="362.4" height="10" rx="4" fill="var(--s1)"><title>verifier: 228 439 324 tokens crudos</title></rect><rect x="100" y="70" width="420.0" height="10" rx="4" fill="var(--s2)"><title>verifier: 241 485 tokens de salida</title></rect><text x="470.4094671220583" y="65" class="val">228.4 M</text><text x="528.0" y="79" class="val" fill="var(--ink3)">241 485</text><text x="90" y="110" class="ax r">workflow</text><text x="90" y="124" class="ax r sm">45 agentes</text><rect x="100" y="100" width="102.1" height="10" rx="4" fill="var(--s1)"><title>workflow: 64 341 666 tokens crudos</title></rect><rect x="100" y="114" width="329.1" height="10" rx="4" fill="var(--s2)"><title>workflow: 189 197 tokens de salida</title></rect><text x="210.0753716151141" y="109" class="val">64.3 M</text><text x="437.0586992980931" y="123" class="val" fill="var(--ink3)">189 197</text><text x="90" y="154" class="ax r">thinker</text><text x="90" y="168" class="ax r sm">12 agentes</text><rect x="100" y="144" width="81.0" height="10" rx="4" fill="var(--s1)"><title>thinker: 51 071 126 tokens crudos</title></rect><rect x="100" y="158" width="118.0" height="10" rx="4" fill="var(--s2)"><title>thinker: 67 842 tokens de salida</title></rect><text x="189.0222129662032" y="153" class="val">51.1 M</text><text x="225.99341574010808" y="167" class="val" fill="var(--ink3)">67 842</text><text x="90" y="198" class="ax r">other</text><text x="90" y="212" class="ax r sm">5 agentes</text><rect x="100" y="188" width="23.6" height="10" rx="4" fill="var(--s1)"><title>other: 14 870 148 tokens crudos</title></rect><rect x="100" y="202" width="25.7" height="10" rx="4" fill="var(--s2)"><title>other: 14 757 tokens de salida</title></rect><text x="131.59087007588124" y="197" class="val">14.9 M</text><text x="133.66594198397416" y="211" class="val" fill="var(--ink3)">14 757</text><text x="90" y="242" class="ax r">scout</text><text x="90" y="256" class="ax r sm">1 agentes</text><rect x="100" y="232" width="8.0" height="10" rx="4" fill="var(--s1)"><title>scout: 5 032 991 tokens crudos</title></rect><rect x="100" y="246" width="27.4" height="10" rx="4" fill="var(--s2)"><title>scout: 15 746 tokens de salida</title></rect><text x="115.98463046730132" y="241" class="val">5.0 M</text><text x="135.38604882290826" y="255" class="val" fill="var(--ink3)">15 746</text><text x="90" y="286" class="ax r">judge</text><text x="90" y="300" class="ax r sm">1 agentes</text><rect x="100" y="276" width="1.5" height="10" rx="4" fill="var(--s1)"><title>judge: 612 171 tokens crudos</title></rect><rect x="100" y="290" width="1.5" height="10" rx="4" fill="var(--s2)"><title>judge: 37 tokens de salida</title></rect><text x="109.5" y="285" class="val">0.6 M</text><text x="109.5" y="299" class="val" fill="var(--ink3)">37</text></svg>
+<div class="lg"><span class="lgi"><i style="background:var(--s1)"></i>tokens crudos</span>
+<span class="lgi"><i style="background:var(--s2)"></i>tokens de salida</span></div>
+<div class="tv"><details><summary>ver tabla</summary><div class="tw"><table><thead><tr><th>rol</th><th>agentes</th><th>crudos</th><th>% del crudo</th><th>salida</th></tr></thead><tbody><tr><td>worker</td><td>45</td><td>264 740 645</td><td>36.7%</td><td>151 463</td></tr><tr><td>verifier</td><td>73</td><td>228 439 324</td><td>31.7%</td><td>241 485</td></tr><tr><td>workflow</td><td>45</td><td>64 341 666</td><td>8.9%</td><td>189 197</td></tr><tr><td>thinker</td><td>12</td><td>51 071 126</td><td>7.1%</td><td>67 842</td></tr><tr><td>other</td><td>5</td><td>14 870 148</td><td>2.1%</td><td>14 757</td></tr><tr><td>scout</td><td>1</td><td>5 032 991</td><td>0.7%</td><td>15 746</td></tr><tr><td>judge</td><td>1</td><td>612 171</td><td>0.1%</td><td>37</td></tr></tbody></table></div></details></div>
+</figure>
+</section>
+
+<section>
+<span class="eyebrow">05 &nbsp;/&nbsp; Mezcla de modelos</span>
+<h2>37.5% frontera acumulado, contra una banda operativa de 53&ndash;65%.</h2>
+<p class="a">Sonnet-5 atendio 94 agentes y
+53.0% del crudo. Los modelos frontera juntos
+&mdash; opus-5, fable-5 y un residuo de opus-4.8 &mdash; suman 87 agentes y
+37.5%. <strong>El acumulado queda por debajo de la banda, pero el acumulado no es la
+unidad de decision: la corrida si.</strong> Solo dos de doce corridas caen dentro de 53&ndash;65%.
+El resto se reparte entre corridas casi enteramente baratas y corridas casi enteramente frontera.
+La banda no se esta violando de forma sostenida, se esta oscilando alrededor de ella.</p>
+
+<figure>
+<figcaption><span class="t">Fraccion frontera por corrida</span>
+<span class="d">Verde: dentro de la banda operativa. Rosa: fuera. El sombreado marca 53&ndash;65%.</span></figcaption>
+<svg viewBox="0 0 760 300" role="img" class="cv"><rect x="414.8" y="16" width="67.2" height="240.0" fill="var(--s3)" opacity="0.10"/><text x="448.4" y="274" class="ax mid sm">banda 53&ndash;65%</text><line x1="118.0" y1="16" x2="118.0" y2="256.0" class="grid dash"/><text x="118.0" y="292" class="ax mid sm">0%</text><line x1="258.0" y1="16" x2="258.0" y2="256.0" class="grid dash"/><text x="258.0" y="292" class="ax mid sm">25%</text><line x1="398.0" y1="16" x2="398.0" y2="256.0" class="grid dash"/><text x="398.0" y="292" class="ax mid sm">50%</text><line x1="538.0" y1="16" x2="538.0" y2="256.0" class="grid dash"/><text x="538.0" y="292" class="ax mid sm">75%</text><line x1="678.0" y1="16" x2="678.0" y2="256.0" class="grid dash"/><text x="678.0" y="292" class="ax mid sm">100%</text><text x="108" y="30.0" class="ax r sm">08-11 04:01</text><circle cx="236.7" cy="26.0" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-11 04:01: 21.2% del raw en modelos frontera</title></circle><text x="248.7" y="30.0" class="val" text-anchor="start">21%</text><text x="108" y="50.33333333333333" class="ax r sm">08-11 18:06</text><circle cx="242.9" cy="46.3" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-11 18:06: 22.3% del raw en modelos frontera</title></circle><text x="254.9" y="50.33333333333333" class="val" text-anchor="start">22%</text><text x="108" y="70.66666666666666" class="ax r sm">08-11 22:04</text><circle cx="208.7" cy="66.7" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-11 22:04: 16.2% del raw en modelos frontera</title></circle><text x="220.7" y="70.66666666666666" class="val" text-anchor="start">16%</text><text x="108" y="91.0" class="ax r sm">08-12 00:03</text><circle cx="482.6" cy="87.0" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-12 00:03: 65.1% del raw en modelos frontera</title></circle><text x="494.6" y="91.0" class="val" text-anchor="start">65%</text><text x="108" y="111.33333333333333" class="ax r sm">08-12 02:37</text><circle cx="142.6" cy="107.3" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-12 02:37: 4.4% del raw en modelos frontera</title></circle><text x="154.6" y="111.33333333333333" class="val" text-anchor="start">4%</text><text x="108" y="131.66666666666666" class="ax r sm">08-12 05:17</text><circle cx="202.0" cy="127.7" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-12 05:17: 15.0% del raw en modelos frontera</title></circle><text x="214.0" y="131.66666666666666" class="val" text-anchor="start">15%</text><text x="108" y="152.0" class="ax r sm">08-12 14:02</text><circle cx="118.0" cy="148.0" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-12 14:02: 0.0% del raw en modelos frontera</title></circle><text x="130.0" y="152.0" class="val" text-anchor="start">0%</text><text x="108" y="172.33333333333331" class="ax r sm">08-12 19:20</text><circle cx="344.2" cy="168.3" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-12 19:20: 40.4% del raw en modelos frontera</title></circle><text x="356.2" y="172.33333333333331" class="val" text-anchor="start">40%</text><text x="108" y="192.66666666666666" class="ax r sm">08-14 04:44</text><circle cx="495.4" cy="188.7" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-14 04:44: 67.4% del raw en modelos frontera</title></circle><text x="507.4" y="192.66666666666666" class="val" text-anchor="start">67%</text><text x="108" y="213.0" class="ax r sm">08-14 14:42</text><circle cx="341.4" cy="209.0" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-14 14:42: 39.9% del raw en modelos frontera</title></circle><text x="353.4" y="213.0" class="val" text-anchor="start">40%</text><text x="108" y="233.33333333333331" class="ax r sm">08-14 23:47</text><circle cx="421.0" cy="229.3" r="5.5" fill="var(--s3)" stroke="var(--panel)" stroke-width="2"><title>08-14 23:47: 54.1% del raw en modelos frontera</title></circle><text x="433.0" y="233.33333333333331" class="val" text-anchor="start">54%</text><text x="108" y="253.66666666666666" class="ax r sm">08-15 06:29</text><circle cx="678.0" cy="249.7" r="5.5" fill="var(--s5)" stroke="var(--panel)" stroke-width="2"><title>08-15 06:29: 100.0% del raw en modelos frontera</title></circle><text x="666.0" y="253.66666666666666" class="val" text-anchor="end">100%</text></svg>
+<div class="lg"><span class="lgi"><i style="background:var(--s3)"></i>dentro de banda</span>
+<span class="lgi"><i style="background:var(--s5)"></i>fuera de banda</span></div>
+<div class="tv"><details><summary>ver tabla</summary><div class="tw"><table><thead><tr><th>modelo</th><th>tier</th><th>agentes</th><th>crudos</th><th>% del crudo</th><th>salida</th></tr></thead><tbody><tr><td>claude-sonnet-5</td><td>cheap</td><td>94</td><td>381 856 075</td><td>53.0%</td><td>231 097</td></tr><tr><td>claude-opus-5</td><td>frontier</td><td>47</td><td>174 449 383</td><td>24.2%</td><td>251 609</td></tr><tr><td>claude-fable-5</td><td>frontier</td><td>39</td><td>60 835 111</td><td>8.4%</td><td>184 485</td></tr><tr><td><synthetic></td><td>unknown</td><td>15</td><td>11 585 694</td><td>1.6%</td><td>13 025</td></tr><tr><td>claude-opus-4-8</td><td>frontier</td><td>1</td><td>381 783</td><td>0.1%</td><td>303</td></tr></tbody></table></div></details></div>
+</figure>
+</section>
+
+<section>
+<span class="eyebrow">06 &nbsp;/&nbsp; Cola y fugas</span>
+<h2>Un agente de cada diez se lleva un tercio del gasto.</h2>
+<p class="a">La distribucion de costo por agente es fuertemente asimetrica: mediana
+2.6 M, p95 10.0 M &mdash; casi cuatro veces la mediana. El decil superior
+concentra 33.7% del total. El payload de contexto por agente lo explica:
+mediana 125 445 tokens, p90 219 368, maximo 373 167, contra
+22 819 en el primer turno. <strong>Lo que engorda no es el prompt inicial,
+es la acumulacion.</strong></p>
+
+<figure>
+<figcaption><span class="t">Costo crudo por agente: percentiles</span>
+<span class="d">Distribucion sobre los 182 agentes de las doce corridas.</span></figcaption>
+<svg viewBox="0 0 760 168" role="img" class="cv"><text x="64" y="32" class="ax r">p50</text><rect x="74" y="16" width="147.4" height="20" rx="4" fill="var(--s1)"><title>p50: 2 622 781 tokens crudos por agente</title></rect><text x="231.40777488188118" y="31" class="val">2.62 M</text><text x="64" y="72" class="ax r">p90</text><rect x="74" y="56" width="421.3" height="20" rx="4" fill="var(--s1)"><title>p90: 7 496 655 tokens crudos por agente</title></rect><text x="505.3333986356958" y="71" class="val">7.50 M</text><text x="64" y="112" class="ax r">p95</text><rect x="74" y="96" width="560.0" height="20" rx="4" fill="var(--s1)"><title>p95: 9 963 907 tokens crudos por agente</title></rect><text x="644.0" y="111" class="val">9.96 M</text><text x="74" y="160" class="ax sm">el decil superior de agentes concentra 33.7% del costo total</text></svg>
+</figure>
+
+<div class="flag"><span class="h">Fuera de todo total de arriba</span>
+Hay consumo que el runner ejecuta sin bloque de uso, asi que no aparece en ninguna cifra de este
+documento: <b>185 llamadas de auto-titulado</b> y
+<b>2 compactaciones automaticas</b> &mdash;
+619 624 &rarr; 18 510 tokens en
+127 s el 2026-08-14, y
+419 862 &rarr; 15 565 tokens en
+148 s el 2026-08-15. Cada compactacion
+es una llamada de sintesis sobre medio millon de tokens de contexto que nadie contabiliza.
+</div>
+</section>
+
+<section>
+<span class="eyebrow">07 &nbsp;/&nbsp; Que hacer con esto</span>
+<h2>Tres palancas, en orden de retorno.</h2>
+<ul>
+<li><b>Emitir un <code>run_id</code>.</b> Hoy la corrida se infiere por hueco temporal de 45
+minutos. Cualquier serie de tiempo de gasto que se construya sobre esa heuristica hereda su error.</li>
+<li><b>Atacar el decil superior, no el promedio.</b> Un tercio del gasto vive en agentes cuyo
+payload de contexto se acerca a los 373 167 tokens. Podar el contexto que se hereda al
+despachar rinde mas que cambiar de modelo.</li>
+<li><b>Subir el tamano del lote antes que la profundidad del DAG.</b> Las unicas corridas por
+encima de 1.6x de concurrencia son las de abanico grande. La topologia ya permite el paralelismo;
+lo que falta es despachar mas por vez.</li>
+</ul>
+</section>
+
+<footer>
+Generado por <code>.harness/bin/usage_report.py --json</code> sobre los transcripts del runner,
+corte 15-08-2026. Las corridas se agrupan por hueco temporal de 45 minutos porque el harness no
+emite identificador de corrida. Ninguna cifra proviene de contadores escritos por el harness.
+La auditoria de instrumentacion previa, con corte 14-08-2026, sigue vigente para las preguntas de
+revisiones, fallas y plano de control.
+</footer>
+</div>
+</body>
+</html>

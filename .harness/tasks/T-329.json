@@ -1,0 +1,29 @@
+{
+  "id": "T-329",
+  "title": "Promote <retired-skill> as a universal portable capability",
+  "description": "Promote the verified <retired-skill> skill into the canonical .agents/skills surface, create byte-identical Claude and installable mirrors, incorporate Mario-approved chart semantics without provider dependencies, update capability indexes and deterministic tests, and prepare a scoped GitHub draft PR. Core skill acceptance: no provider, model, engine, vendor, CLI, or hosted-service dependency; exact mirrors; provenance retained; all applicable tests pass.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-26T08:45:44Z",
+      "agent": "codex-worker-universal-taste",
+      "note": "Plan: promote the calibrated reference-only skill into the universal canonical surface; mirror it byte-identically; add portability and synchronization tests; update indexes; validate without relying on any model or engine."
+    },
+    {
+      "ts": "2026-07-26T09:06:28Z",
+      "agent": "codex-worker-universal-taste",
+      "note": "Actual: universal canonical skill and byte-identical mirrors shipped without vendor metadata. Targeted tests passed 15 of 15 and 9 of 9; full harness suite passed 70 of 70 with 4 environment skips; quick validation and recursive mirror diffs passed. Commit bc4438d pushed and draft PR 2 opened."
+    },
+    {
+      "ts": "2026-07-26T09:06:28Z",
+      "agent": "codex-worker-universal-taste",
+      "note": "HANDOFF -> verifier: Replay the two targeted Python suites, full unittest discovery, quick validation, recursive mirror diffs, vendor scan, and inspect draft PR 2. Producer did not self-approve."
+    },
+    {
+      "ts": "2026-08-12T02:51:10Z",
+      "agent": "coordinator-fable",
+      "note": "DECISION: epic killed by operator directive 2026-08-12 (fleet-first duplicate resolution). Adversarial comparison proved the epic's artifact and the operator's standalone design-taste repository are the same files (recursive diff: 2 differing files of 20, one only in the name: field; same upstream MIT pin b1774273) and that the standalone repo is the extraction of this epic (its git history opens 24 minutes after this epic's last write) and is AHEAD (12 validator checks this epic lacked, covering exactly the geometry fixes T-324 was blocked on). T-329's own PR #2 was already closed as belongs-in-its-own-repo. Six deltas identified for upstream contribution; port dispatched separately. Done tasks T-318..T-323 remain done: history is not rewritten. See PR-014."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "T-394",
+  "title": "R3 RESEARCH: doctrinal duty of author/designee exclusion - recusal doctrine (F6)",
+  "description": "Operator mandate (ruling F6): recusal approved; research the doctrinal duty behind author and designee exclusion. Cover: nemo iudex in causa sua lineage; recusal standards in constitutional courts (28 USC 455, ECHR objective impartiality); how standard-setting and technical bodies (IETF, ISO, W3C, journal peer review) handle author conflicts and DELEGATE conflicts (the designee problem); failure cases where designee capture defeated recusal. Deliverable: docs/precedent-research/15-recusal-doctrinal-duty.md with sources and mechanism hooks: how the harness excludes an author AND its designees from confirming/verifying the author's records without starving small benches of verifiers. Writer claims, locks, U2 note, handoff; verifier reads text against strand data.",
+  "acceptance_criteria": [
+    "docs/precedent-research/15-recusal-doctrinal-duty.md exists with sections: doctrine lineage, comparative standards, designee problem, failure cases, mechanism hooks",
+    "at least 8 distinct external sources cited inline; no absolute user paths; no emojis",
+    "mechanism hooks state how author+designee exclusion works on a small bench without starving verification",
+    "verifier (non-producer) replayed doc against strand findings and found no fabricated citation"
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-14T06:35:09Z",
+      "agent": "writer-r3-recusal",
+      "note": "Writer composing doc 15 from 2 strand findings plus corpus anchors (doc 01 format, doc 12 contradictions 8-9, R-6/R-8/R-9, PR-015, ORCHESTRATION.md F6)."
+    },
+    {
+      "ts": "2026-08-14T06:41:36Z",
+      "agent": "writer-r3-recusal",
+      "note": "DECISION: composed from 2 strand findings; recusal framed as a self-executing duty of the office (455(a)/abstencion/excusa) imputed to the author's delegation closure (Rule 1.10/Hall/EU 537-2014), with 12 mechanism hooks H-1..H-12 answering PR-015/F6 designee exclusion without bench starvation (abstencion-first claim-time eligibility, imputation closure bounded by the Williams predicate, verdict-act-only exclusion per Morgan, rotation register with rate policing, substitution-escalation-necessity ladder per US v Will) and 11 contradictions carried honestly; 28 external sources, Schroter pinpoint caveat disclosed."
+    },
+    {
+      "ts": "2026-08-14T06:46:29Z",
+      "agent": "verifier-r3-recusal",
+      "note": "verified: replayed all sections against both strands -- every ESTABLISHED claim traces to a strand finding or named corpus doc; 11 contradictions = merged strand lists (6+6 with US v Will dedup); H-1..H-12 all trace to strand mechanism hooks and answer small-bench starvation (H-2 Williams-predicate bounds, H-7 verdict-act-only, H-10 substitution/escalation/necessity ladder). Internal anchors checked: doc 12 'confirmer independence/recusal not disclosure' (line 404), R-9 at synthesis-refinements 458-471, PR-015 ratio + voided_by field, ORCHESTRATION.md:119-126 F6, ruling F2/F6 text. 4 web spot-checks confirmed: 28 USC 455(a)/(e) verbatim (Cornell LII), Williams v PA 579 U.S. 1 'significant, personal involvement' quote + Castille facts + 5-3 2016 (slip op PDF), Hall v SBA 695 F.2d 175 'purity of heart is not enough' + clerk-class-member facts, IETF IESG COI 'should normally recuse' + undisclosable-conflict recusal + RECUSE ballot position (ballot procedures). Hygiene clean: no emojis, no user paths, 28 external sources (21 PRIMARY, counts verified), all required sections present, Schroter pinpoint caveat honestly carried. Two minor non-blocking notes: PR-015 ratio quote elides '(producer is never approver)' without ellipsis marks (meaning preserved); one para tagged [ESTABLISHED + ANALOGY] vs legend's exactly-one-tag rule."
+    }
+  ]
+}

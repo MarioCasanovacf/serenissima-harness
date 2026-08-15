@@ -1,0 +1,29 @@
+{
+  "id": "T-325",
+  "title": "Produce blind candidate B with personal:operator across four surfaces",
+  "description": "Use the revised skill and frozen fixture to create variant-b artifacts: inspectable responsive HTML covering personal landing, dashboard and case-study/report plus a real 5-slide executive decision-memo PPTX. Also capture the same skill without personal:operator as negative control. Record prompt, skill hash, token/profile activation, screenshots/renders, QA and accessibility evidence. Acceptance: all hard gates in contract pass; all slides render and slides_test reports no overflow; narrow/wide HTML render without clipping; semantic categories remain legible with labels/non-color encoding.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-18T01:17:05Z",
+      "agent": "main",
+      "note": "DECISION: Controlled personal:operator calibration. Build three exact-copy responsive HTML surfaces plus one real 5-slide 16:9 decision memo, six flagged HTML captures, five full-size slide renders, and an unflagged same-input brand-neutral HTML control. Validate deterministically with nonzero assertions, browser geometry checks, slides_test, and visual inspection."
+    },
+    {
+      "ts": "2026-07-26T08:33:28Z",
+      "agent": "codex-worker-mario-feedback-b",
+      "note": "DECISION: Preserve B as the human-confirmed personal:operator aesthetic. Complete only deterministic QA, correct the false 50KB PPTX plausibility threshold, and document remaining visual-capture evidence without changing approved surfaces."
+    },
+    {
+      "ts": "2026-07-26T08:35:04Z",
+      "agent": "codex-worker-mario-feedback-b",
+      "note": "OPEN-QUESTION: 159/167 assertions pass; the valid five-slide PPTX is ZIP-clean and slides_test reports no overflow. All eight failures are exactly the required flagged/no-flag responsive screenshots, which are absent. Mario's human verdict identifies B as his personal aesthetic. Browser policy blocks agent capture of local file:// pages; no placeholders were fabricated."
+    },
+    {
+      "ts": "2026-08-12T02:51:09Z",
+      "agent": "coordinator-fable",
+      "note": "DECISION: epic killed by operator directive 2026-08-12 (fleet-first duplicate resolution). Adversarial comparison proved the epic's artifact and the operator's standalone design-taste repository are the same files (recursive diff: 2 differing files of 20, one only in the name: field; same upstream MIT pin b1774273) and that the standalone repo is the extraction of this epic (its git history opens 24 minutes after this epic's last write) and is AHEAD (12 validator checks this epic lacked, covering exactly the geometry fixes T-324 was blocked on). T-329's own PR #2 was already closed as belongs-in-its-own-repo. Six deltas identified for upstream contribution; port dispatched separately. Done tasks T-318..T-323 remain done: history is not rewritten. See PR-014."
+    }
+  ]
+}

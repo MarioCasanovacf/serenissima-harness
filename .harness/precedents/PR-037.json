@@ -1,0 +1,48 @@
+{
+  "id": "PR-037",
+  "schema_version": 2,
+  "title": "Leases and TTLs: claims and locks auto-expire; sweeps release them",
+  "subject": "leases-and-ttls",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-010"
+  ],
+  "ratio": "Claims and file locks carry TTLs and auto-expire; sweeps release expired holdings, so a crashed or stalled agent returns its work to the pool instead of blocking the DAG. No agent may hold a claim or a lock without a TTL bound, and no new claim or lock class may ship without one.\n",
+  "dicta": [
+    "Bootstrap-seeded at generation 0; no P-number for the invariant itself, so tier 2 is not honestly available (CD6); tier 3 rests on T-010, which exercised lock contention, expiry and crash-recovery steal, verdicted done by harness-verifier (events.jsonl ts 2026-07-04T04:51:31Z). Corrective history, cited as history and not re-promulgated (CD5): P-004 extended lock coverage to recontext evidence writes; P-005 fixed the TTL-floor comparison so short TTLs stopped expiring near-instantly. Frozen by the codification ledger row decision:T-377#cd-03."
+  ],
+  "scope_conditions": [
+    "role:any agent holding a claim lease or a file lock"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if a lease or lock class without TTL is introduced, or sweep behavior is removed.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:07Z",
+  "sources": [
+    "decision:T-377#cd-03",
+    "ORCHESTRATION.md:98",
+    "T-010"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "state.json limits carries lock_ttl_seconds_default and claim_lease_seconds_default"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "T-318",
+  "title": "Integrate Design Taste as a universal cross-engine skill",
+  "description": "Create a portable design-taste-frontend skill in .agents/skills, mirror it in .claude/skills and skills, preserve upstream MIT provenance pinned to commit b17742737e796305d829b3ad39eda3add0d79060, update capability indexes, and add exact recursive-sync and portability tests. Acceptance: SKILL under 500 lines, one-level references, three trees identical, no mandatory React/imagegen/web assumptions, targeted unittest reports nonzero tests.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-07-15T00:31:30Z",
+      "agent": "main",
+      "note": "DECISION: implement the context-scout progressive-disclosure adaptation: portable core in .agents/skills with conditional framework/tool references, exact mirrors, provenance, indexes, and nonzero integration tests."
+    },
+    {
+      "ts": "2026-07-15T00:37:06Z",
+      "agent": "codex-worker-taste",
+      "note": "DECISION: canonical progressive-disclosure skill is .agents/skills/design-taste-frontend; .claude/skills and skills are recursive byte mirrors. DEVIATION: none from the adapted context-scout plan."
+    },
+    {
+      "ts": "2026-07-15T00:37:17Z",
+      "agent": "codex-worker-taste",
+      "note": "HANDOFF -> verifier: REPLAY: python3 -m unittest discover -s .harness/tests -p test_universal_skill_integration.py -v ran 8 tests, all OK. python3 -m unittest discover -s .harness/tests -p test_codex_integration.py -v ran 6 tests, OK with 2 Python-3.9 TOML skips. python3 -m unittest discover -s .harness/tests -p test_*.py -v ran 54 tests, OK with 4 Python-3.9 TOML skips. quick_validate.py reports Skill is valid for .agents, .claude, and skills. git diff --check emits no findings. Canonical SKILL.md is 89 lines; targeted tests verify two-key frontmatter, all six direct references, recursive mirror identity, portable conditional branches, scope, exact pinned provenance, and full MIT text. git status --short in the upstream Taste repository is empty."
+    },
+    {
+      "ts": "2026-07-15T00:38:29Z",
+      "agent": "codex-verifier-taste",
+      "note": "DECISION: independently replaying handoff commands plus recursive byte-parity, provenance/license inspection, documentation consistency, and upstream-worktree cleanliness; read-only except sanctioned blackboard lifecycle."
+    },
+    {
+      "ts": "2026-07-15T00:41:44Z",
+      "agent": "codex-verifier-taste",
+      "note": "REJECTED: universal cross-engine documentation is internally inconsistent. README lines 37-43 say Gemini currently shares the canonical .agents/skills directory, while README line 54 calls that same skill format only a future Gemini/Antigravity interoperability surface. The Gemini adapter inventory names agents, commands, .agents/workflows, and the headless runner but does not state the intended .agents/skills discovery scope, so the unqualified current universal-availability claim is not replayably coherent. The new test only checks path substrings and misses this contradiction. All implementation checks otherwise pass: targeted integration 8/8; Codex integration 6/6 on Python 3.12; full suite 54/54 on Python 3.12; quick_validate passes 3/3 trees; recursive byte parity and upstream MIT hash pass; git diff --check clean; upstream Taste worktree clean. Return to worker to reconcile README and explicitly document/test repo-scoped Gemini consumption versus any installable distribution claim."
+    },
+    {
+      "ts": "2026-07-15T00:42:17Z",
+      "agent": "codex-worker-taste",
+      "note": "DECISION: reconcile current repo-scoped skill discovery across README and GEMINI_ADAPTER; strengthen the integration test against stale future-only wording."
+    },
+    {
+      "ts": "2026-07-15T00:44:39Z",
+      "agent": "codex-worker-taste",
+      "note": "DECISION: document current repo-scoped .agents/skills discovery for Codex and Gemini CLI, separate it from Gemini context-file injection and installable distribution, remove stale future-only wording, and make AGENTS enumerate every canonical skill directory."
+    },
+    {
+      "ts": "2026-07-15T00:44:39Z",
+      "agent": "codex-worker-taste",
+      "note": "HANDOFF -> verifier: REPLAY AFTER REJECTION: python3.12 -m unittest discover -s .harness/tests -p test_universal_skill_integration.py -v ran 9 tests, all OK. python3.12 -m unittest discover -s .harness/tests -p test_*.py -v ran 55 tests, all OK with zero skips. quick_validate.py reports Skill is valid for .agents, .claude, and skills using the Python environment with PyYAML. git diff --check emits no findings. README no longer contains future interoperability surface and now states current Codex and Gemini CLI repo discovery. GEMINI_ADAPTER has a non-normative note distinguishing automatic .agents/skills discovery from context injection and installable Gemini distribution, citing official Gemini CLI discovery documentation. AGENTS now indexes all four canonical skill directories. Upstream Taste worktree remains clean."
+    },
+    {
+      "ts": "2026-07-15T00:45:06Z",
+      "agent": "codex-verifier-taste",
+      "note": "DECISION: re-reviewing corrected documentation, native Gemini scope, complete skill inventory, strengthened stale-wording test, exact replay suite, parity, provenance, and cleanliness."
+    },
+    {
+      "ts": "2026-07-15T00:45:43Z",
+      "agent": "codex-verifier-taste",
+      "note": "VERIFIED after rejection: corrected README removes the contradictory future-only sentence and states current repo-scoped Codex and Gemini CLI discovery. GEMINI_ADAPTER now accurately separates native .agents/skills workspace discovery from .gemini/settings context injection and from installable Gemini distribution; official Gemini CLI discovery documentation confirms .agents/skills is a workspace alias. AGENTS table lists all four canonical skill directories. The strengthened targeted test asserts the stale future interoperability phrase is absent. Independent replay: Python 3.12 targeted suite 9/9 and full suite 55/55, zero skips; quick_validate 3/3 under system Python 3.9 with PyYAML; recursive parity eight files in each tree with identical hashes; git diff --check clean; upstream Taste clean at pinned commit b17742737e796305d829b3ad39eda3add0d79060. The production skill hash remains 820c1cdd39a071f2b1e90db59854bdb4ffdfff3e86a3d3e19c35a46adcf9318c."
+    }
+  ]
+}

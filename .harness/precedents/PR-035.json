@@ -1,0 +1,50 @@
+{
+  "id": "PR-035",
+  "schema_version": 2,
+  "title": "Single guarded index: only blackboard.py writes blackboard.json",
+  "subject": "single-guarded-index",
+  "status": "active",
+  "authority_tier": 3,
+  "tier_evidence": [
+    "T-010",
+    "T-000"
+  ],
+  "ratio": "Only blackboard.py writes blackboard.json, serialized by flock. No agent, in any role, in any session, may hand-edit the board or write it through any other tool; every board mutation goes through the guarded verbs (claim, update, handoff, add-task, reopen). An edit that bypasses the guarded index is a protocol violation regardless of intent or outcome.\n",
+  "dicta": [
+    "Bootstrap-seeded at generation 0; no P-number exists for this invariant, so tier 2 is not honestly available (CD6) and the record takes tier 3 on distinct-identity verdict evidence: T-010 contention and crash-recovery smoke, verdicted done by harness-verifier (events.jsonl ts 2026-07-04T04:51:31Z), and T-000, which exercised the full guarded lifecycle. The reopen verb named in the ratio is governed by PR-001 (reopen-terminal-state); its recorded ledger gap remains open and owned by T-365 (CD3), and this record neither resolves nor cites that gap. Frozen by the codification ledger row decision:T-377#cd-01."
+  ],
+  "scope_conditions": [
+    "role:any agent mutating blackboard.json state in any session",
+    "role:coordinator supervising parallel dispatch"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "Revisit if any writer other than blackboard.py is ever sanctioned to mutate blackboard.json, or flock serialization is removed from the guarded verbs.",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-379",
+  "published_by": "worker-cod-p1",
+  "published_at": "2026-08-14T15:27:07Z",
+  "sources": [
+    "decision:T-377#cd-01",
+    "ORCHESTRATION.md:96",
+    "T-010"
+  ],
+  "validity_conditions": [
+    "ORCHESTRATION.md:92-103",
+    "blackboard.py remains the sole writer of blackboard.json"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}
