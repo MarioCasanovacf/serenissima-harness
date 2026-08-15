@@ -319,3 +319,209 @@ count 194 unchanged. CORRECTION ON RECORD: the coordinator previously stated the
 appeared in PR-014's dicta. It does not. Zero occurrences across the entire precedent
 registry. The purge touched operational metadata only and required no amendment
 procedure.
+
+## Ruling round 2.6 (operator, 2026-08-15): money is the denominator, full stop
+
+D-13 TIE-BREAK: MONEY, ALWAYS. The operator's reasoning, recorded because it is the
+     load-bearing part: subscriptions and metered API both prorate to money, so money
+     is the one denominator that exists under either mechanism. A million tokens on
+     one engine and a million on another are not the same cost, so a token count can
+     never arbitrate. The coordinator's proposed INTERSECTION rule (D-10) is
+     SUPERSEDED.
+     HONEST CONSEQUENCE, stated because D-10 said "both binding": if money always
+     wins the tie, the raw-token band is no longer binding. It is DIAGNOSTIC. Both
+     figures keep printing under M-1 and neither is ever printed alone, but only the
+     dollar figure governs. Saying "both binding" and "money always wins" cannot both
+     be true, and the operator chose the second.
+
+D-14 THE BAND NUMBER IS NOT THE POINT. Operator: it was always a rule of thumb. What
+     must be enforced is efficiency AND the harness ethos - frontier models exist to
+     do the deciding and the reasoning (requirements gathering from text, features,
+     judgement calls) because they decide and reason better than cheap models. The
+     percentage is a proxy for that, never the thing itself.
+     COORDINATOR ACTION: the band stops being the primary instrument. The primary
+     instrument becomes the ROLE-BY-MODEL CROSS IN DOLLARS, which had never been
+     computed. First measurement, 2026-08-15, $500.18 priced across 5 unpriced pairs
+     omitted:
+
+       role       $ total   $ frontier   frontier share of role   share of all frontier
+       verifier    168.94       131.06                   77.6%                   36.6%
+       thinker     107.38       107.38                  100.0%                   30.0%
+       workflow    106.46       101.86                   95.7%                   28.4%
+       other        22.51         8.60                   38.2%                    2.4%
+       scout         6.35         6.35                  100.0%                    1.8%
+       judge         2.80         2.80                  100.0%                    0.8%
+       worker       85.75         0.00                    0.0%                    0.0%
+
+     READING AGAINST THE ETHOS:
+     - worker at 0.0% frontier is the ethos honoured exactly. Execution never touches
+       a frontier model. This is the strongest result in the table and nobody had
+       measured it.
+     - thinker, scout and judge at 100% frontier is the ethos honoured exactly.
+     - verifier at 77.6% is DEFENSIBLE under the ethos, because a verdict is a
+       decision, and this directly contradicts the efficiency dossier's lever 1.2,
+       which ranked the verifier as migration priority 1.
+     - workflow at 95.7% and $101.86 is THE ANOMALY. Workflow is orchestration
+       plumbing - spawning, routing, collecting - and has the weakest claim of any
+       role to a reasoning-grade model. It is 28.4% of all frontier money.
+     CONCLUSION: the leak is workflow, not verifier. The dossier ranked workflow
+     second and verifier first; on the ethos criterion that ordering is backwards.
+
+D-15 D-6 APPROVED: the conduct record MAY feed Phase A reputation. This is a formal
+     revisit trigger on PR-022, whose own text promises Phase A neutrality, so the
+     revisit is mandatory and not optional.
+
+STILL OPEN: CD1 (mirror stays a mirror / becomes canonical / stays a mirror but a duty
+to consult is created). The operator has not answered it across three rounds; the
+coordinator should stop bundling it and ask it alone next time.
+
+## D-12 BLIND RED-TEAM VERDICT (2026-08-15): the coordinator's design mostly falls
+
+Seven agents, 52 attacks, three ground-truth strands. The coordinator verified the
+load-bearing facts independently rather than accepting the adjudicator's reading.
+All three reproduce exactly:
+
+  harness_common.py:52   agent_id() = os.environ.get("CLAUDE_HARNESS_AGENT_ID", "main")
+  precedent.py:2406      --agent is a free string, default=hc.agent_id(), never validated
+  state.json             108 names in agents.reputation against 7 real record authors
+  authorship shares      0.305 / 0.237 / 0.153 / 0.119 / 0.085 / 0.068 / 0.034 over 59
+  state.json limits      max_parallel_workers = 3, made binding by PR-041
+
+VERDICTS
+  TD-1 (scarcity is independence, not headcount)  SURVIVES WITH TWO AMENDMENTS
+  TD-2 (cap authorship concentration)             FALLS, five independent grounds
+  TD-3 (two dockets, separate budgets)            FALLS, salvage only as AF-2 sub-accounts
+  TD-4 (no standing roster)                       REFUSAL SURVIVES, MECHANISM FALLS
+  TD-5 (efficiency contradiction dissolves)       FALLS
+
+THE FINDING THAT OUTRANKS THE WHOLE DESIGN. Every eligibility check in the stack is a
+string comparison against a self-asserted environment variable. F6 - the ruling the
+operator singled out for praise - is defeated by not typing the same string twice, and
+the registry already carries 108 names against 7 real authors. No design layered above
+an unauthenticated identity can deliver the independence TD-4 promises as its scarce
+good. PR-023 says so on the record: "Sybil minting is closed by this gate and by
+nothing else."
+
+TWO COORDINATOR ERRORS, both material, both stated to the operator:
+1. THE BRIDGE CLAUSE WAS FALSE. The coordinator told the operator "independence is a
+   function of how concentrated authorship is" and drew the authorship cap from it.
+   Write the eligible set as E(R) = V - |closure(author(R)) INTERSECT V|. Three terms,
+   none of them authorship volume. Capping an author at one record instead of eighteen
+   changes E(R) by exactly zero, for every record, always. The diagnosis survives; the
+   "therefore" does not.
+2. THE BENCH ARITHMETIC WAS A UNIT ERROR. The coordinator used 73 verifiers, which is
+   a sum over 13 windows. Independence is a STOCK - identities alive at the same
+   instant outside the same closure - and the median stock is about 4, with
+   max_parallel_workers=3 capping concurrency regardless. Off by an order of magnitude.
+   The correction makes independence SCARCER than the coordinator argued, not less.
+
+AND THE CAP WAS ALREADY UNCONSTITUTIONAL. PR-026 clause 3 forbids "exclusion of any
+identity by computed standing alone"; PR-022 clause 4 says NO CONSEQUENCE ATTACHES to
+a Phase A figure and clause 6 says a consumer wiring one "violates this tier-1 record,
+not a style guide". Rule authorship is a named Phase A event type. The coordinator
+proposed a gate the constitution already forbids and cited neither record. Note the
+collision with D-15, just approved: the operator has authorized conduct to feed
+reputation, which is the same PR-022 boundary from the other side.
+
+THE GRAVEST OMISSION IS NOT IN THE DESIGN, IT IS MISSING FROM IT. There is no
+termination rule for eligibility disputes. Combined with AF-1's "silence auto-forwards",
+an author who poisons its own eligible pool rides the TTL to a verdict-free
+auto-forward. That is a passage strategy, and every surveyed system closes it
+(BVerfGG s19 casting vote and post-hearing bar; Spain and France flat no-appeal).
+
+SEQUENCING, which is the operator's own stated priority. The correct order is IDENTITY,
+then closure substrate, then provenance repair, and only then any rule keying
+eligibility or authorship to an identity - with the cheap-model migration sequenced
+LAST, not first. All three red teams converged on that last point independently.
+
+CARRIED FORWARD, and only as inputs to a redesign on a different axis: TD-1's
+diagnosis, corrected; TD-4's refusal of a standing roster, which is already
+PRECEDENT.md section 12's position. TD-4's replacement mechanism is superseded by the
+gesetzlicher Richter form the research supplied and the coordinator never considered:
+a general, abstract, PUBLISHED allocation rule fixed before any case exists,
+deterministic and auditable, amendments barred as to pending matters. Neither a
+standing roster nor a per-case pick.
+
+QUALITY NOTE ON THE REVIEW ITSELF. The adjudicator overturned one of its own team's
+[serious] attacks on inspection (precedent.py:1335 stamps below_target_tier from the
+two records' tiers, so the author cannot set it). A red team that corrects its own
+attackers is worth more than one that maximizes body count.
+
+TWELVE OPERATOR-ONLY QUESTIONS recorded in the run output. Two block everything else:
+the CLOSURE WIDTH (stated at three different widths in this very file, at :32-33,
+:129 and :145-147, so no docket can be budgeted until one is chosen) and whether the
+harness pays for CRYPTOGRAPHIC IDENTITY or ships F6 knowing an environment variable
+defeats it.
+
+## Ruling round 2.7 (operator, 2026-08-15): the agentic society, and what it dissolves
+
+OPERATOR DESIGN DIRECTION, recorded as given because it outranks the coordinator's:
+
+  1. T-2 (adversarial forest) is SUPERIOR to T-1, and the reason is decisive: it does
+     not depend on borrowing an engine outside the coordinator's own lineage. The
+     coordinator's job in this model is to SET THE INCENTIVES of each group - specific
+     guidelines, specific rewards - FEDERALIST AND DECENTRALISED. Operator's words:
+     "no como la fantasia socialista sovietica ni la fantasia socialista china."
+  2. NOT three colegiados. MANY, so the thing is a simulation of a real society.
+  3. Incentives align through reputation AND through the capacity to win contracts,
+     with play money or an economic simulation. This is the bridge into the Economic
+     Epic and should be built as its precursor, not bolted on later.
+  4. THE GLOBAL ETHOS, verbatim in effect: the system needs agents that want to
+     capitalise themselves, want to earn, want to innovate, want reputation, and want
+     that reputation not damaged by turning risk-averse, avaricious, false, or by lying.
+  5. THE COORDINATOR ACQUIRES TWO DUTIES: issue every agent a NAME, and grant, for each
+     future epic, a bounded number of PLAZAS that must be filled by agents. Recorded for
+     posterity, but small: it must not consume space or memory, because that slows the
+     system.
+  6. T-3 (published roster) is partially absorbed: the published allocation rule becomes
+     the coordinator publishing how many plazas a feature gets.
+  7. Agents get names, roles, experience, invented lives, and the ability to meet.
+  8. THE SUCCESS CONDITION the operator states for the whole programme: an agent sues
+     another for economic damages over a breached contract; the record shows how it
+     discussed the matter with its partners at a board table before suing; the suit is
+     heard by an agentic judge; all three carry real names so the history can be
+     reconstructed and read by a human.
+
+WHAT THIS DISSOLVES. Four of the twelve open questions were not open. The coordinator
+failed to connect them to answers the operator had already given, and the operator was
+right to say so.
+
+  Q3 (lineage substrate) DISSOLVED. It asked whether to reverse PRECEDENT.md s14's
+     refusal of session infrastructure so F6's closure could be computed. Under issued
+     names and declared colegiado membership, eligibility is not computed from a spawn
+     tree at all. It is a membership field on a record that already stores published_by.
+     One field, not an infrastructure. s14 stands untouched.
+  Q4 (lifting PR-026/PR-022 for an authorship cap) MOOT. The authorship cap fell in the
+     red-team. Nothing now needs that lifting.
+  Q11 (anonymity) ANSWERED NO, and it was always incompatible with the operator's own
+     success condition, which requires real names precisely so the history reads.
+  Q1 (closure width) REFRAMED, see below.
+
+THE WIDTH QUESTION, REFRAMED. It only existed because identity is ephemeral and lineage
+was the sole handle: how far up and down a spawn tree does the taint travel. With
+durable issued names and declared membership the question becomes membership plus
+interest, and one rule survives: SAME COLEGIADO IS EXCLUDED, DIFFERENT COLEGIADO IS
+ELIGIBLE, with interest-based recusal on top. That is width B in a different substrate,
+computable from one field, and it is the width the operator originally approved.
+
+OPERATOR ANSWERS RECORDED:
+  Q2  Security over speed. Note the coordinator's reply: the plaza mechanism IS the
+      identity answer at the level that matters here. Names ISSUED and BOUNDED close the
+      failure mode actually observed (108 names, minted by accident). Cryptography
+      closes the adversarial case and can come later. This is an improvement, not a
+      guarantee, and the distinction is stated rather than blurred.
+  Q5  Operator wants to SEE the argument before choosing. Delivered separately.
+  Q6  AGREED: no infinite regress. Eligibility disputes terminate.
+  Q7  The author MAY nominate; other agents contest the nomination with competing
+      nominations. FLAG: this AMENDS the ratified nomination ban ("el autor jamas
+      nomina, instancia o provee el canal del agente que lo verifica"). The operator's
+      rule is better suited to the adversarial forest, but amending a ratified rule runs
+      through the amendment procedure, not through a note.
+  Q8  Expiry with an empty pool ESCALATES TO THE OPERATOR. No auto-forward.
+  Q9  Cheap-model migration does NOT ship before identity. Later, if still needed.
+  Q10 Not understood; coordinator to re-explain.
+  Q12 Consult the red team, which means: write the specification, then re-test it.
+
+STANDING CORRECTION TO THE COORDINATOR: "te haces muchas bolas." Recorded because it is
+accurate. Questions were shipped without first checking which the operator had already
+answered from a different direction.
