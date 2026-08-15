@@ -295,14 +295,16 @@ class ForkDetection(GateCase):
         self.assertEqual(len(fork["branches"]), 2)
         self.assertEqual(fork["STATUS"], "CONTESTED")
 
-    def test_the_fork_is_proof_not_an_opinion(self):
+    def test_a_verified_fork_is_divergence_not_proof_of_two_parties(self):
         wid, keys = self.full_warrant()
         first = attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit")
         self.forge("aurelia", keys["aurelia"], first["prev"], 99)
         fork = attest.forks(self.root)[0]
         self.assertTrue(fork["all_branches_verified"])
-        self.assertIn("two parties held that key", fork["PROOF"])
-        self.assertIn("Mechanical, not a judgement", fork["PROOF"])
+        self.assertNotIn("PROOF", fork,
+                         "a fork is divergence, not proof; the key `PROOF` is retracted")
+        self.assertIn("DIVERGENCE, signed", fork["MEANS"])
+        self.assertIn("is retracted", fork["MEANS"])
 
     def test_a_fork_freezes_nothing(self):
         """DIS-3 and AF-5: a saboteur must not be able to halt a rival, and no mechanism
@@ -690,8 +692,135 @@ class WhatForkDetectionDoesNotCatch(GateCase):
         fork = attest.forks(self.root)[0]
         self.assertFalse(fork["all_branches_verified"])
         self.assertEqual(fork["STATUS"], "UNVERIFIED-DIVERGENCE")
-        self.assertIn("NOT PROOF", fork["PROOF"])
-        self.assertIn("no key at all", fork["PROOF"])
+        self.assertIn("NOT PROOF", fork["MEANS"])
+        self.assertIn("no key at all", fork["MEANS"])
+
+
+class SecondPanelRegressions(GateCase):
+    """One test per finding of the second blind panel, which verdicted the previous
+    build NOT compliant with PR-023 and named three separate minting paths that all
+    ended with `audit` printing clean."""
+
+    def test_agent_keys_json_is_not_a_second_registry(self):
+        """F1. attest.sign_act trusted trust/agent_keys.json, a cache reconcile never
+        read. The panel appended one entry by hand and its sybil signed acts while
+        reconcile reported clean. The set is now DERIVED from verified warrants."""
+        wid, keys = self.full_warrant()
+        evil, evil_pub = self.agent_key("evil")
+        (w.trust_dir(self.root) / "agent_keys.json").write_text(json.dumps({
+            "sybil-1": {"pubkey": evil_pub.read_text(encoding="utf-8").strip(),
+                        "warrant": wid, "epic": "e-1", "colegiado": "banco",
+                        "role": "judge"}}), encoding="utf-8")
+        with self.assertRaises(attest.AttestError):
+            attest.sign_act(self.root, "sybil-1", evil, "verdict", "PR-999")
+        self.assertNotIn("sybil-1", attest.enrolled_keys(self.root))
+
+    def test_init_guards_on_either_trust_file(self):
+        """F2. init guarded on root.fingerprint while is_enrolled guarded on root.pub,
+        so renaming one file aside allowed a full re-anchor."""
+        wid, _ = self.full_warrant()
+        evil, evil_pub = self.agent_key("evil")
+        fp = w.trust_dir(self.root) / "root.fingerprint"
+        fp.rename(fp.parent / ".fp.bak")
+        with self.assertRaises(w.TrustError) as cm:
+            w.init(self.root, evil_pub)
+        self.assertIn("ALREADY ENROLLED", str(cm.exception))
+
+    def test_audit_without_expect_is_marked_unverified(self):
+        """F3. Every check inside this module is consistent with whatever trust/ says,
+        and trust/ is writable by every agent and untracked by git."""
+        self.full_warrant()
+        out = w.audit(self.root)
+        self.assertIsNone(out["anchor_matches_operator"])
+        self.assertIn("UNVERIFIED", out)
+        self.assertIn("cannot distinguish", out["UNVERIFIED"])
+
+    def test_audit_with_expect_catches_a_rewritten_anchor(self):
+        wid, _ = self.full_warrant()
+        good = w.check_anchor(self.root)
+        evil, evil_pub = self.agent_key("evil")
+        td = w.trust_dir(self.root)
+        (td / "root.pub").write_text(evil_pub.read_text(encoding="utf-8"),
+                                     encoding="utf-8")
+        (td / "root.fingerprint").write_text(w.key_fingerprint(evil_pub) + "\n",
+                                             encoding="utf-8")
+        out = w.audit(self.root, expect=good)
+        self.assertFalse(out["anchor_matches_operator"])
+        self.assertIn("TRUST ROOT REPLACED", out["ALARM"])
+
+    def test_a_warrant_authorizes_its_values_not_only_its_keys(self):
+        """F4. The panel signed banco/judge=2 and wrote 64, signed one incentive and
+        rewrote it, and seated a name in a role the warrant never gave it."""
+        wid, _ = self.full_warrant()
+        by = f"warrant:{wid}"
+        data = roster.load(self.root)
+        data["plazas"]["e-1"].pop("banco/judge")
+        (self.root / "roster.json").write_text(json.dumps(data, indent=2),
+                                               encoding="utf-8")
+        with self.assertRaises(KeyError):
+            roster.plazas("e-1", "banco", "judge", 64, by, self.root)
+        with self.assertRaises(KeyError):
+            roster.charter("banco", "paga por lo que yo diga", by, self.root)
+        with self.assertRaises(KeyError):
+            roster.issue("aurelia", "banco", "notary", "e-1", by, "", self.root)
+
+    def test_require_warrant_checks_expiry(self):
+        """F5. apply_warrant refused an expired warrant; roster.py accepted it, which
+        voided --valid-until's whole stated purpose."""
+        self.enroll()
+        priv, pub = self.agent_key("aurelia")
+        d = w.draft(self.root, "e-1", ["banco=x"], ["banco/judge=1"],
+                    [f"aurelia:banco/judge:{pub}"],
+                    valid_until="2020-01-01T00:00:00Z")
+        root_sign(pathlib.Path(d["path"]), self.root_key)
+        with self.assertRaises(KeyError) as cm:
+            roster.charter("banco", "x", f"warrant:{d['warrant_id']}", self.root)
+        self.assertIn("expired", str(cm.exception))
+
+    def test_one_key_signing_concurrently_does_not_manufacture_a_fork(self):
+        """F6. The guard covered the seq computation and the O_EXCL create but was
+        released before the JSON body was written, so a peer read a zero-byte act,
+        head() rewound, and one party's six sign calls produced a fork the tool then
+        called proof that two parties held the key."""
+        import concurrent.futures
+        wid, keys = self.full_warrant()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            list(pool.map(lambda i: attest.sign_act(self.root, "aurelia",
+                                                    keys["aurelia"], "commit", f"r{i}"),
+                          range(6)))
+        rep = attest.verify_name(self.root, "aurelia")
+        self.assertEqual(rep["acts"], 6)
+        self.assertEqual(rep["forks"], [], "one key, one party, a fabricated fork")
+
+    def test_reconcile_survives_a_hostile_roll(self):
+        """F7. reconcile died on a traceback when names was a list, and failed OPEN on
+        an unparseable roster.json because roster.load swallows the decode error."""
+        self.full_warrant()
+        path = self.root / "roster.json"
+        path.write_text(json.dumps({"schema_version": 1, "colegiados": {},
+                                    "plazas": {}, "names": []}), encoding="utf-8")
+        rec = w.reconcile(self.root)
+        self.assertFalse(rec["clean"])
+        path.write_text("{not json at all", encoding="utf-8")
+        rec = w.reconcile(self.root)
+        self.assertFalse(rec["clean"])
+        self.assertIn("unreadable", rec["orphans"][0]["reason"])
+
+    def test_the_warrant_id_is_a_filename_not_a_path(self):
+        """F9. `warrant:../stash/W-001` verified a document outside warrants/, so
+        authorization and reconciliation read different sets."""
+        wid, _ = self.full_warrant()
+        for bad in ("../stash/W-001", "W-001/../W-001", "/etc/passwd", "W-1", "w-001"):
+            with self.assertRaises(KeyError, msg=f"{bad!r} accepted"):
+                roster.charter("banco", "x", f"warrant:{bad}", self.root)
+
+    def test_the_governing_record_carries_the_retraction(self):
+        """F8. The code retracted `unforgeable proof that two parties held the key`
+        while D-20 DIS-1 still asserted it."""
+        record = (ROOT / ".harness" / "coordinator-decisions-ruling-round-2.md"
+                  ).read_text(encoding="utf-8")
+        self.assertIn("RETRACTED", record)
+        self.assertNotIn("unforgeable proof that two parties held the key", record)
 
 
 if __name__ == "__main__":

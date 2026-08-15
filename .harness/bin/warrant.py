@@ -89,7 +89,7 @@ FINGERPRINT_RE = re.compile(r"SHA256:[A-Za-z0-9+/=]{43}")
 
 PUBLIC_API = ("resolve_root", "trust_dir", "anchored_fingerprint", "verify_signature",
               "draft", "verify_warrant", "apply_warrant", "audit", "payload_digest",
-              "authorizes", "reconcile")
+              "authorizes", "reconcile", "enrolled_keys")
 
 
 class TrustError(Exception):
@@ -181,8 +181,15 @@ def init(root, root_pub_path) -> dict:
         raise TrustError("that is a PRIVATE key. Enroll the .pub file, never the key "
                          "itself; this process must remain unable to sign.")
     td = trust_dir(root)
-    if (td / "root.fingerprint").exists():
-        prior = (td / "root.fingerprint").read_text(encoding="utf-8").strip()
+    # Guard on EITHER file. A panel renamed root.fingerprint aside, re-ran init, and
+    # re-anchored the harness to its own key while is_enrolled() still said True,
+    # because the two functions guarded different files.
+    if (td / "root.fingerprint").exists() or (td / "root.pub").exists():
+        prior = None
+        if (td / "root.fingerprint").exists():
+            prior = (td / "root.fingerprint").read_text(encoding="utf-8").strip()
+        elif (td / "root.pub").exists():
+            prior = key_fingerprint(td / "root.pub")
         if prior != fp:
             raise TrustError(
                 f"ALREADY ENROLLED to {prior}. Re-anchoring to {fp} would silently "
@@ -390,7 +397,10 @@ def authorizes(payload, verb, subject) -> bool:
     """Does this warrant's CONTENT authorize this specific mutation?
 
     A verified signature says the operator signed SOMETHING. It does not say the
-    operator signed THIS. The previous build conflated the two: any string beginning
+    operator signed THIS -- and "this" means the VALUES too, not only the keys. A second
+    panel signed `banco/judge=2` and wrote 64; signed aurelia into `corte/judge` and
+    seated her in `banco/notary`; signed one incentive and rewrote it afterwards. All
+    three reconciled clean, because this function compared names and ignored numbers. The previous build conflated the two: any string beginning
     `warrant:` passed, so a panel typed `warrant:ME-LO-INVENTE` and minted five names
     against a harness with a genuine enrolled root. A signed document authorizes what it
     says and nothing else.
@@ -400,14 +410,20 @@ def authorizes(payload, verb, subject) -> bool:
     subject = _norm(subject)
     epic = _norm(payload.get("epic", ""))
     if verb == "charter":
-        return subject in {_norm(c) for c in payload.get("colegiados", {})}
+        colegiado, _, incentive = subject.partition("|")
+        signed = {_norm(c): _norm(v) for c, v in payload.get("colegiados", {}).items()}
+        return colegiado in signed and signed[colegiado] == incentive
     if verb == "plazas":
-        want_epic, _, key = subject.partition("|")
-        return want_epic == epic and key in {_norm(k) for k in payload.get("plazas", {})}
+        want_epic, _, rest = subject.partition("|")
+        key, _, count = rest.rpartition("=")
+        signed = {_norm(k): str(v) for k, v in payload.get("plazas", {}).items()}
+        return want_epic == epic and key in signed and signed[key] == count
     if verb == "issue":
-        want_epic, _, name = subject.partition("|")
-        return want_epic == epic and name in {_norm(n["name"])
-                                              for n in payload.get("names", [])}
+        want_epic, _, rest = subject.partition("|")
+        name, _, seat = rest.partition("@")
+        signed = {_norm(n["name"]): f"{_norm(n['colegiado'])}/{_norm(n['role'])}"
+                  for n in payload.get("names", [])}
+        return want_epic == epic and name in signed and signed[name] == seat
     return False
 
 
@@ -449,6 +465,22 @@ def reconcile(root) -> dict:
             authorized["issue"].add(f"{epic}|{_norm(n['name'])}")
 
     data = roster.load(root)
+    raw = pathlib.Path(root) / "roster.json"
+    if raw.exists():
+        try:
+            json.loads(raw.read_text(encoding="utf-8"))
+        except Exception as exc:
+            out["orphans"].append({"kind": "roll", "id": "roster.json",
+                                   "reason": f"unreadable: {exc}"})
+            out["clean"] = False
+            return out
+    for key in ("colegiados", "plazas", "names"):
+        if not isinstance(data.get(key, {}), dict):
+            out["orphans"].append({"kind": "roll", "id": key,
+                                   "reason": f"malformed: {type(data[key]).__name__}, "
+                                             "expected object"})
+            out["clean"] = False
+            return out
     for c in data.get("colegiados", {}):
         out["checked"] += 1
         if _norm(c) not in authorized["charter"]:
@@ -472,6 +504,19 @@ def reconcile(root) -> dict:
 
 # --------------------------------------------------------------------------- apply
 
+WID_RE = re.compile(r"^W-\d{3,}$")
+
+
+def check_wid(wid) -> str:
+    """A warrant id is a filename, never a path. `warrant:../stash/W-001` used to
+    verify a warrant stored outside warrants/, so authorization and reconciliation read
+    different sets of documents."""
+    wid = str(wid).strip()
+    if not WID_RE.match(wid):
+        raise TrustError(f"malformed warrant id {wid!r}; expected W-NNN")
+    return wid
+
+
 def load_payload(root, wid) -> dict:
     path = warrants_dir(root) / f"{wid}.json"
     if not path.exists():
@@ -480,6 +525,7 @@ def load_payload(root, wid) -> dict:
 
 
 def verify_warrant(root, wid) -> dict:
+    wid = check_wid(wid)
     path = warrants_dir(root) / f"{wid}.json"
     fp = verify_signature(root, path, path.with_suffix(".json.sig"))
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -531,31 +577,41 @@ def apply_warrant(root, wid) -> dict:
         except KeyError as exc:
             applied["already"].append(f"issue {entry['name']}: {exc}")
 
-    _register_keys(root, p)
     _emit(root, "warrant_applied", warrant=wid, epic=p["epic"],
           names=len(applied["names"]), signed_by=v["signed_by"])
     return {"warrant_id": wid, "signed_by": v["signed_by"], **applied}
 
 
-def _register_keys(root, payload) -> None:
-    """Record each issued name's PUBLIC key so attest.py can verify that name's acts.
+def enrolled_keys(root) -> dict:
+    """Every issued name's PUBLIC key, DERIVED on read from the verified warrants.
 
-    These keys live on the shared filesystem and any agent can read the private halves
-    wherever they are kept, so possession proves nothing (D-17). They are here so a
-    forged act is DETECTABLE, not prevented -- see attest.py and DIS-1.
+    This used to be a cache file, `trust/agent_keys.json`, which attest.sign_act trusted
+    and `reconcile` never read. A panel appended one entry by hand and its sybil signed
+    acts while reconcile reported clean -- a second registry, unreconciled, behind the
+    module whose whole job is evidence. There is no cache now: the warrants ARE the
+    registry, following PR-010's computed-on-read doctrine, so there is nothing to
+    forge that is not already a forged signature.
+
+    Keys still prove nothing about possession (D-17): any agent reads any private half.
+    They are here so a forged act is DETECTABLE, not prevented.
     """
-    path = trust_dir(root) / "agent_keys.json"
-    with hc.guarded() if is_live(root) else _NullGuard():
-        data = hc.read_json(path, default={}) or {}
-        for entry in payload["names"]:
-            data[entry["name"]] = {
-                "pubkey": entry["pubkey"],
-                "warrant": payload["warrant_id"],
-                "epic": payload["epic"],
-                "colegiado": entry["colegiado"],
+    out = {}
+    wd = warrants_dir(root)
+    for path in sorted(wd.glob("W-*.json")) if wd.exists() else []:
+        try:
+            v = verify_warrant(root, path.stem)
+        except TrustError:
+            continue
+        if v["expired"]:
+            continue
+        p = v["payload"]
+        for entry in p["names"]:
+            out[_norm(entry["name"])] = {
+                "pubkey": entry["pubkey"], "warrant": p["warrant_id"],
+                "epic": p["epic"], "colegiado": entry["colegiado"],
                 "role": entry["role"],
             }
-        hc.atomic_write_json(path, data)
+    return out
 
 
 class _NullGuard:
@@ -568,8 +624,17 @@ class _NullGuard:
 
 # --------------------------------------------------------------------------- audit
 
-def audit(root) -> dict:
-    """Verify every warrant on disk. Reports, never repairs."""
+def audit(root, expect=None) -> dict:
+    """Verify every warrant on disk and reconcile the roll. Reports, never repairs.
+
+    `expect` is the fingerprint the OPERATOR holds, out of band. Without it this
+    function cannot tell a genuine anchor from one an attacker rewrote: a panel replaced
+    both files in `trust/` with its own key, minted three names and got a clean audit,
+    because every check inside this module is consistent with whatever `trust/` says.
+    `trust/` is writable by every agent and is not tracked by git. THE ANCHOR IS
+    SELF-REFERENTIAL UNLESS A HUMAN SUPPLIES THE FINGERPRINT, so without `expect` this
+    report is explicitly marked unverified rather than clean.
+    """
     out = {"enrolled": is_enrolled(root), "anchor": None, "warrants": [],
            "unsigned": [], "invalid": [], "ok": 0}
     if not out["enrolled"]:
@@ -594,6 +659,21 @@ def audit(root) -> dict:
     if rec["orphans"]:
         out["ALARM"] = (f"{len(rec['orphans'])} row(s) on the roll trace to no verified "
                         "warrant. Something wrote the roll outside the gate.")
+    if expect:
+        expect = str(expect).strip()
+        out["anchor_matches_operator"] = (expect == out["anchor"])
+        if not out["anchor_matches_operator"]:
+            out["ALARM"] = (f"TRUST ROOT REPLACED: this harness is anchored to "
+                            f"{out['anchor']}, the operator expects {expect}. Every "
+                            "warrant below verifies against the WRONG key. Treat the "
+                            "whole roll as forged.")
+    else:
+        out["anchor_matches_operator"] = None
+        out["UNVERIFIED"] = (
+            "No --expect fingerprint supplied, so this report cannot distinguish the "
+            "operator's anchor from one an attacker wrote. trust/ is writable by every "
+            "agent and untracked by git. Re-run with --expect SHA256:... to make this "
+            "an audit rather than a self-consistency check.")
     return out
 
 
@@ -626,7 +706,9 @@ def main(argv=None) -> int:
     a = sub.add_parser("apply", help="verify then write the warrant into the roll")
     a.add_argument("--warrant", required=True)
 
-    sub.add_parser("audit", help="verify every warrant AND reconcile the roll")
+    au = sub.add_parser("audit", help="verify every warrant AND reconcile the roll")
+    au.add_argument("--expect", help="the fingerprint YOU hold, out of band; "
+                                     "without it this is only a self-consistency check")
     sub.add_parser("reconcile", help="can every roll row be traced to a warrant?")
     sub.add_parser("anchor", help="print the fingerprint to verify out of band")
 
@@ -650,7 +732,10 @@ def main(argv=None) -> int:
             print(json.dumps(apply_warrant(root, args.warrant), indent=2,
                              ensure_ascii=False))
         elif args.cmd == "audit":
-            print(json.dumps(audit(root), indent=2, ensure_ascii=False))
+            out = audit(root, args.expect)
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+            if out.get("ALARM"):
+                return 3
         elif args.cmd == "reconcile":
             out = reconcile(root)
             print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -661,6 +746,10 @@ def main(argv=None) -> int:
     except (TrustError, ValueError) as exc:
         print(f"refused: {exc}", file=sys.stderr)
         return 2
+    except Exception as exc:                      # a detector must never die silently
+        print(f"DETECTOR FAILED, treat as unverified: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        return 4
     return 0
 
 

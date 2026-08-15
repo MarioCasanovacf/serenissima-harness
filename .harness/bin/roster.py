@@ -34,7 +34,9 @@ says in its own output that it decides nothing.
 
 NO CONSEQUENCE ATTACHES. Nothing here varies a burden, a weight, a discount, a quorum or
 a permission by standing. PR-022 clause 4 ("NO CONSEQUENCE ATTACHES. NONE") and PR-026
-clause 5 forbid it at tier 1. `.harness/tests/test_roster.py` asserts that no exported
+clause 3 forbid it at tier 1 -- clause 3 is the one that forbids automatic demotion;
+an earlier version of this docstring cited clause 5, which is the procedure for LIFTING
+those refusals. Third miscitation of a tier-1 record caught by a panel in this file. `.harness/tests/test_roster.py` asserts that no exported
 callable takes a threshold, gate, weight, burden or permission parameter. That test is a
 real file with a real assertion: the previous version of this docstring cited it while it
 did not exist, which the panel found and which is repaired here.
@@ -209,9 +211,16 @@ def require_warrant(root, by: str, verb: str, subject=None) -> None:
     import warrant as _w  # lazy: warrant.py imports this module lazily too, no cycle
 
     try:
-        payload = _w.verify_warrant(root, wid)["payload"]
+        v = _w.verify_warrant(root, wid)
     except Exception as exc:                      # TrustError and anything ssh raises
         raise KeyError(f"{verb} refused: warrant {wid!r} does not verify -- {exc}")
+    if v["expired"]:
+        # apply_warrant checked this; require_warrant did not, so an expired warrant
+        # was refused by the front door and accepted through roster.py directly. That
+        # voided --valid-until's whole stated purpose (D-20 DIS-4, blast radius).
+        raise KeyError(f"{verb} refused: warrant {wid} expired at "
+                       f"{v['payload'].get('valid_until')}")
+    payload = v["payload"]
 
     if not _w.authorizes(payload, verb, subject):
         raise KeyError(
@@ -245,7 +254,7 @@ def charter(colegiado: str, incentive: str, by: str, root=None) -> dict:
     willing to type the original author's name still gets through.
     """
     root = resolve_root() if root is None else pathlib.Path(root)
-    require_warrant(root, by, "charter", norm(colegiado))
+    require_warrant(root, by, "charter", f"{norm(colegiado)}|{norm(incentive)}")
     colegiado = norm(colegiado)
     incentive = str(incentive).strip()
     if not incentive:
@@ -279,7 +288,7 @@ def plazas(epic: str, colegiado: str, role: str, count: int, by: str, root=None)
     """
     root = resolve_root() if root is None else pathlib.Path(root)
     require_warrant(root, by, "plazas",
-                    f"{norm(epic)}|{norm(colegiado)}/{norm(role)}")
+                    f"{norm(epic)}|{norm(colegiado)}/{norm(role)}={count}")
     epic, colegiado, role = norm(epic), norm(colegiado), norm(role)
     if not isinstance(count, int) or isinstance(count, bool):
         raise ValueError("count must be an integer")
@@ -319,7 +328,8 @@ def issue(name: str, colegiado: str, role: str, epic: str, by: str,
     the roll. That is the defect this guard exists to close.
     """
     root = resolve_root() if root is None else pathlib.Path(root)
-    require_warrant(root, by, "issue", f"{norm(epic)}|{norm(name)}")
+    require_warrant(root, by, "issue",
+                    f"{norm(epic)}|{norm(name)}@{norm(colegiado)}/{norm(role)}")
     name, colegiado, role, epic = norm(name), norm(colegiado), norm(role), norm(epic)
     persona = str(persona).strip()
     if len(persona) > PERSONA_MAX:

@@ -13,10 +13,15 @@ made unprofitable, self-evident and adjudicable:
 
   DIS-1  FORK DETECTION IS MECHANICAL, NOT A JUDGEMENT -- AND IT CATCHES LESS THAN THE
          FIRST VERSION OF THIS PARAGRAPH CLAIMED. Every act by name N embeds the hash of
-         N's previous act, so two acts sharing one predecessor is a FORK. Where BOTH
-         branches carry a valid signature, that is proof two parties held the key.
-         Where they do not, it is divergence and nothing more: a blind panel fabricated
-         a fork with no key at all, for two write_text calls.
+         N's previous act, so two acts sharing one predecessor is a FORK.
+
+         RETRACTED. This paragraph once read "proof that two parties held the key".
+         That proposition is FALSE and a second panel disproved it: one party signing
+         twice from one predecessor produces an identical artefact, and the panel got
+         exactly that from six ordinary `sign` calls with a single key. A fork is
+         evidence of DIVERGENCE and nothing stronger. Where a branch does not verify it
+         is weaker still, because a fork is fabricable with no key at all, for two
+         write_text calls.
 
          WHAT IT DOES NOT CATCH, measured: a forger who uses the shipped `sign` verb
          appends at the current tip like everyone else and leaves NO fork. Four acts,
@@ -94,7 +99,9 @@ def acts_dir(root, name=None) -> pathlib.Path:
 
 
 def enrolled_keys(root) -> dict:
-    return hc.read_json(w.trust_dir(root) / "agent_keys.json", default={}) or {}
+    """Delegates to warrant.enrolled_keys, which DERIVES the set from verified warrants.
+    This module used to read a cache file a panel simply appended to."""
+    return w.enrolled_keys(root)
 
 
 def digest(path) -> str:
@@ -181,6 +188,14 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
     # reintroduced in the module that is supposed to BE the evidentiary record. Worse,
     # the collisions overwrote each other's files, so the forks DIS-1 exists to catch
     # were destroyed by the same bug: 0 detections in 20 trials.
+    # THE WHOLE read-decide-create-WRITE runs under the same guard roster.issue uses.
+    # Two panels found two different defects here. The first build had no guard at all
+    # and silently lost 75 of 100 concurrent acts, destroying the very forks DIS-1
+    # exists to detect. The second build guarded the seq computation and the O_EXCL
+    # create but released the guard BEFORE writing the JSON body, so a concurrent
+    # signer read a zero-byte file, chain() filed it unparseable, head() skipped it and
+    # returned a stale prev -- manufacturing a FORK from a single party signing twice,
+    # which the tool then printed as proof that two parties held the key.
     with roster._guard(root):
         seq = 1 + max((int(q.stem) for q in d.glob("*.json") if q.stem.isdigit()),
                       default=-1)
@@ -195,21 +210,23 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
                 seq += 1
                 continue
             break
-    act = {
-        "schema_version": SCHEMA_VERSION,
-        "name": name,
-        "seq": seq,
-        "kind": kind,
-        "ref": ref,
-        "body": body if body is not None else {},
-        "prev": prev,
-        "ts": hc.now_iso(),
-        "namespace": NAMESPACE,
-        "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to "
-                                        "the signing name, never to the process",
-    }
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(json.dumps(act, indent=2, ensure_ascii=False) + "\n")
+        act = {
+            "schema_version": SCHEMA_VERSION,
+            "name": name,
+            "seq": seq,
+            "kind": kind,
+            "ref": ref,
+            "body": body if body is not None else {},
+            "prev": prev,
+            "ts": hc.now_iso(),
+            "namespace": NAMESPACE,
+            "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to "
+                                            "the signing name, never to the process",
+        }
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(act, indent=2, ensure_ascii=False) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
     r = subprocess.run(["ssh-keygen", "-Y", "sign", "-f", str(key), "-n", NAMESPACE,
                         str(path)], text=True, capture_output=True)
     if r.returncode != 0:
@@ -280,9 +297,12 @@ def verify_name(root, name) -> dict:
                           "verified": s["_path"] not in unverified}
                          for s in siblings],
             "all_branches_verified": all_verified,
-            "PROOF": (
-                "every branch carries a valid signature by this name's enrolled key, so "
-                "two parties held that key. Mechanical, not a judgement (DIS-1)."
+            "MEANS": (
+                "DIVERGENCE, signed. Every branch carries a valid signature by this "
+                "name's enrolled key, so the branches were produced by whoever held it "
+                "-- which may be ONE party signing twice from one predecessor, and is "
+                "indistinguishable from two. An earlier version called this proof that "
+                "two parties held the key; that proposition is false and is retracted."
                 if all_verified else
                 "DIVERGENCE ONLY, NOT PROOF: at least one branch does not verify, and "
                 "anyone can write an unsigned file with no key at all. A blind panel "

@@ -593,11 +593,21 @@ Prevention is off the table (D-17). These five make forgery unprofitable, self-e
 and adjudicable, without an automatic consequence (PR-022 clause 4) and without waiting
 on a sleeping operator (AF-5).
 
-**DIS-1. Fork detection is mechanical, not a judgement.** Every act signed by name N
-embeds the hash of N's previous act. Two acts sharing one predecessor is a FORK, which
-is unforgeable proof that two parties held the key. Nobody has to believe anybody. This
-is the detector the refused appeal's G2 promised and never built; it is now cryptographic
-instead of procedural.
+**DIS-1. Fork detection is mechanical, not a judgement -- and it means LESS than this
+paragraph first claimed.** Every act signed by name N embeds the hash of N's previous
+act, so two acts sharing one predecessor is a FORK, computed rather than believed.
+
+RETRACTED, 2026-08-15, after a second blind panel: the original text read "unforgeable
+proof that two parties held the key". That proposition is FALSE. One party signing twice
+from one predecessor produces an artefact identical to two parties doing it, and the
+panel generated exactly that from six ordinary `sign` calls with one key. A fork is
+evidence of DIVERGENCE. Where a branch does not verify it is weaker still: a fork is
+fabricable with no key at all, for two write_text calls.
+
+Also measured: a forger who uses the shipped `sign` verb appends at the current tip and
+leaves NO fork. DIS-1 detects concurrent signing and retroactive insertion, not forgery
+in general. The refused appeal's G2 promised a two-claimants detector; this is narrower
+than that promise and the promise must not be re-made on its behalf.
 
 **DIS-2. Credit follows the signature, always.** Every reputational and economic effect
 accrues to the SIGNING name. Forging as A therefore credits A. Forgery cannot enrich the
