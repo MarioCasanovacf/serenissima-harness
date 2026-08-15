@@ -95,15 +95,34 @@ class Convergence(unittest.TestCase):
         self.assertEqual(c["typed_load_bearing_eligible"], 0)
 
     def test_a_falling_typed_share_reads_as_DIVERGING(self):
+        """Both halves must clear MIN_WINDOW_EDGES or no direction is named."""
+        n = currency.MIN_WINDOW_EDGES
         early = [rec(f"PR-{i:03d}", "a",
-                     relations=[{"target": "PR-000", "type": "follows"}])
-                 for i in range(1, 5)]
-        late = [rec(f"PR-{i:03d}", "b", cites=["PR-000"]) for i in range(5, 9)]
+                     relations=[{"target": f"PR-9{j:02d}", "type": "follows"}
+                                for j in range(2)])
+                 for i in range(1, n + 1)]
+        late = [rec(f"PR-{i:03d}", "b", cites=[f"PR-9{j:02d}" for j in range(2)])
+                for i in range(n + 1, 2 * n + 1)]
         with tempfile.TemporaryDirectory() as tmp:
-            root = build(tmp, [rec("PR-000", "z")] + early + late)
+            root = build(tmp, early + late)
             c = currency.convergence(currency.load_records(root))
+        self.assertTrue(c["drift_is_reportable"])
         self.assertLess(c["drift_share_typed"], 0)
         self.assertIn("DIVERGING", c["DIRECTION"])
+
+    def test_a_thin_window_refuses_to_name_a_direction(self):
+        """The live registry's second half carries 6 edges. The first version of this
+        tool called that `converging` and the figure reached the operator as a trend."""
+        early = [rec(f"PR-{i:03d}", "a", cites=["PR-900"]) for i in range(1, 30)]
+        late = [rec(f"PR-{i:03d}", "b",
+                    relations=[{"target": "PR-900", "type": "follows"}])
+                for i in range(30, 33)]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build(tmp, early + late)
+            c = currency.convergence(currency.load_records(root))
+        self.assertFalse(c["drift_is_reportable"])
+        self.assertIn("NOT REPORTABLE", c["DIRECTION"])
+        self.assertIsNotNone(c["drift_share_typed"], "the number still prints")
 
 
 class Concentration(unittest.TestCase):

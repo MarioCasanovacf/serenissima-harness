@@ -64,6 +64,7 @@ import harness_common as hc  # noqa: E402
 
 DEFAULT_ROOT = hc.HARNESS
 TYPED_LOAD_BEARING = ("follows", "reinterprets")
+MIN_WINDOW_EDGES = 20   # below this a half-window share is noise, not a trend
 NO_THRESHOLD = ("NO THRESHOLD RATIFIED: PR-023 clause 5 conditions Phase B on this "
                 "indicator but defines no failing point. This tool reports the "
                 "measures and refuses to invent one.")
@@ -125,6 +126,12 @@ def convergence(records: dict) -> dict:
     drift = None
     if early["share_typed"] is not None and late["share_typed"] is not None:
         drift = round(late["share_typed"] - early["share_typed"], 3)
+    # A share computed on a handful of edges is not a trend. The first version of this
+    # function named a DIRECTION off a second half holding six edges, and the direction
+    # was reported to the operator as "converging". That is the exact defect this epic
+    # exists to remove: a figure whose denominator is too small to carry it.
+    thin = min(early["typed"] + early["bare"], late["typed"] + late["bare"])
+    drift_is_reportable = thin >= MIN_WINDOW_EDGES
 
     return {
         "citation_edges_total": total,
@@ -134,7 +141,13 @@ def convergence(records: dict) -> dict:
         "first_half": early,
         "second_half": late,
         "drift_share_typed": drift,
+        "min_window_edges": thin,
+        "drift_is_reportable": drift_is_reportable,
         "DIRECTION": (
+            f"NOT REPORTABLE: the thinner half carries {thin} citation edges, below the "
+            f"{MIN_WINDOW_EDGES} this tool requires before naming a direction. A share "
+            "computed on a handful of edges is not a trend."
+            if drift is not None and not drift_is_reportable else
             "unknown (too few records to split)" if drift is None else
             "converging: typed citations are gaining on bare name-drops" if drift > 0 else
             "flat" if drift == 0 else
@@ -263,6 +276,7 @@ def render(out: dict) -> None:
     print(f"  primera mitad     {c['first_half']['share_typed']}   "
           f"segunda mitad {c['second_half']['share_typed']}   "
           f"deriva {c['drift_share_typed']}")
+    print(f"  aristas min. mitad {c['min_window_edges']}")
     print(f"  direccion         {c['DIRECTION']}")
     print()
     print("A.8.2  CONCENTRACION SIN TRABAJO VERIFICADO")
