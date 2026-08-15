@@ -57,6 +57,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -64,6 +65,30 @@ import harness_common as hc  # noqa: E402
 
 DEFAULT_ROOT = hc.HARNESS
 TYPED_LOAD_BEARING = ("follows", "reinterprets")
+
+# DEFECT CONVERGENCE-DENOMINATOR-A, found by the third blind panel's mechanism lens.
+# A.8.1 asks what share of citation EDGES is typed. A relation target must be a record id
+# or a decision anchor -- precedent.py's PR_RE and DECISION_RE, and `--revalues target must
+# be a PR-NNN record, decision: tokens are ...`. But `cites` accepts far more: task ids,
+# policy ids, event tokens, and file paths with line ranges (PATH_RE). Counting those in
+# the denominator asks what share of a set is typed when most of that set can NEVER be
+# typed. On the live registry 15 of 30 bare tokens are structurally ineligible -- T-302,
+# P-023, `ORCHESTRATION.md:58-67`, `.harness/state.json:846` -- so the headline read 0.286
+# when the answerable question reads 0.444. The bias runs toward making the currency look
+# sicker than it is, which is the direction that manufactures an emergency.
+_TYPEABLE_RECORD = re.compile(r"^PR-\d{3,}$")
+_TYPEABLE_DECISION = re.compile(r"^decision:T-\d{3,}#[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def is_typeable(target) -> bool:
+    """Could this citation target EVER carry a follows/reinterprets relation?
+
+    Mirrors precedent.py's accepted relation-target grammar. A token that fails this can
+    be cited but can never be typed, so counting it against the typed share measures the
+    citation vocabulary rather than the citation economy.
+    """
+    t = str(target or "").strip()
+    return bool(_TYPEABLE_RECORD.match(t) or _TYPEABLE_DECISION.match(t))
 MIN_WINDOW_EDGES = 20   # below this a half-window share is noise, not a trend
 NO_THRESHOLD = ("NO THRESHOLD RATIFIED: PR-023 clause 5 conditions Phase B on this "
                 "indicator but defines no failing point. This tool reports the "
@@ -121,6 +146,12 @@ def convergence(records: dict) -> dict:
 
     typed, bare = len(typed_pairs), len(bare_pairs)
     total = typed + bare
+    # CONVERGENCE-DENOMINATOR-A. Of the bare pairs, how many name a target that could
+    # ever carry a typed relation at all? Both denominators print, per M-1, because
+    # substituting one for the other silently would be its own defect.
+    bare_typeable = len([p for p in bare_pairs if is_typeable(p[1])])
+    bare_never = bare - bare_typeable
+    answerable = typed + bare_typeable
     half = len(per_record) // 2
     def window(rows):
         t = sum(r["typed"] for r in rows)
@@ -143,6 +174,18 @@ def convergence(records: dict) -> dict:
         "typed_load_bearing_eligible": typed,
         "bare_name_drop": bare,
         "share_typed": round(typed / total, 3) if total else None,
+        "bare_that_could_never_be_typed": bare_never,
+        "citation_edges_typeable": answerable,
+        "share_typed_of_typeable": (round(typed / answerable, 3) if answerable else None),
+        "denominator_note": (
+            "share_typed divides by EVERY citation edge; share_typed_of_typeable divides "
+            "only by edges whose target could ever carry a follows/reinterprets relation. "
+            f"{bare_never} bare edge(s) name a task id, a policy id, an event token or a "
+            "file path with a line range -- citable, never typeable. The first figure "
+            "answers 'what share of everything a record points at is typed', which mixes "
+            "citation vocabulary into a measure of citation economy; the second answers "
+            "the question A.8.1 is asking. The first is biased DOWNWARD, i.e. toward "
+            "making the currency look sicker than it is."),
         "first_half": early,
         "second_half": late,
         "drift_share_typed": drift,
@@ -219,11 +262,17 @@ def concentration(records: dict) -> dict:
         "top3_share": share(3),
         "signal_1_confirmations_total": confirmed_total,
         "signal_1_is_degenerate": confirmed_total == 0,
+        # The claim is conditioned on there BEING records. The third blind panel caught
+        # this printing "0 confirmations across the whole registry" over an empty
+        # registry -- an unconditional assertion about a registry it never read.
         "signal_1_note": (
-            "0 confirmations across the whole registry means PR-015's distinct-identity "
-            "floor has never once been exercised. Reported, not interpreted: a measure "
-            "that separates nobody from anybody is not measuring, which is why signal 2 "
-            "exists." if confirmed_total == 0 else None),
+            f"0 confirmations across all {total} record(s) means PR-015's "
+            "distinct-identity floor has never once been exercised here. Reported, not "
+            "interpreted: a measure that separates nobody from anybody is not measuring, "
+            "which is why signal 2 exists."
+            if confirmed_total == 0 and total else
+            "no records read, so nothing is asserted about confirmations"
+            if not total else None),
         "ranking": [{"identity": who, "records": len(recs),
                      "confirmed_by_another": len(confirmed_for.get(who, [])),
                      "built_on_by_another": len(built_on.get(who, set())),
@@ -443,7 +492,10 @@ def render(out: dict) -> None:
     print(f"  aristas de cita   {c['citation_edges_total']}")
     print(f"  tipadas           {c['typed_load_bearing_eligible']}")
     print(f"  menciones simples {c['bare_name_drop']}")
-    print(f"  share tipado      {c['share_typed']}")
+    print(f"  share tipado      {c['share_typed']}   (denominador: todas las aristas)")
+    print(f"  share tipado util {c['share_typed_of_typeable']}   (denominador: "
+          f"{c['citation_edges_typeable']} aristas tipables; "
+          f"{c['bare_that_could_never_be_typed']} nunca podrian tiparse)")
     print(f"  primera mitad     {c['first_half']['share_typed']}   "
           f"segunda mitad {c['second_half']['share_typed']}   "
           f"deriva {c['drift_share_typed']}")
