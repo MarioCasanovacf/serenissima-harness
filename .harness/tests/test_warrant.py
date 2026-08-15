@@ -823,5 +823,88 @@ class SecondPanelRegressions(GateCase):
         self.assertNotIn("unforgeable proof that two parties held the key", record)
 
 
+class ThirdPanelRegressions(GateCase):
+    """The third blind panel found that BOTH detectors go silent on an un-enrolled
+    harness, which is the state an attacker produces by deleting one untracked
+    directory. The previous repair fixed `audit` to look at the roll; it left the
+    early return that fires before `audit` looks at anything at all."""
+
+    def test_expect_on_an_unenrolled_harness_is_an_alarm_not_a_clean_report(self):
+        """DEFECT AUDIT-EXPECT-DISCARDED. `audit --expect SHA256:anything` returned
+        {"enrolled": false} and exit 0 -- the fingerprint was read, discarded and never
+        compared, because the un-enrolled early return sat above the expect block.
+        Three states produced identical silence: un-enrolled, forged-root-without-expect,
+        and genuine-root-with-matching-expect."""
+        out = w.audit(self.root, expect="SHA256:" + "Z" * 43)
+        self.assertFalse(out["enrolled"])
+        self.assertIn("ALARM", out, "a false operator assertion must be loud")
+        self.assertIn("NO TRUST ROOT", out["ALARM"])
+        self.assertIs(out["anchor_matches_operator"], False)
+        self.assertTrue(out["expect_supplied"])
+
+    def test_the_alarm_reaches_the_exit_code(self):
+        """A detector nothing keys on is decoration. main() returns 3 on ALARM, so the
+        fix has to travel all the way to the shell, not just into the JSON."""
+        rc = w.main(["--root", str(self.root), "audit",
+                     "--expect", "SHA256:" + "Z" * 43])
+        self.assertEqual(rc, 3)
+
+    def test_unenrolled_without_expect_stays_exit_zero_and_says_not_assessed(self):
+        """The asymmetry is the whole design: silence when nobody claimed anything,
+        alarm when someone claimed and the claim is false. Before enrolment there is no
+        flag day, so this path must NOT start failing."""
+        out = w.audit(self.root)
+        self.assertNotIn("ALARM", out)
+        self.assertIn("UNVERIFIED", out)
+        self.assertIsNone(out["anchor_matches_operator"])
+        self.assertFalse(out["expect_supplied"])
+        self.assertEqual(w.main(["--root", str(self.root), "audit"]), 0)
+
+    def test_the_downgrade_attack_no_longer_reads_as_clean(self):
+        """DEFECT RECONCILE-SILENT-UNENROLLED. Enroll, mint an unwarranted name, then
+        delete trust/. reconcile used to answer {"orphans": [], "checked": 0} with no
+        `clean` key, which every caller read as clean while the illegitimate row sat
+        untouched on the roll. trust/ is untracked, so the deletion leaves no trace in
+        `git status` either. This is the exact sequence reconcile's own docstring names.
+        """
+        import roster
+        self.full_warrant()
+        roster.load(self.root)                       # roll now holds warranted rows
+        before = w.reconcile(self.root)
+        self.assertTrue(before["clean"])
+        self.assertGreater(before["checked"], 0)
+
+        for p in sorted(w.trust_dir(self.root).iterdir()):
+            p.unlink()
+        w.trust_dir(self.root).rmdir()
+
+        after = w.reconcile(self.root)
+        self.assertFalse(after["enrolled"])
+        self.assertIsNone(after["clean"], "NOT ASSESSED must never read as clean")
+        self.assertGreater(after["roll_rows_unbacked"], 0,
+                           "the rows survived the deletion and must be counted")
+        self.assertIn("UN-ENROLLED", after["note"])
+        # and the verb that DOES refuse it, with the operator's real fingerprint
+        alarm = w.audit(self.root, expect="SHA256:" + "Q" * 43)
+        self.assertIn("ALARM", alarm)
+
+    def test_records_are_not_issued_under_warrants_and_nothing_pretends_they_are(self):
+        """The panel's condition-(a) finding: `reconcile` walks roster.json, while every
+        standing figure is computed from precedents/PR-*.json:published_by. There is no
+        join. Any future clause claiming a figure is 'computed from records issued under
+        warrants' names a relationship that does not exist, and this test fails the day
+        someone wires one without saying so."""
+        import ast
+        src = (ROOT / ".harness" / "bin" / "precedent.py").read_text(encoding="utf-8")
+        imported = set()
+        for node in ast.walk(ast.parse(src)):
+            if isinstance(node, ast.Import):
+                imported.update(a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+        self.assertNotIn("warrant", imported)
+        self.assertNotIn("roster", imported)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

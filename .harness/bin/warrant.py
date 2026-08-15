@@ -444,7 +444,28 @@ def reconcile(root) -> dict:
     out = {"enrolled": is_enrolled(root), "orphans": [], "checked": 0,
            "warrants_verified": [], "warrants_invalid": []}
     if not out["enrolled"]:
-        out["note"] = "un-enrolled: every row is bookkeeping and nothing is claimed"
+        # DEFECT RECONCILE-SILENT-UNENROLLED, found by the third blind panel, and the
+        # docstring above named the attack this branch enabled: "an agent that moves
+        # trust/root.pub aside, mints freely and moves it back". Moving it aside is
+        # enough on its own. This branch used to return {"orphans": [], "checked": 0}
+        # with no `clean` key at all, which every caller read as clean -- while the
+        # illegitimate rows sat untouched on the roll. It reported zero orphans by
+        # virtue of having examined zero rows, and did not say so.
+        data = roster.load(root)
+        rows = (len(data.get("colegiados", {}) or {})
+                + sum(len(b or {}) for b in (data.get("plazas", {}) or {}).values())
+                + len(data.get("names", {}) or {}))
+        out["roll_rows_unbacked"] = rows
+        out["clean"] = None                    # NOT ASSESSED. Never True, never False.
+        out["note"] = (
+            "UN-ENROLLED: there is no trust root, so this function checked NOTHING and "
+            f"no row on the roll is backed by a warrant. All {rows} row(s) are unbacked. "
+            "Read `clean: null` as NOT ASSESSED, never as clean. Exit stays 0 because "
+            "before enrolment this is the honest state and there is no flag day -- but "
+            "if this harness WAS enrolled, trust/ has been removed, it is untracked by "
+            "git, and that deletion leaves no trace in `git status`. "
+            "`audit --expect <your fingerprint>` is the verb that refuses this state; "
+            "reconcile alone cannot tell 'not yet built' from 'just torn down'.")
         return out
 
     authorized = {"charter": set(), "plazas": set(), "issue": set()}
@@ -636,10 +657,40 @@ def audit(root, expect=None) -> dict:
     report is explicitly marked unverified rather than clean.
     """
     out = {"enrolled": is_enrolled(root), "anchor": None, "warrants": [],
-           "unsigned": [], "invalid": [], "ok": 0}
+           "unsigned": [], "invalid": [], "ok": 0,
+           "expect_supplied": bool(expect)}
     if not out["enrolled"]:
         out["note"] = ("un-enrolled: the harness has no trust root, so roster.py is "
                        "bookkeeping only and PR-023's gate remains closed")
+        # DEFECT AUDIT-EXPECT-DISCARDED, found by the third blind panel. This early
+        # return used to sit ABOVE the `if expect:` block below, so `audit --expect
+        # SHA256:anything-at-all` read the operator's fingerprint, discarded it, printed
+        # no ALARM, printed no UNVERIFIED, and exited 0. Three distinct states all
+        # produced "no ALARM": un-enrolled, forged-root-without-expect, and
+        # genuine-root-with-matching-expect. Only the third is the state a caller means.
+        # Supplying --expect is an ASSERTION BY THE OPERATOR that this harness is
+        # anchored. An assertion that turns out false is the loudest thing this module
+        # can encounter, not the quietest.
+        if expect:
+            out["anchor_matches_operator"] = False
+            out["ALARM"] = (
+                f"NO TRUST ROOT. The operator supplied fingerprint "
+                f"{str(expect).strip()}, which asserts this harness is anchored. It is "
+                "not: trust/root.pub is absent, so there is nothing to compare against "
+                "and every row on the roll was written outside the gate. An un-enrolled "
+                "harness is not a clean audit, it is an unbuilt one. And if this harness "
+                "WAS enrolled before, the root has been REMOVED: trust/ is untracked by "
+                "git, so deleting it leaves no trace in `git status` and downgrades every "
+                "detector in this module to silence.")
+        else:
+            # No claim was made, so no claim is refuted. Exit stays 0 here on purpose:
+            # before enrolment this is the honest, expected state and there is no flag
+            # day. The report still refuses to call itself verified.
+            out["anchor_matches_operator"] = None
+            out["UNVERIFIED"] = (
+                "No --expect fingerprint supplied AND no trust root present. This report "
+                "asserts nothing about anchors because there is no anchor and nobody "
+                "claimed there was one. Read it as NOT ASSESSED, never as clean.")
         return out
     out["anchor"] = check_anchor(root)
     wd = warrants_dir(root)
