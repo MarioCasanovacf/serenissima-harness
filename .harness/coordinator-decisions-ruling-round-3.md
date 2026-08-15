@@ -231,3 +231,117 @@ T-349 quarterly watch (next due 2026-11-10). T-365 generation-6 audit. T-376 rep
 The `docs/` gitignore is deliberate and stays: the operator-local material there is not a
 candidate for tracking, which is precisely why the D1 exit is a signed attestation in the
 repository rather than a file move.
+
+---
+
+# Ruling round 3.2 (operator, 2026-08-15): the five post-panel decisions
+
+## D8. The three-function test: preserved as a design objective. HOW is the open part.
+
+**RULING: concurred with the panel.** Not the operative failing point; kept as an
+objective. Operator's follow-up, verbatim: *"Lo que el panel no me contesta es cómo lo
+implementamos."* The panel ruled on WHETHER. The mechanism is the coordinator's to supply.
+
+**MECHANISM: it goes in `dicta`, never in `ratio`, and that distinction is not cosmetic.**
+
+In this layer `ratio` is the holding and it BINDS on publication; `dicta` is reasoning that
+travels with a record and persuades without binding. That is the whole ratio/obiter
+distinction the precedent layer was built on, and it is the exact instrument for "true and
+worth remembering, but not operative". PR-022 already uses it this way: its dicta names
+`docs/serenissima-addendum-ii...` as the operator text the ratio enacts, precisely because
+that file is gitignored and would dangle as a binding anchor.
+
+Concretely, when the A.8 docket next produces a record:
+- The ratio carries the A.8.3 measures and the standing refusal, NO THRESHOLD RATIFIED.
+- The dicta carries the three functions, with three things stated in the dicta itself so a
+  later session cannot promote it by accident: (i) that it is a design objective and NOT a
+  failing point; (ii) that medium-of-exchange is unsatisfiable while standing is derived on
+  read, so ratifying it as operative would bar Phase B by definition; (iii) the diagnosis
+  it produced and that nothing else did — this system has an asset with no scarcity
+  constraint, because a citation depletes nobody.
+- `validity_conditions` names the condition under which it could ever become operative: a
+  transfer primitive existing, which D-22 IMP-1 says must not.
+
+The safeguard is that promotion from dicta to ratio is not a text edit anyone can make.
+`ratio` is immutable under SDR-01 and no verb in `precedent.py` edits one, so promoting it
+requires a new tier-1 record that overrules, which PR-019 forces to embed the displaced
+ratio verbatim. The objective cannot become a test quietly.
+
+## D9. PR-026 clause 3: docket OPENED, and the panel convened.
+
+**RULING: open it.** Operator, verbatim: *"si no la abrimos, no vamos a poder tener sistema
+económico ni fiscal. ¿Cómo evitamos que tengamos cebadores de arquitectura? Necesito que el
+panel me traiga argumentos."*
+
+Note what was asked for: ARGUMENTS, both sides, not a verdict. Four lenses convened, none
+aware of the others, before any instrument is drafted rather than after — the inverse of
+the PR-022 sequence, and deliberately so. Lenses: constitutional path (is a lift even
+required, and if so what is the instrument); mechanism design (the chilling effect, and
+what the machine computes versus what an agent decides); attack (the operator's gaming
+worry, including whether an attacker can engineer an overruling to damage citers it
+dislikes); comparative institutions plus the case for NOT opening.
+
+The question posed: can a typed citation carry a real cost to the CITER without producing
+the harms PR-026 refuses? The load-bearing sub-question the coordinator put to the
+constitutional lens: clause 3 forbids demotion "by computed standing alone", so a liability
+firing on an ADJUDICATED overruling may not touch clause 3 at all — it may be exactly what
+clause 4 blesses. If that reading holds, the docket needs no lift. If it does not, it is
+word-play routing around a refusal, which is the move the prior panel condemned.
+
+## D10. The three A.8.3 measures: BUILT.
+
+**RULING: build.** Done, shipped in `currency.py` as `structure()`. Read-only, no verdict,
+NO THRESHOLD RATIFIED preserved.
+
+Live values: breadth **4 of 42** ordered pairs (0.095); issued from outside the incumbent
+set **0 of 12** (0.0); liveness **0** typed citations in the trailing 25 records, marked
+NOT REPORTABLE; reciprocity **2 of 4** realized pairs lie on a mutual edge (0.5).
+
+**A measurement defect was caught before it shipped and both figures now print.** The
+panel's literal words were "the share issued from outside the top-3 BY AUTHORSHIP".
+Computed literally on this registry that returns **0.417**, which reads as a mostly-open
+economy and is an artifact: the top-3 by authorship and the identities that actually
+participate are different sets here, because the largest publisher has never cited nor been
+cited while the 4th-largest issues a third of all citations. The measure that answers the
+question uses the INCUMBENTS — identities already holding a cross-author citation received
+— and returns 0.0. Both print, separately named, with the substitution stated, because
+silently replacing a panel's stated measure would be its own defect.
+
+Reciprocity prints `NOT_A_FINDING` on every path: this module cannot distinguish a genuine
+reciprocal citation from a manufactured one, no instrument in this harness can, and the
+panelist who raised it said the same of itself.
+
+Seven new tests, 22 total, OK. One asserts that bulk publication moves none of the three
+and LOWERS liveness, which is the attack that killed the previous candidate's
+store-of-value arm.
+
+## D11. Enrolment: stands, and the commands finally exist.
+
+**RULING: stands.** Operator, verbatim and pointed: *"pues sí, hay que ponerla en pie, pero
+es que yo no he tirado ningún código de Python ni el WordArt ni nada, ni he firmado nada
+porque no me has dicho que sea necesario."*
+
+That is the second time in this session the operator has had to say the commands were never
+supplied. The failure is the coordinator's and it is now closed:
+`.harness/OPERATOR-ENROLMENT.md`, every command run end to end against a sandbox before the
+file was written, with the real outputs quoted and the negative cases verified in both
+directions.
+
+Also verified in that run, and it settles D5 without new code: the `--name` grammar already
+carries an optional PERSONA field, and it lands INSIDE the signed payload and then in the
+roll. The human name is a field of the warrant the operator signs, never a separate alias
+map. D5 needs no implementation.
+
+Sequencing note: D6 required the third panel BEFORE enrolment. It ran, it found two silent
+detectors, both are repaired and pinned by regression tests. The precondition is satisfied.
+
+## D12. The amendment: ARCHIVED.
+
+**RULING: archive.** `draft-amendment-PR-022.md` carries a disposition header naming the
+three findings that are coordinator errors rather than bad luck, and preserves the text
+unchanged as the constancy of what was proposed. Nothing in it is in force.
+
+Recorded because it is the sharpest lesson available: §6 of that draft, "Why this draft
+should be REFUSED, stated by its own drafter", was written before the panel and anticipated
+NONE of the three errors. That is what a drafter's self-critique is worth without an
+adversary.

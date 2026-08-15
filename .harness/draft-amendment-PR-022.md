@@ -1,6 +1,40 @@
-# Draft amendment to PR-022, for the operator's review. NOT PUBLISHED.
+# Draft amendment to PR-022. ARCHIVED, NOT PUBLISHED, DOES NOT PROCEED.
 
-**Status:** DRAFT. No record exists. The drafter does not verdict its own draft (PR-015).
+> **DISPOSITION, 2026-08-15.** ARCHIVED by operator ruling — *"Yo creo que hay que
+> archivar la enmienda."* — following a unanimous 4-of-4 REFUSE from a blind panel of four
+> independent lenses. Full verdict: `.harness/panel-verdict-PR-022-amendment.md`.
+>
+> The text below is preserved UNCHANGED as the constancy of what was proposed and why it
+> failed. Nothing in it is in force. Three of the panel's findings are drafting errors by
+> the coordinator and are recorded here so the document is not read as merely unlucky:
+>
+> 1. **The single proposed consequence — a verification-burden discount — is the FIRST
+>    ITEM PR-023 clause 1 names as Phase B**, in the same three words. §5 below chose it as
+>    "the smallest consequence that is still a consequence" while §3 argued that PR-023
+>    must be satisfied rather than appealed. It is the item the gate names first.
+> 2. **PR-022 clause 6, quoted verbatim in §1 below and declared untouched in §2, forbids
+>    the proposal by name**: "no verification or confirmation burden varies by standing."
+>    The drafter transcribed the prohibition into its own draft and did not see it.
+> 3. **Condition (e) miscites PR-026 clause 3.** The verbatim text forbids demotion,
+>    suspension or exclusion "by computed standing alone". §4 reports the exclusion arm
+>    only and drops the operative qualifier, which is the exact mechanism the discount
+>    uses. The clause actually broken is clause 4: the machine flags, an agent decides.
+>
+> It is NOT repairable by redrafting the six conditions. Five findings are collisions with
+> active tier-1 records — PR-022 c6, PR-023 c1, PR-024 c3/c4, PR-025 c1/c3, PR-038 — that
+> no redraft touches. Any future attempt is a five-record displacement and must arrive as
+> one, with PR-019's verbatim embedding, before a panel holding the whole package.
+>
+> §6, "Why this draft should be REFUSED, stated by its own drafter", was written before the
+> panel and anticipated none of the three errors above. That is the measure of what a
+> drafter's self-critique is worth without an adversary.
+>
+> The live question moved elsewhere and is now on its own docket: can a typed citation be
+> made to cost the citer something, and is PR-026 clause 3 the record that has to move?
+
+---
+
+**Status:** ARCHIVED. No record exists and none will issue from this text.
 **Operator instruction:** *"Hay que enmendarlo con mucho cuidado."*
 **Why it is a draft and not a record:** PR-017 requires the amending record to land before
 any code computes a consequence, and PR-015 requires confirmation by a distinct identity.

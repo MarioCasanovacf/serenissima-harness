@@ -173,6 +173,107 @@ class Concentration(unittest.TestCase):
         self.assertEqual(k["top1_share"], 0.8)
 
 
+class Structure(unittest.TestCase):
+    """A.8.3, the three measures the third blind panel proposed after refusing the
+    three-functions-of-money candidate. Supply-side, non-circular, and none of them
+    satisfiable by bulk publication or by writing one sentence."""
+
+    def typed(self, rid, who, targets):
+        return rec(rid, who, relations=[{"target": t, "type": "follows"}
+                                        for t in targets])
+
+    def test_a_pair_needs_two_parties(self):
+        """Self-citation is excluded from the numerator AND the denominator. Counting it
+        would let one identity manufacture breadth alone."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build(tmp, [rec("PR-001", "a"),
+                               self.typed("PR-002", "a", ["PR-001"])])
+            b = currency.structure(currency.load_records(root))["A_8_3_1_breadth"]
+        self.assertEqual(b["ordered_pairs_realized"], 0)
+        self.assertEqual(b["excluded_from_pairs"]["self_citations"], 1)
+
+    def test_breadth_counts_ordered_pairs_not_edges(self):
+        """Three citations along one pair is still ONE pair. A ring cannot buy breadth
+        by citing harder; it has to recruit somebody new."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build(tmp, [rec("PR-001", "a"), rec("PR-002", "a"), rec("PR-003", "a"),
+                               self.typed("PR-004", "b", ["PR-001", "PR-002", "PR-003"])])
+            b = currency.structure(currency.load_records(root))["A_8_3_1_breadth"]
+        self.assertEqual(b["ordered_pairs_realized"], 1)
+        self.assertEqual(b["ordered_pairs_possible"], 2)      # 2 identities -> 2*1
+        self.assertEqual(b["share_realized"], 0.5)
+
+    def test_the_incumbent_measure_is_not_the_top3_measure(self):
+        """The defect caught before this shipped. The panel's literal words were 'outside
+        the top-3 by authorship'; on the live registry that returns 0.417 and reads as an
+        open economy, because the biggest publisher never cites and the 4th-biggest issues
+        a third of all citations. Both figures must print, and they must differ here."""
+        # The live shape: a bulk publisher who never touches the graph, and a SMALL
+        # publisher who is deep inside it. `z` is an incumbent (x cites it) but sits
+        # outside the top-3 by authorship, which is what pulls the two figures apart.
+        recs = [rec(f"PR-{i:03d}", "bulk") for i in range(1, 9)]      # 8, cites nobody
+        recs += [rec(f"PR-{i:03d}", "x") for i in range(10, 13)]      # 3
+        recs += [rec(f"PR-{i:03d}", "y") for i in range(20, 23)]      # 3
+        recs += [rec("PR-030", "z")]                                  # 1
+        recs += [self.typed("PR-013", "x", ["PR-030"]),               # x -> z
+                 self.typed("PR-031", "z", ["PR-010"])]               # z -> x
+        with tempfile.TemporaryDirectory() as tmp:
+            b = currency.structure(currency.load_records(
+                build(tmp, recs)))["A_8_3_1_breadth"]
+        self.assertEqual(sorted(b["incumbents"]), ["x", "z"])
+        self.assertIn("bulk", b["top3_by_authorship"])
+        self.assertNotIn("z", b["top3_by_authorship"])
+        self.assertEqual(b["share_issued_outside_incumbents"], 0.0,
+                         "nobody outside the clique has issued anything")
+        self.assertGreater(b["share_issued_outside_top3_by_authorship"], 0.0,
+                           "the panel's literal measure reads open on a closed graph")
+
+    def test_liveness_refuses_a_rate_on_a_thin_window(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build(tmp, [rec(f"PR-{i:03d}", "a") for i in range(1, 31)])
+            lv = currency.structure(currency.load_records(root))["A_8_3_2_liveness"]
+        self.assertEqual(lv["window_records"], currency.LIVENESS_WINDOW)
+        self.assertFalse(lv["REPORTABLE"])
+        self.assertEqual(lv["typed_issued_in_window"], 0)
+        self.assertIsNotNone(lv["typed_per_record"], "the number still prints")
+
+    def test_reciprocity_finds_the_mutual_pair_and_refuses_to_judge_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build(tmp, [rec("PR-001", "a"), rec("PR-002", "b"), rec("PR-003", "c"),
+                               self.typed("PR-010", "a", ["PR-002"]),
+                               self.typed("PR-011", "b", ["PR-001"]),
+                               self.typed("PR-012", "c", ["PR-001"])])
+            rc = currency.structure(currency.load_records(root))["A_8_3_3_reciprocity"]
+        self.assertEqual(rc["realized_pairs"], 3)
+        self.assertEqual(rc["pairs_on_a_mutual_edge"], 2)      # a<->b, both directions
+        self.assertEqual(rc["mutual_pairs"], ["a <-> b"])
+        self.assertIn("never a finding of wrongdoing", rc["NOT_A_FINDING"])
+
+    def test_structure_emits_no_verdict_either(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = currency.structure(currency.load_records(build(tmp, [rec("PR-001", "a")])))
+        self.assertIn("NO_THRESHOLD_RATIFIED", out)
+        blob = json.dumps(out).lower()
+        for banned in ('"pass"', '"fail"', '"failing": true', '"healthy"'):
+            self.assertNotIn(banned, blob)
+
+    def test_bulk_publication_does_not_move_any_of_the_three(self):
+        """The attack that killed the previous candidate's store-of-value arm: publish
+        volume, score maximally, prove nothing. None of A.8.3 may reward it."""
+        base = [rec("PR-001", "a"), rec("PR-002", "b"), self.typed("PR-010", "a", ["PR-002"])]
+        spam = base + [rec(f"PR-{i:03d}", "a") for i in range(100, 160)]
+        with tempfile.TemporaryDirectory() as t1, tempfile.TemporaryDirectory() as t2:
+            s1 = currency.structure(currency.load_records(build(t1, base)))
+            s2 = currency.structure(currency.load_records(build(t2, spam)))
+        self.assertEqual(s1["A_8_3_1_breadth"]["ordered_pairs_realized"],
+                         s2["A_8_3_1_breadth"]["ordered_pairs_realized"])
+        self.assertEqual(s1["A_8_3_3_reciprocity"]["share_of_pairs_mutual"],
+                         s2["A_8_3_3_reciprocity"]["share_of_pairs_mutual"])
+        self.assertLess(s2["A_8_3_2_liveness"]["typed_per_record"],
+                        s1["A_8_3_2_liveness"]["typed_per_record"],
+                        "liveness carries a denominator, so spam should LOWER it")
+
+
 class ReadOnly(unittest.TestCase):
 
     def test_the_module_never_writes(self):

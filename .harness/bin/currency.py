@@ -69,7 +69,12 @@ NO_THRESHOLD = ("NO THRESHOLD RATIFIED: PR-023 clause 5 conditions Phase B on th
                 "indicator but defines no failing point. This tool reports the "
                 "measures and refuses to invent one.")
 
-PUBLIC_API = ("load_records", "convergence", "concentration", "report")
+PUBLIC_API = ("load_records", "convergence", "concentration", "structure", "report")
+
+# A.8.3 window: how many of the most recent records LIVENESS looks back over. Chosen to
+# match MIN_WINDOW_EDGES' discipline rather than a round number -- a window is only
+# reportable when the registry is large enough for it to mean something.
+LIVENESS_WINDOW = 25
 
 
 def load_records(root) -> dict:
@@ -238,6 +243,171 @@ def concentration(records: dict) -> dict:
     }
 
 
+# ------------------------------------------------------------------- A.8.3 structure
+
+def structure(records: dict) -> dict:
+    """BREADTH, LIVENESS and RECIPROCITY over the citation graph. Emits no verdict.
+
+    WHY THESE THREE. The third blind panel refused the three-functions-of-money candidate
+    for the A.8 failing point and proposed these instead. The refusal was structural, not
+    stylistic: medium-of-exchange is unsatisfiable here because standing is derived on read
+    and never held (PR-022 clause 1, PR-010), and D-22 IMP-1 makes the ABSENCE of a
+    transfer verb the anti-forgery guarantee. Ratifying that candidate would have made the
+    currency permanently failing and PR-023 clause 5's conjunction permanently closed --
+    barring Phase B by definition rather than by evidence.
+
+    These three are supply-side. None is circular. None requires alienability. None is
+    satisfiable by bulk publication or by writing one sentence, which were the two attacks
+    that killed the previous candidate's arms.
+
+      A.8.3.1 BREADTH. Of the N*(N-1) ordered author-pairs possible among the publishing
+              identities, how many carry a typed citation, and what share of typed
+              citations is issued from OUTSIDE the top-3 by authorship. This is the direct
+              structural brake on a closed ring, which no other measure in this module
+              detects. Self-citation is excluded from both the numerator and the
+              denominator: a pair needs two parties.
+
+      A.8.3.2 LIVENESS. Typed citations issued per record published over the trailing
+              window. Carries its denominator per M-1 and reuses convergence()'s
+              refuse-on-thin-data discipline, so a window that cannot support a rate says
+              so instead of printing one.
+
+      A.8.3.3 RECIPROCITY. The share of realized cross-author pairs that lie on a mutual
+              pair. Reported as a MEASURE and never as a verdict, because this module
+              cannot distinguish a genuine reciprocal citation from a manufactured one and
+              neither could the panelist who raised it. A high value is a reason to look,
+              never a finding of wrongdoing.
+
+    NO THRESHOLD IS RATIFIED FOR ANY OF THE THREE. Same refusal as everywhere else in this
+    module: PR-023 clause 5 defines no failing point and a tool that invents one has
+    decided a tier-1 conjunction.
+    """
+    by_author = {rid: (records[rid].get("published_by") or "<unattributed>")
+                 for rid in records}
+    identities = sorted(set(by_author.values()))
+    n = len(identities)
+
+    authored = {}
+    for rid in sorted(records):
+        authored.setdefault(by_author[rid], []).append(rid)
+    top3 = {who for who, _ in sorted(authored.items(),
+                                     key=lambda kv: (-len(kv[1]), kv[0]))[:3]}
+
+    pairs, self_edges, external_edges, issued_by = {}, 0, 0, {}
+    for rid in sorted(records):
+        citer = by_author[rid]
+        for rel in (records[rid].get("relations") or []):
+            target = rel.get("target")
+            if not target or rel.get("type") not in TYPED_LOAD_BEARING:
+                continue
+            issued_by[citer] = issued_by.get(citer, 0) + 1
+            if target not in by_author:
+                external_edges += 1          # points outside the registry: not a pair
+                continue
+            cited = by_author[target]
+            if cited == citer:
+                self_edges += 1              # not a pair: a pair needs two parties
+                continue
+            pairs[(citer, cited)] = pairs.get((citer, cited), 0) + 1
+
+    possible = n * (n - 1)
+    realized = sorted(pairs)
+    mutual = sorted(p for p in pairs if (p[1], p[0]) in pairs)
+    cross_edges = sum(pairs.values())
+    issued_total = sum(issued_by.values())
+    outside_top3 = sum(v for k, v in issued_by.items() if k not in top3)
+
+    # THE MEASURE THAT ANSWERS THE QUESTION, and why the obvious one does not. The panel
+    # proposed "share issued from outside the top-3 BY AUTHORSHIP". Computed literally on
+    # this registry that returns 0.417, which reads as a mostly-open economy -- and it is
+    # an artifact. The top-3 by authorship and the set of identities that actually
+    # participate in the citation graph are DIFFERENT SETS here: the largest publisher has
+    # never cited or been cited, while the 4th-largest issues a third of all citations. So
+    # the top-3-by-authorship figure measures the mismatch between those two sets, not the
+    # openness of the economy.
+    #
+    # The set that matters is the INCUMBENTS: identities already holding a cross-author
+    # typed citation received. The share issued from outside it answers "is anyone new
+    # participating", which is the question breadth exists to ask. Both are reported,
+    # separately named, because the panel's literal words are on the record and silently
+    # substituting a different measure for them would be its own defect.
+    incumbents = {cited for _, cited in pairs}
+    outside_incumbents = sum(v for k, v in issued_by.items() if k not in incumbents)
+
+    # LIVENESS over the trailing window, by publication order.
+    ordered = sorted(records)
+    window = ordered[-LIVENESS_WINDOW:]
+    win_issued = 0
+    for rid in window:
+        for rel in (records[rid].get("relations") or []):
+            if rel.get("target") and rel.get("type") in TYPED_LOAD_BEARING:
+                win_issued += 1
+
+    return {
+        "A_8_3_1_breadth": {
+            "identities": n,
+            "ordered_pairs_possible": possible,
+            "ordered_pairs_realized": len(realized),
+            "share_realized": round(len(realized) / possible, 3) if possible else None,
+            "realized_pairs": [f"{a} -> {b} ({pairs[(a, b)]})" for a, b in realized],
+            "typed_issued_total": issued_total,
+            "incumbents": sorted(incumbents),
+            "typed_issued_outside_incumbents": outside_incumbents,
+            "share_issued_outside_incumbents": (round(outside_incumbents / issued_total, 3)
+                                                if issued_total else None),
+            "incumbents_note": (
+                "incumbents are the identities already holding a cross-author typed "
+                "citation RECEIVED. The share issued from outside them answers whether "
+                "anyone new is participating, which is what breadth exists to ask."),
+            "typed_issued_outside_top3_by_authorship": outside_top3,
+            "share_issued_outside_top3_by_authorship": (
+                round(outside_top3 / issued_total, 3) if issued_total else None),
+            "top3_by_authorship": sorted(top3),
+            "why_two_figures": (
+                "the panel's words were 'outside the top-3 by authorship'; on this "
+                "registry that returns a healthy-looking number because the top-3 by "
+                "authorship and the identities that actually cite are different sets -- "
+                "the largest publisher has never cited nor been cited, and the "
+                "4th-largest issues a third of all citations. Both figures print so the "
+                "panel's literal measure stays on the record and the substitution is "
+                "visible rather than silent."),
+            "excluded_from_pairs": {
+                "self_citations": self_edges,
+                "targets_outside_registry": external_edges,
+                "why": "a pair needs two parties, and a target this registry does not "
+                       "hold cannot be attributed to an identity",
+            },
+        },
+        "A_8_3_2_liveness": {
+            "window_records": len(window),
+            "window_declared": LIVENESS_WINDOW,
+            "typed_issued_in_window": win_issued,
+            "typed_per_record": (round(win_issued / len(window), 3) if window else None),
+            "REPORTABLE": win_issued >= MIN_WINDOW_EDGES,
+            "note": (
+                f"{win_issued} typed citation(s) in the trailing {len(window)} records, "
+                f"below the {MIN_WINDOW_EDGES} this module requires before a rate carries "
+                "any weight. The number prints because suppressing it would be a "
+                "different defect; it is not a trend."
+                if win_issued < MIN_WINDOW_EDGES else
+                f"{win_issued} typed citation(s) over {len(window)} records."),
+        },
+        "A_8_3_3_reciprocity": {
+            "cross_author_edges": cross_edges,
+            "realized_pairs": len(realized),
+            "pairs_on_a_mutual_edge": len(mutual),
+            "mutual_pairs": [f"{a} <-> {b}" for a, b in mutual if a < b],
+            "share_of_pairs_mutual": (round(len(mutual) / len(realized), 3)
+                                      if realized else None),
+            "NOT_A_FINDING": (
+                "This module cannot distinguish a genuine reciprocal citation from a "
+                "manufactured one, and no instrument in this harness can. A high value "
+                "is a reason to look, never a finding of wrongdoing."),
+        },
+        "NO_THRESHOLD_RATIFIED": NO_THRESHOLD,
+    }
+
+
 # ---------------------------------------------------------------------------- report
 
 def report(root) -> dict:
@@ -256,6 +426,7 @@ def report(root) -> dict:
         },
         "A_8_1_convergence": convergence(records),
         "A_8_2_concentration": concentration(records),
+        "A_8_3_structure": structure(records),
         "VERDICT": ("NOT COMPUTED. " + NO_THRESHOLD + " A tool that invents the failing "
                     "point of a tier-1 conjunction has decided the conjunction."),
     }
@@ -293,6 +464,23 @@ def render(out: dict) -> None:
         print(f"  {row['identity'][:24]:24s} {row['records']:9d} "
               f"{row['confirmed_by_another']:8d} {row['built_on_by_another']:16d}"
               f"  {row['has_verified_work']}")
+    print()
+    s = out["A_8_3_structure"]
+    b, lv, rc = s["A_8_3_1_breadth"], s["A_8_3_2_liveness"], s["A_8_3_3_reciprocity"]
+    print("A.8.3  ESTRUCTURA DEL GRAFO DE CITAS")
+    print(f"  amplitud          {b['ordered_pairs_realized']}/"
+          f"{b['ordered_pairs_possible']} pares ordenados  ({b['share_realized']})")
+    print(f"  emitidas por nuevos {b['typed_issued_outside_incumbents']}/"
+          f"{b['typed_issued_total']}  ({b['share_issued_outside_incumbents']})")
+    print(f"    ya establecidos   {', '.join(b['incumbents']) or 'ninguno'}")
+    print(f"    medida literal del panel (fuera del top-3 por autoria): "
+          f"{b['share_issued_outside_top3_by_authorship']}, ver why_two_figures")
+    print(f"  actividad         {lv['typed_issued_in_window']} citas en los ultimos "
+          f"{lv['window_records']} registros  (reportable: {lv['REPORTABLE']})")
+    print(f"  reciprocidad      {rc['pairs_on_a_mutual_edge']}/{rc['realized_pairs']} "
+          f"pares realizados son mutuos  ({rc['share_of_pairs_mutual']})")
+    for p in b["realized_pairs"]:
+        print(f"      {p}")
     print()
     print(out["VERDICT"])
 
