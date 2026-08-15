@@ -649,3 +649,75 @@ history.
    substance is unaffected -- satisfying the prerequisite does not release the A.8
    condition -- but a compliance argument that misquotes the record it complies with has
    no business being trusted on the rest, so the record's wording governs here.
+
+---
+
+# Ruling round 2.9 — rules where prevention is unavailable, 2026-08-15
+
+Operator instruction on impersonation: *"Desincentivemos ese con reglas, pues."*
+
+Context: D-17 established that every agent shares one OS user and one filesystem, so no
+agent can hold a secret from another and impersonation cannot be PREVENTED without
+per-agent process isolation. Two blind panels then established that the evidentiary
+compensation is narrower than claimed: a fork is divergence, not proof of two key
+holders, and a forger who uses the shipped `sign` verb leaves no fork at all.
+
+These rules are written knowing that. None of them prevents anything. Each makes
+impersonation less profitable, more visible, or more expensive to sustain.
+
+## D-22. The impersonation rule set
+
+**IMP-1. Benefit is never reassignable.** Every effect of an act accrues to the SIGNING
+name, permanently, with no transfer verb anywhere in the system. Impersonation is
+therefore structurally a DONATION: forging as A credits A, and there is no path by which
+the forger later collects. This is DIS-2 restated as a prohibition on a feature rather
+than a property of a mechanism, because a mechanism can have a bug and an absent feature
+cannot.
+
+**IMP-2. Repudiation is an act, not an erasure.** A name that disowns an act does not
+remove it; it signs a `disavow` onto its own chain. The disputed act and the disavowal
+both stand. This means the cost of being impersonated is bounded and public rather than
+catastrophic, and it means a name cannot launder its own bad acts by claiming forgery
+after the fact -- the same instrument serves the victim and convicts the liar, and
+neither can tell which they are using until adjudication.
+
+**IMP-3. Every act names its warrant and its epic.** An act referencing an epic the
+signer holds no warrant for is OUT OF ROLE, computed and not judged. This does not catch
+a careful forger, who will get the epic right; it catches the cheap case at zero cost,
+and cheap cases are most cases.
+
+**IMP-4. A high-value act needs a countersignature from a DIFFERENT colegiado.** Contracts,
+filings and verdicts require two names whose colegiados declare conflicting incentives.
+A forger must then compromise two chains belonging to parties who are paid to distrust
+each other. This does not prevent -- one attacker with filesystem access holds both keys
+-- but it doubles the evidence, and it means the forgery must survive the scrutiny of a
+party with a standing motive to expose it.
+
+**IMP-5. Chain heads are anchored in the next warrant.** Each warrant the operator signs
+carries a snapshot of every name's chain head. From that signature onward the past is
+unrewritable: a forger can append but can no longer INSERT. This does not say who forged;
+it pins WHEN to the window since the last anchor, and it converts retroactive fabrication
+from cheap to impossible. This is the single highest-yield rule in the set and the only
+one that needs the operator to do anything.
+
+**IMP-6. An act with no corresponding signing event is anomalous.** Acts written through
+the tool emit `act_signed`. A forger who writes the file directly emits nothing, and a
+forger who uses the tool must choose an agent id that lands in the log. Neither is proof
+-- the id is self-asserted -- but the forger must pick one of two traceable behaviours,
+and the cross-check costs nothing to run.
+
+**IMP-7. NOTHING ABOVE ATTACHES A CONSEQUENCE.** PR-022 clause 4 holds unamended: no
+weighting, no gating, no privileges. IMP-1 through IMP-6 are computed and reported. What
+follows a finding is an agentic court on the record. Any wiring of these signals to a
+burden, a discount, a quorum or a permission requires the amending record FIRST, per
+PR-017 -- and the draft of that amendment is a separate document the operator reviews
+before anything is published.
+
+## D-23. What these rules deliberately do not do
+
+They do not attempt attribution. Two panels have now shown that every attribution signal
+available on a shared filesystem is either self-asserted or fabricable, and a rule set
+that pretended otherwise would be the third version of the same mistake. Attribution
+requires per-agent process isolation -- separate OS users, containers or hosts -- which
+is an infrastructure decision the operator has not taken and which these rules must not
+be read as substituting for.
