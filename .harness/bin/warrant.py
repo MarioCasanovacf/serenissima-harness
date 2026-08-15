@@ -363,7 +363,14 @@ def draft(root, epic, colegiados, plaza_specs, name_specs, valid_until=None) -> 
         "warrant_id": wid,
         "path": str(path),
         "digest": payload_digest(path),
-        "sign_with": f"ssh-keygen -Y sign -f ~/.ssh/harness_root -n {NAMESPACE} {path}",
+        "sign_with": (f"ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U "
+                      f"-n {NAMESPACE} {path}"),
+        "WHY_-U_AND_.pub": (
+            "-U signs THROUGH ssh-agent using only the public key, so `ssh-add -c` "
+            "confirm-on-use actually applies. Pointing -f at the PRIVATE key file "
+            "instead reads it directly and bypasses the agent entirely, which makes "
+            "confirm-on-use decorative. An earlier version of this string got that "
+            "wrong."),
         "then": f"python3 .harness/bin/warrant.py apply --warrant {wid}",
         "note": "This process cannot sign. Run the command above; ssh-agent will ask "
                 "you to confirm (ssh-add -c).",
