@@ -90,6 +90,15 @@ Reproduced independently by the coordinator:
 
 - **11 records name 19 live registry records inside their own ratio text with zero edges
   of any kind to them.**
+  > **CORRECTION, 2026-08-15, coordinator.** The figure 19 does not reproduce. Recomputed
+  > over all 59 files with scope `ratio` + `dicta` + `scope_conditions`, excluding
+  > self-references and any target already carrying a declared edge in `relations[]` or
+  > `cites[]`: **17 references to 10 distinct live records, from 11 records.** The record
+  > count and the post-PR-034 figure below reproduce exactly. No field combination tried
+  > yields 19; 19 is neither the reference count nor the distinct-target count. The finding
+  > is unaffected in direction and magnitude — the comparable declared figure is 10 typed
+  > edges (`follows`/`reinterprets`) and 15 bare `cites` to live records, so untyped prose
+  > consultation still exceeds typed consultation. Cite 17, not 19.
 - In the post-PR-034 window: **8 of 25 records (32%)**, carrying 10 such references.
 - **PR-004 is named by ID in the ratio of six records** — PR-007, and PR-053 through
   PR-057 consecutively — while `precedent.py show PR-004` prints `cited_by: []` and
