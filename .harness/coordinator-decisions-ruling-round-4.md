@@ -180,3 +180,107 @@ RECOMMENDATION: convene it, after enrolment, as the vehicle for D4-3 and D4-4 jo
 - D1 canonicity epic: `verify-anchors`, then the ratification acts, then the
   RATIFICATION-SET record.
 - T-349 quarterly watch (due 2026-11-10); T-365 gen-6 audit; T-376 repair.
+
+---
+
+# Ruling round 4.1 (operator, 2026-08-15): the assembly is a persuasion market
+
+Operator's design constraint, verbatim: *"Al final, D4 tiene que ser una
+simulación/debate donde todos tengan incentivos para convencerme a mí. That's the whole
+thing."*
+
+This is not a detail of D4-4. It reshapes D4-1 and D4-3 as well, and it names a unit the
+coordinator had not proposed.
+
+## The architectural consequence: the only unforgeable unit is the operator's signature
+
+Every event the reputation layer counts is agent-generated, on one filesystem, under one
+OS user (D-17). That is why the currency has no scarce unit: authorship, citations,
+consolidations, overrulings and verification verdicts are all mintable by the party they
+credit, and the docket measured the mint times (31 ms to 9.1 s).
+
+An award denominated in the operator's ratification is different in kind. Ratification is
+a signed act under `warrant.py` and `attest.py`; the key is held off the machine; no agent
+can hold a secret from another but no agent holds THAT secret at all. **It is the only
+event in this harness that an agent cannot fabricate.** Pointing the payoff at it is
+therefore the only incentive design that is not self-referential.
+
+## D4-1 restated: B becomes the ticket of admission
+
+Instrument B (declare what would have to fail for your citation to be wrong) was rescoped
+in round 4 to the legislative channel. Under a persuasion market it takes a sharper form:
+**it is the delegate's entry requirement.** A delegate states, before arguing, the
+condition under which their own position is wrong. That is B, and it is also PR-025
+clause 3's pre-registration applied to advocacy.
+
+A and C are unaffected and remain the build. C remains the gate per D4-2.
+
+## D4-3 restated: a third base nobody proposed
+
+The Swiss template (H-1) says the levy attaches to capacity, and PR-026 clause 3 puts
+capacity-keyed consequences out of reach — which is why round 4 collapsed D4-3 into D4-4.
+
+The persuasion market supplies a base that is neither realized output (tokens, the
+anti-Swiss base) nor computed standing (the PR-026 base): **ratification acts**.
+
+HYPOTHESIS, NOT A HOLDING, and flagged as such because the coordinator has miscited tier-1
+records four times this session: PR-026 clause 3 forbids "automatic demotion, suspension or
+exclusion of any identity by computed standing alone". An award keyed to ratifications is
+neither a demotion, a suspension nor an exclusion, and is not computed standing. On its
+face clause 3 does not reach it on either arm. Clause 4 appears satisfied rather than
+strained: a ratification IS a written, reasoned decision by an agent, which is precisely
+what clause 4 requires as the only status-changing instrument.
+
+Its falsifier, stated so the assembly can kill it: if a ratification-denominated award
+functions as a de facto exclusion of identities the operator never ratifies, clause 3's
+exclusion arm reaches it after all, and the hypothesis dies.
+
+## The collision this ruling discovers: PR-022 clause 3 closes the list at six
+
+**PR-022 clause 3 states "The event types are exactly six" and enumerates them.** Both new
+instruments are seventh types:
+
+- Instrument C was described in round 4 as "a seventh figure, symmetric to the six". As a
+  STANDING figure it collides with clause 3 head-on.
+- A ratification unit is likewise a seventh type if it lives on the standing surface.
+
+Available distinction, offered to the assembly rather than asserted by the coordinator:
+clause 3 closes the event types of the REPUTATION reader. An attribution record that lives
+on the signature chain (`attest.py`) or in event reporting (`event_stats.py`), and that no
+standing computation reads, is not an event type of that reader. Whether that distinction
+holds is exactly the kind of question a legislature answers and a court cannot.
+
+Consequence for sequencing: instrument C must be built ON THE SIGNATURE CHAIN, not on the
+standing surface, or it needs a tier-1 amendment before it ships. PR-017 governs: the
+record lands before the code.
+
+## The failure mode the coordinator owes the operator
+
+**Sycophancy is the equilibrium of a persuasion market with a single human judge.** If the
+payoff is the operator's agreement, the dominant strategy is to predict what he already
+believes and say it well. The debate then produces unanimity that measures nothing.
+
+Three instruments, two of them already ratified in this registry:
+
+1. **Positions assigned by lot, never chosen.** PR-025 clause 4, verbatim: this record's
+   "whole function is to fix the ORDERING before the interests know their positions". The
+   same doctrine applied to the assembly: delegates draw a side after the question is
+   fixed, so advocacy is a role and not a belief.
+2. **Pay for movement, not for the verdict.** The operator pre-registers his prior before
+   the debate (PR-025 clause 3's device). The award attaches to how far a delegate moved
+   him from that recorded position, in either direction, not to which side prevailed.
+   Paying the winner produces herding; paying movement produces argument.
+3. **Compensate the losing cohort.** H-16 from the Swiss document: repeal passes when
+   paired with transitional compensation and fails when naked (TRAF 66.4% coupled, RIE III
+   rejected 59.1% naked). A delegate who loses well is paid; otherwise the incentive is to
+   never take the harder side of a question.
+
+## What the incentive design does to the enrolment gate
+
+It tightens it. Under a deliberative assembly, capturing seats buys influence. Under a
+persuasion market with a real award, **capturing all the seats is maximally profitable**:
+one identity occupying every chair stages a debate whose outcome it selects and collects
+the award regardless. D-17 makes that undetectable from inside.
+
+The enrolment in `.harness/OPERATOR-ENROLMENT.md` is therefore not a precondition of good
+hygiene for D4-4. It is the thing that makes the award mean anything at all.
