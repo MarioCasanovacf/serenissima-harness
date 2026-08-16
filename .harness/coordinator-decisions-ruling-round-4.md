@@ -395,3 +395,141 @@ second witness that a local attacker cannot silently rewrite: a modified `root.p
 appear as a git diff. Against that: this is a public repository, and committing it publishes
 the operator's root public key and ties the repository to that key permanently. The
 coordinator has NOT staged it and will not without an explicit instruction.
+
+---
+
+# Panel result, round 4 docket (2026-08-16): 12 of 12 REFUTED
+
+Four blind lenses. Each returned REFUTED on all three propositions. No lens saw another's
+work. Full verdicts are held outside the tracked tree; their substance is reproduced here.
+
+| lens | P1 the unit | P2 instrument C | P3 the market |
+| --- | --- | --- | --- |
+| attack | REFUTED | REFUTED | REFUTED |
+| historical | REFUTED | REFUTED | REFUTED |
+| mechanism design | REFUTED | REFUTED | REFUTED |
+| doctrinal | REFUTED | REFUTED | REFUTED |
+
+## 1. The coordinator's blind failed, and the doctrinal lens caught it
+
+`.harness/coordinator-decisions-ruling-round-4.md` — this file — sits in the repository
+under the naming convention CLAUDE.md instructs agents to read. It contains the
+coordinator's full defence of the proposal and records D4-1 as already ratified. The
+doctrinal reviewer opened it. The blind was therefore not blind, and any reviewer who did
+NOT open it was answering a question the operator had already closed.
+
+This is a coordinator process defect, not a reviewer failure. Recorded as **defect
+BLIND-PANEL-LEAK-A**. Any future panel brief must either (a) run against a worktree with
+the ruling files removed, or (b) state to every reviewer exactly which propositions are
+already ratified and confine them to the lawfulness of the implementing record.
+
+## 2. Coordinator miscitations found by the panel and verified against the JSON
+
+**PR-017 does NOT say "the record lands before the code."** Verbatim ratio:
+"INTERPRETIVE-CODE.md v1 holds constitutional rank. The amendment procedure is: a build
+session that needs a constitutional addendum requests it explicitly, reasons it with the
+operator, and only then delimits the instance that later constructions will reference; the
+amendment is published as a tier 1 or 2 record naming the IC rules changed and the version
+jump before any text edit lands." Its `scope_conditions` are "any edit to
+INTERPRETIVE-CODE.md; any session requesting a constitutional addendum"; `declared_width`
+narrow; `confirmation_status` unconfirmed.
+
+The general record-before-code duty is real and is settled practice here, but its authority
+is coordinator memo text (D-21 clause 3; IMP-7), not a published registry record. Citing
+PR-017 for it overstates the source. The miscitation is propagated across at least 11 places
+in tracked files, including `CLAUDE.md`, `.harness/plan.md`, `ruling-round-2.md`,
+`draft-amendment-PR-022.md` and this file. Recorded as **defect PR-017-OVEREXTENSION-A**;
+repair is a sweep, not a one-line edit, and is NOT performed in this commit.
+
+**PR-023 clause 1 contains no ordering.** Verbatim: "(1) Phase B (verification-burden
+discounts, quorum weight, charter contestability) is gated on cryptographic identity with an
+external trust root." A three-item parenthetical naming Phase B's contents is not a
+priority. The coordinator characterized verification-burden discounts as "the FIRST item
+PR-023 clause 1 names as Phase B", and that characterization was recorded in
+`.harness/draft-amendment-PR-022.md` as the earlier panel's DISPOSITIVE finding. The
+archival disposition of that draft is not disturbed — four other findings stand, including
+PR-022 clause 6, which forbids the proposal by name and was quoted correctly — but the
+dispositive finding rested on a coordinator framing. Recorded as **defect
+PR-023-ORDERING-A**.
+
+**PR-022 clause 2 was truncated without ellipsis**, dropping ", because stacking layers can
+subtract performance" — the clause's own reason, and the half bearing directly against
+building a second attribution layer.
+
+**The concentration figure was an undercount, in the direction that flatters.** The
+coordinator reported 6 tier-1 records from one identity and one task. Measured: **16 tier-1
+records issue from T-369** (14 by `worker-a2-3`, 2 by `coordinator-fable`), out of 29 tier-1
+records total, every one `confirmation_status: unconfirmed`, `confirmed_by: null`. Two are
+`void_per_incuriam`. More than half the constitution of this harness came from one task.
+
+## 3. The substantive findings, strongest first
+
+**The scarce resource is attention, not the signature (mechanism lens).**
+`OPERATOR-ENROLMENT.md` step 2 mandates `ssh-add -c`, confirmation on every single use. One
+unit therefore costs one operator prompt. The unforgeability being sold is ATTENTIONAL, not
+cryptographic, and it is consumed by its own velocity: the more the currency circulates, the
+more of the operator it spends. A currency whose issuance cost is the sovereign's attention
+cannot scale past the sovereign.
+
+**The trust root is the answer key beside the lock (attack and historical lenses,
+independently; reproduced a third time by the coordinator).** Swapping `trust/root.pub` AND
+`trust/root.fingerprint` — same agent-writable, git-untracked directory — yields
+`reconcile clean: true` with the forged warrant listed under `warrants_verified`, and `audit`
+without `--expect` exits 0. Coordinator's own measurement: 109 ms for sign plus apply. Only
+`audit --expect` with an off-machine fingerprint fires. PR-022 clause 1 requires reputation
+be computed AT READ TIME; a read path is a program and holds no off-machine fingerprint, so
+the read path consumes forged ratifications as authentic.
+
+**Instrument C inverts `attest.py`'s central safety property (mechanism lens).** DIS-2
+verbatim: "CREDIT FOLLOWS THE SIGNATURE, ALWAYS... Forging as A therefore credits A. Forgery
+cannot enrich the forger, only damage the victim, which deletes the economic motive and
+leaves only sabotage." That protects a CREDIT ledger. Instrument C is a DEBIT ledger, so the
+sign flips: forging as A now DAMAGES A, and the design rule that removed the motive becomes
+the mechanism of a framing attack.
+
+**There is no third space for instrument C (historical lens).** A destructive act run
+through the protocol is already credit under PR-020 clause 1. A destructive act outside the
+protocol is silent divergence, which PR-021 clause 1 owns and clause 3 prices to Phase B:
+"Phase A counts and displays; it does not fine." Coordinator's correction to this reviewer:
+it also cited PR-021 clause 4 ("authorizes no new detector") as a general prohibition; that
+clause is self-limiting and speaks only to what PR-021 itself authorizes. The structural
+argument survives without it.
+
+**The 1624 test (historical lens).** Elizabethan monopoly patents WERE the reward, sold for
+revenue, and discredited themselves in forty years before being voided in Darcy v Allein.
+The instrument survived four centuries only because the Statute of Monopolies 1624 converted
+it into CERTIFICATION of an antecedent fact: the "true and first inventor" of a "new
+manufacture". The proposal as ratified is the pre-1624 form. This is a repair instruction,
+not only a refutation: the operator's signature must certify a fact established elsewhere,
+never constitute the reward itself.
+
+**The project's own research already ruled it out.** Corpus document 19, section 8.4,
+item 5, verbatim: "treating reputation points as a compensation unit would be a category
+error and would convert reputation into a target." Commissioned by the operator, written
+before this docket, not surfaced by the coordinator.
+
+**Pay-for-movement is not a scoring rule (mechanism lens).** It scores the principal's state
+transition rather than a prediction against an outcome. Movement is unconserved, so two
+delegates oscillating the operator mint unbounded payout. Peer prediction is the right
+family and D-17 kills it. The honest analogue is a Tullock contest, which dissipates rents.
+This bears on D4-3 corrective 2, which the operator ratified; the ratification fixed the
+direction and the measurement rule is now known to be broken.
+
+**PR-026 clause 1 is ratio, not dicta.** `PR-026.dicta` is `[]`, so "the operator is
+sovereign, not a market participant" sits in the binding half. The coordinator handed this
+to the panel as an open question; it is not open, it binds. Clause 5: lifting any refusal
+"requires a tier-1 act naming this record and the single refusal it lifts."
+
+**The diagnosis, which no instrument in the docket addresses.** Measured: 0 warrants applied,
+no `.harness/acts/`, 0 citations across the 25 post-PR-034 records, 0 confirmations across
+59 records. Quantity and velocity are both zero. **The harness has a velocity problem and
+the proposal prescribes scarcity.**
+
+## 4. Status of the operator's rulings after the panel
+
+D4-1 (denomination in ratifications) and D4-3 (the three correctives) were RATIFIED by the
+operator and a panel cannot reverse a ratification. What the panel establishes is what any
+implementing record must survive, and on the present findings no implementing record can be
+drafted that survives PR-026 clause 1, PR-022 clauses 1 and 4, and the attention-cost
+argument simultaneously. The coordinator brings this back to the operator rather than
+drafting around it.
