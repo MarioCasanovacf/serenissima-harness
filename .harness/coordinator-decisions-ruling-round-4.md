@@ -284,3 +284,114 @@ the award regardless. D-17 makes that undetectable from inside.
 
 The enrolment in `.harness/OPERATOR-ENROLMENT.md` is therefore not a precondition of good
 hygiene for D4-4. It is the thing that makes the award mean anything at all.
+
+---
+
+# Ruling round 4.2 (operator, 2026-08-16): three ratified, one to panel, enrolment live
+
+## D4-1 (denomination): RATIFIED
+
+Operator, verbatim: *"Se denomina en ratificaciones. Estamos creando una economía
+eficiente."*
+
+The fiscal wedge denominates in operator ratification acts. Neither realized output
+(tokens, the anti-Swiss base per H-1) nor computed standing (the base PR-026 clause 3
+closes).
+
+The hypothesis recorded in round 4.1 is now a ruling. Its falsifier stands unchanged and is
+NOT discharged by ratification: if a ratification-denominated award functions as a de facto
+exclusion of identities the operator never ratifies, PR-026 clause 3's exclusion arm reaches
+it. The falsifier is live and any implementing record must state it.
+
+**Stress-tested notwithstanding ratification.** The proposal was dispatched to a blind
+four-lens panel as proposition P1 on the same day it was ratified. This is not a
+re-litigation: the operator has ruled and the ruling stands. It is the PR-025 clause 1
+posture — adversarial work is scarcer and must pay more — applied to the coordinator's own
+proposal, which the coordinator wrote and therefore cannot verify (PR-038: producer is
+never approver). A panel finding cannot reverse the ruling; it can only inform what the
+implementing record must survive.
+
+Unresolved and handed to the panel rather than answered by the coordinator: **PR-026
+clause 1** states that the operator "is sovereign, not a market participant". Making him
+the sole issuer of the unit may or may not make him a participant. The coordinator does not
+know and did not guess.
+
+## D4-2 (where instrument C lives): TO PANEL
+
+Operator, verbatim: *"Vayamos de nuevo con el panel con una nueva propuesta, escuchemos sus
+argumentos."*
+
+Dispatched as a blind four-lens panel, propositions P1 (the unit), P2 (signature chain
+versus tier-1 amendment to PR-022 clause 3) and P3 (the persuasion market). Lenses:
+doctrinal, attack, mechanism design and monetary economics, historical and institutional
+precedent. Each reviewer is instructed to REFUTE and to default to refuted under
+uncertainty. None sees the others; none sees the coordinator's defence.
+
+Panel discipline carried from prior rounds: reviewers verify every clause quotation against
+the JSON rather than trusting the brief, because the coordinator has miscited tier-1 records
+four times this session.
+
+## D4-3 (anti-sycophancy correctives): RATIFIED, ALL THREE
+
+Operator, verbatim: *"Entran."*
+
+Binding on the assembly's procedure:
+
+1. Sides drawn by lot after the question is fixed, never chosen. Doctrinal basis already in
+   force: PR-025 clause 4, "fix the ORDERING before the interests know their positions".
+2. The operator pre-registers his position before the debate; the award attaches to
+   measured movement from that recorded position in either direction, never to which side
+   prevailed. Apparatus already in force: PR-025 clause 3.
+3. The losing cohort is compensated. Basis: H-16 of the Swiss research, repeal passes
+   coupled and fails naked.
+
+Correctives 2 and 3 are dispatched to the panel's mechanism lens for incentive-compatibility
+review before any implementing record. Ratification fixes the DIRECTION; the panel is asked
+whether "movement from a pre-registered prior" is measurable and gameable.
+
+## D4-4 (enrolment): EXECUTED BY THE OPERATOR, VERIFIED IN PART
+
+Operator, verbatim: *"Listo el enrolamiento."*
+
+Verified by the coordinator on 2026-08-16, and reported with its limits rather than as a
+clean bill:
+
+| check | command | result |
+| --- | --- | --- |
+| trust root present | `ls .harness/trust/` | `root.pub`, `root.fingerprint` present |
+| enrolled | `warrant.py audit` | `enrolled: true` |
+| anchor | `warrant.py audit` | `SHA256:9Ya45T4LytgZjcPKr0Aj5YrFqWmZT0SNoK3ExeQQnVM` |
+| anchor is the operator's | `warrant.py audit` | **`anchor_matches_operator: null`, UNVERIFIED** |
+| roll integrity | `warrant.py reconcile` | `clean: true`, `checked: 0` |
+| population | `roster.py roster` | 0 colegiados, 0 plazas, 0 names |
+
+**What is now true.** `roster.py` refuses every unwarranted mutation from this point. The
+flag day has passed. Minting is closed conditionally, on the two conditions CLAUDE.md
+already names.
+
+**What is NOT yet true, and the coordinator will not round it up.** The anchor is
+unverified. `audit` without `--expect` is a self-consistency check: `.harness/trust/` is
+writable by every agent and untracked by git, so every check inside the module is consistent
+with whatever was written there. The fingerprint file ON THE MACHINE cannot close this — it
+is the same surface an attacker rewrites. Only the operator running
+`warrant.py audit --expect "SHA256:..."` with the fingerprint he holds off the machine
+converts this from self-consistency into an audit. Until then the report marks itself
+UNVERIFIED and this record does the same.
+
+**`reconcile: clean` is correct here but must not be read as strong.** It checked zero rows
+because zero names exist. That is the true state, not the RECONCILE-SILENT-UNENROLLED
+defect, which was repaired and is regression-tested. The figure becomes load-bearing only
+once names exist.
+
+**Next mechanical step, blocked on one operator action.** The assembly needs seats; seats
+are plazas inside a signed warrant. The coordinator drafts W-001 declaring the colegiado,
+its charter and its plaza count; the operator signs it with
+`ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U -n harness-warrant`; the coordinator
+applies it. A test asserts no code path in the module can sign on the operator's behalf.
+
+**Open question for the operator, not decided here.** `.gitignore` un-ignores `*.pub`, so
+`.harness/trust/root.pub` would be committed if staged. Tracking it would give the anchor a
+second witness that a local attacker cannot silently rewrite: a modified `root.pub` would
+appear as a git diff. Against that: this is a public repository, and committing it publishes
+the operator's root public key and ties the repository to that key permanently. The
+coordinator has NOT staged it and will not without an explicit instruction.
