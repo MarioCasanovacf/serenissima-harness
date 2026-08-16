@@ -533,3 +533,95 @@ implementing record must survive, and on the present findings no implementing re
 drafted that survives PR-026 clause 1, PR-022 clauses 1 and 4, and the attention-cost
 argument simultaneously. The coordinator brings this back to the operator rather than
 drafting around it.
+
+---
+
+# Coordinator proposal, round 4 remedy (2026-08-16): four tracks
+
+Operator: *"Necesito que me traigas soluciones."* Twelve refutations and no path was not a
+deliverable. This section is the path.
+
+## The diagnosis the panel did not reach
+
+`precedent.py confirm` ALREADY EXISTS and already enforces producer-distinct-from-approver.
+The event log holds 246 raw / **16 distinct** `precedent_confirm_refused` events and **zero**
+`precedent_confirmed` events, ever. Deduplicated on every field except `ts`, the 16 refusals
+are:
+
+| reason | distinct |
+| --- | --- |
+| the publishing author tried to confirm their own record (SDR-24.1) | 5 |
+| `--outcome narrowed` without a scope restatement (SDR-24.3) | 3 |
+| the record was not active (SDR-24.2) | 3 |
+| `confirm` requires `--note` (SDR-24.4) | 3 |
+| invalid `--outcome` value (SDR-15) | 2 |
+
+Five are the rule working correctly. The other eleven are usage errors, most from the test
+suite. **Nothing is broken. The verb was never wired into the workflow.** Zero confirmations
+across 59 records does not mean PR-015's floor is ceremonial; it means no step in the
+process calls the verb that already exists.
+
+## Track 1 — velocity. No ratification required.
+
+1. Wire `confirm` into the existing verifier path: when a verifier closes a task that
+   published a record, the route to `done` requires the `confirm` call. PR-015 already
+   requires it, PR-038 already requires producer is not approver, and SDR-24.1 already
+   refuses the author mechanically. No new doctrine.
+2. Citation lint at publish: when a `ratio` names a `PR-NNN` with no declared relation to
+   it, `publish` flags it. This targets the 11 records / 17 prose references measured
+   earlier. A FLAG, never a price: no consequence attaches, PR-022 clause 4 untouched.
+
+## Track 2 — close the 109 ms hole. No ratification required, and it opens Phase B.
+
+1. `warrant.py audit` without `--expect` exits 0 today. It must exit non-zero. A tool whose
+   default path is silent about its own blind spot is the defect.
+2. `reconcile` must not report `clean: true` while the anchor is unverified. Same repair
+   already made for the un-enrolled case (RECONCILE-SILENT-UNENROLLED), extended to the
+   enrolled-but-unaudited case.
+3. Git-track `.harness/trust/root.pub` with its fingerprint inside an annotated tag the
+   operator signs once. The read path can then compare the working tree against a signed
+   tag, so the silent swap becomes a visible diff. OPERATOR DECISION: this publishes the
+   operator root public key in a public repository, and it does not fully close the hole
+   (an attacker who can write can also commit). It moves the attack from invisible to
+   noisy and attributable.
+
+**The consequence nobody had noticed.** PR-023 clause 1 gates Phase B on "cryptographic
+identity with an external trust root". The present trust root is NOT external: it is an
+agent-writable file stored beside its own self-declared fingerprint. Making it genuinely
+external is not an amendment. It is SATISFYING the condition the record always stated.
+Phase B then opens through its own gate, and the PR-023 / PR-026 collision that constituted
+decision 4 dissolves without an assembly and without a tier-1 act.
+
+## Track 3 — the operator's D4-1, in the 1624 form. Needs a record.
+
+The ratification CERTIFIES; it never CONSTITUTES. Two properties do the work:
+
+- **The antecedent fact is archive-computed and requires a third party's act**: a record
+  built on by a different colegiado, a verdict upheld by a distinct identity. The
+  beneficiary cannot mint it alone.
+- **Certification is batched.** One signature certifies an epoch's set, so the operator's
+  attention cost is O(1) per epoch rather than O(1) per unit. This answers the mechanism
+  lens's strongest objection: `ssh-add -c` prices one unit at one operator prompt only if
+  units are signed one at a time.
+
+This also clears PR-026 clause 1. The operator is not issuing value; he is attesting that a
+computation over the archive ran and matched. Notary to a deed, not participant.
+
+## Track 4 — the assembly keeps its form and changes its office. After track 2.
+
+Its product is not currency. Its product is **confirmations**, the act that has never
+occurred once in 59 records.
+
+The corrective the mechanism lens killed is repaired: instead of paying measured movement of
+the operator's position, delegates are scored on **whether the falsifier they themselves
+declared later fires**. That resolves against a verifiable fact rather than against the
+principal's mental state, restoring the proper-scoring-rule shape the lens found missing.
+Assignment by lot survives untouched; it is already PR-025 clause 4.
+
+Unclosed, and stated: D-17 does not go away. Signed plazas bound HOW MANY seats exist. They
+do not bound WHO occupies them.
+
+## Sequence
+
+Tracks 1 and 2 in parallel, now, no ratification. Track 3 needs a record, drafted on the
+operator's word and panelled before publication. Track 4 after track 2.
