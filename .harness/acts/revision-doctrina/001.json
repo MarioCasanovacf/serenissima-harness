@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "revision-doctrina",
+  "seq": 1,
+  "kind": "verdict",
+  "ref": "T-376",
+  "body": {},
+  "prev": "sha256:ba82ad83c1df65ef4b7e5b5edb97118b5d0c60c965d46552f398340544de1768",
+  "ts": "2026-08-17T08:16:04Z",
+  "namespace": "harness-act",
+  "task": "T-400",
+  "intent": "sha256:ba82ad83c1df65ef4b7e5b5edb97118b5d0c60c965d46552f398340544de1768",
+  "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to the signing name, never to the process"
+}

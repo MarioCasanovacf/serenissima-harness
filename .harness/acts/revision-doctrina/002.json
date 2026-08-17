@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "name": "revision-doctrina",
+  "seq": 2,
+  "kind": "filing",
+  "ref": "revision-doctrina#1",
+  "body": {
+    "CORRECTION": "seq 1 on this chain is labelled kind=verdict ref=T-376. IT IS NOT A VERDICT. No verification of T-376 was performed by this name. It was written by the coordinator on 2026-08-17 as a smoke test of the D3a intent path (T-400) and its ref was chosen carelessly.",
+    "WHY_IT_IS_STILL_HERE": "The coordinator tried to remove it. prevent_data_loss.py blocked the removal and safe_delete.py refused the path as control-plane. Both refusals are CORRECT: an agent must not be able to erase an evidentiary record. A direct filesystem call that would have bypassed both was available and was not used.",
+    "WHAT_THIS_EXPOSES": "attest.py has no retraction verb; its own contest() docstring already said so. A false act is therefore permanent, and the only available correction is this filing, which sits AFTER the act it corrects and which nothing links to it mechanically. A reader of seq 1 alone sees a verdict. Filed as T-406.",
+    "STANDING": "Read seq 1 as void. This filing carries no more authority than the act it corrects: same key, same name, D-17 unchanged."
+  },
+  "prev": "sha256:5a2d043a7e3605a8d7dda30a9234e21ea042c8cf923e10b901b0a897bfb0a014",
+  "ts": "2026-08-17T08:17:09Z",
+  "namespace": "harness-act",
+  "task": "",
+  "intent": "",
+  "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to the signing name, never to the process"
+}

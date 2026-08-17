@@ -52,6 +52,60 @@ made unprofitable, self-evident and adjudicable:
          the delayer; here the accusation costs the accuser its own evidentiary record,
          with no punitive consequence attached and none needed.
 
+THE THREE ANCHORING RECORDS (D3a, operator ruling 2026-08-17). A privileged act must
+reconstruct back to the authorizing human. Two of the three records already existed and
+were not rebuilt:
+
+  INTENT DECLARED    `kind=intent`, filed by the actor, on THE ACTOR'S OWN CHAIN. New.
+  PRIVILEGE GRANTED  the operator-signed warrant that issued the name. ALREADY EXISTED.
+                     There is no second grant record and there must not be one: a name
+                     exists only inside a warrant that verifies against `trust/root.pub`,
+                     so the grant is the operator's signature and nothing else.
+  PRIVILEGE EXERCISED  the signed act itself. ALREADY EXISTED.
+
+`trace` walks act -> intent -> name -> warrant -> root fingerprint and prints which links
+resolve and which do not. The last step in that walk is NOT self-authenticating: see
+`warrant.py audit --expect`, which says so about itself.
+
+WHY THE INTENT LIVES ON THE ACTOR'S OWN CHAIN, and what that does NOT buy. An earlier
+version of this paragraph claimed chain-locality closes the framing surface -- an agent
+filing an intent AS another name to manufacture evidence that the victim deliberated. A
+NEGATIVE CONTROL REFUTED THAT: pooling every name's intents into one shared set passes the
+entire test suite, so the directory an intent sits in is not what stops the attack. The
+statement is corrected here rather than softened.
+
+  WHAT CHAIN-LOCALITY ACTUALLY BUYS. DIS-2 applies to intents unchanged, because an intent
+    IS an act: filing one as A credits A. The intent participates in fork detection like
+    any other act. And there is no second registry to fall out of sync, which is the
+    roster.py cache defect a panel exploited by hand-appending one entry (PR-010's
+    computed-on-read doctrine).
+  WHAT ACTUALLY CLOSES THE FRAMING SURFACE. The requirement that an intent VERIFY under
+    the actor's own enrolled key. A party who cannot produce that signature cannot
+    manufacture deliberation by the victim, wherever the file sits.
+  AND WHAT THAT IS WORTH INSIDE THIS HARNESS: nothing, against an agent here. D-17 means
+    every agent reads every private key, so every agent CAN produce that signature. The
+    signature requirement bounds a party with no filesystem access, and this harness has
+    no such party. Against an insider, the guarantee is DIS-2 and DIS-2 alone: the forgery
+    credits the victim, so it can only destroy and never enrich.
+
+WHAT D3a DOES NOT CLOSE, said plainly. D-17 IS UNTOUCHED. Every agent runs as the same OS
+user and reads every private key, so an agent that can forge A's act can forge A's intent
+in the same breath. This raises the cost of a forged privileged act from one signature to
+TWO. That is the entire security gain and it is arithmetic, not prevention. Anyone reading
+"the intent requirement authenticates the actor" has found a defect.
+
+WHY A REFUSAL HERE IS NOT A PR-022 CLAUSE 4 CONSEQUENCE, flagged as an interpretive step
+rather than buried. Clause 4 forbids attaching consequence to a Phase A reputation figure:
+"no weighting, no gating, no privileges". The intent requirement reads no figure. It does
+not vary by identity, standing, history, colegiado or any computed quantity -- it is the
+same requirement for every name on its first act as on its thousandth, in the way that
+`--kind` being mandatory is the same for everyone. A uniform well-formedness rule on the
+act's own contents is not a weighting of the actor. IF A VERIFIER DISAGREES, the disposal
+is to remove the refusal and keep `trace`, which reports the same facts and gates nothing;
+that fallback is cheap and is why the reporting was built separately from the refusal.
+This module does NOT rely on PR-060 for the argument: PR-060 is unconfirmed and does not
+bind.
+
 INERT (D-21). Nothing here varies a burden, a weight, a quorum or a permission. PR-022
 clause 4 holds: NO CONSEQUENCE ATTACHES. NONE. `verify` reports CONTESTED and stops;
 what follows is an agentic court on the record, which is the operator's stated success
@@ -85,8 +139,41 @@ NAMESPACE = "harness-act"      # distinct from warrant.NAMESPACE; a warrant sign
 SCHEMA_VERSION = 1
 GENESIS = "genesis"
 
+INTENT_KIND = "intent"
+
+PRIVILEGED_KINDS = frozenset({"verdict", "contest", "distinguish", "grant"})
+"""Acts that need a declared intent first (D3a, operator ruling 2026-08-17).
+
+THE CRITERION, stated so the set is not arbitrary and can be argued with: an act is
+privileged when its subject is a name OTHER than the signer, or a record that binds
+others. `verdict` disposes of another name's work. `contest` accuses another name.
+`distinguish` (T-402) disposes of a case for everyone afterwards. `grant` hands a
+privilege on. `commit` and `filing` are a name doing its own work and are NOT privileged,
+which is why they are absent.
+
+DEFECT INTENT-BY-KIND-A, named here rather than found later. Enforcement reads the KIND
+and never inspects the ref, so a signer who labels a disposal `commit` escapes the
+requirement entirely. Inspecting the ref would not close it either, because `ref` is a
+free string the signer also controls. What `trace` does instead is report intent coverage
+for EVERY act regardless of kind, so the escape shows up as an act with no intent rather
+than as a silence in the report. Visible, not prevented.
+
+INTENT_KIND is deliberately absent. An intent requiring an intent is an infinite regress,
+and the regress has to terminate at an act whose only backing is the signature and the
+warrant behind it.
+"""
+
+INTENT_MAX_AGE_S = 24 * 3600
+"""How long a declared intent stays usable.
+
+An intent that never expires is a standing authorization, which is the opposite of
+declaring intent BEFORE a specific act. This bound is a floor under that, not a solved
+TTL problem: T-401 owns self-expiring credentials generally, and the number here is a
+default this module chose. NO THRESHOLD RATIFIED by any record.
+"""
+
 PUBLIC_API = ("acts_dir", "chain", "sign_act", "verify_name", "verify_all",
-              "forks", "contest")
+              "forks", "contest", "declare_intent", "open_intents", "trace")
 
 
 class AttestError(Exception):
@@ -159,9 +246,125 @@ def head(root, name) -> str:
         node = chosen
 
 
+# ------------------------------------------------------------------------- intent
+
+def open_intents(root, name) -> list:
+    """This name's intents that are SIGNED, VERIFIED, unexpired, and not yet consumed.
+
+    Every one of those four adjectives is load-bearing and each one is a bypass that was
+    considered and closed:
+
+      SIGNED + VERIFIED against the name's enrolled key. Without this the requirement is
+        satisfiable with no key at all, for one `write_text` -- DIS-1 measured exactly that
+        cost when a panel fabricated a fork. An unsigned intent file would then "authorize"
+        a forged act, which makes the feature worse than its absence.
+      UNEXPIRED, per INTENT_MAX_AGE_S. An immortal intent is a standing authorization.
+      UNCONSUMED. One intent authorizes ONE act. Consumption is DERIVED, by looking for an
+        act on this chain whose `intent` field holds the intent's digest -- there is no
+        consumption ledger. That is deliberate: a mutable side file is the roster.py cache
+        defect (a second registry nothing reconciles), and warrant.enrolled_keys already
+        had to be rewritten to compute-on-read for that reason. PR-010's doctrine.
+
+    Read-only. Never repairs, never writes.
+    """
+    keys = enrolled_keys(root)
+    if name not in keys:
+        return []
+    pub = keys[name]["pubkey"]
+    acts = [a for a in chain(root, name) if "_unparseable" not in a]
+    consumed = {a.get("intent") for a in acts if a.get("intent")}
+    out = []
+    for a in acts:
+        if a.get("kind") != INTENT_KIND or a["_digest"] in consumed:
+            continue
+        ok, why = _verify_sig(root, name, a["_path"], pub)
+        if not ok:
+            continue
+        age = _age_seconds(a.get("ts"))
+        if age is None or age > INTENT_MAX_AGE_S:
+            continue
+        b = a.get("body") or {}
+        out.append({"digest": a["_digest"], "seq": a.get("seq"),
+                    "for_kind": b.get("for_kind"), "for_ref": b.get("for_ref"),
+                    "task": b.get("task"), "declares": b.get("declares"),
+                    "ts": a.get("ts"), "age_s": int(age)})
+    return out
+
+
+def _age_seconds(ts):
+    """Seconds since an ISO timestamp, or None when it cannot be read.
+
+    None is treated as EXPIRED by the caller, not as fresh. An unparseable timestamp must
+    never buy an unbounded intent: the failure has to fall closed, because the field is
+    written by the same party the bound is meant to constrain.
+    """
+    if not ts:
+        return None
+    import datetime as _dt
+    try:
+        t = _dt.datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=_dt.timezone.utc)
+    return (_dt.datetime.now(_dt.timezone.utc) - t).total_seconds()
+
+
+def declare_intent(root, name, key_path, for_kind, task, declares, for_ref="") -> dict:
+    """File an intent to perform a privileged act, as a signed act on this name's chain.
+
+    `task` is required and is the link D3 asks for: agent identity plus task id, so an
+    exercised privilege reconstructs to the board task that authorized the work. It is not
+    validated against the blackboard here -- attest.py must not import the board, and a
+    task id that does not exist is a finding for `trace` to report, not a refusal that
+    couples the evidentiary layer to task bookkeeping.
+    """
+    if for_kind == INTENT_KIND:
+        raise AttestError("an intent cannot declare an intent; the regress has to stop")
+    if not str(task).strip():
+        raise AttestError("--task is required: D3a links intent to identity AND task id, "
+                          "and an intent with no task cannot be reconstructed to the work "
+                          "that authorized it")
+    if not str(declares).strip():
+        raise AttestError("--declares is required: an intent that says nothing is a "
+                          "checkbox, and a checkbox anchors nothing")
+    return sign_act(root, name, key_path, INTENT_KIND, ref=for_ref,
+                    body={"for_kind": for_kind, "for_ref": for_ref, "task": task,
+                          "declares": declares,
+                          "NOT_AN_AUTHORIZATION": "this declares what this name intends. "
+                                                  "The authorization is the warrant that "
+                                                  "issued the name (D3a: privilege "
+                                                  "granted), and it already existed."})
+
+
+def _match_intent(root, name, kind, task):
+    """The intent that authorizes this act, or a refusal explaining exactly what is
+    missing. Returns (intent_or_None, message_or_None)."""
+    avail = open_intents(root, name)
+    for i in avail:
+        if i["for_kind"] == kind and str(i["task"]) == str(task):
+            return i, None
+    how = (f"python3 .harness/bin/attest.py declare-intent --name {name} --key <key> "
+           f"--for-kind {kind} --task {task} --declares \"<what and why>\"")
+    if not avail:
+        return None, (
+            f"{name!r} has no open intent for a {kind!r} act on task {task!r}, and "
+            f"{kind!r} is privileged (D3a: intent declared BEFORE the act). File one "
+            f"first:\n  {how}\n"
+            f"An intent must be signed by this name's enrolled key, no older than "
+            f"{INTENT_MAX_AGE_S}s, and unconsumed. If you filed one and it is not being "
+            f"seen, run `attest.py intents --name {name}` -- an unsigned or expired "
+            f"intent is invisible here BY DESIGN, because an unsigned one costs no key.")
+    have = ", ".join(f"{i['for_kind']}/task={i['task']}" for i in avail)
+    return None, (
+        f"{name!r} has {len(avail)} open intent(s) but none for a {kind!r} act on task "
+        f"{task!r}. Open: {have}. An intent authorizes ONE act of ONE kind on ONE task, "
+        f"so a near miss is a refusal and not a warning. File the right one:\n  {how}")
+
+
 # --------------------------------------------------------------------------- sign
 
-def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
+def sign_act(root, name, key_path, kind, ref="", body=None, task=None) -> dict:
     """Write an act onto `name`'s chain and sign it with `name`'s key.
 
     This process signs with a key it can read, which is exactly the limitation D-17
@@ -177,6 +380,14 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
     key = pathlib.Path(key_path).expanduser()
     if not key.exists():
         raise AttestError(f"no such private key: {key}")
+
+    # D3a: what can be refused without reading the chain is refused here, before the guard
+    # is even taken, so the cheap failure stays cheap.
+    if kind in PRIVILEGED_KINDS and not str(task or "").strip():
+        raise AttestError(
+            f"--task is required for a {kind!r} act: {kind!r} is privileged, and D3a links "
+            f"the exercised privilege to the intent by identity AND task id. Without a "
+            f"task there is nothing to match an intent against.")
 
     import roster  # lazy, for the guard; roster imports warrant lazily too, no cycle
 
@@ -197,6 +408,19 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
     # returned a stale prev -- manufacturing a FORK from a single party signing twice,
     # which the tool then printed as proof that two parties held the key.
     with roster._guard(root):
+        # D3a, AND IT IS IN HERE FOR A REASON. Matching an intent is a read-decide-write:
+        # read the open intents, decide which one authorizes this act, write the act that
+        # consumes it. Outside the guard, two concurrent privileged acts both see the same
+        # open intent and both consume it, which turns "one intent authorizes ONE act" into
+        # a suggestion. That is the identical shape as the two defects this function was
+        # already repaired for, so it is not a hypothetical race -- it is this module's
+        # established failure mode, in a third place.
+        # It still refuses before any file is created, so a refusal writes nothing.
+        used_intent = None
+        if kind in PRIVILEGED_KINDS:
+            used_intent, why = _match_intent(root, name, kind, task)
+            if used_intent is None:
+                raise AttestError(why)
         seq = 1 + max((int(q.stem) for q in d.glob("*.json") if q.stem.isdigit()),
                       default=-1)
         prev = head(root, name)
@@ -220,6 +444,11 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
             "prev": prev,
             "ts": hc.now_iso(),
             "namespace": NAMESPACE,
+            "task": str(task) if task else "",
+            # D3a. The digest of the intent this act exercises, or "" when the kind is not
+            # privileged. Consumption is derived from this field alone -- there is no
+            # ledger, so there is no second registry to fall out of sync (PR-010).
+            "intent": used_intent["digest"] if used_intent else "",
             "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to "
                                             "the signing name, never to the process",
         }
@@ -233,9 +462,10 @@ def sign_act(root, name, key_path, kind, ref="", body=None) -> dict:
         path.unlink(missing_ok=True)
         raise AttestError(f"could not sign: {(r.stderr or r.stdout).strip()}")
     _emit(root, "act_signed", name=name, seq=seq, act_kind=kind,
-          prev=act["prev"])
+          prev=act["prev"], task=act["task"], intent=act["intent"])
     return {"name": name, "seq": seq, "path": str(path), "digest": digest(path),
-            "prev": act["prev"]}
+            "prev": act["prev"], "task": act["task"], "intent": act["intent"],
+            "privileged": kind in PRIVILEGED_KINDS}
 
 
 def _emit(root, kind, **fields):
@@ -343,20 +573,180 @@ def forks(root) -> list:
     return [f for r in verify_all(root)["reports"] for f in r.get("forks", [])]
 
 
+# -------------------------------------------------------------------------- trace
+
+def trace(root, name=None) -> dict:
+    """Walk every act back through its three anchoring records to the operator (D3a).
+
+    act (privilege exercised) -> intent (intent declared) -> name -> warrant (privilege
+    granted) -> root fingerprint -> the human who holds the private half.
+
+    IT REPORTS AND NEVER REFUSES. This is the half of D3a that survives even if a verifier
+    rules the `sign` refusal out of order under PR-022 clause 4, which is why it is a
+    separate function with no shared state.
+
+    Counts come out RAW AND DISTINCT, both, never one alone (TELEMETRY-PROVENANCE-A).
+
+    THE WALK'S LAST STEP IS NOT SELF-AUTHENTICATING and the report says so. Every check in
+    this process reads `trust/root.pub` from a filesystem every agent can write. A trace
+    that ends "authorized by SHA256:..." is consistent with an attacker having written that
+    fingerprint there. `warrant.py audit --expect <fingerprint held off this machine>` is
+    the only thing that breaks the circle, and the report carries that instruction rather
+    than implying it was already done.
+    """
+    keys = enrolled_keys(root)
+    names = [name] if name else sorted(
+        set(keys) | ({p.name for p in acts_dir(root).iterdir() if p.is_dir()}
+                     if acts_dir(root).exists() else set()))
+    anchor = None
+    try:
+        fp = pathlib.Path(root) / "trust" / "root.fingerprint"
+        anchor = fp.read_text(encoding="utf-8").strip() if fp.is_file() else None
+    except OSError:
+        anchor = None
+
+    rows, gaps, unpriv = [], [], []
+    for n in names:
+        issued = keys.get(n)
+        pub = issued["pubkey"] if issued else None
+        by_digest = {}
+        acts = [a for a in chain(root, n) if "_unparseable" not in a]
+        for a in acts:
+            by_digest[a["_digest"]] = a
+        for a in acts:
+            kind = a.get("kind", "?")
+            privileged = kind in PRIVILEGED_KINDS
+            sig_ok = False
+            if pub:
+                sig_ok, _ = _verify_sig(root, n, a["_path"], pub)
+            idig = a.get("intent") or ""
+            intent_act = by_digest.get(idig) if idig else None
+            intent_ok = False
+            if intent_act is not None and pub:
+                intent_ok, _ = _verify_sig(root, n, intent_act["_path"], pub)
+            row = {
+                "name": n, "seq": a.get("seq"), "kind": kind,
+                "privileged": privileged,
+                "task": a.get("task") or "",
+                "exercised_verified": sig_ok,
+                "intent_digest": idig,
+                "intent_present": intent_act is not None,
+                "intent_verified": intent_ok,
+                "intent_same_chain": intent_act is not None,
+                "granted_by_warrant": issued["warrant"] if issued else None,
+                "colegiado": issued["colegiado"] if issued else None,
+                "role": issued["role"] if issued else None,
+                "anchor": anchor,
+            }
+            row["complete"] = bool(
+                sig_ok and issued and anchor
+                and (not privileged or (intent_act is not None and intent_ok
+                                        and str((intent_act.get("body") or {}).get("task"))
+                                        == str(a.get("task") or ""))))
+            rows.append(row)
+            # INTENT-BY-KIND-A's mitigation, and it CANNOT live in `gaps`. A test caught
+            # that: an act labelled `commit` with a good signature, a warrant and an anchor
+            # is `complete` -- correctly, because no intent is required of it -- so it never
+            # reaches the gap branch and the mislabelled-disposal surface was reported
+            # nowhere at all. These are not gaps. They are the population an auditor has to
+            # read, because a disposal hidden under an unprivileged label looks exactly like
+            # an honest unprivileged act and no mechanism here can tell them apart.
+            if not privileged and not idig:
+                unpriv.append({"name": n, "seq": a.get("seq"), "kind": kind,
+                               "ref": a.get("ref", ""), "task": a.get("task") or ""})
+            if not row["complete"]:
+                missing = []
+                if not sig_ok:
+                    missing.append("exercised act does not verify")
+                if not issued:
+                    missing.append("no warrant issued this name, so nothing granted it")
+                if not anchor:
+                    missing.append("no trust/root.fingerprint to end the walk at")
+                if privileged and intent_act is None:
+                    missing.append("no intent record" if not idig else
+                                   "intent digest names an act not on this chain")
+                elif privileged and not intent_ok:
+                    missing.append("intent record does not verify")
+                elif privileged and str((intent_act.get("body") or {}).get("task")) \
+                        != str(a.get("task") or ""):
+                    missing.append("intent task and act task disagree")
+                gaps.append({"name": n, "seq": a.get("seq"), "kind": kind,
+                             "missing": missing})
+
+    priv = [r for r in rows if r["privileged"]]
+    return {
+        "acts_raw": len(rows),
+        "acts_distinct": len({(r["name"], r["seq"]) for r in rows}),
+        "privileged_raw": len(priv),
+        "privileged_distinct": len({(r["name"], r["seq"]) for r in priv}),
+        "complete_raw": sum(1 for r in rows if r["complete"]),
+        "complete_distinct": len({(r["name"], r["seq"]) for r in rows if r["complete"]}),
+        "names_raw": len(names),
+        "names_distinct": len(set(names)),
+        "unprivileged_no_intent_raw": len(unpriv),
+        "unprivileged_no_intent_distinct": len({(u["name"], u["seq"]) for u in unpriv}),
+        "anchor": anchor,
+        "rows": rows,
+        "gaps": gaps,
+        "unprivileged_no_intent": unpriv,
+        "INTENT_BY_KIND_A": (
+            "DEFECT INTENT-BY-KIND-A. "
+            "The acts listed under unprivileged_no_intent required no intent because of "
+            "their KIND. A signer who labels a disposal `commit` lands in that list and "
+            "escapes the requirement. Inspecting `ref` would not help: the signer writes "
+            "that too. So this list is the audit surface, and it is a list a human reads "
+            "rather than a check a machine passes. Intent acts appear in it as well. They "
+            "are NOT filtered out even though they can never require an intent themselves, "
+            "because a disposal labelled `intent` would hide in exactly the gap that filter "
+            "would open."),
+        "COUNTS_ARE_REPORTED_TWICE": "raw and distinct, per TELEMETRY-PROVENANCE-A. Acts "
+                                     "are files on disk, so raw and distinct agree unless "
+                                     "a directory was renumbered; when they diverge the "
+                                     "chain has been edited and that is the finding.",
+        # The obvious way to write this note is to interpolate the on-disk fingerprint into
+        # the --expect command so the operator can copy-paste it. THAT IS THE BUG, and the
+        # first version of this string had it: pasting back a value read from the file under
+        # suspicion turns an audit into a self-consistency check while looking like an
+        # audit. Same family as AUDIT-EXPECT-DISCARDED. The value on disk is shown, clearly
+        # labelled as the untrusted side of the comparison, and never inside the command.
+        "ANCHOR_IS_UNVERIFIED": (
+            "The last step of every walk above reads trust/root.pub from a filesystem every "
+            "agent can write (D-17). This report cannot tell the operator's anchor from one "
+            "an attacker wrote, so read every 'complete' above as "
+            "complete-IF-the-anchor-is-genuine. To settle it, run\n"
+            "    python3 .harness/bin/warrant.py audit --expect \"SHA256:<the fingerprint "
+            "you hold OFF this machine>\"\n"
+            "typing the value from your password manager, phone note or paper. Do NOT copy "
+            "it from this report: the fingerprint this process can see is "
+            + (anchor or "(absent)") + ", and that string is the thing being checked, not "
+            "the thing to check it against."),
+        "D_17_UNCHANGED": "An agent that can read a name's private key can file its intent "
+                          "AND its act. D3a raises a forged privileged act from one "
+                          "signature to two. It authenticates nobody.",
+    }
+
+
 # ------------------------------------------------------------------------ contest
 
-def contest(root, accuser, key_path, target_name, target_seq, reason) -> dict:
+def contest(root, accuser, key_path, target_name, target_seq, reason, task=None) -> dict:
     """File a forgery claim. DIS-5: the claim is an ACT on the accuser's own chain.
 
     Filing is not free and is not anonymous. It costs the accuser a permanent, signed
     position in its own record, which is what makes AF-3 ("the delay costs the delayer")
     bite without attaching a punitive consequence PR-022 clause 4 would forbid.
+
+    `contest` IS a privileged kind (D3a), so as of 2026-08-17 an accuser must declare the
+    intent to accuse before accusing. That was checked against AF-5 before it was allowed:
+    a mechanism must not let one party stall another. It does not, because an intent is
+    SELF-SERVICE -- the accuser files its own, on its own chain, with its own key, and no
+    third party is in the path. The cost is one extra signature by the accuser, which is
+    the direction AF-3 already points.
     """
     if accuser == target_name:
         raise AttestError("a name cannot contest its own act; that is a retraction, "
                           "which is a different verb and does not exist yet")
     return sign_act(root, accuser, key_path, "contest",
-                    ref=f"{target_name}#{target_seq}",
+                    ref=f"{target_name}#{target_seq}", task=task,
                     body={"reason": reason,
                           "AF_3": "this claim is permanently attributable to the "
                                   "filing name, whether or not it is upheld",
@@ -378,6 +768,26 @@ def main(argv=None) -> int:
     s.add_argument("--kind", required=True, help="e.g. commit, filing, verdict, offer")
     s.add_argument("--ref", default="", help="what the act points at")
     s.add_argument("--body", help="JSON object")
+    s.add_argument("--task", help="board task id; REQUIRED for a privileged kind (%s)"
+                                 % ", ".join(sorted(PRIVILEGED_KINDS)))
+
+    di = sub.add_parser("declare-intent",
+                        help="declare intent to perform a privileged act, BEFORE it (D3a)")
+    di.add_argument("--name", required=True)
+    di.add_argument("--key", required=True)
+    di.add_argument("--for-kind", required=True, dest="for_kind",
+                    help="the privileged kind this intent authorizes, one act of it")
+    di.add_argument("--task", required=True, help="board task id (D3a linkage)")
+    di.add_argument("--declares", required=True, help="what this name intends, and why")
+    di.add_argument("--for-ref", default="", dest="for_ref")
+
+    ints = sub.add_parser("intents", help="open, signed, unexpired, unconsumed intents")
+    ints.add_argument("--name", required=True)
+
+    tr = sub.add_parser("trace", help="walk acts back through the three anchoring "
+                                      "records to the operator (D3a)")
+    tr.add_argument("--name", help="one name (default: every name)")
+    tr.add_argument("--json", action="store_true")
 
     v = sub.add_parser("verify", help="verify signatures and detect forks")
     v.add_argument("--name", help="one name (default: every name)")
@@ -394,6 +804,8 @@ def main(argv=None) -> int:
     k.add_argument("--name", required=True, help="the name whose act is contested")
     k.add_argument("--seq", required=True, type=int)
     k.add_argument("--reason", required=True)
+    k.add_argument("--task", help="board task id; contest is privileged, so this is "
+                                 "required and an intent must be on file first (D3a)")
 
     args = ap.parse_args(argv)
     root = w.resolve_root(args.root)
@@ -401,7 +813,26 @@ def main(argv=None) -> int:
         if args.cmd == "sign":
             body = json.loads(args.body) if args.body else None
             print(json.dumps(sign_act(root, args.name, args.key, args.kind, args.ref,
-                                      body), indent=2, ensure_ascii=False))
+                                      body, task=args.task),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "declare-intent":
+            print(json.dumps(declare_intent(root, args.name, args.key, args.for_kind,
+                                            args.task, args.declares, args.for_ref),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "intents":
+            out = open_intents(root, args.name)
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+            if not out:
+                print(f"\nno OPEN intents for {args.name!r}. An intent is invisible here "
+                      f"unless it is signed by that name's enrolled key, under "
+                      f"{INTENT_MAX_AGE_S}s old, and not yet consumed by an act.",
+                      file=sys.stderr)
+        elif args.cmd == "trace":
+            out = trace(root, args.name)
+            if args.json:
+                print(json.dumps(out, indent=2, ensure_ascii=False))
+            else:
+                _render_trace(out)
         elif args.cmd == "verify":
             out = verify_name(root, args.name) if args.name else verify_all(root)
             if args.json or args.name:
@@ -417,7 +848,8 @@ def main(argv=None) -> int:
                       f"{'signed' if a.get('_signed') else 'UNSIGNED'}")
         elif args.cmd == "contest":
             print(json.dumps(contest(root, args.by, args.key, args.name, args.seq,
-                                     args.reason), indent=2, ensure_ascii=False))
+                                     args.reason, task=args.task),
+                             indent=2, ensure_ascii=False))
     except (AttestError, ValueError, json.JSONDecodeError) as exc:
         print(f"refused: {exc}", file=sys.stderr)
         return 2
@@ -434,9 +866,47 @@ def _render(out) -> None:
         for f in r.get("forks", []):
             print(f"\nFORK en {r['name']}, prev={f['prev'][:24]}")
             for b in f["branches"]:
-                print(f"    seq {b['seq']:>3}  {b['kind']:12s} {b['ts']}")
-            print(f"    {f['PROOF']}")
+                print(f"    seq {b['seq']:>3}  {b['kind']:12s} {b['ts']}"
+                      f"  {'verificado' if b.get('verified') else 'SIN VERIFICAR'}")
+            # `PROOF` until 2026-08-17. When DIS-1's proof claim was retracted the key was
+            # renamed to MEANS and this line was not updated, so `verify` with a fork
+            # present raised KeyError -- the human-readable renderer crashed on the ONE
+            # case it exists to report, and nothing caught it because no test rendered a
+            # fork. Found while building D3a. Defect RENDER-FORK-KEYERROR.
+            print(f"    {f['STATUS']}: {f['MEANS']}")
+            print(f"    {f['NO_CONSEQUENCE']}")
     print(f"\n{out['NOTE']}")
+
+
+def _render_trace(out) -> None:
+    print(f"actos                  {out['acts_raw']} crudos / "
+          f"{out['acts_distinct']} distintos")
+    print(f"actos privilegiados    {out['privileged_raw']} crudos / "
+          f"{out['privileged_distinct']} distintos")
+    print(f"cadena completa        {out['complete_raw']} crudos / "
+          f"{out['complete_distinct']} distintos")
+    print(f"nombres                {out['names_raw']} crudos / "
+          f"{out['names_distinct']} distintos")
+    print(f"sin intencion exigida  {out['unprivileged_no_intent_raw']} crudos / "
+          f"{out['unprivileged_no_intent_distinct']} distintos")
+    print(f"ancla                  {out['anchor'] or 'NINGUNA'}")
+    for r in out["rows"]:
+        mark = "ok " if r["complete"] else "INC"
+        print(f"  {mark} {r['name']:20s} seq {str(r['seq']):>3} {r['kind']:12s} "
+              f"{'PRIV' if r['privileged'] else '    '} "
+              f"tarea={r['task'] or '-':8s} "
+              f"warrant={r['granted_by_warrant'] or 'NINGUNO'}")
+    for g in out["gaps"]:
+        print(f"\nHUECO {g['name']} seq {g['seq']} ({g['kind']})")
+        for m in g["missing"]:
+            print(f"    {m}")
+    if out["unprivileged_no_intent"]:
+        print(f"\n{out['INTENT_BY_KIND_A']}")
+        for u in out["unprivileged_no_intent"]:
+            print(f"    {u['name']:20s} seq {str(u['seq']):>3} {u['kind']:12s} "
+                  f"ref={u['ref'] or '-'}")
+    print(f"\n{out['ANCHOR_IS_UNVERIFIED']}")
+    print(f"\n{out['D_17_UNCHANGED']}")
 
 
 if __name__ == "__main__":

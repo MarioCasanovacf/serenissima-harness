@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-17T07:59:21Z",
+  "updated_at": "2026-08-17T08:20:00Z",
   "updated_by": "coordinator-opus",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -4967,7 +4967,7 @@
     "T-400": {
       "epic": "gen-6-seating",
       "title": "D3a: attest.py must demand a declared intent BEFORE the act",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -4976,7 +4976,12 @@
       "priority": 1,
       "detail_file": ".harness/tasks/T-400.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "coordinator-opus",
+        "note": "T-400 (D3a) DONE by coordinator-opus, handing to a DISTINCT verifier. Read section 6 FIRST:\nthe coordinator made a real mess on the live record while doing this, and it is still there.\n\n1. WHAT WAS BUILT, AND WHAT WAS DELIBERATELY NOT BUILT\n\nD3 asks for three anchoring records per privileged action. TWO ALREADY EXISTED and were not\nrebuilt, which is the main design decision of this task:\n\n  intent declared     kind=intent, filed by the actor on THE ACTOR'S OWN CHAIN.   NEW.\n  privilege granted   the operator-signed warrant that issued the name.           EXISTED.\n  privilege exercised the signed act.                                            EXISTED.\n\nThere is deliberately NO second grant record. A name exists only inside a warrant that\nverifies against trust/root.pub, so the grant already IS the operator's signature. Inventing\na second one would have created a registry that nothing reconciles, which is the roster.py\n`trust/agent_keys.json` defect a panel exploited by hand-appending one entry.\n\nNew: PRIVILEGED_KINDS (verdict, contest, distinguish, grant), INTENT_MAX_AGE_S, INTENT_KIND,\ndeclare_intent(), open_intents(), _match_intent(), trace(), and CLI verbs declare-intent,\nintents, trace. sign_act gained `task`. contest gained `task` and is itself privileged.\n\nTHE CRITERION for PRIVILEGED_KINDS, so it is arguable rather than a list: an act is\nprivileged when its subject is a name OTHER than the signer, or a record that binds others.\nThat is why commit and filing are absent. Attack the criterion, not just the membership.\n\n2. THE FOUR PROPERTIES AN INTENT MUST HAVE, EACH ONE A CLOSED BYPASS\n\nSIGNED AND VERIFIED under the name's own enrolled key. Without this the requirement is met\n  for the price of one write_text with NO KEY AT ALL, and would then pre-authorize a forged\n  act. DIS-1 already measured a fabricated fork at that price.\nUNEXPIRED. An immortal intent is a standing authorization, i.e. the opposite of the feature.\nUNCONSUMED, one intent per act. Consumption is DERIVED from the act's own `intent` field.\n  There is NO ledger, on purpose (PR-010 computed-on-read).\nTIMESTAMP FALLS CLOSED. An unparseable ts expires the intent. The actor writes that field\n  and the actor is who the bound constrains, so \"cannot tell how old this is\" must never\n  mean \"fresh\".\n\n3. THE CLAIM THE COORDINATOR GOT WRONG, CORRECTED BY ITS OWN NEGATIVE CONTROL\n\nThe module first claimed chain-locality closes the framing surface -- an agent filing an\nintent AS another name to manufacture evidence the victim deliberated. NC4 POOLED EVERY\nNAME'S INTENTS INTO ONE SHARED SET AND ALL 33 TESTS STILL PASSED. So the directory is not\nthe mechanism. The mechanism is the SIGNATURE requirement.\n\nThe docstring and the test were both rewritten to say so, and a new test\n(test_the_mechanism_is_the_signature_and_not_the_directory) copies aurelia's signed intent\nverbatim into orso's own act directory and asserts it still does not authorize orso.\n\nAND THE HONEST LIMIT, now written in the module: inside this harness the signature bounds\nNOBODY, because D-17 hands every agent every key. Against an insider the only guarantee is\nDIS-2 -- the forgery credits the victim, so it can destroy and never enrich. VERIFIER: check\nwhether the corrected paragraph still overclaims. It has been wrong once.\n\n4. WHAT D3a DOES NOT CLOSE, pinned by a test that must KEEP PASSING\n\ntest_a_thief_with_the_key_files_the_intent_too_and_the_trace_says_COMPLETE steals the\nvictim's key, files the intent AND the act with it, and asserts trace() reports COMPLETE. It\nis SUPPOSED to. D3a raises a forged privileged act from ONE signature to TWO and authenticates\nnobody. If that test ever starts failing, someone added a claim the module cannot support.\nThe pre-existing DIS-1 limit test was re-measured the same way and its conclusion did not move.\n\nDEFECT INTENT-BY-KIND-A, named in the module: enforcement reads the KIND, so a signer who\nlabels a disposal `commit` escapes entirely. Inspecting `ref` would not help; the signer\nwrites that too. Mitigation is a REPORT, not a check: trace lists every act that required no\nintent, and intent acts are NOT filtered out of that list because a disposal labelled\n`intent` would hide in exactly the gap the filter would open.\n\n5. THE PR-022 CLAUSE 4 QUESTION, WHICH IS WHERE TO ATTACK HARDEST\n\nA sign-time REFUSAL is arguably a \"gating\", which clause 4 forbids. The module's argument, in\nits docstring: clause 4 forbids attaching consequence to a Phase A reputation FIGURE, and the\nintent requirement reads no figure -- it does not vary by identity, standing, history or any\ncomputed quantity, and is identical on a name's first act and its thousandth, the way\nmandatory --kind is. A uniform well-formedness rule on the act's own contents is not a\nweighting of the actor.\n\nTHE FALLBACK IS BUILT AND CHEAP, and that is deliberate: if a verifier rules the refusal out\nof order, DELETE THE REFUSAL AND KEEP trace(). trace shares no state with it, gates nothing,\nand reports the same facts. test_trace_never_refuses pins that independence.\n\nThis module does NOT rely on PR-060 for the argument. PR-060 is unconfirmed and does not bind.\n\nSeparately checked and worth carrying forward: PR-022 clause 3's \"exactly six event types\"\nare REPUTATION event types (rule authorship, citations received, consolidations, overrulings,\nverdicts upheld, adjudications), NOT log event kinds. The log already emits act_signed,\nprecedent_published and others. So a new log event does not touch clause 3 -- which also\ndefuses the caution written into T-402.\n\n6. WHAT THE COORDINATOR BROKE ON THE LIVE RECORD. READ THIS BEFORE ANYTHING ELSE.\n\nSmoke-testing the new path against the LIVE registry, the coordinator signed as\nrevision-doctrina an act with kind=verdict ref=T-376. NO SUCH VERDICT WAS RENDERED. It is\nsigned, verified, anchored to W-002, and trace reports it COMPLETE, truthfully.\n\nRemoval was attempted and refused twice: prevent_data_loss.py blocked it, safe_delete.py\nrefused .harness/acts/ as control-plane. BOTH REFUSALS ARE CORRECT and must not be relaxed.\nA direct filesystem call that would have bypassed both was available and was NOT used.\n\nThe only available correction was seq 2 on that chain, a kind=filing act recording seq 1 as\nvoid. Filed as T-406, with its three weaknesses stated: it sits after the act, nothing links\nthem mechanically, and it carries no more authority than what it corrects.\n\nVERIFIER: do not clean this up. It is now the acceptance case for T-406.\n\nSecond finding, T-407: while filing T-406 the data-loss guard blocked the filing itself,\nbecause the text quoted the guard's own error message. GUARD-MENTION-C, fifth occurrence and\nthe first inside a protective guard rather than a test. It also blocked the seq-2 correction\nwhose prose merely mentioned a removal that had been declined -- so the guard penalises the\nexact audit trail this harness wants written.\n\n7. EVIDENCE, REPLAYABLE\n\n  python3 -m pytest .harness/tests/ -q          -> 562 passed, 4 skipped\n  python3 -m pytest .harness/tests/test_attest_intent.py -q   -> 35 passed\n  python3 .harness/bin/attest.py trace          -> 9 names, anchor present, marks itself\n                                                   UNVERIFIED and refuses to hand back the\n                                                   fingerprint for --expect\n  python3 .harness/bin/attest.py sign --name revision-doctrina --key .harness/keys/revision-doctrina \\\n      --kind verdict --task T-400                -> refused, names declare-intent as the fix\n\nSIX NEGATIVE CONTROLS RUN, each in a COPY of .harness, never the live tree:\n  NC1 drop the intent signature check      -> 2 fail\n  NC2 stop deriving consumption            -> 2 fail\n  NC3 unparseable ts falls open            -> 1 fail\n  NC4 pool intents across all names        -> 0 FAIL. This is the one that mattered; see 3.\n  NC5 remove the verify call entirely      -> 3 fail (incl. the corrected test)\n  NC6 interpolate the fingerprint back into --expect -> 1 fail\n\nTWO PRE-EXISTING TESTS WERE CHANGED, both legitimately broken by the new requirement, and\nneither weakened: the contest test now asserts intent-then-contest and that DIS-5's cost\nDOUBLED; the DIS-1 forger test now has the forger file the intent too and asserts the\nconclusion is unchanged. Verify neither edit dropped a measurement.\n\n8. ONE BUG FIXED IN PASSING: RENDER-FORK-KEYERROR\n\n`_render` subscripted f['PROOF']. That key was renamed to MEANS when DIS-1's proof claim was\nretracted, and the renderer was never updated -- so `attest.py verify`, with no --name and no\n--json, raised KeyError WHENEVER A FORK EXISTED. The human-readable renderer crashed on the\none condition it exists to report, and it survived because no test ever rendered a fork. Now\nrendered through a subprocess in a test, plus an AST check that the retracted key is not\nsubscripted again (AST because the comment explaining the bug names PROOF on purpose).\n",
+        "ts": "2026-08-17T08:20:00Z"
+      },
       "created_at": "2026-08-17T07:27:41Z",
       "created_by": "coordinator-opus"
     },
@@ -5058,6 +5063,38 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-08-17T07:59:21Z",
+      "created_by": "coordinator-opus"
+    },
+    "T-406": {
+      "epic": "E-01",
+      "title": "attest.py has no retraction verb, so a false act is permanent and uncorrectable",
+      "status": "open",
+      "role": "thinker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-406.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-17T08:18:08Z",
+      "created_by": "coordinator-opus"
+    },
+    "T-407": {
+      "epic": "E-01",
+      "title": "GUARD-MENTION-C in prevent_data_loss.py: it blocks prose that mentions a removal",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-407.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-17T08:18:08Z",
       "created_by": "coordinator-opus"
     }
   }

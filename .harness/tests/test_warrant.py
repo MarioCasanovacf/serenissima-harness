@@ -349,14 +349,26 @@ class Disincentives(GateCase):
     def test_a_contest_is_an_act_on_the_accusers_own_chain(self):
         wid, keys = self.full_warrant()
         attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit")
+        # `contest` became a privileged kind on 2026-08-17 (D3a, T-400): an accuser must
+        # declare the intent to accuse before accusing. Checked against AF-5 before it was
+        # allowed -- filing an intent is SELF-SERVICE, on the accuser's own chain with the
+        # accuser's own key, so no third party sits in the path and nobody can be stalled.
+        # The cost is one extra signature by the accuser, which is the direction AF-3
+        # already points.
+        attest.declare_intent(self.root, "orso", keys["orso"], "contest", "T-x",
+                              "acuso a aurelia de firmar un acto que no es mio")
         filed = attest.contest(self.root, "orso", keys["orso"], "aurelia", 0,
-                               "esa firma no es mia")
+                               "esa firma no es mia", task="T-x")
         self.assertEqual(filed["name"], "orso")
         chain = attest.chain(self.root, "orso")
-        self.assertEqual(len(chain), 1)
-        self.assertEqual(chain[0]["kind"], "contest")
-        self.assertEqual(chain[0]["ref"], "aurelia#0")
-        self.assertIn("AF_3", chain[0]["body"])
+        self.assertEqual(len(chain), 2, "intent then contest, both on orso's own chain")
+        self.assertEqual(chain[0]["kind"], attest.INTENT_KIND)
+        self.assertEqual(chain[1]["kind"], "contest")
+        self.assertEqual(chain[1]["ref"], "aurelia#0")
+        self.assertIn("AF_3", chain[1]["body"])
+        # DIS-5 unchanged and now doubly so: the accusation costs the accuser TWO permanent
+        # signed positions in its own record, not one.
+        self.assertEqual(chain[1]["intent"], chain[0]["_digest"])
 
     def test_a_name_cannot_contest_its_own_act(self):
         wid, keys = self.full_warrant()
@@ -685,16 +697,32 @@ class WhatForkDetectionDoesNotCatch(GateCase):
 
     def test_a_forger_using_the_shipped_verb_leaves_no_fork(self):
         """Measured. DIS-1 detects concurrent signing and retroactive insertion, NOT
-        forgery in general, and the docstring must keep saying so."""
+        forgery in general, and the docstring must keep saying so.
+
+        RE-MEASURED after D3a (T-400, 2026-08-17) and THE CONCLUSION DID NOT MOVE. `verdict`
+        is now a privileged kind, so the forger has to file an intent first -- which it does,
+        below, with the same stolen key, because under D-17 there is only one key to steal.
+        Two signatures instead of one, still no fork, still no detection. That is the point:
+        D3a raises the price of a forged privileged act and closes nothing.
+        """
         wid, keys = self.full_warrant()
         attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "honest-1")
-        attest.sign_act(self.root, "aurelia", keys["aurelia"], "verdict", "FORGED")
+        attest.declare_intent(self.root, "aurelia", keys["aurelia"], "verdict", "T-x",
+                              "intencion tambien forjada, con la misma llave robada")
+        attest.sign_act(self.root, "aurelia", keys["aurelia"], "verdict", "FORGED",
+                        task="T-x")
         attest.sign_act(self.root, "aurelia", keys["aurelia"], "commit", "honest-2")
         rep = attest.verify_name(self.root, "aurelia")
         self.assertEqual(rep["forks"], [], "if this ever passes, update the docstring")
         self.assertFalse(rep["contested"])
         self.assertIn("WHAT IT DOES NOT CATCH", attest.__doc__)
         self.assertIn("leaves NO fork", attest.__doc__)
+        # And the trace agrees the forgery is fully anchored, which is the honest report.
+        t = attest.trace(self.root, "aurelia")
+        forged = [r for r in t["rows"] if r["kind"] == "verdict"][0]
+        self.assertTrue(forged["complete"],
+                        "D3a must not be read as authenticating the actor; if this row is "
+                        "incomplete the trace is claiming something it cannot know")
 
     def test_a_keyless_fabricated_fork_is_not_reported_as_proof(self):
         """Two write_text calls used to produce a CONTESTED verdict with an

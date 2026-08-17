@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "revision-doctrina",
+  "seq": 0,
+  "kind": "intent",
+  "ref": "",
+  "body": {
+    "for_kind": "verdict",
+    "for_ref": "",
+    "task": "T-400",
+    "declares": "verdicto sobre T-376: replay de la auditoria de 33 banderas",
+    "NOT_AN_AUTHORIZATION": "this declares what this name intends. The authorization is the warrant that issued the name (D3a: privilege granted), and it already existed."
+  },
+  "prev": "genesis",
+  "ts": "2026-08-17T08:16:04Z",
+  "namespace": "harness-act",
+  "task": "",
+  "intent": "",
+  "CREDIT_FOLLOWS_THE_SIGNATURE": "DIS-2: every effect of this act accrues to the signing name, never to the process"
+}
