@@ -10,5 +10,7 @@
     "No net weakening: if any currently-blocked form must be allowed to make the parse work, say so explicitly rather than letting it lapse."
   ],
   "context_files": [],
-  "notes": []
+  "notes": [
+    "THIRD REPRODUCTION, same day (2026-08-17), during T-403's handoff. The guard blocked the write of a handoff note whose section 7 listed the filesystem-mutating method names that an AST test FORBIDS the module from calling. So the guard blocked a document describing a prohibition on the very operation it was guarding against. All three of today's reproductions share one shape: prose DESCRIBING a removal that was not being performed. Two of the three were audit trails this harness wants written, and the third was this defect's own bug report. Pin all three verbatim as allowed cases."
+  ]
 }
