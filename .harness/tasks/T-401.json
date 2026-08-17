@@ -1,0 +1,8 @@
+{
+  "id": "T-401",
+  "title": "D3b: delegation ceiling and self-expiring credentials for coordinator-to-subagent dispatch",
+  "description": "Operator ruled YES on D3 (2026-08-17). Two properties, enforced structurally rather than by policy: no identity may delegate more privilege than it holds; and a subagent credential carries a TTL the subagent cannot extend. Coordinator-to-subagent dispatch is unconstrained today. W-002 already carries an expiry, so make the expiry the rule rather than the instance. Write down the honest limit: under D-17 every agent runs as the same OS user, so this bounds ACCIDENT and makes overreach attributable, and does not bound an adversary. Pin it with a test that tries to exceed the ceiling and shows what is and is not stopped.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

@@ -1,0 +1,8 @@
+{
+  "id": "T-403",
+  "title": "D4b: build the PR-029 reconciliation-cost KPI, which has been ratified and unbuilt",
+  "description": "Operator ruled YES on D4 (2026-08-17). PR-029 defines a reconciliation-cost KPI with an operator baseline of roughly three months of human effort, and it has never been built, so rung 11 has records and no instrument. Build it. It measures what repairing a divergence costs over time, which is a different question from the Implementation Gap the valley measures at an instant. Follow the currency.py precedent exactly on the hard part: if PR-029 defines no failing point, emit NO THRESHOLD RATIFIED and no verdict, because a tool that invents a threshold has decided the question. Report every count twice, raw and distinct, per the event_stats.py provenance rule.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

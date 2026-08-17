@@ -1,6 +1,133 @@
 {
   "schema_version": 1,
-  "colegiados": {},
-  "plazas": {},
-  "names": {}
+  "colegiados": {
+    "fedatario": {
+      "incentive": "integridad del proceso; NO legisla, NO vota, NO tiene stake (AgentCity clerk constraint)",
+      "declared_by": "warrant:W-002",
+      "declared_at": "2026-08-17T07:20:32Z"
+    },
+    "registro": {
+      "incentive": "registros confirmados que sobreviven a la citacion posterior",
+      "declared_by": "warrant:W-002",
+      "declared_at": "2026-08-17T07:20:32Z"
+    },
+    "revision": {
+      "incentive": "refutaciones que se sostienen contra replica; PR-025 c1: el trabajo adversarial paga mas",
+      "declared_by": "warrant:W-002",
+      "declared_at": "2026-08-17T07:20:32Z"
+    }
+  },
+  "plazas": {
+    "gen-6-seating": {
+      "fedatario/registrar": {
+        "count": 1,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "fedatario/relator": {
+        "count": 1,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "fedatario/regulador": {
+        "count": 1,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "fedatario/codificador": {
+        "count": 1,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "registro/author": {
+        "count": 2,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "registro/verifier": {
+        "count": 3,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      },
+      "revision/verifier": {
+        "count": 3,
+        "declared_by": "warrant:W-002",
+        "declared_at": "2026-08-17T07:20:32Z"
+      }
+    }
+  },
+  "names": {
+    "fed-registrar": {
+      "colegiado": "fedatario",
+      "role": "registrar",
+      "epic": "gen-6-seating",
+      "persona": "vincula nombre a llave y a principal",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "fed-relator": {
+      "colegiado": "fedatario",
+      "role": "relator",
+      "epic": "gen-6-seating",
+      "persona": "corre la deliberacion en orden aleatorio",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "fed-regulador": {
+      "colegiado": "fedatario",
+      "role": "regulador",
+      "epic": "gen-6-seating",
+      "persona": "ancla evidencia ANTES de la discusion",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "fed-codificador": {
+      "colegiado": "fedatario",
+      "role": "codificador",
+      "epic": "gen-6-seating",
+      "persona": "convierte consenso en registro",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "registro-a": {
+      "colegiado": "registro",
+      "role": "author",
+      "epic": "gen-6-seating",
+      "persona": "",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "registro-b": {
+      "colegiado": "registro",
+      "role": "verifier",
+      "epic": "gen-6-seating",
+      "persona": "",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "revision-doctrina": {
+      "colegiado": "revision",
+      "role": "verifier",
+      "epic": "gen-6-seating",
+      "persona": "",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "revision-ataque": {
+      "colegiado": "revision",
+      "role": "verifier",
+      "epic": "gen-6-seating",
+      "persona": "",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    },
+    "revision-mecanismo": {
+      "colegiado": "revision",
+      "role": "verifier",
+      "epic": "gen-6-seating",
+      "persona": "",
+      "issued_by": "warrant:W-002",
+      "issued_at": "2026-08-17T07:20:32Z"
+    }
+  }
 }

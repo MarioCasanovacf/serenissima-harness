@@ -1,0 +1,8 @@
+{
+  "id": "T-399",
+  "title": "D2: publish the tier-1 record that separates constitutional from operational parameters",
+  "description": "Operator ruled YES on 2026-08-17 (see .harness/operator-rulings-2026-08-17.md, D2). The ruling authorizes the SPLIT and attaches no consequence to anything. Publish through precedent.py a tier-1 record whose ratio states: consequences may attach to OPERATIONAL parameters that agents set for themselves; CONSTITUTIONAL parameters (thresholds, quorum floors, any weighting) remain the operator's alone. MUST cite PR-022 clause 4 and PR-026 clause 3 and state precisely how the split coexists with each rather than overruling either - all twelve instruments the round-4 blind panel refuted 12-0 attached a consequence to a constitutional parameter, so the record must read as the narrow route past that, not as a general licence. MUST NOT itself attach any consequence. Do not treat the operator's yes as the record. Per PR-015 the record needs confirmation by a distinct identity before it binds; hand off accordingly. Seat: registro/author.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

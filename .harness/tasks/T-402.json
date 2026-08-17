@@ -1,0 +1,8 @@
+{
+  "id": "T-402",
+  "title": "D4a: the distinguish verb, and the citation-versus-legislation ratio it makes measurable",
+  "description": "Operator ruled YES on D4 (2026-08-17). Add a distinguish verb to precedent.py that disposes of a novel case by citing the nearest decided record plus the material difference, emitted as a signed act via attest.py. Then report the ratio of novel cases disposed by citation versus by legislation. That ratio is the differentiator and nobody else can report it because nobody else has the denominator. Two cautions from the existing layer: PR-022 clause 3 says the event types are exactly six, so check whether a new event type is even available before emitting one; and the ratio needs a defined denominator before it is published, or it becomes another figure with no falsifier. If the denominator cannot be defined honestly, ship the verb and report NO DENOMINATOR RATIFIED rather than inventing one.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

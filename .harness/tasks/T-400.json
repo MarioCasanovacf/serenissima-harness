@@ -1,0 +1,8 @@
+{
+  "id": "T-400",
+  "title": "D3a: attest.py must demand a declared intent BEFORE the act",
+  "description": "Operator ruled YES on D3 (2026-08-17). CSA framework, three anchoring records per privileged action: intent declared (before execution), privilege granted (the authorization decision), privilege exercised (the audit log), all linked by agent identity plus task id so any action reconstructs back to the authorizing human. attest.py already signs acts; the gap is that nothing requires a declared intent to exist first. Read the module's DIS-2 note before designing: credit follows the signature, always. A new record type must not invert that, because an intent that can be filed AS another identity is a framing surface. State in the docstring what the change does NOT close: D-17 impersonation stays open.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

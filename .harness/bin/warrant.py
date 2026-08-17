@@ -127,6 +127,15 @@ class TrustError(Exception):
     """Raised when the trust root is absent, tampered with, or unverifiable."""
 
 
+class UnsignedWarrant(TrustError):
+    """A warrant payload exists and carries NO signature file.
+
+    A subclass, so every caller that treats this as "not authorized" keeps behaving
+    exactly as before. It exists only so `reconcile` can separate a warrant awaiting the
+    operator from one whose signature fails, which are not the same news at all.
+    """
+
+
 # ------------------------------------------------------------------ paths and roots
 
 def resolve_root(flag=None) -> pathlib.Path:
@@ -266,7 +275,11 @@ def verify_signature(root, payload_path, sig_path) -> str:
     fp = check_anchor(root)
     payload_path, sig_path = pathlib.Path(payload_path), pathlib.Path(sig_path)
     if not sig_path.exists():
-        raise TrustError(f"warrant is unsigned: {sig_path} does not exist")
+        # UnsignedWarrant, not a bare TrustError: `reconcile` has to tell a warrant that is
+        # merely AWAITING the operator's signature from one whose signature FAILS. See the
+        # defect note in reconcile(). Callers that only care "is this authorized" keep
+        # working unchanged, because UnsignedWarrant IS a TrustError.
+        raise UnsignedWarrant(f"warrant is unsigned: {sig_path} does not exist")
     with tempfile.TemporaryDirectory() as tmp:
         allowed = pathlib.Path(tmp) / "allowed_signers"
         pub = (trust_dir(root) / "root.pub").read_text(encoding="utf-8").strip()
@@ -468,7 +481,7 @@ def reconcile(root) -> dict:
     import roster
 
     out = {"enrolled": is_enrolled(root), "orphans": [], "checked": 0,
-           "warrants_verified": [], "warrants_invalid": []}
+           "warrants_verified": [], "warrants_invalid": [], "warrants_unsigned": []}
     if not out["enrolled"]:
         # DEFECT RECONCILE-SILENT-UNENROLLED, found by the third blind panel, and the
         # docstring above named the attack this branch enabled: "an agent that moves
@@ -499,6 +512,22 @@ def reconcile(root) -> dict:
     for path in sorted(wd.glob("W-*.json")) if wd.exists() else []:
         try:
             payload = verify_warrant(root, path.stem)["payload"]
+        except UnsignedWarrant as exc:
+            # DEFECT RECONCILE-UNSIGNED-DIRTY, found 2026-08-17 the first time a real
+            # warrant was applied. `clean` used to be false whenever ANY warrant file
+            # failed to verify, and `draft` writes an UNSIGNED payload by construction --
+            # the coordinator cannot sign. So the normal state between drafting and
+            # signing reported `clean: false`, and a genuinely FAILING signature reported
+            # the identical `clean: false`. An operator who learns to ignore the first
+            # ignores the second, which is alarm fatigue built into the indicator.
+            #
+            # Narrowing `clean` loses no detection, and that is the load-bearing claim:
+            # an unsigned warrant authorizes NOTHING, because verify_warrant refuses it
+            # and nothing from it ever enters `authorized`. Any roll row that leaned on it
+            # therefore still surfaces as an ORPHAN, which is the real detector. A test
+            # pins exactly that.
+            out["warrants_unsigned"].append({"id": path.stem, "reason": str(exc)})
+            continue
         except TrustError as exc:
             out["warrants_invalid"].append({"id": path.stem, "reason": str(exc)})
             continue
@@ -546,6 +575,13 @@ def reconcile(root) -> dict:
                                    "issued_by": entry.get("issued_by"),
                                    "reason": "no verified warrant issues it"})
     out["clean"] = not out["orphans"] and not out["warrants_invalid"]
+    if out["warrants_unsigned"]:
+        out["note"] = (
+            f"{len(out['warrants_unsigned'])} warrant payload(s) carry no signature. That "
+            "is the NORMAL state of a draft awaiting the operator, so it does not affect "
+            "`clean`: an unsigned payload authorizes nothing, and any roll row leaning on "
+            "one shows up in `orphans`. A signature that EXISTS and fails to verify lands "
+            "in `warrants_invalid` instead, and that does set `clean` to false.")
     return out
 
 
@@ -746,11 +782,20 @@ def audit(root, expect=None) -> dict:
                             "whole roll as forged.")
     else:
         out["anchor_matches_operator"] = None
+        # This string used to assert that trust/ is "untracked by git". As of 2026-08-17,
+        # on the operator's instruction (decision D6), root.pub and root.fingerprint ARE
+        # tracked. Leaving the old sentence would have this tool telling the operator
+        # something false about their own harness, so it now describes what tracking does
+        # and does not buy. The conclusion is unchanged: without --expect this is not an
+        # audit, because a diff is evidence and not prevention, and only a fingerprint held
+        # off this filesystem closes the circle.
         out["UNVERIFIED"] = (
             "No --expect fingerprint supplied, so this report cannot distinguish the "
             "operator's anchor from one an attacker wrote. trust/ is writable by every "
-            "agent and untracked by git. Re-run with --expect SHA256:... to make this "
-            "an audit rather than a self-consistency check.")
+            "agent on this filesystem. Tracking it in git (D6, 2026-08-17) makes a swap "
+            "a visible DIFF, which is evidence and not prevention: an agent can still "
+            "swap the file and still stage the swap. Re-run with --expect SHA256:... to "
+            "make this an audit rather than a self-consistency check.")
     return out
 
 
