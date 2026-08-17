@@ -625,3 +625,51 @@ do not bound WHO occupies them.
 
 Tracks 1 and 2 in parallel, now, no ratification. Track 3 needs a record, drafted on the
 operator's word and panelled before publication. Track 4 after track 2.
+
+---
+
+# Ruling round 4.3 (operator, 2026-08-16): the taste-calibration epic is retired
+
+Operator, verbatim: *"Mario taste calibration matala. Eso es <retired-skill> primitivo."*
+
+## Why it was raised
+
+Asked how the harness was actually doing, the coordinator measured the board rather than
+answering from impression. 194 tasks: 138 done, 3 open, 1 blocked, 52 failed. Of the 52
+failures, 47 belong to deliberately disposable smoke and probe epics (`scratch-swarm`,
+`scratch-guardrail-v2`, the E-01 substrate smoke set) and were built to fail.
+
+The remaining 5 were the only non-disposable failures on the board, and all 5 were
+`mario-taste-calibration`: T-324 through T-328. Those five were precisely the tasks that
+would have demonstrated, blind, that the harness's design output had improved. The one epic
+that existed to prove the product got better was the one that stayed broken.
+
+## Disposition
+
+RETIRED, not repaired. The epic benchmarked a design-taste toolchain that has since been
+superseded; the successor lives outside this repository, so the A/B no longer measures
+anything real. `blackboard.py update --note` has recorded the ruling on all five tasks so
+that a future status sweep does not read them as an open wound and try to resurrect them.
+The `failed` status stands: the board has no `cancelled` state, and inventing one to make a
+count look better would be exactly the kind of cosmetic move this registry exists to refuse.
+
+Retired is not wasted. T-322 and T-323 shipped and their artifacts (the operator profile,
+the A/B rubric and fixture, the executive-presentation reference) were absorbed into the
+successor toolchain. The on-disk scaffolding under `projects/` and `evaluations/` no longer
+exists; nothing was deleted by this ruling.
+
+## What the coordinator still owes on the underlying question
+
+The operator's question was not about this epic. It was: *"no veo si hoy me da un mejor
+producto."* Killing the failed benchmark answers what to do with five rows; it does not
+answer the question. Measured product, recorded here so the next status pass starts from
+facts:
+
+- Two external projects delivered end to end through the harness: 18 files each, 2,651 and
+  3,308 lines, 10 tasks each, all closed.
+- 25 tools, 19 test files, 481 tests passing and 0 failing as of this commit.
+- 59 precedent records; 138 tasks closed.
+
+What is NOT measured anywhere: whether any of it is BETTER than what the same operator
+would have got without the harness. That was the retired epic's job. Nothing has inherited
+it, and the coordinator is not going to claim the improvement without an instrument.
