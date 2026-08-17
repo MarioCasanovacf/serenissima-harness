@@ -428,11 +428,30 @@ class StatedLimits(GateCase):
 
 class LiveStoreIsolation(GateCase):
 
-    def test_nothing_in_this_suite_enrolls_a_root_in_the_live_harness(self):
+    def test_nothing_in_this_suite_touches_the_live_trust_store(self):
+        """The claim is ISOLATION, not un-enrolment.
+
+        This test previously asserted `(LIVE_HARNESS / "trust").exists()` is False,
+        which conflated two different facts: that no test writes to the live store,
+        and that the operator has not enrolled yet. The operator enrolled on
+        2026-08-16 and the test began failing on a correct harness -- a false
+        positive that would have trained readers to ignore it.
+
+        What it must actually pin is that running this suite leaves the live trust
+        store byte-identical, whatever state the operator left it in. Both the
+        enrolled and un-enrolled cases are legitimate; a CHANGE is not.
+        """
+        def snapshot():
+            trust = LIVE_HARNESS / "trust"
+            if not trust.exists():
+                return None
+            return {p.name: p.read_bytes() for p in sorted(trust.iterdir()) if p.is_file()}
+
+        before = snapshot()
         self.full_warrant()
-        self.assertFalse((LIVE_HARNESS / "trust").exists(),
-                         "the live harness must stay un-enrolled until the operator "
-                         "runs init with their own key")
+        self.assertEqual(snapshot(), before,
+                         "this suite must never create, modify or delete anything in the "
+                         "live trust store; it generates its own root in a temp dir")
 
     def test_audit_reports_un_enrolled_cleanly(self):
         out = w.audit(self.base / "empty")

@@ -104,6 +104,45 @@ def expire_claims(bb):
     return released
 
 
+def unconfirmed_records_for(task_id):
+    """Active precedent records issued by this task that no distinct identity has
+    confirmed yet.
+
+    PR-015 requires a confirming identity; `precedent.py confirm` already refuses
+    the publishing author mechanically (SDR-24.1). Measured 2026-08-16 before this
+    function existed: 0 successful confirmations across 59 records, against 16
+    distinct `precedent_confirm_refused` events -- 5 of them the author rule firing
+    correctly and 11 usage errors. Nothing was broken. The verb was never wired to
+    a step that runs, so the floor was never exercised.
+
+    FAIL-OPEN BY CONSTRUCTION. A missing directory, an unreadable file or a
+    malformed record all yield [], so a registry problem can never wedge the DAG.
+    Only a record that is present, parseable, active and unconfirmed is returned.
+    """
+    out = []
+    try:
+        pdir = hc.HARNESS / "precedents"
+        if not pdir.is_dir():
+            return out
+        for path in sorted(pdir.glob("PR-*.json")):
+            try:
+                rec = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if not isinstance(rec, dict):
+                continue
+            if rec.get("issuing_task") != task_id:
+                continue
+            if rec.get("status") != "active":
+                continue
+            if rec.get("confirmation_status") == "confirmed":
+                continue
+            out.append(rec.get("id") or path.stem)
+    except Exception:
+        return []
+    return out
+
+
 def deps_unmet(bb, t):
     return [d for d in t.get("depends_on", []) if bb["tasks"].get(d, {}).get("status") != "done"]
 
@@ -320,6 +359,10 @@ def cmd_update(args):
     if args.override_producer_check and not note:
         sys.exit("refused: --override-producer-check requires --note (or --note-file/--note-stdin) "
                   "explaining why (the reason is recorded to events.jsonl for audit)")
+    if getattr(args, "allow_unconfirmed", False) and not note:
+        sys.exit("refused: --allow-unconfirmed requires --note (or --note-file/--note-stdin) "
+                  "explaining why a record ships without its confirming identity "
+                  "(the reason is recorded to events.jsonl for audit)")
     with hc.guarded():
         bb = load_bb()
         released = expire_claims(bb)
@@ -330,6 +373,7 @@ def cmd_update(args):
         previous_status = t.get("status")
         override_used = False
         verifier_execute_used = False
+        unconfirmed_allowed = None
         if args.status == "done":
             # MECHANICAL producer != approver guardrail -- AUTHORSHIP-FIRST (P-011).
             # Originally this gated on previous_status == 'review' BEFORE checking
@@ -387,6 +431,37 @@ def cmd_update(args):
                                  previous_status=previous_status, producer=handoff_producer,
                                  reason=refusal)
                     sys.exit(refusal)
+            # PR-015's confirmation floor, wired to the one step that already
+            # establishes a distinct identity. The guard immediately above has
+            # just proven that `args.agent` is not the producer, so SDR-24.1 is
+            # satisfied by construction and this gate recruits no extra party --
+            # it asks the verifier who is already here to say what they verified.
+            # The escape hatch mirrors --override-producer-check exactly: audited,
+            # note-mandatory, never silent.
+            pending = unconfirmed_records_for(args.task_id)
+            if pending:
+                gate = (
+                    "refused: {tid} cannot go to 'done' -- it issued {n} active record(s) that "
+                    "no distinct identity has confirmed: {ids}. PR-015 requires a confirming "
+                    "identity; PR-038 requires it not be the author, and `precedent.py confirm` "
+                    "enforces that itself. Run:\n"
+                    "  python3 .harness/bin/precedent.py confirm {first} --agent {agent} "
+                    "--outcome confirmed --note \"what you verified\"\n"
+                    "(use --outcome narrowed with --scope if you restate the scope, or "
+                    "--outcome rejected). Then retry. To close without it, pass "
+                    "--allow-unconfirmed together with --note."
+                ).format(tid=args.task_id, n=len(pending), ids=", ".join(pending),
+                         first=pending[0], agent=args.agent)
+                if getattr(args, "allow_unconfirmed", False):
+                    unconfirmed_allowed = pending
+                    hc.log_event("confirmation_gate_overridden", task=args.task_id,
+                                 agent=args.agent, records=pending, note=note)
+                    print("WARNING: closing {} with {} unconfirmed record(s): {}".format(
+                        args.task_id, len(pending), ", ".join(pending)))
+                else:
+                    hc.log_event("confirmation_gate_refused", task=args.task_id,
+                                 agent=args.agent, records=pending)
+                    sys.exit(gate)
         if args.status:
             t["status"] = args.status
             if args.status in ("done", "failed"):
@@ -619,6 +694,11 @@ def main(argv):
                        default=False,
                        help="escape hatch for the mechanical producer!=approver guardrail on "
                             "--status done; requires --note/--note-file/--note-stdin (logged to events.jsonl)")
+    p_upd.add_argument("--allow-unconfirmed", dest="allow_unconfirmed", action="store_true",
+                       default=False,
+                       help="close the task even though it issued active precedent records that "
+                            "no distinct identity has confirmed (PR-015); requires "
+                            "--note/--note-file/--note-stdin (logged to events.jsonl)")
     p_upd.set_defaults(func=cmd_update)
 
     p_ho = sub.add_parser("handoff", parents=[common], help="hand the task to another role (producer != approver)")
