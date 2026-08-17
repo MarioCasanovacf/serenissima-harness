@@ -13,13 +13,21 @@ Supersedes W-001, which is WITHDRAWN and must never be applied.
 ## The command
 
 ```
-ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U -n harness-warrant \
+ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant \
     .harness/warrants/W-002.json
 ```
 
-`-U` signs THROUGH ssh-agent using only the public key, so the `ssh-add -c` confirm-on-use
-prompt actually fires. Pointing `-f` at the private key file reads it directly and bypasses
-the agent, which makes confirm-on-use decorative.
+Note `-f ~/.ssh/harness_root`, the PRIVATE key, with no `.pub` and no `-U`. It will ask for
+the key's passphrase on the terminal, and it asks on every single signature. That is the
+human-presence check.
+
+**This command was wrong here twice.** Both earlier versions used the `-f <pubkey> -U`
+agent route, and both failed on the operator's machine with `agent refused operation`. With
+`ssh-add -c` the AGENT is the party that must display the confirmation, and on macOS
+`SSH_AUTH_SOCK` points at Apple's launchd-managed agent, which has its own environment and
+never sees an `SSH_ASKPASS` exported in a shell. The agent route still works behind a
+privately started `ssh-agent` and is written up as Route A in `OPERATOR-ENROLMENT.md`. It is
+not the default because the default has to be the command that runs.
 
 Then the coordinator runs `warrant.py apply --warrant W-002`, followed by
 `warrant.py reconcile` and `roster.py roster`.

@@ -8,6 +8,13 @@ refuses the signature. The operator hit exactly that on 2026-08-17
 ("agent refused operation"). The enrolment document had been described as tested end
 to end; the `-U` branch had not been.
 
+Scope, so this file does not get read as a fix it is not. Supplying the helper is
+NECESSARY but not SUFFICIENT: SSH_AUTH_SOCK points at Apple's launchd-managed agent
+by default, that agent has its own environment, and it never sees an SSH_ASKPASS
+exported in a shell. The helper only reaches an agent the operator starts themselves.
+That is Route A of the enrolment document. The default route signs with the private
+key and no `-U`, involves no agent, and demands the passphrase on the terminal.
+
 The property that matters most here is FAIL CLOSED. An askpass that returns success
 when its dialog breaks would silently authorize every signature the agent is asked
 for, which is strictly worse than having no askpass at all. The dialog is stubbed so

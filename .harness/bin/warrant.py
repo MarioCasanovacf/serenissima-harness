@@ -370,17 +370,24 @@ def draft(root, epic, colegiados, plaza_specs, name_specs, valid_until=None) -> 
         "warrant_id": wid,
         "path": str(path),
         "digest": payload_digest(path),
-        "sign_with": (f"ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U "
+        "sign_with": (f"ssh-keygen -Y sign -f ~/.ssh/harness_root "
                       f"-n {NAMESPACE} {path}"),
-        "WHY_-U_AND_.pub": (
-            "-U signs THROUGH ssh-agent using only the public key, so `ssh-add -c` "
-            "confirm-on-use actually applies. Pointing -f at the PRIVATE key file "
-            "instead reads it directly and bypasses the agent entirely, which makes "
-            "confirm-on-use decorative. An earlier version of this string got that "
-            "wrong."),
+        "WHY_THE_PRIVATE_KEY_AND_NO_-U": (
+            "-f points at the PRIVATE key and there is no -U, so the agent is not "
+            "involved and the passphrase is demanded on the terminal for every "
+            "signature. That is the human-presence check. Two earlier versions of "
+            "this string emitted the `-f <pubkey> -U` agent route instead, and BOTH "
+            "failed on the operator's machine with `agent refused operation`: with "
+            "`ssh-add -c` the AGENT must display the confirmation, and on macOS "
+            "SSH_AUTH_SOCK points at Apple's launchd-managed agent, which has its own "
+            "environment and never sees an SSH_ASKPASS exported in a shell. The agent "
+            "route is still correct where it works and is documented as Route A in "
+            "OPERATOR-ENROLMENT.md; it needs a privately started ssh-agent that "
+            "inherits SSH_ASKPASS. It is NOT the default because the default must be "
+            "the command that runs."),
         "then": f"python3 .harness/bin/warrant.py apply --warrant {wid}",
-        "note": "This process cannot sign. Run the command above; ssh-agent will ask "
-                "you to confirm (ssh-add -c).",
+        "note": "This process cannot sign. Run the command above; it will ask for the "
+                "key's passphrase.",
     }
 
 

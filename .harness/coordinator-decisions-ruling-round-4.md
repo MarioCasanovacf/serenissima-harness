@@ -389,6 +389,16 @@ its charter and its plaza count; the operator signs it with
 `ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U -n harness-warrant`; the coordinator
 applies it. A test asserts no code path in the module can sign on the operator's behalf.
 
+> **CORRECTION, 2026-08-17.** The command in the paragraph above DOES NOT WORK on the
+> operator's machine and is left in place only so the record is not rewritten. It failed
+> twice with `agent refused operation`. With `ssh-add -c` the AGENT must display the
+> confirmation, and on macOS `SSH_AUTH_SOCK` points at Apple's launchd-managed agent, which
+> has its own environment and never sees an `SSH_ASKPASS` exported in a shell. The working
+> command is `ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path>` — the
+> PRIVATE key, no `.pub`, no `-U` — which involves no agent and demands the key's passphrase
+> on the terminal for every signature. `warrant.py draft` now prints that form. W-001 is also
+> WITHDRAWN and superseded by W-002; see `.harness/W-002-BRIEFING.md`.
+
 **Open question for the operator, not decided here.** `.gitignore` un-ignores `*.pub`, so
 `.harness/trust/root.pub` would be committed if staged. Tracking it would give the anchor a
 second witness that a local attacker cannot silently rewrite: a modified `root.pub` would

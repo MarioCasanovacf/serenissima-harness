@@ -8,10 +8,20 @@
 # guard working. This script supplies the missing prompt rather than removing the
 # guard.
 #
-# The alternative -- reloading the key without -c, or signing with `-f <privkey>` to
-# bypass the agent -- makes confirm-on-use decorative and means a signature can
-# happen without the operator present. For a key whose whole purpose is that only a
-# human can wield it, that is the one property worth preserving.
+# SCOPE, stated exactly. This helper only reaches an agent the operator starts
+# themselves, because that agent inherits SSH_ASKPASS from the shell. It does NOT
+# reach Apple's launchd-managed agent, which is what SSH_AUTH_SOCK points at by
+# default and which has its own environment. Exporting SSH_ASKPASS in a shell fixes
+# the client and does nothing for that agent. So this script is Route A of
+# OPERATOR-ENROLMENT.md, not the default route.
+#
+# The default route signs with `-f <privkey>` and no -U, which does not involve an
+# agent at all and demands the key's passphrase on the terminal every time. An
+# earlier version of this header called that route "decorative". That was WRONG for
+# a passphrase-protected key: a secret the operator must type is not decorative. The
+# property both routes keep is the only one that matters -- no signature without the
+# operator present. Reloading the key WITHOUT -c, or stripping the passphrase, is
+# what breaks it, and both remain forbidden.
 #
 # CONTRACT. ssh-agent invokes an askpass in two different modes and they are not
 # interchangeable:

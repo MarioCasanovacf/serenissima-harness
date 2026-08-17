@@ -38,44 +38,76 @@ single use**, so a signature can never happen without the operator seeing a prom
 `-c`, any process running as this user can sign silently for as long as the agent holds
 the key.
 
-### Step 2b — macOS ONLY, and it is not optional. Do this before you try to sign.
+### Step 2b — on macOS, `-c` cannot prompt through Apple's agent. Read this before signing.
 
-**Asking requires something that can ask.** A stock macOS ships no askpass program, and
-OpenSSH does not fail open: with no way to prompt, the agent refuses the signature and
-prints `agent refused operation`. That refusal is the guard working correctly, but nothing
-in it tells you what is missing.
+> **This document was wrong twice, on 2026-08-17.** First it mandated `-c` and then handed
+> over a `-U` signing command that cannot succeed on a stock macOS; the flow had been
+> described as tested end to end and the `-U` branch had not been exercised. Then the repair
+> misdiagnosed the cause as a missing askpass program and did not work either. Both failures
+> reached the operator as `agent refused operation`. What follows is verified end to end
+> against a throwaway passphrase-protected key, both routes, before being written.
 
-> **This document was wrong until 2026-08-17.** It mandated `-c` in step 2 and then handed
-> over a `-U` signing command that cannot succeed on a stock macOS. The coordinator
-> described the flow as tested end to end; the `-U` branch had not been exercised. The
-> operator hit the refusal on his first real signature.
+**The actual cause.** With `ssh-add -c` the AGENT is the party that has to ask, not the
+command you typed. On macOS `SSH_AUTH_SOCK` points at Apple's launchd-managed agent
+(`/var/run/com.apple.launchd.*/Listeners`), which has its own environment and never sees an
+`SSH_ASKPASS` you export in your shell. So the agent holds a key marked confirm-on-use, has
+no way to display the confirmation, and refuses. Exporting `SSH_ASKPASS` fixes the client
+and does nothing for the agent.
+
+Two routes work. Both keep the property that matters: **no signature happens without the
+operator present.**
+
+#### Route B, recommended: sign with the private key, no agent involved
+
+```
+ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
+```
+
+Note `-f ~/.ssh/harness_root`, the PRIVATE key, with no `.pub` and no `-U`. Because step 1
+gave the key a passphrase, **every signature demands that passphrase on the terminal.** No
+configuration, no agent to manage, and a secret you have to know beats a dialog you can
+click through.
+
+An earlier version of this document warned against exactly this command on the grounds that
+it "makes confirm-on-use decorative". That warning is FALSE for a passphrase-protected key
+held outside an agent: there is nothing decorative about being asked for a passphrase you
+must type. The warning only holds for a key with no passphrase.
+
+#### Route A: keep confirm-on-use, by running your own agent
+
+Use this if the key has no passphrase, or if you want the GUI confirmation specifically. The
+private agent inherits `SSH_ASKPASS` from the shell that starts it, which is the whole point.
 
 ```
 chmod +x .harness/bin/askpass_macos.sh
 export SSH_ASKPASS="$PWD/.harness/bin/askpass_macos.sh"
 export SSH_ASKPASS_REQUIRE=force
+eval "$(ssh-agent -s)"          # your own agent, NOT Apple's
+ssh-add -c ~/.ssh/harness_root
+ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U -n harness-warrant <path to W-NNN.json>
 ```
 
+Here `-f` points at the PUBLIC key and `-U` is required: together they route the signature
+through the agent, which is what makes confirm-on-use fire. This is the one place in this
+document where the `.pub` form is correct.
+
 `SSH_ASKPASS_REQUIRE=force` is required, not decoration: without it OpenSSH prefers the
-terminal and skips the helper, and you are back to a refusal.
+terminal and skips the helper. `ssh-agent -k` ends that agent when you are done.
 
-Both exports live only in the shell you set them in. Put them in your shell profile if you
-want signing to work in every new terminal.
-
-The helper fails CLOSED: if the dialog breaks, is dismissed, times out, or returns anything
-other than an explicit authorization, it denies. That property is what `test_askpass.py`
-pins, because an askpass that returns success on error would silently authorize every
-signature the agent is ever asked for, which is worse than having none at all.
-
-Verify the wiring without touching your key:
+The helper fails CLOSED: a broken dialog, a dismissal, a timeout, empty output, or any
+string that is not an explicit authorization all deny. An askpass that returned success on
+error would silently authorize every signature the agent is ever asked for, which is worse
+than having none at all. `test_askpass.py` pins that, and it runs without touching your key:
 
 ```
 python3 -m pytest .harness/tests/test_askpass.py -q
 ```
 
-**Do not "fix" this by dropping `-c` or by pointing `-f` at the private key.** Both work,
-and both make confirm-on-use decorative. A key whose only purpose is that a human must
-wield it should never be usable while the human is absent.
+#### What is still forbidden
+
+Reloading the key without `-c` into a long-lived agent, or stripping the passphrase. Either
+one lets any process running as this user sign silently for as long as the agent holds the
+key. The key's only purpose is that a human must wield it.
 
 ## Step 3 — Enrol the PUBLIC key. Only the public key ever leaves `~/.ssh`.
 
@@ -157,14 +189,16 @@ python3 .harness/bin/warrant.py draft \
 `draft` writes an UNSIGNED payload and prints the exact command to sign it:
 
 ```
-ssh-keygen -Y sign -f ~/.ssh/harness_root.pub -U -n harness-warrant <path to W-NNN.json>
+ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
 ```
 
-**Why `-U` and the `.pub` file.** `-U` signs THROUGH ssh-agent using only the public key,
-so `ssh-add -c` confirm-on-use actually applies. Pointing `-f` at the PRIVATE key file
-reads it directly and bypasses the agent entirely, which makes confirm-on-use decorative.
-An earlier version of this instruction got that wrong and the operator was handed a command
-that silently defeated the custody model they had chosen.
+**Why the private key and no `-U`.** This is Route B from step 2b, and it is what `draft`
+now prints. The passphrase from step 1 is demanded on the terminal for every signature, so
+no signature happens without the operator present. `draft` printed the `-f <pubkey> -U`
+agent form twice, and both times it failed on the operator's machine for the reason step 2b
+gives: with `ssh-add -c` the agent must display the confirmation, and Apple's launchd agent
+cannot. Route A is still correct where the operator runs their own agent; it is not what the
+tool prints by default, because the default has to be the command that runs.
 
 ## The operator signs. The agent prompts.
 
