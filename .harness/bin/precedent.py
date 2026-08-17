@@ -806,6 +806,246 @@ def emit_event(root, kind, **fields):
     hc.append_jsonl(_sidecar_events_path(root), record)
 
 
+# --------------------------------------------------------------------------
+# distinguish (D4a, T-402): dispose of a novel case WITHOUT legislating
+# --------------------------------------------------------------------------
+
+DISTINGUISH_KIND = "distinguish"
+
+DISPOSITION_NOTE = """WHY THIS VERB EXISTS, AND WHAT WAS ALREADY HERE.
+
+`distinguishes` already existed as a RELATION on `publish`, and that is the problem it does
+not solve: to distinguish a case, you had to publish a whole precedent record. So every novel
+case cost an act of LEGISLATION -- a new tier-N record, permanent, immutable under SDR-01,
+needing its own confirmation under PR-015. The layer could distinguish, but only by growing.
+
+This verb disposes of a case by CITATION: it names the nearest decided record and the material
+difference, signs that as an act, and WRITES NO RECORD. The registry does not grow. That is
+the whole point, and it is why the two paths are countable against each other.
+
+WHAT IT IS NOT. It does not bind anyone. It is not a precedent, does not enter the registry,
+and nothing later `cites` it. It is one agent's reasoned disposal of one case, on the record,
+attributable. A disposal that SHOULD bind is a publication and must go through `publish`."""
+
+
+def _distinguish_refusals(rec, facts, nearest):
+    """Every reason to refuse a distinguish, in one place so the tests can enumerate them.
+
+    Returns a refusal string or None. Deliberately mirrors the rules `publish` already applies
+    to a `distinguishes` relation (SDR-17.7 and the target-scope rule), because a disposal by
+    citation must not be held to a LOWER standard than a disposal by legislation -- that would
+    make the cheap path the sloppy path and the ratio this task exists to measure would then be
+    measuring corner-cutting rather than economy.
+    """
+    if rec is None:
+        return ("--nearest {} is not in this registry. A disposal by citation must cite "
+                "something real; if there is nothing to distinguish from, the case is not "
+                "novel-by-distinction and needs `publish`.".format(nearest))
+    if rec.get("status") != "active":
+        return ("--nearest {} has status {!r}. Distinguishing from dead law disposes of "
+                "nothing: SDR-17.7's whole premise is that the cited record still "
+                "governs its own facts.".format(nearest, rec.get("status")))
+    if not (rec.get("scope_conditions") or []):
+        return ("cannot distinguish against {}: its scope_conditions are empty, so there is "
+                "no stated scope for the facts to fall outside of. This is the same refusal "
+                "`publish` applies to a distinguishes relation, and it is applied here so "
+                "the cheap path is not the lax one.".format(nearest))
+    if not (facts or "").strip():
+        return ("--facts (or --facts-file) is required and must be non-empty (SDR-17.7). A "
+                "distinguish with no stated material difference is a citation pretending to "
+                "be a disposal.")
+    if len((facts or "").split()) < 12:
+        return ("--facts is {} words. A material difference stated in under 12 words is not "
+                "reviewable, and this act is the only record of the reasoning -- there is no "
+                "ratio behind it to fall back on. Say what differs and why it "
+                "matters.".format(len((facts or "").split())))
+    return None
+
+
+def harness_root_for_acts(args, prec_root):
+    """The HARNESS root, which is not the same thing as this module's `--root`.
+
+    THIS DISTINCTION BIT ONCE AND IS WRITTEN DOWN SO IT DOES NOT AGAIN. `precedent.py --root`
+    points at the PRECEDENTS DIRECTORY (`.harness/precedents/`, per SDR-13). `attest.py --root`
+    points at the HARNESS root (`.harness/`), because that is where `acts/`, `warrants/` and
+    `trust/` live. The first version of `distinguish` handed the precedents directory to
+    attest, which then looked for warrants inside it, found none, and refused every name as
+    unable to sign.
+
+    The default is the precedents directory's PARENT, which is correct for every standard
+    layout. `--harness-root` overrides it, and the refusal below fires rather than guessing
+    when neither resolves to something with a trust anchor -- an implicit wrong root would
+    otherwise surface as "that name can sign nothing", which points at the wrong problem.
+    """
+    explicit = getattr(args, "harness_root", None)
+    hroot = Path(explicit) if explicit else Path(prec_root).parent
+    if not ((hroot / "warrants").exists() or (hroot / "trust").exists()):
+        return None, (
+            "cannot find the harness root: {} has no warrants/ or trust/ directory. "
+            "`--root` here is the PRECEDENTS directory (SDR-13) and signing needs the "
+            "HARNESS root, which defaults to its parent. Pass --harness-root explicitly. "
+            "This is refused rather than guessed because a wrong root would surface as "
+            "'that name can sign nothing', which points at the wrong problem."
+            .format(hroot))
+    return hroot, None
+
+
+def cmd_distinguish(args):
+    """Dispose of a novel case by citation, as a signed act. Writes NO precedent record."""
+    root = resolve_root(args)
+    hroot, why = harness_root_for_acts(args, root)
+    if hroot is None:
+        return refuse("distinguish_refused", why, root, nearest=args.nearest,
+                      case=args.case, by=args.by)
+    facts = resolve_ratio_like(args)
+    records = scan_registry(root)
+    by_id = {r["id"]: r for _, r in records}
+    rec = by_id.get(args.nearest)
+
+    why = _distinguish_refusals(rec, facts, args.nearest)
+    if why:
+        return refuse("distinguish_refused", why, root, nearest=args.nearest,
+                      case=args.case, by=args.by)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    body = {
+        "case": args.case,
+        "nearest": args.nearest,
+        "nearest_title": rec.get("title"),
+        "material_difference": facts,
+        "DISPOSES_WITHOUT_LEGISLATING": (
+            "This act disposes of the case named above by citing {} and stating why that "
+            "record does not reach these facts. NO PRECEDENT RECORD WAS CREATED. This act "
+            "binds nobody, enters no registry, and is not citable as authority. It is one "
+            "agent's reasoned disposal, attributable to the signing name."
+            .format(args.nearest)),
+        "IF_THIS_SHOULD_BIND": (
+            "then it is the wrong verb. A disposal meant to govern later cases is "
+            "LEGISLATION and goes through `precedent.py publish`, with a tier, evidence, "
+            "scope conditions and confirmation by a distinct identity (PR-015)."),
+    }
+    try:
+        # kind="distinguish" is already in attest.PRIVILEGED_KINDS (T-400), so this requires a
+        # declared intent first. Not incidental: disposing of a case for everyone afterwards
+        # is exactly the act whose deliberation should predate it.
+        act = attest.sign_act(hroot, args.by, args.key, DISTINGUISH_KIND,
+                              ref=args.nearest, body=body, task=args.task)
+    except attest.AttestError as exc:
+        return refuse("distinguish_refused", str(exc), root, nearest=args.nearest,
+                      case=args.case, by=args.by)
+
+    emit_event(root, "case_distinguished", nearest=args.nearest, case=args.case,
+               by=args.by, act_seq=act["seq"], task=act["task"])
+    print("distinguished {} by citing {} (act {}#{})".format(
+        args.case, args.nearest, args.by, act["seq"]))
+    print("NO RECORD PUBLISHED. This disposal binds nobody and enters no registry.")
+    print(json.dumps(act, indent=2, ensure_ascii=False))
+    return 0
+
+
+def resolve_ratio_like(args):
+    """--facts or --facts-file, mirroring how publish resolves prose (P-021)."""
+    if getattr(args, "facts_file", None):
+        return read_file_text(args.facts_file)
+    return getattr(args, "facts", None) or ""
+
+
+def disposition_counts(root, hroot=None):
+    """Cases disposed by CITATION versus by LEGISLATION.
+
+    Two roots, for the reason spelled out in harness_root_for_acts: `root` is the PRECEDENTS
+    directory and holds the legislation side; `hroot` is the HARNESS root and holds the acts.
+
+    READ THE DENOMINATOR NOTE BELOW BEFORE QUOTING ANY OF THESE NUMBERS. It is not a caveat.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    hroot = Path(hroot) if hroot else Path(root).parent
+    acts = []
+    base = attest.acts_dir(hroot)
+    if base.exists():
+        for d in sorted(p for p in base.iterdir() if p.is_dir()):
+            for a in attest.chain(hroot, d.name):
+                if a.get("_unparseable") or a.get("kind") != DISTINGUISH_KIND:
+                    continue
+                acts.append({"name": d.name, "seq": a.get("seq"),
+                             "case": (a.get("body") or {}).get("case"),
+                             "nearest": (a.get("body") or {}).get("nearest"),
+                             "signed": a.get("_signed"),
+                             "ts": a.get("ts")})
+
+    records = [r for _, r in scan_registry(root)]
+    legislated = [r for r in records if r.get("status") == "active"]
+
+    def distinct(rows, key):
+        return len({key(r) for r in rows})
+
+    cited_raw, cited_distinct = len(acts), distinct(acts, lambda a: (a["name"], a["seq"]))
+    leg_raw, leg_distinct = len(legislated), distinct(legislated, lambda r: r["id"])
+    total_raw = cited_raw + leg_raw
+    return {
+        "by_citation_raw": cited_raw, "by_citation_distinct": cited_distinct,
+        "by_legislation_raw": leg_raw, "by_legislation_distinct": leg_distinct,
+        "dispositions_raw": total_raw,
+        "dispositions_distinct": cited_distinct + leg_distinct,
+        "citation_share_of_dispositions": (round(cited_raw / total_raw, 4)
+                                           if total_raw else None),
+        "acts": acts,
+        "NO_DENOMINATOR_RATIFIED": (
+            "The figure above is the share of DISPOSITIONS MADE, not of NOVEL CASES ARISING, "
+            "and those are different denominators. This harness keeps no register of cases "
+            "PRESENTED: a case that was raised and never disposed of -- abandoned, forgotten, "
+            "routed around, or silently answered in prose without either verb -- is invisible "
+            "here. So the true denominator is unmeasured and no record defines it. "
+            "D4 called this ratio the differentiator because nobody else has the denominator; "
+            "the honest report is that THIS HARNESS DOES NOT HAVE IT EITHER YET. What it has "
+            "is the numerator split, which is real and is worth watching. "
+            "Building a case register would define the denominator, and it must not be done "
+            "by inferring cases retroactively from dispositions -- that would make the "
+            "denominator a function of the numerator and the ratio would read 1.0 forever."),
+        "WHAT_THE_SPLIT_MEANS": (
+            "by_legislation counts ACTIVE precedent records, every one of which is a case "
+            "disposed by growing the registry. by_citation counts distinguish acts, which "
+            "dispose without growing it. A layer whose citation share rises is answering "
+            "novel cases from existing law; one whose share falls is legislating its way "
+            "through them. Neither direction is graded here: NO THRESHOLD RATIFIED."),
+        "COUNTS_ARE_REPORTED_TWICE": (
+            "raw and distinct, per TELEMETRY-PROVENANCE-A, whose measurement was that the "
+            "raw event log replays at 3.93x overall and up to 47x on some event types. These "
+            "counts are files rather than log lines, so raw and distinct should AGREE; when "
+            "they diverge, a chain was renumbered or a record id is duplicated, and that "
+            "divergence is the finding."),
+    }
+
+
+def cmd_disposition_ratio(args):
+    prec = resolve_root(args)
+    out = disposition_counts(prec, getattr(args, "harness_root", None))
+    if args.json:
+        print(json.dumps(out, indent=2, ensure_ascii=False))
+        return 0
+    print("dispuestos por cita        {} crudos / {} distintos".format(
+        out["by_citation_raw"], out["by_citation_distinct"]))
+    print("dispuestos por legislacion {} crudos / {} distintos".format(
+        out["by_legislation_raw"], out["by_legislation_distinct"]))
+    print("total de disposiciones     {} crudos / {} distintos".format(
+        out["dispositions_raw"], out["dispositions_distinct"]))
+    share = out["citation_share_of_dispositions"]
+    print("cuota de la cita           {}".format(
+        "sin disposiciones" if share is None else "{:.1%}".format(share)))
+    for a in out["acts"]:
+        print("  {} #{} caso={} cerca={} {}".format(
+            a["name"], a["seq"], a["case"], a["nearest"],
+            "firmado" if a["signed"] else "SIN FIRMAR"))
+    print("\nNO DENOMINATOR RATIFIED\n" + out["NO_DENOMINATOR_RATIFIED"])
+    print("\n" + out["WHAT_THE_SPLIT_MEANS"])
+    print("\n" + out["COUNTS_ARE_REPORTED_TWICE"])
+    return 0
+
+
 def refuse(event_kind, reason, root, **fields):
     """Log a refusal event (SDR-26) and print the message. Callers do
     `return refuse(...)` -- this function itself never exits the process,
@@ -2595,6 +2835,36 @@ def main(argv):
     p_stale.add_argument("--json", action="store_true", default=False)
     add_root_arg(p_stale)
     p_stale.set_defaults(func=cmd_stale)
+
+    # D4a (T-402): dispose of a novel case by CITATION rather than by legislation.
+    p_dist = sub.add_parser(
+        "distinguish", help="dispose of a novel case by citing the nearest record plus the "
+                            "material difference, as a signed act. Publishes NO record.")
+    p_dist.add_argument("--case", required=True,
+                        help="what is being disposed of: a task id, a docket ref, a summary")
+    p_dist.add_argument("--nearest", required=True, metavar="PR-NNN",
+                        help="the nearest decided record this case falls outside of")
+    facts_grp = p_dist.add_mutually_exclusive_group(required=True)
+    facts_grp.add_argument("--facts", default=None,
+                           help="the material difference (P-021: prefer --facts-file)")
+    facts_grp.add_argument("--facts-file", dest="facts_file", default=None)
+    p_dist.add_argument("--by", required=True, help="the disposing name")
+    p_dist.add_argument("--key", required=True, help="that name's private key")
+    p_dist.add_argument("--task", required=True, help="board task id (D3a linkage)")
+    p_dist.add_argument("--harness-root", dest="harness_root", default=None,
+                        help="the HARNESS root, where acts/ and warrants/ live. Defaults to "
+                             "--root's parent; --root itself is the PRECEDENTS directory.")
+    add_root_arg(p_dist)
+    p_dist.set_defaults(func=cmd_distinguish)
+
+    p_ratio = sub.add_parser(
+        "disposition-ratio",
+        help="cases disposed by citation versus by legislation. Reports NO DENOMINATOR "
+             "RATIFIED, because no register of cases PRESENTED exists.")
+    p_ratio.add_argument("--json", action="store_true", default=False)
+    p_ratio.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_ratio)
+    p_ratio.set_defaults(func=cmd_disposition_ratio)
 
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
     # Applied to `publish` and `confirm`, the two verbs that write a record; `--root` and
