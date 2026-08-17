@@ -399,6 +399,18 @@ applies it. A test asserts no code path in the module can sign on the operator's
 > on the terminal for every signature. `warrant.py draft` now prints that form. W-001 is also
 > WITHDRAWN and superseded by W-002; see `.harness/W-002-BRIEFING.md`.
 
+> **CORRECTION 2, same day.** The correction above is ALSO WRONG and is left in place for the
+> same reason. `-f <privkey>` with no `-U` fails too, with the identical message, because
+> `ssh-keygen -Y sign` tries an empty passphrase first and then FALLS BACK to ssh-agent
+> instead of prompting. The fallback lands on the same confirm-on-use refusal. The working
+> command removes the agent for one process:
+> `SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path>`.
+> Three broken versions of one command reached the operator on 2026-08-17. All three passed
+> a verification run, and all three verification runs used a key with NO passphrase, so the
+> failing path was never exercised. The lesson is not about ssh: a verification that does not
+> reproduce the operator's actual state verifies nothing. Pinned by
+> `.harness/tests/test_warrant_sign_command.py`.
+
 **Open question for the operator, not decided here.** `.gitignore` un-ignores `*.pub`, so
 `.harness/trust/root.pub` would be committed if staged. Tracking it would give the anchor a
 second witness that a local attacker cannot silently rewrite: a modified `root.pub` would

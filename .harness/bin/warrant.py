@@ -87,6 +87,37 @@ SCHEMA_VERSION = 1
 MAX_PLAZA = 64                          # mirrors roster.PLAZA_MAX
 FINGERPRINT_RE = re.compile(r"SHA256:[A-Za-z0-9+/=]{43}")
 
+# ---------------------------------------------------------------------------
+# The signing command. It lives in constants, not inline, because THREE earlier
+# versions of this string reached the operator broken and each one cost a round
+# trip. `test_warrant_sign_command.py` pins every part of it.
+#
+# The empty SSH_AUTH_SOCK is the load-bearing piece and it is the least obvious.
+# `ssh-keygen -Y sign -f <privkey>` first tries to load the private key with an
+# EMPTY passphrase. For a passphrase-protected key that fails, and instead of
+# prompting, ssh-keygen falls back to ssh-agent and looks the key up there. When
+# the agent holds it under `ssh-add -c` it must display a confirmation; Apple's
+# launchd-managed agent cannot, so it answers `agent refused operation`. Emptying
+# SSH_AUTH_SOCK leaves ssh-keygen no agent to fall back to, so it reads the file
+# and asks for the passphrase on the terminal. Measured, both directions, against
+# a passphrase-protected key loaded under -c.
+ROOT_KEY = "~/.ssh/harness_root"
+SIGN_ENV = "SSH_AUTH_SOCK= "
+SIGN_RATIONALE = (
+    "SSH_AUTH_SOCK= empties the agent socket FOR THIS COMMAND ONLY and is the part "
+    "that makes it work: `ssh-keygen -Y sign -f <privkey>` tries an empty passphrase "
+    "first, and on failure falls back to ssh-agent rather than prompting. An agent "
+    "holding the key under `ssh-add -c` has to display a confirmation, Apple's "
+    "launchd agent cannot, and it answers `agent refused operation`. With no agent "
+    "to fall back to, ssh-keygen reads the file and asks on the terminal, which is "
+    "the human-presence check. "
+    "-f points at the PRIVATE key, no `.pub`. There is no -U, which would force the "
+    "agent route back in. "
+    "THREE earlier versions of this string failed on the operator's machine: two used "
+    "`-f <pubkey> -U`, and the third dropped -U but not the agent fallback. Do not "
+    "shorten this command; each piece is there because its absence was measured."
+)
+
 PUBLIC_API = ("resolve_root", "trust_dir", "anchored_fingerprint", "verify_signature",
               "draft", "verify_warrant", "apply_warrant", "audit", "payload_digest",
               "authorizes", "reconcile", "enrolled_keys")
@@ -370,24 +401,12 @@ def draft(root, epic, colegiados, plaza_specs, name_specs, valid_until=None) -> 
         "warrant_id": wid,
         "path": str(path),
         "digest": payload_digest(path),
-        "sign_with": (f"ssh-keygen -Y sign -f ~/.ssh/harness_root "
+        "sign_with": (f"{SIGN_ENV}ssh-keygen -Y sign -f {ROOT_KEY} "
                       f"-n {NAMESPACE} {path}"),
-        "WHY_THE_PRIVATE_KEY_AND_NO_-U": (
-            "-f points at the PRIVATE key and there is no -U, so the agent is not "
-            "involved and the passphrase is demanded on the terminal for every "
-            "signature. That is the human-presence check. Two earlier versions of "
-            "this string emitted the `-f <pubkey> -U` agent route instead, and BOTH "
-            "failed on the operator's machine with `agent refused operation`: with "
-            "`ssh-add -c` the AGENT must display the confirmation, and on macOS "
-            "SSH_AUTH_SOCK points at Apple's launchd-managed agent, which has its own "
-            "environment and never sees an SSH_ASKPASS exported in a shell. The agent "
-            "route is still correct where it works and is documented as Route A in "
-            "OPERATOR-ENROLMENT.md; it needs a privately started ssh-agent that "
-            "inherits SSH_ASKPASS. It is NOT the default because the default must be "
-            "the command that runs."),
+        "WHY_EVERY_PART_OF_THAT_COMMAND": SIGN_RATIONALE,
         "then": f"python3 .harness/bin/warrant.py apply --warrant {wid}",
         "note": "This process cannot sign. Run the command above; it will ask for the "
-                "key's passphrase.",
+                "key's passphrase on the terminal.",
     }
 
 

@@ -13,21 +13,37 @@ Supersedes W-001, which is WITHDRAWN and must never be applied.
 ## The command
 
 ```
-ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant \
+SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant \
     .harness/warrants/W-002.json
 ```
 
-Note `-f ~/.ssh/harness_root`, the PRIVATE key, with no `.pub` and no `-U`. It will ask for
-the key's passphrase on the terminal, and it asks on every single signature. That is the
-human-presence check.
+It prints `Enter passphrase for "/Users/…/harness_root":` and asks on every single
+signature. That prompt IS the human-presence check.
 
-**This command was wrong here twice.** Both earlier versions used the `-f <pubkey> -U`
-agent route, and both failed on the operator's machine with `agent refused operation`. With
-`ssh-add -c` the AGENT is the party that must display the confirmation, and on macOS
-`SSH_AUTH_SOCK` points at Apple's launchd-managed agent, which has its own environment and
-never sees an `SSH_ASKPASS` exported in a shell. The agent route still works behind a
-privately started `ssh-agent` and is written up as Route A in `OPERATOR-ENROLMENT.md`. It is
-not the default because the default has to be the command that runs.
+Every piece of that command earns its place:
+
+- **`SSH_AUTH_SOCK= `** empties the agent socket for this one command. This is the part
+  that makes it work and the least obvious. `ssh-keygen -Y sign -f <privkey>` tries an
+  EMPTY passphrase first and, when that fails, **falls back to ssh-agent instead of
+  prompting.** An agent holding the key under `ssh-add -c` must display a confirmation;
+  Apple's launchd-managed agent cannot, and answers `agent refused operation`. With no
+  agent to fall back to, ssh-keygen reads the file and asks on the terminal. The prefixed
+  form scopes to this process, so the operator's agent is untouched everywhere else.
+- **`-f ~/.ssh/harness_root`** is the PRIVATE key, no `.pub`.
+- **no `-U`**, which would force the agent route back in.
+
+**This command was wrong here three times on 2026-08-17.** Two versions used
+`-f <pubkey> -U`. The third dropped `-U` but not the agent fallback, and failed with the
+same message. The third slipped through because the verification run used a key with no
+passphrase, so the fallback path was never exercised. The current form was reproduced in
+both directions against a passphrase-protected key loaded under `ssh-add -c`:
+without the prefix it refuses, with it, it prompts and signs.
+`test_warrant_sign_command.py` now pins each piece and fails if a document hands over the
+private-key form without the prefix.
+
+The agent route is still correct where the operator starts their own `ssh-agent`; it is
+Route A in `OPERATOR-ENROLMENT.md`. It is not the default, because the default has to be
+the command that runs.
 
 Then the coordinator runs `warrant.py apply --warrant W-002`, followed by
 `warrant.py reconcile` and `roster.py roster`.

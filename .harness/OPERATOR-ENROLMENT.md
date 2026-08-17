@@ -40,38 +40,68 @@ the key.
 
 ### Step 2b — on macOS, `-c` cannot prompt through Apple's agent. Read this before signing.
 
-> **This document was wrong twice, on 2026-08-17.** First it mandated `-c` and then handed
-> over a `-U` signing command that cannot succeed on a stock macOS; the flow had been
-> described as tested end to end and the `-U` branch had not been exercised. Then the repair
-> misdiagnosed the cause as a missing askpass program and did not work either. Both failures
-> reached the operator as `agent refused operation`. What follows is verified end to end
-> against a throwaway passphrase-protected key, both routes, before being written.
+> **This document was wrong three times, on 2026-08-17.** Every failure reached the
+> operator as the same line, `agent refused operation`.
+>
+> 1. It mandated `-c` and then handed over a `-U` signing command that cannot succeed on a
+>    stock macOS. The flow had been described as tested end to end; the `-U` branch had not
+>    been exercised.
+> 2. The repair misdiagnosed the cause as a missing askpass program. Supplying one is
+>    necessary and not sufficient, so it failed too.
+> 3. The next repair dropped `-U` and pointed `-f` at the private key. That looked right and
+>    still failed, for a reason nobody had looked for. The verification run used a key with
+>    **no passphrase**, so the failing path was never touched.
+>
+> What follows was reproduced in BOTH directions against a passphrase-protected key loaded
+> under `ssh-add -c`: the command without the prefix refuses, the command with it prompts
+> and signs, a wrong passphrase is rejected, and the resulting signature verifies.
 
-**The actual cause.** With `ssh-add -c` the AGENT is the party that has to ask, not the
-command you typed. On macOS `SSH_AUTH_SOCK` points at Apple's launchd-managed agent
+**The actual cause, in two parts.**
+
+First: with `ssh-add -c` the AGENT is the party that has to ask, not the command you typed.
+On macOS `SSH_AUTH_SOCK` points at Apple's launchd-managed agent
 (`/var/run/com.apple.launchd.*/Listeners`), which has its own environment and never sees an
-`SSH_ASKPASS` you export in your shell. So the agent holds a key marked confirm-on-use, has
-no way to display the confirmation, and refuses. Exporting `SSH_ASKPASS` fixes the client
-and does nothing for the agent.
+`SSH_ASKPASS` you export in your shell. It holds a key marked confirm-on-use, has no way to
+display the confirmation, and refuses. Exporting `SSH_ASKPASS` fixes the client and does
+nothing for that agent.
+
+Second, and this is the part that made failure 3 look impossible: **pointing `-f` at the
+private key does not keep the agent out of it.** `ssh-keygen -Y sign` first tries to load
+the private key with an EMPTY passphrase. For a passphrase-protected key that fails, and
+instead of prompting, ssh-keygen FALLS BACK to ssh-agent and looks the key up there. The
+fallback lands on the same refusal. So the command has to remove the agent, not merely
+decline to address it.
 
 Two routes work. Both keep the property that matters: **no signature happens without the
 operator present.**
 
-#### Route B, recommended: sign with the private key, no agent involved
+#### Route B, recommended: take the agent out of the picture for one command
 
 ```
-ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
+SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
 ```
 
-Note `-f ~/.ssh/harness_root`, the PRIVATE key, with no `.pub` and no `-U`. Because step 1
-gave the key a passphrase, **every signature demands that passphrase on the terminal.** No
-configuration, no agent to manage, and a secret you have to know beats a dialog you can
-click through.
+Real output on the reproduction:
 
-An earlier version of this document warned against exactly this command on the grounds that
-it "makes confirm-on-use decorative". That warning is FALSE for a passphrase-protected key
-held outside an agent: there is nothing decorative about being asked for a passphrase you
-must type. The warning only holds for a key with no passphrase.
+```
+Enter passphrase for "/…/harness_root":
+Signing file W-NNN.json
+Write signature to W-NNN.json.sig
+```
+
+`SSH_AUTH_SOCK= ` in front, with the space, empties the agent socket **for this process
+only**; the operator's agent is untouched in every other shell and command. Do not write
+`export SSH_AUTH_SOCK=` or a separate `unset`, which would disarm the agent session-wide.
+With no agent to fall back to, ssh-keygen reads the file and demands the passphrase from
+step 1 on the terminal, on every single signature.
+
+An earlier version of this document warned against the private-key form on the grounds that
+it "makes confirm-on-use decorative". That warning is FALSE for a passphrase-protected key:
+there is nothing decorative about a secret you have to type. It holds only for a key with
+no passphrase, which step 1 forbids.
+
+`test_warrant_sign_command.py` pins every piece of this command and fails the suite if any
+document here hands over the private-key form without the prefix.
 
 #### Route A: keep confirm-on-use, by running your own agent
 
@@ -189,16 +219,16 @@ python3 .harness/bin/warrant.py draft \
 `draft` writes an UNSIGNED payload and prints the exact command to sign it:
 
 ```
-ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
+SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant <path to W-NNN.json>
 ```
 
-**Why the private key and no `-U`.** This is Route B from step 2b, and it is what `draft`
-now prints. The passphrase from step 1 is demanded on the terminal for every signature, so
-no signature happens without the operator present. `draft` printed the `-f <pubkey> -U`
-agent form twice, and both times it failed on the operator's machine for the reason step 2b
-gives: with `ssh-add -c` the agent must display the confirmation, and Apple's launchd agent
-cannot. Route A is still correct where the operator runs their own agent; it is not what the
-tool prints by default, because the default has to be the command that runs.
+**Why each piece.** This is Route B from step 2b, and it is what `draft` now prints. Step 2b
+carries the full account; the short version is that the emptied socket is load-bearing,
+because `-f <privkey>` alone still falls back to the agent and gets refused. `draft` got
+this string wrong three times; it is now assembled from module constants in exactly one
+place, and `test_warrant_sign_command.py` fails the suite if any piece goes missing or if a
+document here contradicts the tool. Route A stays correct where the operator runs their own
+agent. It is not the default, because the default has to be the command that runs.
 
 ## The operator signs. The agent prompts.
 
