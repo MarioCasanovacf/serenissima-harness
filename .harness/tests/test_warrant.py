@@ -330,7 +330,13 @@ class ForkDetection(GateCase):
         ghost, _ = self.agent_key("ghost")
         with self.assertRaises(attest.AttestError) as cm:
             attest.sign_act(self.root, "ghost", ghost, "commit")
-        self.assertIn("only inside a root-signed warrant", str(cm.exception))
+        msg = str(cm.exception)
+        # D3b (T-401) widened the set of identities that can sign to include DELEGATED
+        # credentials, so this refusal now has to rule out BOTH routes rather than one. The
+        # assertion was tightened along with the message: checking only the warrant half
+        # would leave the new route untested by the test whose whole job is "cannot sign".
+        self.assertIn("issued inside a root-signed warrant", msg)
+        self.assertIn("delegated credential", msg)
 
 
 # ---------------------------------------------------------------------------------

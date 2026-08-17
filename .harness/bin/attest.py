@@ -246,6 +246,252 @@ def head(root, name) -> str:
         node = chosen
 
 
+# --------------------------------------------------------------------- delegation
+
+def _grant_body(to_name, pubkey, kinds, expires, note):
+    return {"to": to_name, "pubkey": pubkey, "kinds": sorted(set(kinds)),
+            "expires": expires, "note": note,
+            "NO_SEAT": "a delegated identity holds NO plaza, NO seat and NO standing. "
+                       "roster.py is untouched by this act and reconcile does not and must "
+                       "not list this name in the roll.",
+            "CEILING": "the kinds above are a SUBSET of what the grantor held at the moment "
+                       "of signing, and the expiry is not later than the grantor's own.",
+            }
+
+
+def delegated_keys(root) -> dict:
+    """Signing identities created by `grant` acts, DERIVED on read. Never a cache file.
+
+    RETURNS name -> {pubkey, kinds, expires, grantor, depth, path}. A delegated name is not
+    a warranted name and the difference is load-bearing:
+
+      warrant.enrolled_keys IS NOT TOUCHED BY THIS FUNCTION, and must never be. `reconcile`
+      requires every ROLL row to trace to a verified warrant, and that property is what lets
+      warrant.py say minting is closed (conditionally). A delegated name holds no plaza and
+      appears in no roll, so reconcile stays exactly as strong as it was.
+
+      Nothing is minted outside the warrant tree either. The tree got DEEPER, not wider: a
+      grant act lives on a warranted name's chain, which traces to a warrant, which traces
+      to the operator's key. `trace` walks that.
+
+    DEFECT DELEGATION-OUTSIDE-RECONCILE-A, named here rather than found later. `reconcile` is
+    the detector for identities that exist without a warrant, and it does not look at grants,
+    because grants are not roll rows. So a delegated signing identity is real and reconcile
+    will not mention it. `attest.py delegations` is the corresponding report and it is the
+    ONLY place these identities are enumerated. Anyone auditing who can sign in this harness
+    must run BOTH verbs; either one alone is an incomplete answer.
+
+    The ceiling is applied TRANSITIVELY here, so a grant can never widen what its grantor
+    held even if the grantor's own privileges were narrowed after the fact -- the recomputation
+    on every read is what makes that true, and is the second reason there is no cache.
+
+    THE COST, stated rather than discovered later. This verifies every grant act's signature
+    on every call, and one `sign_act` reaches it several times (via signing_keys, held_kinds
+    and effective_expiry). At the current scale -- 9 warranted names, single-digit acts -- that
+    is milliseconds and the correctness is worth it. It is O(acts x depth) per call and will
+    need a per-call memo, NOT a persisted cache, if the chains grow. The distinction matters:
+    a memo inside one call cannot go stale; a file can, and that is the roster.py defect.
+    """
+    warranted = w.enrolled_keys(root)
+    out, frontier, depth = {}, dict(warranted), 0
+    seen_names = set(warranted)
+    # Breadth-first over grant acts, one hop per pass, so a cycle cannot loop forever and a
+    # name already established at a shallower depth is never re-established deeper.
+    while frontier and depth < 16:
+        depth += 1
+        nxt = {}
+        for grantor in sorted(frontier):
+            gk = warranted.get(grantor) or out.get(grantor)
+            if gk is None:
+                continue
+            gpub = gk["pubkey"]
+            g_kinds = (set(PRIVILEGED_KINDS) if grantor in warranted
+                       else set(out[grantor]["kinds"]))
+            g_exp = (warranted[grantor].get("valid_until") if grantor in warranted
+                     else out[grantor]["expires"])
+            for a in chain(root, grantor):
+                if a.get("_unparseable") or a.get("kind") != "grant":
+                    continue
+                ok, _ = _verify_sig(root, grantor, a["_path"], gpub)
+                if not ok:
+                    continue
+                b = a.get("body") or {}
+                to, pub = b.get("to"), b.get("pubkey")
+                if not to or not pub or to in seen_names:
+                    # A name established once is never re-established: a second grant to the
+                    # same name cannot raise its ceiling, and a grant naming a WARRANTED name
+                    # cannot touch it at all. Both are refusals at sign time too; this is the
+                    # read-side backstop, because sign-time checks bound only the shipped verb.
+                    continue
+                kinds = set(b.get("kinds") or []) & g_kinds
+                exp = b.get("expires") or ""
+                if g_exp and exp and exp > g_exp:
+                    exp = g_exp          # clamp on READ; sign-time REFUSES rather than clamps
+                if not exp or hc.now_iso() > exp:
+                    continue             # expired credentials simply do not exist
+                if not kinds:
+                    continue
+                out[to] = {"pubkey": pub, "kinds": sorted(kinds), "expires": exp,
+                           "grantor": grantor, "depth": depth, "path": a["_path"]}
+                seen_names.add(to)
+                nxt[to] = out[to]
+        frontier = nxt
+    return out
+
+
+def signing_keys(root) -> dict:
+    """Every identity that can sign an act: warranted names plus live delegated ones.
+
+    `enrolled_keys` deliberately still means WARRANTED ONLY, because warrant.py's guarantees
+    are stated in those terms and a silent widening of that word would break them.
+    """
+    out = dict(w.enrolled_keys(root))
+    for n, d in delegated_keys(root).items():
+        out.setdefault(n, {"pubkey": d["pubkey"], "warrant": None,
+                           "epic": None, "colegiado": None, "role": None,
+                           "delegated": True, "grantor": d["grantor"],
+                           "kinds": d["kinds"], "expires": d["expires"],
+                           "depth": d["depth"]})
+    return out
+
+
+def held_kinds(root, name) -> set:
+    """The privileged kinds `name` may sign. THE CEILING IS COMPUTED FROM THIS.
+
+    A warranted name holds ALL of them, because nothing in this harness yet restricts a
+    warranted name by role -- and saying so plainly matters: THE CEILING IS THEREFORE
+    VACUOUS AT THE FIRST HOP. It binds from the second hop on, where a delegated identity
+    holds only what it was granted and can pass on no more. Anyone who reads this as
+    constraining a warranted name has read it wrong.
+    """
+    if name in w.enrolled_keys(root):
+        return set(PRIVILEGED_KINDS)
+    d = delegated_keys(root).get(name)
+    return set(d["kinds"]) if d else set()
+
+
+def effective_expiry(root, name):
+    """When `name` stops being able to sign, or None for a warranted name with no expiry.
+
+    A subagent CANNOT EXTEND THIS, and two independent barriers say so rather than one:
+      1. a name cannot grant to itself (refused at sign time), so "extend myself" has no verb;
+      2. even a grant from elsewhere is clamped to the grantor's own expiry on every read,
+         so no path through the graph produces a later date than the warrant at its root.
+    """
+    ws = w.enrolled_keys(root)
+    if name in ws:
+        return ws[name].get("valid_until")
+    d = delegated_keys(root).get(name)
+    return d["expires"] if d else None
+
+
+def grant_privilege(root, grantor, key_path, to_name, pubkey, kinds, expires, task,
+                    note="") -> dict:
+    """Delegate a SUBSET of the grantor's privileges, for a bounded time, as a signed act.
+
+    `grant` is itself a privileged kind (D3a), so this composes: delegating requires a
+    declared intent first. That was not arranged for elegance -- delegation is precisely the
+    act whose deliberation should be on the record before it happens.
+
+    WHAT THIS BOUNDS, stated before what it does not. Accident and drift: a coordinator
+    cannot hand a subagent something it does not hold, cannot hand it something forever, and
+    cannot hand it something the grantor's own warrant will outlive. Every hop is a signed
+    act on the grantor's own chain, so overreach is ATTRIBUTABLE to whoever signed it.
+
+    WHAT IT DOES NOT BOUND: an adversary. D-17 -- every agent runs as the same OS user and
+    reads every private key, including the grantor's. An attacker does not need a grant; it
+    signs as the grantor directly. This mechanism therefore raises no wall against a hostile
+    agent inside this harness, and a test below demonstrates exactly that rather than
+    asserting it.
+    """
+    if to_name == grantor:
+        raise AttestError(
+            "a name cannot grant to itself. This is the first of the two barriers against a "
+            "credential extending its own life; the second is that every expiry is clamped "
+            "to the grantor's on read, so even a grant from elsewhere cannot outlive its "
+            "root warrant.")
+    if to_name in w.enrolled_keys(root):
+        raise AttestError(
+            f"{to_name!r} is a WARRANTED name. A grant must not touch one: its privileges "
+            f"come from an operator signature, and letting an agent's act modify them would "
+            f"put agent-writable state on the authorization path.")
+    if to_name in delegated_keys(root):
+        raise AttestError(
+            f"{to_name!r} already holds a delegated credential. A second grant is refused "
+            f"rather than merged, because merging is how a ceiling gets raised one act at a "
+            f"time. To change what it holds, let the credential expire.")
+    want = set(kinds or [])
+    if not want:
+        raise AttestError("--kinds is required; a grant of nothing is not a grant")
+    held = held_kinds(root, grantor)
+    # Holding `grant` is itself required to grant, and a test found this missing: without it
+    # any delegate could re-delegate forever, so the ceiling would bound WHAT is passed on
+    # while leaving WHETHER it can be passed on unbounded -- half a ceiling. A warranted name
+    # holds `grant` like everything else, so this binds only delegates, which is the point:
+    # a subagent is re-delegable only if someone decided so explicitly.
+    if "grant" not in held:
+        raise AttestError(
+            f"{grantor!r} holds {sorted(held) or 'nothing'} and NOT 'grant', so it cannot "
+            f"delegate at all. Re-delegation is a privilege like any other and has to be "
+            f"handed over on purpose; a credential is not re-delegable by default.")
+    excess = want - held
+    if excess:
+        raise AttestError(
+            f"DELEGATION CEILING: {grantor!r} holds {sorted(held) or 'nothing'} and cannot "
+            f"grant {sorted(excess)}. No identity delegates more privilege than it holds "
+            f"(D3b). Grant a subset, or obtain the privilege first.")
+    if not str(expires or "").strip():
+        raise AttestError("--expires is required; a credential with no expiry is a standing "
+                          "privilege, which is what D3b exists to prevent")
+    if hc.now_iso() > expires:
+        raise AttestError(f"--expires {expires!r} is already in the past")
+    ceiling = effective_expiry(root, grantor)
+    if ceiling and expires > ceiling:
+        # REFUSED, not clamped. Silently keeping a smaller value than the operator typed is
+        # the exact shape of T-376, where `--voids A --voids B` kept B and exited 0.
+        raise AttestError(
+            f"--expires {expires!r} is later than {grantor!r}'s own expiry {ceiling!r}. "
+            f"Refused rather than clamped: silently substituting a value the caller did not "
+            f"ask for is defect T-376's shape, and this one would be substituting a "
+            f"SECURITY parameter. Pass {ceiling!r} or earlier.")
+    return sign_act(root, grantor, key_path, "grant", ref=to_name, task=task,
+                    body=_grant_body(to_name, pubkey, want, expires, note))
+
+
+def delegations(root) -> dict:
+    """The report DELEGATION-OUTSIDE-RECONCILE-A makes necessary. Read-only.
+
+    Counts raw AND distinct, both, never one alone (TELEMETRY-PROVENANCE-A).
+    """
+    d = delegated_keys(root)
+    ws = w.enrolled_keys(root)
+    rows = [dict(v, name=k) for k, v in sorted(d.items())]
+    return {
+        "warranted_raw": len(ws), "warranted_distinct": len(set(ws)),
+        "delegated_raw": len(rows),
+        "delegated_distinct": len({r["name"] for r in rows}),
+        "can_sign_raw": len(ws) + len(rows),
+        "can_sign_distinct": len(set(ws) | {r["name"] for r in rows}),
+        "max_depth": max([r["depth"] for r in rows], default=0),
+        "rows": rows,
+        "RECONCILE_DOES_NOT_SEE_THESE": (
+            "DEFECT DELEGATION-OUTSIDE-RECONCILE-A. warrant.py reconcile checks that every "
+            "ROLL row traces to a verified warrant. A delegated identity holds no plaza and "
+            "is in no roll, so reconcile will report clean while the names above can sign. "
+            "That is not reconcile being broken -- it is answering a narrower question than "
+            "'who can sign here'. Run both verbs. Neither alone is the answer."),
+        "CEILING_IS_VACUOUS_AT_THE_FIRST_HOP": (
+            "THE CEILING IS VACUOUS AT THE FIRST HOP. A warranted name holds every privileged "
+            "kind, because nothing in this harness restricts a warranted name by role yet. So "
+            "it constrains re-delegation and not the first grant. Stated because a reader "
+            "could otherwise take it for a restraint on the coordinator, which it is not."),
+        "D_17_UNCHANGED": (
+            "This bounds ACCIDENT and makes overreach ATTRIBUTABLE. It does not bound an "
+            "adversary: an attacker reads the grantor's private key and signs as the grantor "
+            "directly, needing no grant at all."),
+    }
+
+
 # ------------------------------------------------------------------------- intent
 
 def open_intents(root, name) -> list:
@@ -267,7 +513,9 @@ def open_intents(root, name) -> list:
 
     Read-only. Never repairs, never writes.
     """
-    keys = enrolled_keys(root)
+    # signing_keys, not enrolled_keys: a delegated identity files intents too, or `grant`
+    # would hand out a privilege its holder could never exercise.
+    keys = signing_keys(root)
     if name not in keys:
         return []
     pub = keys[name]["pubkey"]
@@ -372,11 +620,28 @@ def sign_act(root, name, key_path, kind, ref="", body=None, task=None) -> dict:
     the act is CHAINED, so a second party signing as `name` produces a fork.
     """
     root = pathlib.Path(root)
-    keys = enrolled_keys(root)
+    keys = signing_keys(root)
     if name not in keys:
         raise AttestError(
-            f"{name!r} is not an issued name; a name exists only inside a root-signed "
-            f"warrant (warrant.py). This is the one thing that IS closed.")
+            f"{name!r} can sign nothing. A name is either issued inside a root-signed "
+            f"warrant (warrant.py) or holds a live delegated credential from one "
+            f"(`attest.py delegations`). Minting the first kind is closed, conditionally; "
+            f"the second kind expires and cannot extend itself (D3b).")
+    # D3b. A delegated identity signs only the kinds it was granted, and only until its
+    # credential expires. Both are recomputed here rather than trusted from anywhere.
+    if kind in PRIVILEGED_KINDS:
+        held = held_kinds(root, name)
+        if kind not in held:
+            raise AttestError(
+                f"DELEGATION CEILING: {name!r} holds {sorted(held) or 'nothing'} and cannot "
+                f"sign a {kind!r} act. A delegated identity signs no more than it was "
+                f"granted (D3b), and it cannot widen that by asking.")
+    exp = effective_expiry(root, name)
+    if exp and hc.now_iso() > exp:
+        raise AttestError(
+            f"{name!r}'s authority expired at {exp}. A credential cannot extend itself: a "
+            f"name cannot grant to itself, and every grant is clamped to its grantor's own "
+            f"expiry on read, so no path produces a later date than the root warrant.")
     key = pathlib.Path(key_path).expanduser()
     if not key.exists():
         raise AttestError(f"no such private key: {key}")
@@ -499,10 +764,15 @@ def _verify_sig(root, name, path, pubkey) -> tuple:
 def verify_name(root, name) -> dict:
     """Verify every act by `name`, and report forks. Reports; never repairs, never
     refuses, never freezes (DIS-3)."""
-    keys = enrolled_keys(root)
+    keys = signing_keys(root)
     if name not in keys:
         return {"name": name, "enrolled": False,
-                "note": "no warrant issued this name; its acts carry no standing"}
+                "note": "no warrant issued this name and it holds no live delegated "
+                        "credential; its acts carry no standing. A credential that has "
+                        "EXPIRED lands here too, which is the intended reading: the acts it "
+                        "signed while live remain on the chain and verifiable, but the name "
+                        "can no longer be resolved to a key, so this report cannot speak "
+                        "for them."}
     pub = keys[name]["pubkey"]
     acts, bad, by_prev = chain(root, name), [], collections.defaultdict(list)
     for a in acts:
@@ -549,7 +819,7 @@ def verify_name(root, name) -> dict:
 
 
 def verify_all(root) -> dict:
-    keys = enrolled_keys(root)
+    keys = signing_keys(root)
     names = sorted(set(keys) | {p.name for p in acts_dir(root).iterdir()
                                 if p.is_dir()} if acts_dir(root).exists() else set(keys))
     reports = [verify_name(root, n) for n in names]
@@ -594,7 +864,7 @@ def trace(root, name=None) -> dict:
     the only thing that breaks the circle, and the report carries that instruction rather
     than implying it was already done.
     """
-    keys = enrolled_keys(root)
+    keys = signing_keys(root)
     names = [name] if name else sorted(
         set(keys) | ({p.name for p in acts_dir(root).iterdir() if p.is_dir()}
                      if acts_dir(root).exists() else set()))
@@ -789,6 +1059,26 @@ def main(argv=None) -> int:
     tr.add_argument("--name", help="one name (default: every name)")
     tr.add_argument("--json", action="store_true")
 
+    g = sub.add_parser("grant", help="delegate a SUBSET of your privileges, with an "
+                                     "expiry you cannot outlive (D3b)")
+    g.add_argument("--by", required=True, help="the granting name")
+    g.add_argument("--key", required=True, help="the granting name's private key")
+    g.add_argument("--to", required=True, dest="to", help="the delegated identity")
+    g.add_argument("--pubkey", required=True, help="the delegate's PUBLIC key, verbatim")
+    g.add_argument("--kinds", required=True, nargs="+",
+                   help="privileged kinds to delegate; must be a subset of what you hold")
+    g.add_argument("--expires", required=True,
+                   help="ISO instant; refused, never clamped, if later than your own")
+    g.add_argument("--task", required=True, help="board task id (D3a linkage)")
+    g.add_argument("--note", default="")
+
+    dg = sub.add_parser("delegations", help="every live delegated credential; the report "
+                                           "reconcile does NOT cover (D3b)")
+    dg.add_argument("--json", action="store_true")
+
+    hk = sub.add_parser("holds", help="what a name may sign, and until when")
+    hk.add_argument("--name", required=True)
+
     v = sub.add_parser("verify", help="verify signatures and detect forks")
     v.add_argument("--name", help="one name (default: every name)")
     v.add_argument("--json", action="store_true")
@@ -833,6 +1123,28 @@ def main(argv=None) -> int:
                 print(json.dumps(out, indent=2, ensure_ascii=False))
             else:
                 _render_trace(out)
+        elif args.cmd == "grant":
+            print(json.dumps(grant_privilege(root, args.by, args.key, args.to,
+                                             args.pubkey, args.kinds, args.expires,
+                                             args.task, args.note),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "delegations":
+            out = delegations(root)
+            if args.json:
+                print(json.dumps(out, indent=2, ensure_ascii=False))
+            else:
+                _render_delegations(out)
+        elif args.cmd == "holds":
+            held = sorted(held_kinds(root, args.name))
+            print(json.dumps({
+                "name": args.name,
+                "privileged_kinds": held,
+                "expires": effective_expiry(root, args.name),
+                "warranted": args.name in w.enrolled_keys(root),
+                "NOTE": ("A warranted name holds every privileged kind, because nothing here "
+                         "restricts a warranted name by role yet. The ceiling binds on "
+                         "re-delegation, not on the first grant."),
+            }, indent=2, ensure_ascii=False))
         elif args.cmd == "verify":
             out = verify_name(root, args.name) if args.name else verify_all(root)
             if args.json or args.name:
@@ -876,6 +1188,22 @@ def _render(out) -> None:
             print(f"    {f['STATUS']}: {f['MEANS']}")
             print(f"    {f['NO_CONSEQUENCE']}")
     print(f"\n{out['NOTE']}")
+
+
+def _render_delegations(out) -> None:
+    print(f"nombres con warrant    {out['warranted_raw']} crudos / "
+          f"{out['warranted_distinct']} distintos")
+    print(f"credenciales delegadas {out['delegated_raw']} crudas / "
+          f"{out['delegated_distinct']} distintas")
+    print(f"pueden firmar          {out['can_sign_raw']} crudos / "
+          f"{out['can_sign_distinct']} distintos")
+    print(f"profundidad maxima     {out['max_depth']}")
+    for r in out["rows"]:
+        print(f"  {r['name']:20s} d{r['depth']} de {r['grantor']:18s} "
+              f"vence {r['expires']}  {','.join(r['kinds'])}")
+    print(f"\n{out['RECONCILE_DOES_NOT_SEE_THESE']}")
+    print(f"\n{out['CEILING_IS_VACUOUS_AT_THE_FIRST_HOP']}")
+    print(f"\n{out['D_17_UNCHANGED']}")
 
 
 def _render_trace(out) -> None:

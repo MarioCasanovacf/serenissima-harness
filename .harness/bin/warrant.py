@@ -693,6 +693,16 @@ def enrolled_keys(root) -> dict:
                 "pubkey": entry["pubkey"], "warrant": p["warrant_id"],
                 "epic": p["epic"], "colegiado": entry["colegiado"],
                 "role": entry["role"],
+                # ADDED for T-401 (D3b). The delegation ceiling clamps a delegated
+                # credential's expiry to its grantor's, and for a warranted grantor that
+                # bound IS this field. It was absent, so attest.effective_expiry returned
+                # None for every warranted name and NOTHING WAS CLAMPED -- a test caught
+                # that a hand-written grant could outlive the warrant it descends from.
+                # It is derived from the same already-verified payload as every other field
+                # here, so no new trust is being placed anywhere; the alternative was
+                # re-verifying every warrant a second time inside attest.py, duplicating
+                # this loop and its refusals.
+                "valid_until": p.get("valid_until"),
             }
     return out
 
