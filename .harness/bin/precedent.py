@@ -395,6 +395,64 @@ VALID_WIDTH = ("narrow", "wide")
 VALID_CONFIRMATION_OUTCOMES = ("confirmed", "narrowed", "rejected")
 RELATION_TYPES = ("follows", "distinguishes", "overrules", "supersedes", "voids",
                   "reinterprets", "revalues")  # V1-07: last two added by T-353
+
+
+class StoreOnce(argparse.Action):
+    """Refuse a repeated single-value flag instead of silently keeping the last one.
+
+    Defect T-376, found by the coordinator publishing PR-032: `publish` accepted
+    `--voids A --voids B`, kept only B, exited 0, and wrote ONE relation where two were
+    asked for. Silent discard of an explicit instruction, made permanent by an immutable
+    record. The same defect family as a false-green test.
+
+    A mechanical audit of `publish` found 33 flags with this exact shape, not one. Twelve
+    flags on the same subcommand accumulate (`action="append"`), so the semantics were
+    inconsistent and the trap was invisible from the outside: nothing in the help text
+    distinguishes a flag that accumulates from one that overwrites.
+
+    WHY REFUSE RATHER THAN ACCUMULATE. Accumulating the relation flags is not a one-line
+    change: `--voids` pairs with `--controlling-authority`, and `--overrules`/`--revalues`
+    pair with `--factor` and `--factor-note`, so accumulation needs occurrence-order
+    pairing. This module's own docstring already carries a DEVIATION note about how
+    fragile that pairing is for `--distinguishes`/`--distinguishing-facts`. A second
+    fragile pairing surface is a worse trade than an explicit refusal. A record that must
+    void two targets is published as two acts, and the tool now SAYS so.
+
+    The sentinel lives in a set rather than testing `is not None`, because several of these
+    flags have non-None defaults (`--operation` defaults to "determination") and a
+    None-check would let those be silently overwritten -- the very bug being fixed.
+    """
+
+    SEEN = "_store_once_seen"
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        seen = getattr(namespace, self.SEEN, None)
+        if seen is None:
+            seen = set()
+            setattr(namespace, self.SEEN, seen)
+        if self.dest in seen:
+            parser.error(
+                "{0} was given more than once and this flag takes a single value. Earlier "
+                "versions silently kept only the last one, which discarded an explicit "
+                "instruction into an immutable record (T-376). Supply {0} once. If you need "
+                "two targets, publish two acts.".format(option_string or ("--" + self.dest)))
+        seen.add(self.dest)
+        setattr(namespace, self.dest, values)
+
+
+def _refuse_repeats(*parsers):
+    """Apply StoreOnce to every single-value flag on the given parsers.
+
+    Applied uniformly rather than only to the relation flags T-376 named. Fixing five
+    siblings and leaving 28 with the identical trap on the same subcommand is the shape of
+    half-repair this registry keeps finding; and for a command that writes an immutable
+    record, silently keeping the last of two explicit instructions is never the wanted
+    behaviour. Flags that accumulate and boolean switches are left alone.
+    """
+    for parser in parsers:
+        for action in parser._actions:
+            if action.__class__ is argparse._StoreAction and action.option_strings:
+                action.__class__ = StoreOnce
 FACTOR_ENUM = ("reasoning_error", "unworkability", "doctrinal_change", "factual_change", "reliance")
 
 # T-353, A4/V1-13: the typed-operation vocabulary.
@@ -2537,6 +2595,11 @@ def main(argv):
     p_stale.add_argument("--json", action="store_true", default=False)
     add_root_arg(p_stale)
     p_stale.set_defaults(func=cmd_stale)
+
+    # T-376: refuse a repeated single-value flag rather than silently keeping the last.
+    # Applied to `publish` and `confirm`, the two verbs that write a record; `--root` and
+    # the read-only verbs are left alone so a repeated --root in a wrapper still behaves.
+    _refuse_repeats(p_pub, p_conf)
 
     args = parser.parse_args(argv)
     return args.func(args)

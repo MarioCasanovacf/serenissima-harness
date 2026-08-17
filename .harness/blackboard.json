@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-17T07:27:41Z",
+  "updated_at": "2026-08-17T07:59:21Z",
   "updated_by": "coordinator-opus",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -4371,7 +4371,7 @@
     "T-376": {
       "epic": "addendum-ii",
       "title": "REPAIR: precedent.py silently discards extra --voids targets (non-accumulating flag)",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
@@ -4380,7 +4380,12 @@
       "priority": 1,
       "detail_file": ".harness/tasks/T-376.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "coordinator-opus",
+        "note": "T-376 DONE by coordinator-opus. Handing to a DISTINCT verifier: I am the producer and must not verdict.\n\nWHAT WAS WRONG. publish accepted --voids A --voids B, kept only B, exited 0, wrote ONE\nrelation where two were requested. Silent discard of an explicit instruction into an\nimmutable record.\n\nTHE AUDIT THE TASK ASKED FOR, and it changes the scope. I introspected every flag on the\npublish subcommand mechanically rather than by eye. 47 flags total: 12 accumulate\n(action=append), 2 are booleans, and 33 have the silent-discard shape. Not five relation\nflags. The full list is reproducible with the script quoted below. Because 12 flags on the\nsame subcommand DO accumulate, the semantics were inconsistent and the trap was invisible\nfrom outside: nothing in the help text distinguishes a flag that accumulates from one that\noverwrites.\n\nWHAT I SHIPPED. A StoreOnce argparse action that refuses a repeat with a message naming the\nflag, the defect id, and the workaround. Applied via _refuse_repeats(p_pub, p_conf) to every\nsingle-value flag on the two verbs that WRITE a record. Read-only verbs and --root are left\nalone so a wrapper that repeats --root still behaves.\n\nTWO DELIBERATE DECISIONS A VERIFIER SHOULD ATTACK.\n\n1. REFUSE rather than ACCUMULATE. The task allowed either. I chose refuse because\n   accumulation is not a one-line change: --voids pairs with --controlling-authority, and\n   --overrules and --revalues pair with --factor and --factor-note, so accumulating needs\n   occurrence-order pairing. This module's own docstring already carries a DEVIATION note\n   about how fragile that pairing is for --distinguishes. A second fragile pairing surface\n   is a worse trade than an explicit refusal. THE COST IS REAL AND I AM NOT HIDING IT: a\n   record that legitimately voids two targets can no longer be expressed as one act. The\n   schema would allow it, since relations is a list. If the verifier thinks that cost is\n   too high, this is the right place to say so.\n\n2. UNIFORM rather than scoped to the relation flags. Fixing five siblings and leaving 28\n   with the identical trap on the same subcommand is the half-repair shape this registry\n   keeps finding. This widens the task as written, so it is called out rather than slipped\n   in. The empirical check for blast radius: the whole precedent suite passes unchanged.\n\nEVIDENCE, replayable.\n  python3 -m py_compile .harness/bin/precedent.py                      -> exit 0\n  python3 -m unittest discover -s .harness/tests -p \"test_precedent*.py\"\n      -> Ran 252 tests, OK. Nonzero count, green, nothing depended on the discard.\n  python3 -m pytest .harness/tests/ -q                                 -> 527 passed, 4 skipped\n  Two --voids now: \"precedent.py publish: error: --voids was given more than once and this\n      flag takes a single value ... If you need two targets, publish two acts.\" exit nonzero.\n  One --voids: parsing succeeds and the run proceeds to the next legitimate validation\n      (\"refused: tier_evidence must be non-empty\"), which is the proof the guard did not\n      break the single use.\n\nNEW TEST: .harness/tests/test_precedent_repeat_flags.py, 13 tests, grouped by what each\nprotects: the reported defect on --voids, the 15 siblings sampled from the audit, the flags\nthat must STILL accumulate (the regression this fix could plausibly cause), and that nothing\nis written when a repeat is refused.\n\nNEGATIVE CONTROL RUN, because a guard nobody broke on purpose is not a verified guard:\n  removing _refuse_repeats entirely      -> 5 of 13 fail\n  dropping p_conf from the guard         -> 1 of 13 fails\nBoth directions caught. Restored after.\n\nIMMUTABILITY. PR-032 and PR-033 were not touched; a test asserts both still parse and carry\ntheir relations. No file under .harness/precedents/ was written by this task.\n\nWHAT I DID NOT DO. I did not add accumulation for any relation flag, and I did not touch the\n33-flag audit result into a task of its own, because the uniform fix already covers all 33.\nIf the verifier prefers accumulation for --voids specifically, that is a new task, not a\ncorrection of this one.\n",
+        "ts": "2026-08-17T07:50:25Z"
+      },
       "created_at": "2026-08-12T23:11:45Z",
       "created_by": "coordinator-fable"
     },
@@ -4941,7 +4946,7 @@
     "T-399": {
       "epic": "gen-6-seating",
       "title": "D2: publish the tier-1 record that separates constitutional from operational parameters",
-      "status": "open",
+      "status": "review",
       "role": "thinker",
       "engine": "any",
       "depends_on": [],
@@ -4950,7 +4955,12 @@
       "priority": 1,
       "detail_file": ".harness/tasks/T-399.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "coordinator-opus",
+        "note": "T-399 DONE by coordinator-opus: PR-060 published. Handing to a DISTINCT verifier, and this one\nNEEDS a real adversarial read rather than a replay, for the reason in section 2.\n\n1. WHAT WAS PUBLISHED\n\nPR-060, authority_tier 1, subject constitutional-operational-split, declared_width wide,\noperation determination, interpretive_code_version v1, status active,\nconfirmation_status UNCONFIRMED (so it does NOT bind yet; show prints that trailer itself).\n\nSix clauses. (1) every parameter is CONSTITUTIONAL or OPERATIONAL and never both, with\nconstitutional defined as anything fixing HOW WORK IS EVALUATED plus any figure computed\nabout an identity, and operational as anything fixing WHAT WORK IS DONE. (2) consequence MAY\nattach to an operational parameter. (3) consequence may NOT attach to a constitutional one and\nno agent may set one. (4) this record overrules nothing and lifts no refusal, with the argument\nspelled out. (5) the deciding test for a hard case, with doubt resolving toward constitutional.\n(6) THIS RECORD AUTHORIZES NO CONSEQUENCE NOW; it authorizes the distinction only, and every\nindividual consequence still needs its own published record.\n\nCitations are TYPED, not name-drops: relations carries follows PR-022 and follows PR-026, and\ncites is empty by design. Verified that this updates cited_by on both targets, which went from\n[] to [PR-060]. This is the A.8.1 convergence measure the coordinator reported at 28.6% typed;\na bare --cites here would have made that figure worse while claiming to improve the layer.\n\n2. THE LOAD-BEARING INTERPRETIVE STEP, WHICH IS WHERE TO ATTACK\n\nClause 4 rests on reading PR-022 clause 4 as SCOPED to reputation figures. PR-022 clause 4\nreads, verbatim: \"NO CONSEQUENCE ATTACHES. NONE: no weighting, no gating, no privileges.\"\nRead apart from its record, that sentence forbids the whole of clause 2 of PR-060.\n\nThe scoping argument, which is IN the ratio so it can be attacked: PR-022 is titled \"Phase A\nreputation is bookkeeping: derived on read, zero consequences\", its subject is\nreputation-phase-a, its clause 5 says \"Phase A is bookkeeping, not currency\", and its clause 6\nnames the violation as wiring \"a consequence to a Phase A figure\".\n\nA FIRST DRAFT OF THIS RECORD STATED THAT SCOPING AS IF IT WERE PR-022's TEXT. It is not; it is\nan interpretation. I caught it before publishing and rewrote clause 4 to quote the clause\nverbatim, present the scoping as an argument, and flag it as the step to test first. The ratio\nalso names the coordinator's four tier-1 miscitations of 2026-08-17 and says its reading is\noffered for checking, not for trust.\n\nIF PR-022 CLAUSE 4 IS UNSCOPED, clause 2 of PR-060 has no authority and the record must be\nVOIDED PER INCURIAM rather than applied. The ratio says so itself. That is the disposal the\nverifier should reach if the reading fails; do not narrow it instead.\n\n3. WHY THIS IS A DETERMINATION AND NOT AN OVERRULING\n\nBecause nothing is lifted. PR-026 clause 5 requires a tier-1 act naming the record and the\nsingle refusal lifted. PR-060 lifts no refusal, so it does not invoke clause 5, and it says so.\nPR-026 clause 3 forbids demotion by computed standing ALONE; an operational-parameter\nconsequence is not computed from standing. PR-022 clause 6, the neutrality clause, is left\nuntouched and PR-060 explains why: a burden is a weighting, therefore constitutional.\n\nA verifier who thinks this should have been an overrules act rather than a determination\nshould say so, because that changes what evidence the record needed (SDR-17.8 factors).\n\n4. THE OPERATOR'S AUTHORITY, AND ITS LIMIT\n\nThe sole authority for the division is the operator's ruling of 2026-08-17, recorded in\n.harness/operator-rulings-2026-08-17.md. The operator answered YES to D2. What the operator\nauthorized is the SPLIT. They did not author this text and did not authorize any consequence,\nwhich is why clause 6 exists. Treating \"the operator said yes\" as the record was the specific\nfailure mode the task warned against.\n\n5. EVIDENCE, REPLAYABLE\n\n  python3 .harness/bin/precedent.py show PR-060\n      -> prints \"scope: UNCONFIRMED (does not bind)\" and \"force: binding\"\n  python3 .harness/bin/precedent.py conflicts\n      -> 1 finding across 60 records, and it is the PRE-EXISTING PR-001 dangling P-023\n         citation. Zero new findings. Confirm this independently rather than taking it here.\n  python3 -m pytest .harness/tests/ -q     -> 527 passed, 4 skipped\n  Dry run discipline: published twice into COPIES of the registry under the scratchpad before\n  touching the live one, which is how the clause-4 defect above was caught in time.\n\n6. THE CONFIRMATION FLOOR IS NOW LOAD-BEARING FOR THE FIRST TIME\n\n  python3 -c \"import sys; sys.path.insert(0,'.harness/bin'); import blackboard as bb;\n              print(bb.unconfirmed_records_for('T-399'))\"      -> ['PR-060']\n\nT-399 CANNOT be marked done until a DISTINCT identity confirms PR-060, and the gate shipped\nearlier in this session is what enforces it. That gate had never once fired on a live record.\nThis is its first real exercise, so a verifier should check the gate as well as the record: if\nT-399 can be closed with PR-060 still unconfirmed, the gate is broken and that is a bigger\nfinding than anything about the record.\n\n7. TWO FINDINGS MADE WHILE DOING THIS, BOTH DELIBERATELY NOT ACTED ON HERE\n\n(a) PR-022 carries the validity condition \"FORCE-IDENTITY-A is open: no cryptographic identity\n    with an external trust root exists in this harness\". After W-002 was signed and applied\n    today, that sentence is FALSE: an enrolled root exists and nine names are bound to keys\n    inside a signed warrant. The DEFECT it points at is NOT closed, because D-17 still holds\n    and every agent can read every key. So the condition's literal words lapsed while its\n    purpose survives. I did NOT use this to weaken PR-022, and PR-060 does not rely on it;\n    PR-060's own validity_conditions state that it depends on coexisting with PR-022 clause 4,\n    not on its lapse. Filed as T-404.\n(b) precedent.py stale does not evaluate validity_conditions at all. It reports citation-decay\n    candidates only, 36 of 59 records. So no tool in this harness can notice a lapsed validity\n    condition, which is how (a) went unnoticed. Filed as T-405.\n",
+        "ts": "2026-08-17T07:55:39Z"
+      },
       "created_at": "2026-08-17T07:27:21Z",
       "created_by": "coordinator-opus"
     },
@@ -5016,6 +5026,38 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-08-17T07:27:41Z",
+      "created_by": "coordinator-opus"
+    },
+    "T-404": {
+      "epic": "E-01",
+      "title": "Canon question: PR-022's validity condition lapsed in letter but not in purpose",
+      "status": "open",
+      "role": "thinker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-404.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-17T07:59:21Z",
+      "created_by": "coordinator-opus"
+    },
+    "T-405": {
+      "epic": "E-01",
+      "title": "stale cannot evaluate validity_conditions, so a lapsed condition is undetectable",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-405.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-17T07:59:21Z",
       "created_by": "coordinator-opus"
     }
   }

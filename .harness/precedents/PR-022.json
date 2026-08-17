@@ -39,7 +39,9 @@
   "cites": [
     "PR-015"
   ],
-  "cited_by": [],
+  "cited_by": [
+    "PR-060"
+  ],
   "overruled_by": null,
   "superseded_by": null,
   "voided_by": null,

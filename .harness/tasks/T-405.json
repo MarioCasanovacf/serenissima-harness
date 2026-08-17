@@ -1,0 +1,16 @@
+{
+  "id": "T-405",
+  "title": "stale cannot evaluate validity_conditions, so a lapsed condition is undetectable",
+  "description": "FINDING, made during T-399. This is the mechanical half of T-404.\n\nprecedent.py stale reports ONE check only: check=D [decay-candidate], citation decay, threshold\n10 subsequent publications, 36 candidates across 59 records at the time of writing. It does not\nread validity_conditions at all. Confirm that by reading the function before building anything.\n\nCONSEQUENCE. Every tier-1 record in this layer states the conditions under which it stops being\nvalid, in prose, and NO TOOL IN THIS HARNESS CAN NOTICE WHEN ONE OF THEM STOPS HOLDING. T-404's\nfinding was made by a coordinator reading the record by hand while doing unrelated work. That is\nnot a detector.\n\nWHAT TO BUILD, and the hard part is the honesty and not the code:\n  A verb that lists each record's validity_conditions next to whatever the harness can actually\n  measure about them, and that says plainly which ones it CANNOT evaluate.\n\nThe trap to refuse. A tool that pattern-matches prose and emits 'condition no longer holds' will\nbe wrong, and wrong in the expensive direction, because it would report a tier-1 record as\nlapsed on a string match. Follow the currency.py precedent instead: emit the figure and refuse\nthe verdict. If a condition cannot be mechanically evaluated, the correct output names the\ncondition and prints NOT MECHANICALLY EVALUABLE. A report listing 59 records as 'unknown' is a\nTRUE report and is more useful than a false one, because it tells a reader exactly how much of\nthis layer rests on nobody having checked.\n\nRegistry rules that apply. GUARD-MENTION-C: if any test scans source for a token, parse the AST\ninstead, because prose explaining a command will trip a substring scan. This is the fourth time\nthat defect would apply. TELEMETRY-PROVENANCE-A: report counts raw AND distinct, never one.\n\nShip with the count of conditions in each bucket, and pin the bucketing with tests.",
+  "acceptance_criteria": [
+    "Read the stale implementation first and record verbatim which checks it runs; the claim 'validity_conditions are not evaluated' must be evidenced, not assumed.",
+    "A verb that lists every record's validity_conditions and, per condition, either a measured value or the literal NOT MECHANICALLY EVALUABLE.",
+    "NO pass/fail verdict on prose conditions. A false lapse report on a tier-1 record is the expensive failure; refuse the verdict as currency.py does.",
+    "Counts reported raw AND distinct (TELEMETRY-PROVENANCE-A).",
+    "Any test that inspects source parses the AST, never a substring scan (GUARD-MENTION-C, fourth occurrence).",
+    "T-404's finding appears in the output when the verb runs against the live registry: PR-022's condition is listed, and listed as one this tool cannot evaluate.",
+    "Full suite green; negative control run and reported for at least one test per group."
+  ],
+  "context_files": [],
+  "notes": []
+}

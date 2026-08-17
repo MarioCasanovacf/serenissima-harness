@@ -1,0 +1,14 @@
+{
+  "id": "T-404",
+  "title": "Canon question: PR-022's validity condition lapsed in letter but not in purpose",
+  "description": "FINDING, made during T-399, deliberately not resolved by the coordinator alone.\n\nPR-022 (authority_tier 1, subject reputation-phase-a) carries this validity condition, verbatim:\n  'FORCE-IDENTITY-A is open: no cryptographic identity with an external trust root exists in\n   this harness'\n\nAfter W-002 was signed and applied on 2026-08-17 that sentence is FALSE as written. An enrolled\nroot exists at .harness/trust/root.pub, nine names are bound inside an operator-signed warrant,\nand reconcile traces 19 roll rows to it with 0 orphans.\n\nTHE NUANCE THAT MUST NOT BE OVERCLAIMED, and the whole reason this is a task and not a patch:\nthe DEFECT FORCE-IDENTITY-A is NOT closed. D-17 still holds. Every agent runs as the same OS\nuser on one filesystem, every agent can read .harness/keys/, and a test proves forgery by\nstealing an agent key. So the condition's literal words lapsed while the condition's PURPOSE\nsurvives intact.\n\nTHE CANON QUESTION, which is what needs deciding: when a tier-1 record's validity condition is\nwritten as a factual claim, and the fact changes but the concern the fact stood for does not,\ndoes the record lapse? IC-01..IC-10 is the interpretation canon; check whether it already\nanswers this before legislating anything new.\n\nWHAT MUST NOT HAPPEN. Do not use the lapse to weaken PR-022. Its clause 4 ('NO CONSEQUENCE\nATTACHES. NONE') is the strongest restraint in the layer, and a coordinator that wanted to\nattach a consequence would have exactly this incentive to read the lapse broadly. PR-060 was\npublished without relying on the lapse for that reason; its own validity_conditions depend on\nCOEXISTING with PR-022 clause 4, not on its expiry. An outcome that leaves PR-022 fully in\nforce and merely restates the condition in terms of the defect rather than the artifact is a\nGOOD outcome, not a failure to act.\n\nDepends on nothing. Blocks nothing. Deliberately low priority: the harness is safe either way,\nbecause the restraint currently binds.",
+  "acceptance_criteria": [
+    "IC-01..IC-10 read and quoted: state whether the canon already answers the lapse question, before proposing anything new.",
+    "A written disposal that either (a) restates PR-022's condition in terms of defect FORCE-IDENTITY-A rather than the absence of an artifact, via a tier-1 act naming PR-022, or (b) records that the canon requires no act and why.",
+    "Either way: PR-022 clause 4 is still in force at the end, and the disposal says so in words.",
+    "The disposal states D-17 explicitly: impersonation is open, agents share one OS user, keys are readable.",
+    "If a record is published it needs confirmation by a distinct identity per PR-015 before it binds."
+  ],
+  "context_files": [],
+  "notes": []
+}

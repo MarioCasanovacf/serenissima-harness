@@ -1,0 +1,72 @@
+{
+  "id": "PR-060",
+  "schema_version": 2,
+  "title": "Constitutional and operational parameters: the split, and what it does not lift",
+  "subject": "constitutional-operational-split",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-399"
+  ],
+  "ratio": "(1) THE DIVISION. Every parameter of this harness is CONSTITUTIONAL or OPERATIONAL, and never both. A parameter is CONSTITUTIONAL when it fixes HOW WORK IS EVALUATED: any threshold, any quorum floor, any weighting, any burden of proof, any tier boundary, and any figure computed about an identity. A parameter is OPERATIONAL when it fixes WHAT WORK IS DONE: which task is claimed, in what order, under what budget, against what deadline, on which engine, with what iteration bound. (2) CONSEQUENCE MAY ATTACH TO AN OPERATIONAL PARAMETER. An agent that sets an operational parameter for itself may be held to it, and the holding is a consequence in the full sense: it may bind, refuse, or cost. (3) CONSEQUENCE MAY NOT ATTACH TO A CONSTITUTIONAL PARAMETER, AND NO AGENT MAY SET ONE. Constitutional parameters belong to the operator alone and change only by a tier-1 act of the operator. (4) THIS RECORD OVERRULES NOTHING AND LIFTS NO REFUSAL, and the argument is set out so it can be attacked rather than trusted. PR-022 clause 4 reads, verbatim: \"NO CONSEQUENCE ATTACHES. NONE: no weighting, no gating, no privileges.\" Read apart from its record that sentence forbids the whole of clause 2 here. It is read within its record: PR-022 is titled \"Phase A reputation is bookkeeping: derived on read, zero consequences\", its subject is reputation-phase-a, its clause 5 states \"Phase A is bookkeeping, not currency\", and its clause 6 names the violation as wiring \"a consequence to a Phase A figure\". On that reading clause 4 governs consequences computed from reputation figures, and every figure computed about an identity is CONSTITUTIONAL under clause 1 here, so clause 4 is not narrowed but restated in wider terms. THIS IS THE LOAD-BEARING INTERPRETIVE STEP OF THIS RECORD AND IS FLAGGED AS SUCH RATHER THAN BURIED: a confirming identity must test it before anything else, and if PR-022 clause 4 is instead unscoped, then clause 2 here has no authority and this record must be voided per incuriam rather than applied. The coordinator that drafted this record made four tier-1 miscitations on 2026-08-17, two of them reading a rule into a record that is not written there, so its reading is offered for checking and not for trust. PR-022 clause 6 holds unchanged: no verification or confirmation burden varies by standing, because a burden is a weighting and therefore constitutional. PR-026 clause 3 forbids demotion, suspension or exclusion by computed standing alone; a consequence attached to an operational parameter is not computed from standing, so clause 3 is untouched. PR-026 clause 5 requires a tier-1 act naming the record and the single refusal lifted; this record lifts no refusal and therefore does not invoke it. (5) THE DECIDING TEST FOR A HARD CASE. If the consequence could be computed, in whole or in part, from a figure about an identity, the parameter is CONSTITUTIONAL. Doubt resolves toward constitutional, because the cost of wrongly calling a parameter operational is a consequence nobody authorized, and the cost of wrongly calling it constitutional is a delay. (6) THIS RECORD AUTHORIZES NO CONSEQUENCE NOW. It authorizes the DISTINCTION and nothing else. Every individual consequence still requires its own published record, which must name the operational parameter, the consequence, and the agent's own act of setting that parameter. A consumer that reads this record as a general licence to attach consequences violates this clause.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "Applies to every parameter of this harness, including parameters not yet named, because clause 1 is a division and a division with gaps is not one",
+    "Does NOT apply to the operator, who is sovereign and not a market participant (PR-026 clause 1)",
+    "Does NOT itself attach any consequence to anything; clause 6 is a self-limitation and is part of the ratio, not dicta",
+    "Operative only while the operator's ruling of 2026-08-17 stands; it is recorded in .harness/operator-rulings-2026-08-17.md and is the sole authority for the division"
+  ],
+  "declared_width": "wide",
+  "revisit_trigger": "PR-022 clause 4 or PR-026 clause 3 is amended or overruled; or the operator withdraws the ruling of 2026-08-17; or a consumer is found reading clause 6 as a licence",
+  "confirmation_status": "unconfirmed",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "narrowed_scope": null,
+  "confirmation_note": null,
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-022",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    },
+    {
+      "type": "follows",
+      "target": "PR-026",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-399",
+  "published_by": "coordinator-opus",
+  "published_at": "2026-08-17T07:54:34Z",
+  "sources": [
+    "decision:T-399#operator-ruling-d2",
+    "T-399"
+  ],
+  "validity_conditions": [
+    "The operator remains the only tier-1 authority (PR-026 clause 1 unamended)",
+    "PR-022 clause 4 remains in force and unamended; this record depends on coexisting with it, not on its lapse",
+    "No harness store holds a stored standing or balance field, so no figure can become an operational parameter by accident"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}
