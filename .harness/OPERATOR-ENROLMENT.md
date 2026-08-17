@@ -38,6 +38,45 @@ single use**, so a signature can never happen without the operator seeing a prom
 `-c`, any process running as this user can sign silently for as long as the agent holds
 the key.
 
+### Step 2b — macOS ONLY, and it is not optional. Do this before you try to sign.
+
+**Asking requires something that can ask.** A stock macOS ships no askpass program, and
+OpenSSH does not fail open: with no way to prompt, the agent refuses the signature and
+prints `agent refused operation`. That refusal is the guard working correctly, but nothing
+in it tells you what is missing.
+
+> **This document was wrong until 2026-08-17.** It mandated `-c` in step 2 and then handed
+> over a `-U` signing command that cannot succeed on a stock macOS. The coordinator
+> described the flow as tested end to end; the `-U` branch had not been exercised. The
+> operator hit the refusal on his first real signature.
+
+```
+chmod +x .harness/bin/askpass_macos.sh
+export SSH_ASKPASS="$PWD/.harness/bin/askpass_macos.sh"
+export SSH_ASKPASS_REQUIRE=force
+```
+
+`SSH_ASKPASS_REQUIRE=force` is required, not decoration: without it OpenSSH prefers the
+terminal and skips the helper, and you are back to a refusal.
+
+Both exports live only in the shell you set them in. Put them in your shell profile if you
+want signing to work in every new terminal.
+
+The helper fails CLOSED: if the dialog breaks, is dismissed, times out, or returns anything
+other than an explicit authorization, it denies. That property is what `test_askpass.py`
+pins, because an askpass that returns success on error would silently authorize every
+signature the agent is ever asked for, which is worse than having none at all.
+
+Verify the wiring without touching your key:
+
+```
+python3 -m pytest .harness/tests/test_askpass.py -q
+```
+
+**Do not "fix" this by dropping `-c` or by pointing `-f` at the private key.** Both work,
+and both make confirm-on-use decorative. A key whose only purpose is that a human must
+wield it should never be usable while the human is absent.
+
 ## Step 3 — Enrol the PUBLIC key. Only the public key ever leaves `~/.ssh`.
 
 ```
