@@ -1,0 +1,88 @@
+{
+  "warrant_id": "W-002",
+  "schema_version": 1,
+  "epic": "gen-6-seating",
+  "issued_at": "2026-08-17T05:44:52Z",
+  "valid_until": "2026-11-10T00:00:00Z",
+  "colegiados": {
+    "fedatario": "integridad del proceso; NO legisla, NO vota, NO tiene stake (AgentCity clerk constraint)",
+    "registro": "registros confirmados que sobreviven a la citacion posterior",
+    "revision": "refutaciones que se sostienen contra replica; PR-025 c1: el trabajo adversarial paga mas"
+  },
+  "plazas": {
+    "fedatario/registrar": 1,
+    "fedatario/relator": 1,
+    "fedatario/regulador": 1,
+    "fedatario/codificador": 1,
+    "registro/author": 2,
+    "registro/verifier": 3,
+    "revision/verifier": 3
+  },
+  "names": [
+    {
+      "name": "fed-registrar",
+      "colegiado": "fedatario",
+      "role": "registrar",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILJEMkoPpr0/bDI9bgXLBSvNCueNa/1wcT88F/LW3OKG harness clerk fed-registrar",
+      "persona": "vincula nombre a llave y a principal"
+    },
+    {
+      "name": "fed-relator",
+      "colegiado": "fedatario",
+      "role": "relator",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGlSXGp1kqMHDtS5vmDipKLoE7+/iQ836H9ZuOlp4Mej harness clerk fed-relator",
+      "persona": "corre la deliberacion en orden aleatorio"
+    },
+    {
+      "name": "fed-regulador",
+      "colegiado": "fedatario",
+      "role": "regulador",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBDnvH9qvXw02LjzgC8sQjeC52ub7u9I2CSmpDMj6oFq harness clerk fed-regulador",
+      "persona": "ancla evidencia ANTES de la discusion"
+    },
+    {
+      "name": "fed-codificador",
+      "colegiado": "fedatario",
+      "role": "codificador",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBSAL+q42BKkP3lk3c1THZRKYP2il89e7LKGOPoD/eo/ harness clerk fed-codificador",
+      "persona": "convierte consenso en registro"
+    },
+    {
+      "name": "registro-a",
+      "colegiado": "registro",
+      "role": "author",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINa9YvYJaxoKkZGv+3fcOLoNadwzsboTHd46p3AGV/9J harness agent registro-a",
+      "persona": ""
+    },
+    {
+      "name": "registro-b",
+      "colegiado": "registro",
+      "role": "verifier",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC917We33mSQZbMQ35BWegxUc49VkxJnfNiOm9PEEJDP harness agent registro-b",
+      "persona": ""
+    },
+    {
+      "name": "revision-doctrina",
+      "colegiado": "revision",
+      "role": "verifier",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJkDcSkEU72kbtKdMz+GUXUwVJ8a2IKHrgZaaTe1lp7V harness agent revision-doctrina",
+      "persona": ""
+    },
+    {
+      "name": "revision-ataque",
+      "colegiado": "revision",
+      "role": "verifier",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJG510BttVMdn2jrU7vR+ANVaVfNE28k2UZr3Rs/MN+ harness agent revision-ataque",
+      "persona": ""
+    },
+    {
+      "name": "revision-mecanismo",
+      "colegiado": "revision",
+      "role": "verifier",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2iyreqpGe4L6eEtLlRQau1nhSodIowi4IUguLwtpDC harness agent revision-mecanismo",
+      "persona": ""
+    }
+  ],
+  "namespace": "harness-warrant",
+  "NOT_A_CONSEQUENCE": "PR-022 clause 4 holds: this warrant confers a seat and a name, never a weight, a burden, a quorum or a permission"
+}
