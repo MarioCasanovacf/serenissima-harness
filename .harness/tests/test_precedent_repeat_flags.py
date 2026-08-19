@@ -204,3 +204,47 @@ class TheRecordsAlreadyPublished(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheRootFlag(PublishCase):
+    """The gap that let a false statement survive its own test suite.
+
+    The wiring comment in precedent.py claimed `--root` was left alone by the guard. It was
+    not, and is not: `--root` is an ordinary single-value store action on `publish` and
+    `confirm`, so `_refuse_repeats` has always covered it. A verifier reproduced the
+    contradiction in two commands and rejected T-376 for it.
+
+    NO TEST IN THIS FILE TOUCHED `--root`, which is the actual defect here. A claim nothing
+    exercises is a claim nothing can falsify. Both halves are now pinned: the write verbs
+    refuse, the read-only verbs do not.
+    """
+
+    def test_publish_refuses_a_repeated_root(self):
+        r = subprocess.run(
+            [sys.executable, str(CLI), "publish", "--root", "/tmp/a", "--root", "/tmp/b",
+             "--tier", "3", "--subject", "s", "--title", "t", "--task", "T-999",
+             "--ratio", "r", "--tier-evidence", "T-999"],
+            capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--root was given more than once", r.stderr + r.stdout)
+
+    def test_confirm_refuses_a_repeated_root(self):
+        r = subprocess.run(
+            [sys.executable, str(CLI), "confirm", "PR-001",
+             "--root", "/tmp/a", "--root", "/tmp/b"],
+            capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("--root was given more than once", r.stderr + r.stdout)
+
+    def test_a_read_only_verb_still_accepts_a_repeated_root(self):
+        # The half of the old claim that WAS true, pinned so narrowing the guard to fix the
+        # other half cannot silently break a wrapper that double-passes --root on a read.
+        r = subprocess.run(
+            [sys.executable, str(CLI), "list", "--root", str(self.reg),
+             "--root", str(self.reg)], capture_output=True, text=True)
+        self.assertNotIn("given more than once", r.stderr + r.stdout)
+
+    def test_the_wiring_comment_no_longer_makes_the_false_claim(self):
+        src = (ROOT / ".harness" / "bin" / "precedent.py").read_text(encoding="utf-8")
+        self.assertNotIn("`--root` and\n    # the read-only verbs are left alone", src)
+        self.assertIn("CORRECTED 2026-08-17", src)

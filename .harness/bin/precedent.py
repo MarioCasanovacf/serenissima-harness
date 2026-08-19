@@ -2867,8 +2867,20 @@ def main(argv):
     p_ratio.set_defaults(func=cmd_disposition_ratio)
 
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
-    # Applied to `publish` and `confirm`, the two verbs that write a record; `--root` and
-    # the read-only verbs are left alone so a repeated --root in a wrapper still behaves.
+    # Applied to `publish` and `confirm`, the two verbs that write a record.
+    #
+    # CORRECTED 2026-08-17 after a verifier rejected T-376 for a FALSE STATEMENT that stood
+    # here. The old comment claimed "--root and the read-only verbs are left alone so a
+    # repeated --root in a wrapper still behaves". Only the second half was true. `--root` is
+    # an ordinary single-value store action on `publish` and `confirm`, so `_refuse_repeats`
+    # covers it and always did: `publish --root A --root B` exits 2. Read-only verbs really
+    # are untouched, so `list --root A --root A` still works.
+    #
+    # THE BEHAVIOUR IS KEPT AND THE CLAIM IS FIXED, not the reverse. A repeated `--root` on a
+    # verb that WRITES an immutable record is exactly the silent-last-wins hazard T-376
+    # exists to stop -- picking the wrong registry is worse than picking the wrong relation.
+    # No test covered `--root` at all, which is why a false sentence survived its own suite;
+    # TheRootFlag in test_precedent_repeat_flags.py now covers both halves.
     _refuse_repeats(p_pub, p_conf)
 
     args = parser.parse_args(argv)

@@ -1,0 +1,8 @@
+{
+  "id": "T-411",
+  "title": "test_wall_clock_timeout falla de forma consistente en esta maquina, no es intermitente",
+  "description": "CORRECCION DE UN DIAGNOSTICO PROPIO. El coordinador venia tratando\ntest_gemini_headless_runner.py::...test_wall_clock_timeout_bounds_silent_child_and_reaps_process_group\ncomo una intermitencia bajo carga de suite completa, y lo escribio asi en dos notas de entrega.\n\nDOS VERIFICADORES INDEPENDIENTES LO CONTRADICEN. revision-mecanismo lo corrio TRES VECES AISLADO y\nfallo las tres. revision-ataque reporto lo mismo. Diagnostico de ellos: el presupuesto de 0.35 s es\ndemasiado ajustado para la latencia de arranque de proceso de esta maquina.\n\nPOR QUE IMPORTA MAS DE LO QUE PARECE. El coordinador reporto 'sin fallas' apoyandose en sus propias\ncorridas y despacho a los verificadores diciendoles que si solo fallaba esa prueba la reintentaran\naislada antes de tratarla como hallazgo. Esa instruccion los empujaba a descartar una falla real.\nLa leccion es la misma de la firma del warrant: una verificacion que no reproduce el estado real no\nverifica nada.\n\nQUE HACER. Medir la latencia real de arranque de proceso en esta maquina antes de tocar el numero.\nSi el presupuesto sube, que suba con la medicion escrita al lado y no a ojo. Y si la prueba no puede\nser fiable en maquinas lentas, decir eso en vez de aflojar el limite hasta que pase.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

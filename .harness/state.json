@@ -653,6 +653,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-08-15T07:20:03Z"
+      },
+      "coordinator-opus": {
+        "tasks_done": 5,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-19T22:48:30Z"
       }
     }
   },

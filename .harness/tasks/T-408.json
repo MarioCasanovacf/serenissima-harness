@@ -1,0 +1,8 @@
+{
+  "id": "T-408",
+  "title": "_match_intent ignora for_ref, asi que una intencion no fija el objetivo real del acto",
+  "description": "HALLAZGO DEL VERIFICADOR revision-ataque, 2026-08-17, al aceptar T-400.\n\n_match_intent empareja una intencion con un acto por (for_kind, task) UNICAMENTE. Nunca compara\nfor_ref con el ref real del acto. Asi que una intencion declarada como 'voy a emitir un veredicto\nsobre aurelia#1' autoriza igual un veredicto sobre orso#7, mientras coincidan el tipo y la tarea.\n\nNO ES UNA AFIRMACION FALSA. El docstring solo promete granularidad de tipo mas tarea, y el\nverificador lo dijo asi. Es un hueco entre lo que la intencion DICE y lo que la intencion ATA.\n\nQUE DECIDIR ANTES DE CODIFICAR. Si for_ref pasa a ser vinculante, una intencion se vuelve mas\nestrecha y habra que declarar una por objetivo. Eso puede ser correcto o puede volver el verbo\ninusable en la practica. Medir cuantas intenciones reales tendria que declarar un verificador en\nuna sesion tipica antes de decidir.\n\nCUIDADO CON EL FALSO CIERRE: for_ref lo escribe el mismo firmante, igual que ref. Atarlos entre si\nno autentica nada; solo hace que una desviacion quede escrita. D-17 sigue abierto.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

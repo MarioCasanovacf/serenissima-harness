@@ -1,0 +1,8 @@
+{
+  "id": "T-410",
+  "title": "Las guardas AST del KPI son por nombre, no por semantica: una cifra fabricada pasa",
+  "description": "HALLAZGO DEL VERIFICADOR revision-mecanismo, 2026-08-17, al aceptar T-403. Es su objecion mas\nfuerte, y la demostro en vez de afirmarla.\n\nEn una copia inyecto una cifra con forma de costo de reconciliacion: registries_distinct*40 +\nmeasurements_raw*1200000, guardada en una clave nueva out['projected_effort_estimate'], usando\nnombres de variable que no contienen las subcadenas hour, token ni cost, y sin tocar la clave\n'cost'. LAS 28 PRUEBAS PASARON y la cifra fabricada aparecio en la salida --json.\n\nNO ES UN DEFECTO DE LO QUE SE ENTREGO HOY. Hubo que inyectar codigo para producirlo. Es un hueco de\nresistencia futura: las cuatro guardas AST vigilan nombres y claves, no significado.\n\nQUE CONSTRUIR. Una guarda que pregunte por la SALIDA y no por el codigo: ninguna clave del reporte\npuede contener un numero que no venga de un conteo directo. Un conteo es defendible; un producto o\nuna suma ponderada de conteos es una estimacion, y PR-029 clausula 6 prohibe estimar este costo\nhoy. Probablemente sea mas facil validar el dict devuelto que analizar el AST.\n\nCUIDADO: no volver la guarda tan estricta que prohiba los conteos legitimos que el reporte ya\npublica.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

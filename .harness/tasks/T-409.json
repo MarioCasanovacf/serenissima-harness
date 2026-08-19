@@ -1,0 +1,8 @@
+{
+  "id": "T-409",
+  "title": "La separacion reconcile / delegations solo la sostiene la documentacion",
+  "description": "HALLAZGO DEL VERIFICADOR revision-ataque, 2026-08-17, al aceptar T-401. Es su objecion mas\nfuerte y no fue motivo de rechazo.\n\nDELEGATION-OUTSIDE-RECONCILE-A quedo documentado: reconcile responde 'toda fila del rol traza a un\nwarrant' y las identidades delegadas no estan en el rol, asi que reconcile sale limpio mientras una\ncredencial delegada puede firmar. La mitigacion es que `delegations` es el reporte complementario y\nque ambos verbos deben correrse.\n\nEL PROBLEMA: eso es una convencion de documentacion, no un mecanismo. Nada obliga a un auditor a\ncorrer los dos. Nada le avisa a quien corre solo reconcile que su respuesta es parcial.\n\nOPCIONES, sin recomendacion del coordinador: (a) reconcile menciona la existencia de credenciales\ndelegadas sin evaluarlas, preservando su garantia y quitando el silencio; (b) un verbo unico que\nllame a ambos; (c) dejarlo como esta y aceptar que la convencion basta.\n\nRESTRICCION DURA: la garantia de reconcile esta enunciada en terminos de nombres con warrant. No\nampliar esa palabra en silencio. Ampliarla romperia la afirmacion 'acunar esta cerrado' mientras\nparece fortalecerla.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}
