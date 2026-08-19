@@ -245,14 +245,18 @@ def summarize_run(index, units, coordinator):
               if m["ts"] and start - timedelta(minutes=20) <= m["ts"] <= end + timedelta(minutes=20)]
     roles = defaultdict(lambda: defaultdict(int))
     models = defaultdict(lambda: defaultdict(int))
+    model_tasks = defaultdict(set)
     for unit in units:
         bucket = roles[unit["role"]]
         bucket["agents"] += 1
+        bucket["turns"] += unit["turns"]
         for key in ("in", "out", "cache_write", "cache_read"):
             bucket[key] += unit[key]
         # a unit's tokens are split evenly across the models that served it
         for model in unit["models"]:
             models[model]["agents"] += 1
+            models[model]["turns"] += unit["turns"] // len(unit["models"])
+            model_tasks[model].update(unit["tasks"])
             for key in ("in", "out", "cache_write", "cache_read"):
                 models[model][key] += unit[key] // len(unit["models"])
     totals = {key: sum(u[key] for u in units) for key in ("in", "out", "cache_write", "cache_read")}
@@ -268,7 +272,7 @@ def summarize_run(index, units, coordinator):
         "coordinator": dict(coord, raw=sum(coord.values()), turns=len(window)),
         "roles": {r: dict(v, raw=sum(v[k] for k in ("in", "out", "cache_write", "cache_read")))
                   for r, v in roles.items()},
-        "models": {m: dict(v, tier=tier_of(m),
+        "models": {m: dict(v, tier=tier_of(m), tasks=sorted(model_tasks[m]),
                            raw=sum(v[k] for k in ("in", "out", "cache_write", "cache_read")))
                    for m, v in models.items()},
         "concurrency": concurrency(units),
@@ -319,7 +323,52 @@ def build_report(directory, gap_minutes, limit):
             "p95": percentile(costs, 0.95),
             "top_decile_share_pct": round(100 * sum(top_decile) / sum(costs), 1) if costs else 0,
         },
+        "turn_efficiency": turn_efficiency(summaries),
         "compaction": collect_compaction(directory),
+    }
+
+
+def turn_efficiency(summaries):
+    """Turns per task by model - the raw input to the k multiplier.
+
+    k is the ratio of one model's turns_per_task to another's ON COMPARABLE
+    WORK. This function cannot establish comparability: if the routing sent
+    hard tasks to one model and easy ones to another, the ratio measures the
+    routing, not the model. It reports the confound instead of hiding it, and
+    computes no k of its own.
+    """
+    models = defaultdict(lambda: {"agents": 0, "turns": 0, "raw": 0, "tasks": set()})
+    for summary in summaries:
+        for model, v in summary["models"].items():
+            entry = models[model]
+            entry["agents"] += v["agents"]
+            entry["turns"] += v.get("turns", 0)
+            entry["raw"] += v["raw"]
+            entry["tasks"].update(v.get("tasks", []))
+    rows = {}
+    for model, v in models.items():
+        tasks = len(v["tasks"])
+        rows[model] = {
+            "tier": tier_of(model),
+            "agents": v["agents"],
+            "turns": v["turns"],
+            "tasks_touched": tasks,
+            "raw": v["raw"],
+            "turns_per_agent": round(v["turns"] / v["agents"], 2) if v["agents"] else 0,
+            "turns_per_task": round(v["turns"] / tasks, 2) if tasks else 0,
+        }
+    shared = None
+    task_sets = {m: v["tasks"] for m, v in models.items() if v["tasks"]}
+    if len(task_sets) > 1:
+        shared = len(set.intersection(*task_sets.values()))
+    return {
+        "models": rows,
+        "shared_tasks": shared,
+        "comparable": False,
+        "note": ("turns_per_task is NOT k. Comparing two models' turns_per_task "
+                 "assumes both saw work of equal difficulty; this harness routes "
+                 "by difficulty, so the assumption fails on historical data. "
+                 "A valid k needs the SAME tasks run on both models."),
     }
 
 
@@ -363,6 +412,17 @@ def print_human(report):
         print("  {:22} {:9} agents={:>4} raw={:>15,} ({:>5.1f}%)"
               .format(model, tier_of(model), v["agents"], v["raw"],
                       100 * v["raw"] / model_total))
+
+    eff = report["turn_efficiency"]
+    print("\nturns by model (input to the k multiplier, NOT k itself)")
+    for model, v in sorted(eff["models"].items(), key=lambda kv: -kv[1]["raw"]):
+        print("  {:22} agents={:>4} turns={:>6,} tasks={:>4} turns/agent={:>6.2f} "
+              "turns/task={:>7.2f}".format(model, v["agents"], v["turns"],
+                                           v["tasks_touched"], v["turns_per_agent"],
+                                           v["turns_per_task"]))
+    if eff["shared_tasks"] is not None:
+        print("  tasks seen by every model above: {}".format(eff["shared_tasks"]))
+    print("  {}".format(eff["note"]))
 
     cache = report["cache"]
     print("\ncache split of input: read {:.2f}% / write {:.2f}% / uncached {:.3f}%"
