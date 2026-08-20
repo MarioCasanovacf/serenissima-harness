@@ -2648,6 +2648,170 @@ def render_stale_finding(f):
                 f["record"], f["subsequent_publications"], f["threshold"]))
 
 
+NOT_EVALUABLE = "NOT MECHANICALLY EVALUABLE"
+
+
+def validity_report(records_by_id):
+    """T-405: every record's validity_conditions, each with a MEASURED VALUE or the literal
+    NOT MECHANICALLY EVALUABLE. No verdict on prose, ever.
+
+    WHAT `stale` ACTUALLY DOES, read from the implementation before this was written rather
+    than assumed, because the task that opened this required the claim be evidenced:
+
+      check V   evaluates only the two mechanically-checkable FORMS (V1-35): `path:N-M`
+                and a bare path. A failing entry becomes a finding.
+      V1-35     free-text entries are reported by `stale --json` as `"unchecked": true`,
+                "never flagged, never an error" -- its own words.
+      check D   decay candidates, unrelated to validity conditions.
+
+    So the claim "stale cannot evaluate validity_conditions" is IMPRECISE and is corrected
+    here: stale evaluates the checkable forms and does report the prose ones. THE REAL GAP
+    IS WHERE THAT REPORT GOES. Measured on the live registry on 2026-08-19: text mode prints
+    "stale: 34 reconsideration candidate(s) across 60 record(s)" and says NOTHING about 64
+    unchecked entries, including both of PR-022's. A reader in the default mode sees a clean
+    count and has no signal that 64 conditions were never evaluated at all.
+
+    NO PASS/FAIL VERDICT ON PROSE, AND THE REASON IS ASYMMETRIC COST. A false lapse report
+    on a tier-1 record is the expensive failure: it hands anyone who wants that record
+    weakened a machine-generated reason to treat it as expired. currency.py set this
+    precedent -- emit the figure, refuse the verdict -- and westphalia_kpi.py followed it.
+
+    A CONDITION CAN LAPSE IN LETTER WITHOUT LAPSING IN PURPOSE, and no mechanism here can
+    tell the difference. PR-022's first condition reads "FORCE-IDENTITY-A is open: no
+    cryptographic identity with an external trust root exists in this harness". Since W-002
+    that sentence is false as written -- and the DEFECT it names is not closed, because D-17
+    holds and a test proves forgery by stealing an agent key. Letter lapsed, purpose intact.
+    That is the open canon question on T-404, and this tool reports the condition and
+    declines to rule on it.
+
+    Read-only. Mutates nothing, logs nothing, and always exits 0: it is a REPORT, not a
+    check. `stale` is the check and already owns the exit code for a failing condition.
+    """
+    by_record = []
+    all_texts, prose_texts, checkable_texts = [], [], []
+    active_prose = []
+    for pid in sorted(records_by_id):
+        rec = records_by_id[pid]
+        active = rec.get("status") == "active"
+        entries = rec.get("validity_conditions") or []
+        rows = []
+        for entry in entries:
+            kind = _validity_entry_checkable_kind(entry)
+            text = entry if isinstance(entry, str) else json.dumps(entry, ensure_ascii=False)
+            all_texts.append(text)
+            if kind is None:
+                prose_texts.append(text)
+                if active:
+                    active_prose.append(text)
+                rows.append({
+                    "condition": text,
+                    "form": "free-text",
+                    "disposition": NOT_EVALUABLE,
+                    "holds": None,
+                    "why": ("no mechanically checkable form (V1-35 recognises `path:N-M` and "
+                            "a bare path). Reading this one requires a human."),
+                })
+            else:
+                checkable_texts.append(text)
+                ok, reason = _check_validity_entry(entry)
+                rows.append({
+                    "condition": text,
+                    "form": kind,
+                    "disposition": ("the declared path resolves" if ok else reason),
+                    "holds": bool(ok),
+                    "why": None,
+                })
+        if rows:
+            by_record.append({
+                "record": pid,
+                "status": rec.get("status"),
+                "tier": rec.get("authority_tier", rec.get("tier")),
+                "conditions_raw": len(rows),
+                "conditions_distinct": len({r["condition"] for r in rows}),
+                "conditions": rows,
+            })
+    return {
+        "records_raw": len(records_by_id),
+        "records_distinct": len(set(records_by_id)),
+        "records_with_conditions_raw": len(by_record),
+        "records_with_conditions_distinct": len({r["record"] for r in by_record}),
+        "conditions_raw": len(all_texts),
+        "conditions_distinct": len(set(all_texts)),
+        "evaluable_raw": len(checkable_texts),
+        "evaluable_distinct": len(set(checkable_texts)),
+        "not_evaluable_raw": len(prose_texts),
+        "not_evaluable_distinct": len(set(prose_texts)),
+        # RECONCILABLE AGAINST `stale --json` ON PURPOSE. `stale` skips non-active records,
+        # so its unchecked count and this report's would disagree with no way to tell a
+        # scope difference from a bug. The active-only figure is the one that has to match.
+        "not_evaluable_active_raw": len(active_prose),
+        "not_evaluable_active_distinct": len(set(active_prose)),
+        "by_record": by_record,
+        "NO_VERDICT_ON_PROSE": (
+            "Every condition marked " + NOT_EVALUABLE + " is reported and NOT judged. The "
+            "cost is asymmetric: a false lapse report on a tier-1 record hands anyone who "
+            "wants that record weakened a machine-generated reason to treat it as expired. "
+            "currency.py set the precedent -- emit the figure, refuse the verdict."),
+        "A_LAPSE_IN_LETTER_IS_NOT_A_LAPSE_IN_PURPOSE": (
+            "A condition written as a factual claim can become false while the concern it "
+            "stood for survives untouched. PR-022's first condition is the live example and "
+            "the open canon question is T-404. No mechanism in this tool can tell the two "
+            "apart, which is the reason it rules on neither."),
+        "COUNTS_ARE_REPORTED_TWICE": (
+            "raw and distinct, per TELEMETRY-PROVENANCE-A. They diverge when the same "
+            "condition text is carried by more than one record, and that divergence is the "
+            "finding: one sentence going stale then lapses across every record repeating it."),
+        "WHAT_STALE_DOES_INSTEAD": (
+            "`stale` evaluates the two checkable forms and flags failures; V1-35 has it "
+            "report free-text entries as unchecked in --json only. Its text mode prints a "
+            "candidate count and never mentions them, so the default view of a registry "
+            "whose conditions are mostly prose looks clean. This verb is that missing view."),
+    }
+
+
+def render_validity_report(out):
+    print("condiciones de validez -- {} registros, {} con condiciones".format(
+        out["records_raw"], out["records_with_conditions_raw"]))
+    for rec in out["by_record"]:
+        print("\n{} [{}] tier={}".format(rec["record"], rec["status"], rec["tier"]))
+        for row in rec["conditions"]:
+            print("  - {}".format(row["condition"]))
+            print("      forma: {}   disposicion: {}".format(row["form"], row["disposition"]))
+            if row["why"]:
+                print("      {}".format(row["why"]))
+    print("\ncondiciones          {} crudas / {} distintas".format(
+        out["conditions_raw"], out["conditions_distinct"]))
+    print("evaluables           {} crudas / {} distintas".format(
+        out["evaluable_raw"], out["evaluable_distinct"]))
+    print("{}   {} crudas / {} distintas".format(
+        NOT_EVALUABLE, out["not_evaluable_raw"], out["not_evaluable_distinct"]))
+    print("   de ellas en registros activos   {} crudas / {} distintas   (esta es la cifra "
+          "que reconcilia contra stale --json)".format(
+              out["not_evaluable_active_raw"], out["not_evaluable_active_distinct"]))
+    print("\nSIN VEREDICTO SOBRE PROSA\n" + out["NO_VERDICT_ON_PROSE"])
+    print("\n" + out["A_LAPSE_IN_LETTER_IS_NOT_A_LAPSE_IN_PURPOSE"])
+    print("\n" + out["WHAT_STALE_DOES_INSTEAD"])
+    print("\n" + out["COUNTS_ARE_REPORTED_TWICE"])
+
+
+def cmd_conditions(args):
+    """T-405: report every record's validity_conditions with a per-condition disposition.
+
+    Always exits 0. It is a report; `stale` is the check.
+    """
+    root = resolve_root(args)
+    try:
+        records = list(scan_registry(root))
+    except RegistryIntegrityError as e:
+        return integrity_error(e.path, e)
+    out = validity_report(dict(records))
+    if args.json:
+        print(json.dumps(out, indent=2, ensure_ascii=False))
+    else:
+        render_validity_report(out)
+    return 0
+
+
 def cmd_stale(args):
     """T-354, V1-34: the validity-conditions staleness pass -- a SIBLING
     read verb, not a sixth `conflicts` detector (`conflicts` is record-vs-
@@ -2835,6 +2999,15 @@ def main(argv):
     p_stale.add_argument("--json", action="store_true", default=False)
     add_root_arg(p_stale)
     p_stale.set_defaults(func=cmd_stale)
+
+    # ---- conditions (T-405) ----
+    p_cond = sub.add_parser(
+        "conditions",
+        help="list every record's validity_conditions with a measured value or the literal "
+             "NOT MECHANICALLY EVALUABLE. A report, never a verdict on prose; always exits 0.")
+    p_cond.add_argument("--json", action="store_true", default=False)
+    add_root_arg(p_cond)
+    p_cond.set_defaults(func=cmd_conditions)
 
     # D4a (T-402): dispose of a novel case by CITATION rather than by legislation.
     p_dist = sub.add_parser(

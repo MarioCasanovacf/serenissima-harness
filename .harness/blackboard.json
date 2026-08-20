@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-20T01:04:22Z",
+  "updated_at": "2026-08-20T01:10:25Z",
   "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5077,7 +5077,7 @@
     "T-405": {
       "epic": "E-01",
       "title": "stale cannot evaluate validity_conditions, so a lapsed condition is undetectable",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5085,8 +5085,16 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-405.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/precedent.py",
+        ".harness/tests/test_precedent_conditions.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T01:10:25Z"
+      },
       "created_at": "2026-08-17T07:59:21Z",
       "created_by": "coordinator-opus"
     },
