@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-20T00:48:03Z",
+  "updated_at": "2026-08-20T00:55:24Z",
   "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5125,7 +5125,7 @@
     "T-408": {
       "epic": "E-01",
       "title": "_match_intent ignora for_ref, asi que una intencion no fija el objetivo real del acto",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5133,8 +5133,16 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-408.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/attest.py",
+        ".harness/tests/test_attest_intent.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T00:55:24Z"
+      },
       "created_at": "2026-08-19T22:44:38Z",
       "created_by": "coordinator-opus"
     },
@@ -5157,7 +5165,7 @@
     "T-410": {
       "epic": "E-01",
       "title": "Las guardas AST del KPI son por nombre, no por semantica: una cifra fabricada pasa",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5165,8 +5173,15 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-410.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/tests/test_westphalia_kpi.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T00:55:24Z"
+      },
       "created_at": "2026-08-19T22:44:38Z",
       "created_by": "coordinator-opus"
     },

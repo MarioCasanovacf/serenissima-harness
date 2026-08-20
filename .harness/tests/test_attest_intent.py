@@ -136,9 +136,10 @@ class Enrolled(unittest.TestCase):
 
     # ------------------------------------------------------------------ helpers
 
-    def intent(self, name="orso", for_kind="verdict", task="T-1", declares="por que"):
+    def intent(self, name="orso", for_kind="verdict", task="T-1", declares="por que",
+               for_ref=""):
         return attest.declare_intent(self.root, name, self.keys[name], for_kind, task,
-                                     declares)
+                                     declares, for_ref)
 
     def verdict(self, name="orso", task="T-1", ref="aurelia#1"):
         return attest.sign_act(self.root, name, self.keys[name], "verdict", ref=ref,
@@ -197,6 +198,117 @@ class TheRequirement(Enrolled):
             with self.assertRaises(attest.AttestError):
                 attest.declare_intent(self.root, "orso", self.keys["orso"], "verdict",
                                       "T-1", blank)
+
+
+class TheDeclaredTargetBinds(Enrolled):
+    """T-408. The gap the verifier revision-ataque found while accepting T-400.
+
+    An intent reading "I am going to issue a verdict on aurelia#1" authorized a verdict on
+    orso#7 just as well: matching compared (for_kind, task) and never read for_ref. Not a
+    false claim -- the docstring promised kind plus task -- but a gap between what an intent
+    SAID and what it BOUND.
+
+    THE RULE CHOSEN IS BIND-WHEN-DECLARED, and the alternative was measured before choosing.
+    Bind-always would force one intent per target. The live chain holds ONE privileged act,
+    in one (name, kind, task) group, against one target; a population of one settles nothing
+    about a typical session, so the decision does not rest on it. Bind-when-declared costs
+    zero extra intents for anyone who leaves the field empty and narrows only the signer who
+    chose to name a target.
+    """
+
+    def test_an_intent_naming_a_target_does_not_authorize_a_different_one(self):
+        self.intent(for_ref="aurelia#1")
+        with self.assertRaises(attest.AttestError) as e:
+            self.verdict(ref="orso#7")
+        msg = str(e.exception)
+        self.assertIn("NAMES A DIFFERENT TARGET", msg)
+        self.assertIn("aurelia#1", msg)
+        self.assertIn("orso#7", msg)
+
+    def test_the_refusal_writes_nothing_and_leaves_the_intent_open(self):
+        i = self.intent(for_ref="aurelia#1")
+        with self.assertRaises(attest.AttestError):
+            self.verdict(ref="orso#7")
+        # One act on the chain: the intent itself. The refused verdict wrote nothing, and
+        # the intent is still spendable on the target it actually named.
+        self.assertEqual(len(self.acts_on("orso")), 1)
+        self.assertEqual([o["digest"] for o in attest.open_intents(self.root, "orso")],
+                         [i["digest"]])
+        a = self.verdict(ref="aurelia#1")
+        self.assertEqual(a["intent"], i["digest"])
+
+    def test_an_intent_naming_a_target_authorizes_that_target(self):
+        i = self.intent(for_ref="aurelia#1")
+        a = self.verdict(ref="aurelia#1")
+        self.assertEqual(a["intent"], i["digest"])
+
+    def test_an_intent_that_names_no_target_still_authorizes_any_target(self):
+        """NO NET NARROWING BEYOND THE MISMATCH. Every intent filed before T-408 left the
+        field empty, and each one keeps working exactly as it did."""
+        i = self.intent()
+        a = self.verdict(ref="whatever#99")
+        self.assertEqual(a["intent"], i["digest"])
+
+    def test_the_right_intent_is_chosen_when_several_are_open(self):
+        """Selection, not first-match. Two open intents differing only in target."""
+        wrong = self.intent(for_ref="aurelia#1")
+        right = self.intent(for_ref="orso#7")
+        a = self.verdict(ref="orso#7")
+        self.assertEqual(a["intent"], right["digest"])
+        self.assertNotEqual(a["intent"], wrong["digest"])
+        self.assertEqual([o["digest"] for o in attest.open_intents(self.root, "orso")],
+                         [wrong["digest"]], "the unused intent must remain open")
+
+    def test_binding_two_self_asserted_fields_authenticates_nothing(self):
+        """THE LIMIT, pinned so no reader mistakes this for a control on a thief.
+
+        for_ref is written by the signer, exactly like ref. A holder of another agent's key
+        -- which under D-17 is every agent on this filesystem -- files the matching intent
+        and proceeds. What the binding buys is that a deviation is WRITTEN DOWN, on that
+        name's own chain, credited to that name.
+        """
+        stolen = self.keys["orso"]
+        attest.declare_intent(self.root, "orso", stolen, "verdict", "T-1", "robo",
+                              "aurelia#1")
+        a = attest.sign_act(self.root, "orso", stolen, "verdict", ref="aurelia#1",
+                            task="T-1")
+        self.assertTrue(a["privileged"])
+        t = attest.trace(self.root, "orso")
+        self.assertTrue(all(r["complete"] for r in t["rows"]),
+                        "the trace reads COMPLETE for a thief, and that is the point")
+
+    def test_the_trace_reports_a_target_mismatch_rather_than_calling_it_complete(self):
+        """A mismatch cannot be produced through sign_act any more, so it is written onto
+        the chain directly -- which is exactly the state an editor of the acts directory
+        would leave behind, and the state trace exists to report."""
+        i = self.intent(for_ref="aurelia#1")
+        a = self.verdict(ref="aurelia#1")
+        path = attest.acts_dir(self.root, "orso") / ("%03d.json" % a["seq"])
+        body = json.loads(path.read_text(encoding="utf-8"))
+        body["ref"] = "orso#7"
+        path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
+
+        t = attest.trace(self.root, "orso")
+        row = next(r for r in t["rows"] if r["seq"] == a["seq"])
+        self.assertFalse(row["intent_ref_agrees"])
+        self.assertFalse(row["complete"])
+        gap = next(g for g in t["gaps"] if g["seq"] == a["seq"])
+        self.assertTrue(any("T-408" in m for m in gap["missing"]),
+                        "the mismatch must be named as such: %r" % gap["missing"])
+        self.assertEqual(i["digest"], row["intent_digest"])
+
+    def test_the_trace_counts_acts_authorized_by_an_intent_that_named_no_target(self):
+        """The looseness has to be countable or it is invisible: a row reading `complete`
+        looks identical whether the intent bound the target or bound nothing about it."""
+        self.intent()
+        self.verdict(ref="aurelia#1")
+        self.intent(for_ref="aurelia#2")
+        self.verdict(ref="aurelia#2")
+        t = attest.trace(self.root, "orso")
+        self.assertEqual(t["ref_open_intent_raw"], 1)
+        self.assertEqual(t["ref_open_intent_distinct"], 1)
+        self.assertEqual(t["ref_open_intent"][0]["ref"], "aurelia#1")
+        self.assertIn("authenticates nothing", t["T_408_REF_BINDS_WHEN_DECLARED"].lower())
 
 
 class TheBypasses(Enrolled):

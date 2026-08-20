@@ -585,15 +585,62 @@ def declare_intent(root, name, key_path, for_kind, task, declares, for_ref="") -
                                                   "granted), and it already existed."})
 
 
-def _match_intent(root, name, kind, task):
+def intent_binds_ref(intent, ref) -> bool:
+    """Does this intent's declared target permit an act against `ref`?
+
+    T-408, and the rule is BIND WHEN DECLARED. An intent that names a target is bound to
+    that target; an intent that leaves `for_ref` empty constrains kind and task only, which
+    is what every intent did before this function existed.
+
+    THE DEFECT IT CLOSES, found by the verifier revision-ataque while accepting T-400: an
+    intent reading "I am going to issue a verdict on aurelia#1" authorized a verdict on
+    orso#7 just as well, because matching compared (for_kind, task) and never looked at
+    for_ref. That was not a false statement -- the docstring only ever promised kind plus
+    task -- it was a gap between what an intent SAID and what it BOUND.
+
+    WHY BIND-WHEN-DECLARED RATHER THAN BIND-ALWAYS. Always-binding would force one intent
+    per target, and the task asked for that cost to be measured before deciding. THE
+    MEASUREMENT IS DEGENERATE AND IS REPORTED AS SUCH: the live chain holds exactly ONE
+    privileged act, in one (name, kind, task) group, against one target. A population of
+    one settles nothing about a typical session, so the decision cannot rest on it and does
+    not. It rests on this instead: bind-when-declared costs ZERO additional intents for
+    anyone who leaves the field empty, and narrows only the signer who chose to name a
+    target. Nothing permitted today becomes forbidden except the mismatch itself.
+
+    IT AUTHENTICATES NOTHING, and the same warning belongs here as on the act's own `ref`.
+    `for_ref` is written by the signer, exactly like `ref`. Binding one self-asserted field
+    to another self-asserted field does not stop a signer who intends to deviate -- it makes
+    the deviation WRITTEN DOWN, on that name's own chain, credited to that name. D-17 is
+    untouched: an agent holding another agent's key files the matching intent too.
+    """
+    declared = str(intent.get("for_ref") or "")
+    return not declared or declared == str(ref or "")
+
+
+def _match_intent(root, name, kind, task, ref=""):
     """The intent that authorizes this act, or a refusal explaining exactly what is
     missing. Returns (intent_or_None, message_or_None)."""
     avail = open_intents(root, name)
-    for i in avail:
-        if i["for_kind"] == kind and str(i["task"]) == str(task):
+    same_kind_task = [i for i in avail
+                      if i["for_kind"] == kind and str(i["task"]) == str(task)]
+    for i in same_kind_task:
+        if intent_binds_ref(i, ref):
             return i, None
     how = (f"python3 .harness/bin/attest.py declare-intent --name {name} --key <key> "
-           f"--for-kind {kind} --task {task} --declares \"<what and why>\"")
+           f"--for-kind {kind} --task {task} --for-ref {ref or '<target>'} "
+           f"--declares \"<what and why>\"")
+    if same_kind_task:
+        # The narrow miss T-408 exists for, and it gets its own message. Folding it into the
+        # generic "none for this kind and task" refusal would report the one case where the
+        # signer DID declare a target as though they had declared nothing.
+        named = ", ".join(repr(i["for_ref"]) for i in same_kind_task)
+        return None, (
+            f"{name!r} has {len(same_kind_task)} open intent(s) for a {kind!r} act on task "
+            f"{task!r}, but each one NAMES A DIFFERENT TARGET: {named}. This act targets "
+            f"{str(ref)!r}. An intent that names a target is bound to it (T-408); an intent "
+            f"that leaves --for-ref empty is not. File one for this target:\n  {how}\n"
+            f"Binding these two fields authenticates nothing -- the signer writes both -- it "
+            f"only makes a deviation written down on this name's own chain.")
     if not avail:
         return None, (
             f"{name!r} has no open intent for a {kind!r} act on task {task!r}, and "
@@ -683,7 +730,7 @@ def sign_act(root, name, key_path, kind, ref="", body=None, task=None) -> dict:
         # It still refuses before any file is created, so a refusal writes nothing.
         used_intent = None
         if kind in PRIVILEGED_KINDS:
-            used_intent, why = _match_intent(root, name, kind, task)
+            used_intent, why = _match_intent(root, name, kind, task, ref)
             if used_intent is None:
                 raise AttestError(why)
         seq = 1 + max((int(q.stem) for q in d.glob("*.json") if q.stem.isdigit()),
@@ -875,7 +922,7 @@ def trace(root, name=None) -> dict:
     except OSError:
         anchor = None
 
-    rows, gaps, unpriv = [], [], []
+    rows, gaps, unpriv, ref_open = [], [], [], []
     for n in names:
         issued = keys.get(n)
         pub = issued["pubkey"] if issued else None
@@ -894,6 +941,10 @@ def trace(root, name=None) -> dict:
             intent_ok = False
             if intent_act is not None and pub:
                 intent_ok, _ = _verify_sig(root, n, intent_act["_path"], pub)
+            ibody = (intent_act.get("body") or {}) if intent_act is not None else {}
+            intent_names_a_target = bool(str(ibody.get("for_ref") or ""))
+            ref_agrees = (not intent_names_a_target
+                          or str(ibody.get("for_ref")) == str(a.get("ref") or ""))
             row = {
                 "name": n, "seq": a.get("seq"), "kind": kind,
                 "privileged": privileged,
@@ -903,6 +954,8 @@ def trace(root, name=None) -> dict:
                 "intent_present": intent_act is not None,
                 "intent_verified": intent_ok,
                 "intent_same_chain": intent_act is not None,
+                "intent_names_a_target": intent_names_a_target,
+                "intent_ref_agrees": ref_agrees,
                 "granted_by_warrant": issued["warrant"] if issued else None,
                 "colegiado": issued["colegiado"] if issued else None,
                 "role": issued["role"] if issued else None,
@@ -911,8 +964,17 @@ def trace(root, name=None) -> dict:
             row["complete"] = bool(
                 sig_ok and issued and anchor
                 and (not privileged or (intent_act is not None and intent_ok
+                                        and ref_agrees
                                         and str((intent_act.get("body") or {}).get("task"))
                                         == str(a.get("task") or ""))))
+            if privileged and intent_act is not None and not intent_names_a_target:
+                # T-408's residue, and it is a POPULATION rather than a gap. These acts were
+                # authorized by an intent that named no target, which is permitted and is
+                # what every intent did before T-408. It is reported because the looseness is
+                # otherwise invisible: a row saying `complete` looks identical whether the
+                # intent bound the target or bound nothing about it.
+                ref_open.append({"name": n, "seq": a.get("seq"), "kind": kind,
+                                 "ref": a.get("ref", ""), "task": a.get("task") or ""})
             rows.append(row)
             # INTENT-BY-KIND-A's mitigation, and it CANNOT live in `gaps`. A test caught
             # that: an act labelled `commit` with a good signature, a warrant and an anchor
@@ -940,6 +1002,10 @@ def trace(root, name=None) -> dict:
                 elif privileged and str((intent_act.get("body") or {}).get("task")) \
                         != str(a.get("task") or ""):
                     missing.append("intent task and act task disagree")
+                elif privileged and not ref_agrees:
+                    missing.append(
+                        "intent names target %r and the act targets %r (T-408)"
+                        % (ibody.get("for_ref"), a.get("ref", "")))
                 gaps.append({"name": n, "seq": a.get("seq"), "kind": kind,
                              "missing": missing})
 
@@ -953,12 +1019,22 @@ def trace(root, name=None) -> dict:
         "complete_distinct": len({(r["name"], r["seq"]) for r in rows if r["complete"]}),
         "names_raw": len(names),
         "names_distinct": len(set(names)),
+        "ref_open_intent_raw": len(ref_open),
+        "ref_open_intent_distinct": len({(r["name"], r["seq"]) for r in ref_open}),
         "unprivileged_no_intent_raw": len(unpriv),
         "unprivileged_no_intent_distinct": len({(u["name"], u["seq"]) for u in unpriv}),
         "anchor": anchor,
         "rows": rows,
         "gaps": gaps,
         "unprivileged_no_intent": unpriv,
+        "ref_open_intent": ref_open,
+        "T_408_REF_BINDS_WHEN_DECLARED": (
+            "An intent that names a target binds to it; an intent that leaves for_ref empty "
+            "constrains kind and task only. The acts listed under ref_open_intent took the "
+            "second path, which is permitted. THE BINDING AUTHENTICATES NOTHING: for_ref and "
+            "ref are both written by the signer, so tying them together cannot stop a signer "
+            "who intends to deviate -- it makes the deviation written down, on that name's "
+            "own chain, credited to that name. D-17 is untouched."),
         "INTENT_BY_KIND_A": (
             "DEFECT INTENT-BY-KIND-A. "
             "The acts listed under unprivileged_no_intent required no intent because of "

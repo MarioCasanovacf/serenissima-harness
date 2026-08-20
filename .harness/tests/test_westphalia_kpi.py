@@ -22,6 +22,7 @@ would produce a false figure:
     definition, labelled as such, and printed on every run so it can be argued with.
 """
 import ast
+import importlib.util
 import json
 import pathlib
 import subprocess
@@ -273,6 +274,187 @@ class TheModuleCannotFabricateACost(unittest.TestCase):
         self.assertIn("NOT YET MEASURABLE", doc)
         self.assertIn("NO THRESHOLD RATIFIED", doc)
         self.assertIn("dicta", doc, "the docstring must say why every clause binds")
+
+
+def numeric_leaves(value, path="$"):
+    """Every number the report emits, with the path it sits at. Booleans are excluded:
+    `True` is an int in Python and a flag is not a measurement."""
+    if isinstance(value, bool):
+        return
+    if isinstance(value, (int, float)):
+        yield path, value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from numeric_leaves(v, "%s.%s" % (path, k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from numeric_leaves(v, "%s[%d]" % (path, i))
+
+
+def recount_from_disk(root):
+    """Recount everything the report could legitimately be counting, WITHOUT calling the
+    module. Calling it would make the guard agree with whatever the module did.
+
+    Returns the set of values a number in the report is allowed to take.
+    """
+    root = pathlib.Path(root)
+    allowed = {0}
+    registry_dirs = [d for d in sorted(root.iterdir()) if d.is_dir()] if root.is_dir() else []
+    with_records = [d for d in registry_dirs if list(d.glob("*-*.json")) or list(d.glob("PR-*.json"))]
+    allowed.add(len(with_records))
+    for d in with_records:
+        allowed.add(len(list(d.glob("*.json"))))
+    store = root / "kpi" / "westphalia"
+    files = sorted(store.glob("*.json")) if store.is_dir() else []
+    allowed.add(len(files))
+    quarters = set()
+    for f in files:
+        try:
+            quarters.add(json.loads(f.read_text(encoding="utf-8")).get("quarter"))
+        except json.JSONDecodeError:
+            pass
+    allowed.add(len(quarters))
+    # Two DECLARED CONSTANTS, not counts. They are thresholds the record itself states, and a
+    # report that prints them is quoting, not measuring. Named here so the guard does not
+    # mistake a quotation for a fabrication -- and named as constants so it is visible that
+    # a fabricated figure landing exactly on 2 or 3 would slip through. That is a real hole
+    # and it is cheap: it buys an attacker the number 2.
+    allowed.add(kpi.REQUIRED_REGISTRIES)
+    allowed.add(kpi.MEASUREMENTS_NEEDED_FOR_REVISIT)
+    return allowed
+
+
+class TheOutputCannotCarryAFabricatedFigure(Fixture):
+    """T-410. The four AST guards watch NAMES; this one watches the OUTPUT.
+
+    THE ATTACK THAT MOTIVATED IT, run by the verifier revision-mecanismo on 2026-08-17 and
+    demonstrated rather than asserted: inject `registries_distinct * 40 +
+    measurements_raw * 1200000` under a new key `projected_effort_estimate`, using variable
+    names containing none of the substrings the AST guards watch for, and never touching the
+    key `cost`. ALL 28 TESTS PASSED and the fabricated figure appeared in `--json`.
+
+    The rule this class enforces instead: every number the report prints must be RECOUNTABLE
+    from disk. A count is defensible. A product or a weighted sum of counts is an estimate,
+    and PR-029 clause 6 forbids estimating this cost today. The recount deliberately does not
+    call the module -- a guard that asks the module what it counted agrees with it by
+    construction.
+
+    WHAT THIS GUARD DOES NOT COVER, said plainly rather than left to be discovered:
+      - PROSE. `operator_baseline` legitimately contains "3 months", so string leaves are
+        outside the rule. A figure smuggled into a sentence would pass. Bounding that needs a
+        ratified definition of what a cost-shaped sentence is, and there is none.
+      - THE NUMBERS 2 AND 3, which are declared constants of the record and therefore always
+        allowed. An attacker who can live with those two values is unaffected.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Cardinalities chosen so that no product or sum of them collides with a legitimate
+        # count. 7 records, 3 measurement files, 2 distinct quarters, 1 registry.
+        self.add_registry("precedents", "PR-", 7)
+        store = self.root / "kpi" / "westphalia"
+        store.mkdir(parents=True)
+        for i, quarter in enumerate(["2026Q1", "2026Q1", "2026Q2"]):
+            (store / "m{}.json".format(i)).write_text(
+                json.dumps({"quarter": quarter}) + "\n", encoding="utf-8")
+
+    def test_every_number_the_report_prints_can_be_recounted_from_disk(self):
+        out = kpi.report(self.root)
+        allowed = recount_from_disk(self.root)
+        offenders = [(path, n) for path, n in numeric_leaves(out) if n not in allowed]
+        self.assertEqual(
+            offenders, [],
+            "the report emits numbers that are not counts of anything on disk; allowed "
+            "values were %s" % sorted(allowed))
+
+    def test_the_guard_rejects_the_exact_figure_the_verifier_injected(self):
+        """NEGATIVE CONTROL. Without this the test above passes on a guard that checks
+        nothing, which is precisely how the four AST guards passed the original attack."""
+        out = kpi.report(self.root)
+        out["projected_effort_estimate"] = (
+            out["registries_distinct"] * 40 + out["measurements_raw"] * 1200000)
+        allowed = recount_from_disk(self.root)
+        offenders = [path for path, n in numeric_leaves(out) if n not in allowed]
+        self.assertIn("$.projected_effort_estimate", offenders)
+
+    def test_the_guard_rejects_a_figure_buried_in_a_nested_structure(self):
+        """The injected key was top-level. A second attempt would not be."""
+        out = kpi.report(self.root)
+        out["instrumentation"] = dict(out["instrumentation"])
+        out["instrumentation"]["modelled"] = {"hours": [{"q1": 640}]}
+        offenders = [path for path, n in numeric_leaves(out)
+                     if n not in recount_from_disk(self.root)]
+        self.assertIn("$.instrumentation.modelled.hours[0].q1", offenders)
+
+    def test_a_flag_is_not_a_measurement(self):
+        """Booleans are ints in Python. Counting them as numbers would either force `True`
+        into the allowed set -- which admits every 1 -- or fail every report that has a flag."""
+        self.assertEqual(list(numeric_leaves({"store_exists": True, "n": 7})), [("$.n", 7)])
+
+    def test_the_verifiers_attack_replayed_against_a_patched_MODULE_is_caught(self):
+        """The reproduction, not a paraphrase of it.
+
+        The three tests above inject into the returned dict. This one patches the module the
+        way the verifier did -- new key, variable names carrying none of the watched
+        substrings, `cost` untouched -- imports the patched copy, and runs it. It asserts two
+        things in order: that the four AST guards STILL pass on the patched module, which is
+        the finding; and that the output guard catches what they miss.
+        """
+        patched = pathlib.Path(self._tmp.name) / "patched_kpi.py"
+        source = CLI.read_text(encoding="utf-8")
+        needle = "    if not enough:\n        out[\"WHY_NO_FIGURE\"]"
+        self.assertIn(needle, source)
+        injection = (
+            "    span = out[\"registries_distinct\"]\n"
+            "    weight = out[\"measurements_raw\"]\n"
+            "    out[\"projected_effort_estimate\"] = span * 40 + weight * 1200000\n")
+        patched.write_text(source.replace(needle, injection + needle, 1), encoding="utf-8")
+
+        # The AST guards, replayed verbatim against the patched module: they pass.
+        tree = ast.parse(patched.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for t in node.targets:
+                    if (isinstance(t, ast.Subscript) and isinstance(t.slice, ast.Constant)
+                            and t.slice.value == "cost"):
+                        self.assertIsInstance(node.value, ast.Constant)
+                        self.assertIsNone(node.value.value)
+            if isinstance(node, ast.BinOp):
+                names = [n.id.lower() for n in ast.walk(node) if isinstance(n, ast.Name)]
+                for bad in ("hour", "token", "cost"):
+                    self.assertFalse(any(bad in n for n in names),
+                                     "the injection was supposed to evade this guard")
+
+        spec = importlib.util.spec_from_file_location("patched_kpi", patched)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        out = module.report(self.root)
+        self.assertIn("projected_effort_estimate", out)
+
+        offenders = [path for path, n in numeric_leaves(out)
+                     if n not in recount_from_disk(self.root)]
+        self.assertEqual(offenders, ["$.projected_effort_estimate"])
+
+    def test_the_recount_never_calls_the_module_it_checks(self):
+        """GUARD-MENTION-C, sixth occurrence: parsed, not scanned. A recount that delegated to
+        `kpi.domain_registries` would confirm the module against itself."""
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        fn = next(n for n in ast.walk(ast.parse(source))
+                  if isinstance(n, ast.FunctionDef) and n.name == "recount_from_disk")
+        called = set()
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if isinstance(node.func.value, ast.Name):
+                    called.add("%s.%s" % (node.func.value.id, node.func.attr))
+        forbidden = {c for c in called if c.startswith("kpi.")}
+        self.assertEqual(forbidden, set(),
+                         "the recount calls the module it is supposed to check: %s" % forbidden)
+        # It may still READ the module's declared constants; that is a quotation, not a
+        # measurement, and the docstring says so.
+        constants = {n.attr for n in ast.walk(fn)
+                     if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+                     and n.value.id == "kpi"}
+        self.assertEqual(constants, {"REQUIRED_REGISTRIES", "MEASUREMENTS_NEEDED_FOR_REVISIT"})
 
 
 class ThePublishedRecordStillSaysThis(unittest.TestCase):
