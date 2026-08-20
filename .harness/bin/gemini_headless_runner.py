@@ -208,13 +208,77 @@ def pump_stdout(stream, messages):
         messages.put(None)
 
 
+# `killpg` on Darwin does not only answer ESRCH for a group that is gone. Measured on
+# macOS 25.6 under load (25 timed-out runs, 10 CPU burners): 2 of them came back EPERM,
+# "[Errno 1] Operation not permitted", from `killpg` on a group this process created
+# moments earlier and is entitled to signal. The run had launched, streamed and timed
+# out correctly; only the kill answered oddly.
+#
+# DEFECT RUNNER-LAUNCH-MISREPORT-A, and the consequence was not cosmetic. PermissionError
+# is an OSError, so it escaped this function, unwound past every assignment below, and
+# landed in the handler that writes `status: "launch_error"` -- a run that timed out was
+# filed as a CLI that never started. Anyone counting timeouts undercounted them and
+# anyone counting launch failures counted a launch that had in fact succeeded.
+#
+# A signal we are not permitted to send is not a failure of the run, so it is absorbed
+# here, at the only place that can tell the difference.
+UNSIGNALLABLE = (ProcessLookupError, PermissionError)
+
+
+def record_refusals(summary, refused):
+    """Write refused signals into the summary, or say nothing when there were none.
+
+    The field is absent on the ordinary path on purpose. A key that is always present and
+    almost always empty gets skimmed; a key that appears only when the kernel refused a
+    kill is a fact worth reading, and it is the only signal a consumer has that the run
+    timed out but the process group may have outlived it.
+    """
+    if refused:
+        summary["termination_refused"] = refused
+    return summary
+
+
 def terminate_process_group(process):
-    """Terminate, then force-kill, the isolated child process group and reap it."""
-    if os.name == "posix":
+    """Terminate, then force-kill, the isolated child process group and reap it.
+
+    Returns the signals that were refused WHILE THE LEADER WAS STILL ALIVE, in order.
+    Absorbing a refusal is not the same as pretending it did not happen: a refusal that
+    lands on a live leader means the group may outlive the run, and the caller writes it
+    down rather than reporting an unqualified clean timeout. An empty list is the ordinary
+    case.
+
+    TWO KINDS OF ERROR ARE DELIBERATELY NOT REFUSALS, and both were learned by measurement
+    rather than reasoned about:
+
+    ESRCH -- the group is already gone. This is the NORMAL outcome of the second signal,
+    because SIGTERM usually did the job. Filing it would put the field on nearly every
+    timed-out run, where it would say nothing.
+
+    EPERM ON A LEADER THAT HAS ALREADY EXITED -- Darwin answers `killpg` on an emptied
+    group with EPERM, not ESRCH. Observed under load with `child_exit_code: -15` in the
+    same summary: SIGTERM had worked, the leader was reaped, and the follow-up SIGKILL
+    still came back "Operation not permitted". Recording that as a refusal claims the
+    group may have survived when the leader's own exit status proves it did not.
+
+    What is left is the case that carries information: the kernel refused a signal to a
+    group whose leader is still running.
+    """
+    refused = []
+
+    def signal_group(sig, name):
+        if os.name != "posix":
+            return
+        alive_before = process.poll() is None
         try:
-            os.killpg(process.pid, signal.SIGTERM)
+            os.killpg(process.pid, sig)
         except ProcessLookupError:
             pass
+        except PermissionError as exc:
+            if alive_before:
+                refused.append({"signal": name, "error": str(exc)})
+
+    if os.name == "posix":
+        signal_group(signal.SIGTERM, "SIGTERM")
     elif process.poll() is None:
         process.terminate()
 
@@ -226,17 +290,16 @@ def terminate_process_group(process):
     # The leader may have exited while descendants retained its stdout pipe, so
     # target the group even when process.poll() is no longer None.
     if os.name == "posix":
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        signal_group(signal.SIGKILL, "SIGKILL")
     elif process.poll() is None:
         process.kill()
+
     try:
         process.wait(timeout=TERMINATION_GRACE_SECONDS)
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait()
+    return refused
 
 
 def main(argv=None):
@@ -318,6 +381,7 @@ def main(argv=None):
 
     started = time.monotonic()
     timed_out = False
+    launched = False
     try:
         with raw_path.open("wb") as raw_log, stderr_path.open("wb") as stderr_log:
             process = subprocess.Popen(
@@ -329,6 +393,7 @@ def main(argv=None):
                 shell=False,
                 start_new_session=(os.name == "posix"),
             )
+            launched = True
             assert process.stdout is not None
             messages = queue.Queue()
             reader = threading.Thread(
@@ -353,7 +418,7 @@ def main(argv=None):
                 sys.stdout.buffer.flush()
                 observe_event(summary, raw_line)
             if timed_out:
-                terminate_process_group(process)
+                record_refusals(summary, terminate_process_group(process))
             else:
                 # EOF implies the child has closed stdout; this bounded wait is
                 # still covered by the same deadline for unusual CLI behavior.
@@ -362,7 +427,7 @@ def main(argv=None):
                     process.wait(timeout=remaining)
                 except subprocess.TimeoutExpired:
                     timed_out = True
-                    terminate_process_group(process)
+                    record_refusals(summary, terminate_process_group(process))
             reader.join(timeout=TERMINATION_GRACE_SECONDS)
             # Preserve any complete events the reader queued just before group
             # termination; a timeout must not silently discard available evidence.
@@ -380,14 +445,32 @@ def main(argv=None):
                 observe_event(summary, raw_line)
             exit_code = process.returncode
     except OSError as exc:
-        summary.update(
-            status="launch_error",
-            exit_code=127,
-            finished_at=iso_now(),
-            launch_error=str(exc),
-        )
+        # A LAUNCH ERROR IS AN ERROR OF THE LAUNCH. Anything raised after `Popen` returned
+        # is an error of the runner's own bookkeeping -- a full disk, a closed stdout, a
+        # signal refused -- and reporting it as a CLI that never started is a lie about
+        # where the fault lies. The two cases now carry different status strings and
+        # different fields; the exit code stays 127 for both, because no record ratifies
+        # a second failure code and inventing one here would be this module deciding it.
+        if launched:
+            summary.update(
+                status="runner_error",
+                exit_code=127,
+                finished_at=iso_now(),
+                runner_error=str(exc),
+                child_launched=True,
+            )
+            note = "Gemini CLI launched but the runner failed; summary: %s"
+        else:
+            summary.update(
+                status="launch_error",
+                exit_code=127,
+                finished_at=iso_now(),
+                launch_error=str(exc),
+                child_launched=False,
+            )
+            note = "Gemini CLI launch failed; summary: %s"
         atomic_json(summary_path, summary)
-        print("Gemini CLI launch failed; summary: %s" % summary_path, file=sys.stderr)
+        print(note % summary_path, file=sys.stderr)
         return 127
 
     elapsed_seconds = round(time.monotonic() - started, 3)

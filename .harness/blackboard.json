@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-19T22:48:30Z",
-  "updated_by": "revision-doctrina",
+  "updated_at": "2026-08-20T00:48:03Z",
+  "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5173,7 +5173,7 @@
     "T-411": {
       "epic": "E-01",
       "title": "test_wall_clock_timeout falla de forma consistente en esta maquina, no es intermitente",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5181,8 +5181,16 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-411.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/gemini_headless_runner.py",
+        ".harness/tests/test_gemini_headless_runner.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T00:48:03Z"
+      },
       "created_at": "2026-08-19T22:44:38Z",
       "created_by": "coordinator-opus"
     },
