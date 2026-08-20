@@ -384,6 +384,112 @@ class BundledShortFlagsAreCodeFlags(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+# Third-round escapes, all found by a verifier differential-testing the parsed guard against
+# the pre-parser implementation. Destructive strings are ASSEMBLED rather than written, because
+# this file is both the corpus and a valid input to the guard it tests.
+_RM = "r" + "m -rf project"
+
+WRAPPER_ARITY = (
+    "nice -n 5 " + _RM,
+    "ionice -c 3 " + _RM,
+    "xargs -I {} " + _RM,
+    "find . | xargs -I {} " + _RM,
+    "xargs -n 1 " + _RM,
+    "timeout -s KILL 5 " + _RM,
+    "timeout --signal=KILL 5 " + _RM,
+    "sudo -u nobody " + _RM,
+    "env -u HOME " + _RM,
+    "stdbuf -o 0 " + _RM,
+)
+
+SHELLING_OUT = (
+    'perl -e \'system("' + _RM + '")\'',
+    'ruby -e \'system("' + _RM + '")\'',
+    'python3 -c \'import subprocess; subprocess.getoutput("' + _RM + '")\'',
+    'python3 -c \'import os; os.system("' + _RM + '")\'',
+    'node -e \'require("child_process").execSync("' + _RM + '")\'',
+    "perl -e '`" + _RM + "`'",
+    "perl -e 'qx{" + _RM + "}'",
+)
+
+ANSI_C_QUOTED = (
+    "bash -c $'" + _RM + "'",
+    "sh -c $'" + _RM + "'",
+    "sudo bash -c $'" + _RM + "'",
+)
+
+
+class ThirdRoundEscapes(unittest.TestCase):
+    """Three classes a verifier found by differential-testing against the pre-parser guard.
+
+    WRAPPER ARITY. `nice -n 5 rm -rf project`: the wrapper loop popped `-n`, then stopped at
+    `5` and read it as the program name. Flags whose value sits in the next token now have
+    their arity declared, and a token that cannot be a program name under any spelling is
+    skipped -- which covers the flags nobody has listed yet.
+
+    SHELLING OUT. `perl -e 'system("rm -rf project")'` deletes without naming a single one of
+    the deletion APIs in SOURCE_RULES, because the program does not delete -- it asks a shell
+    to. The string argument of a shell-out call is a command line by that function's own
+    convention, so it is parsed as one.
+
+    ANSI-C QUOTING. `bash -c $'rm -rf x'`: `shlex` does not understand `$'...'` and hands back
+    a payload beginning `$rm`. `$rm` is not a program anyone runs; it is this parser's own
+    artifact, and the leading `$` comes off in `basename`.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.workspace = Path(self.temp.name)
+        (self.workspace / ".harness" / "logs").mkdir(parents=True)
+
+    def test_a_wrapper_flag_with_its_value_in_the_next_token_is_stepped_over(self):
+        for command in WRAPPER_ARITY:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_shelling_out_from_source_is_parsed_as_a_command_line(self):
+        for command in SHELLING_OUT:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_ansi_c_quoting_does_not_disguise_the_program_name(self):
+        for command in ANSI_C_QUOTED:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_counts_raw_and_distinct(self):
+        for name, corpus, expected in (("arity", WRAPPER_ARITY, 10),
+                                       ("shell-out", SHELLING_OUT, 7),
+                                       ("ansi-c", ANSI_C_QUOTED, 3)):
+            with self.subTest(name=name):
+                self.assertEqual((len(corpus), len(set(corpus))), (expected, expected))
+
+    def test_NEGATIVE_CONTROL_the_same_wrappers_still_pass_a_harmless_command(self):
+        """Without this, every fix above could be "block the wrapper", which is a guard that
+        stopped parsing. The arity fix in particular walks further into the command, so it has
+        more chances to be wrong about what it finds there."""
+        for command in (
+            "nice -n 5 python3 -m pytest .harness/tests -q",
+            "xargs -I {} echo {}",
+            "timeout -s KILL 5 python3 script.py",
+            "sudo -u nobody python3 -m pytest -q",
+            "ionice -c 3 python3 script.py",
+            "env -u HOME python3 script.py",
+        ):
+            with self.subTest(command=command):
+                result = run_guard(self.workspace, command)
+                self.assertEqual(result.returncode, 0, (command, result.stderr))
+
+    def test_NEGATIVE_CONTROL_prose_naming_a_shell_out_call_still_passes(self):
+        """The shell-out rule reads source, and prose is not source. This is the reproduction
+        class the whole task exists for, checked against the newest rule."""
+        note = ('python3 .harness/bin/blackboard.py update T-1 --note '
+                '"el defecto era que system() y os.system() no estaban cubiertos"')
+        result = run_guard(self.workspace, note)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
 class SafeDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

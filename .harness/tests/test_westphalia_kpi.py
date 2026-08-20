@@ -295,6 +295,12 @@ def as_published(out):
 
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 
+# A number dressed up is still a number. `"3,600,040"` and `"$3,600,040"` slipped past a
+# fullmatch on the raw string while sitting in `--json` as perfectly readable text, so the
+# separators and currency marks come off before the test. What survives this is prose:
+# "3 months" becomes "3months", which is not a number, and that exemption keeps its own test.
+DECORATION = re.compile(r"[,\s\u00a0$\u20ac\u00a3\u00a5]")
+
 
 def numeric_leaves(value, path="$"):
     """Every number the published report carries, with the path it sits at.
@@ -315,7 +321,7 @@ def numeric_leaves(value, path="$"):
     if isinstance(value, (int, float)):
         yield path, value
     elif isinstance(value, str):
-        text = value.strip()
+        text = DECORATION.sub("", value.strip())
         if text and NUMBER.fullmatch(text):
             yield path, float(text) if "." in text else int(text)
     elif isinstance(value, dict):
@@ -507,15 +513,59 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
         out = as_published(kpi.report(self.root))
         from_values = {str(v) for _, v in numeric_leaves(out)}
         prose = " ".join(s for s in strings_in(out))
-        unexplained = [n for n in NUMBER.findall(proc.stdout)
+        # BOTH STREAMS. A figure written to stderr is as visible to a human running this in a
+        # terminal as one written to stdout, and reading only stdout was the sixth bypass.
+        printed = proc.stdout + "\n" + proc.stderr
+        unexplained = [n for n in NUMBER.findall(printed)
                        if n not in from_values and n not in prose]
         self.assertEqual(unexplained, [],
-                         "text mode printed numbers that appear nowhere in the report")
+                         "the CLI printed numbers that appear nowhere in the report")
 
     def test_a_flag_is_not_a_measurement(self):
         """Booleans are ints in Python. Counting them would either force `True` into the
         specification -- which admits every 1 -- or fail every report that has a flag."""
         self.assertEqual(list(numeric_leaves({"store_exists": True, "n": 7})), [("$.n", 7)])
+
+    def test_a_figure_dressed_as_currency_or_thousands_is_caught(self):
+        """The fifth bypass. `"$3,600,040"` is a number to every reader and was not one to a
+        fullmatch on the raw string."""
+        fabricated = out_value = (
+            kpi.report(self.root)["registries_distinct"] * 40
+            + kpi.report(self.root)["measurements_raw"] * 1200000)
+        for dressed in ("{:,}".format(fabricated), "${:,}".format(out_value),
+                        " {} ".format(fabricated)):
+            with self.subTest(dressed=dressed):
+                out = kpi.report(self.root)
+                out["reconciliation_cost_hours"] = dressed
+                numbers = self.published_numbers(out)
+                self.assertEqual(numbers.get("$.reconciliation_cost_hours"), 3600040)
+                self.assertNotEqual(numbers, expected_numbers(self.root))
+
+    def test_every_function_in_the_module_is_reachable_from_main(self):
+        """The seventh bypass: a `report_debug()` that no code path calls, carrying a
+        fabricated figure, sitting in the module where no test could reach it.
+
+        AN UNCALLED FUNCTION PUBLISHES NOTHING, so it is not a figure any consumer can read
+        today -- the finding is about the caller that arrives later. Rather than argue the
+        point, the module is held to having no orphans: every top-level function must be
+        reachable from `main`, so a figure cannot be parked out of the guard's sight waiting
+        for a call site.
+        """
+        tree = ast.parse(CLI.read_text(encoding="utf-8"))
+        functions = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+        calls = {name: {c.func.id for c in ast.walk(fn)
+                        if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+                 for name, fn in functions.items()}
+        reachable, frontier = set(), ["main"]
+        while frontier:
+            name = frontier.pop()
+            if name in reachable or name not in functions:
+                continue
+            reachable.add(name)
+            frontier.extend(calls.get(name, ()))
+        orphans = sorted(set(functions) - reachable)
+        self.assertEqual(orphans, [],
+                         "unreachable function(s) in the KPI module: %s" % orphans)
 
     def test_the_specification_never_calls_the_module_it_checks(self):
         """GUARD-MENTION-C, sixth occurrence: parsed, not scanned. A recount that delegated to

@@ -139,6 +139,25 @@ STRING_COMMAND_FLAGS = {
     "env": ("-S", "--split-string"),
 }
 
+# Wrapper flags whose value sits in the NEXT token.  Without these the value is mistaken for
+# the program name and the real command after it is never reached.
+WRAPPER_VALUE_FLAGS = {
+    "nice": ("-n",),
+    "ionice": ("-c", "-n", "-p"),
+    "xargs": ("-I", "-i", "-n", "-P", "-L", "-s", "-d", "-E", "-a", "--replace",
+              "--max-args", "--max-procs", "--delimiter", "--arg-file"),
+    "timeout": ("-s", "-k", "--signal", "--kill-after"),
+    "sudo": ("-u", "-g", "-p", "-C", "-D", "-R", "-h", "--user", "--group"),
+    "doas": ("-u", "-C"),
+    "env": ("-u", "-C", "--unset", "--chdir"),
+    "stdbuf": ("-i", "-o", "-e"),
+    "setsid": (),
+    "command": (),
+    "busybox": (),
+    "nohup": (),
+    "time": ("-f", "-o", "--format", "--output"),
+}
+
 GIT_RULES = (
     ("git clean", lambda argv: "clean" in argv),
     ("git reset --hard", lambda argv: "reset" in argv and "--hard" in argv),
@@ -171,6 +190,19 @@ SOURCE_RULES = (
     ("PowerShell Remove-Item", re.compile(r"(?i)\bRemove-Item\b|(?:^|[;|]\s*)ri\b")),
     ("Windows delete command", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:del|erase)(?:\s|$)")),
     ("Perl unlink", re.compile(r"(?i)\bunlink\b")),
+)
+
+# Calls whose string argument is a COMMAND LINE rather than data.  A program that shells out
+# deletes without naming any deletion API of its own, which is what makes SOURCE_RULES alone
+# insufficient; the captured string is parsed as a command line.
+SHELL_OUT_CALLS = (
+    re.compile(r"""(?is)\b(?:os\.system|os\.popen|subprocess\.getoutput"""
+               r"""|subprocess\.getstatusoutput|Kernel\.system|IO\.popen|child_process\.exec"""
+               r"""|execSync|spawnSync|system|popen|shell_exec|passthru)"""
+               r"""\s*\(?\s*(?P<q>['"])(?P<cmd>.*?)(?P=q)"""),
+    # Perl and Ruby command substitution: `cmd`, qx{cmd}, %x{cmd}
+    re.compile(r"""(?s)`(?P<cmd>[^`]+)`"""),
+    re.compile(r"""(?is)\b(?:qx|%x)\s*[{(\[]\s*(?P<cmd>[^})\]]+)"""),
 )
 
 # The flat scan, kept VERBATIM as the fallback for text that will not parse.
@@ -310,8 +342,15 @@ def simple_commands(tokens: Sequence[str]) -> List[List[str]]:
 
 
 def basename(executable: str) -> str:
+    """The program name, with the spellings a shell would have resolved already.
+
+    The leading `$` comes off because `shlex` does not understand ANSI-C quoting: given
+    ``bash -c $'rm -rf x'`` it hands back a payload beginning ``$rm``, and a verifier found
+    that walking through. `$rm` is not a program anyone runs; it is this parser's own artifact,
+    and treating it as `rm` is conservative in the right direction.
+    """
     name = executable.replace("\\", "/").rstrip("/").split("/")[-1]
-    return name.lower()
+    return name.lstrip("$").lower()
 
 
 # --------------------------------------------------------------------------- decide
@@ -369,10 +408,27 @@ def _code_flag_payload(token: str, names: set, letters: set):
     return None
 
 
-def scan_source(text: str) -> Optional[Tuple[str, str]]:
+def scan_source(text: str, depth: int = 0) -> Optional[Tuple[str, str]]:
+    """Language-level deletion, plus any command line this source hands to a shell.
+
+    SOURCE_RULES IS A CURATED LIST OF DELETION APIS, and a verifier showed what that misses:
+    ``perl -e 'system("rm -rf project")'`` deletes without naming a single one of them. The
+    program does not delete; it asks a shell to. So the string argument of a shell-out call is
+    a command line by that function's own convention -- the same doctrine as CODE_FLAGS -- and
+    it is parsed as one rather than pattern-matched as prose.
+    """
     for rule, pattern in SOURCE_RULES:
         if pattern.search(text):
             return rule, text
+    if depth <= 8:
+        for pattern in SHELL_OUT_CALLS:
+            for match in pattern.finditer(text):
+                command = match.group("cmd")
+                if not command:
+                    continue
+                found = inspect_text(command, depth + 1)
+                if found:
+                    return "shelling out to " + found[0], text
     return None
 
 
@@ -462,12 +518,40 @@ def inspect_command(argv: Sequence[str], depth: int = 0) -> Optional[Tuple[str, 
                         return found
 
         inner = [a for a in rest]
-        # `env FOO=bar rm -rf x` and `xargs -0 rm -rf x`: skip the wrapper's own
-        # assignments and flags, then treat what remains as a command.
-        while inner and (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", inner[0])
-                         or inner[0].startswith("-")
-                         or (exe == "timeout" and re.fullmatch(r"[\d.]+[smhd]?", inner[0]))):
-            inner.pop(0)
+        # `env FOO=bar rm -rf x` and `xargs -0 rm -rf x`: skip the wrapper's own assignments
+        # and flags, then treat what remains as a command.
+        #
+        # A FLAG THAT TAKES ITS VALUE IN THE NEXT TOKEN LEAVES THAT VALUE BEHIND, and a
+        # verifier found `nice -n 5 rm -rf project` and `xargs -I {} rm {}` walking through
+        # for exactly that reason: the loop popped `-n`, then stopped at `5` and read it as
+        # the program name. The table below is the arity this loop was missing, and the
+        # trailing check catches the same shape for flags nobody has listed yet -- a token
+        # that cannot be a program name is not the program.
+        value_flags = WRAPPER_VALUE_FLAGS.get(exe, ())
+        while inner:
+            head = inner[0]
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", head):
+                inner.pop(0)
+                continue
+            if head in value_flags and len(inner) > 1:
+                inner.pop(0)
+                inner.pop(0)
+                continue
+            if head.startswith("-"):
+                inner.pop(0)
+                continue
+            if exe == "timeout" and re.fullmatch(r"[\d.]+[smhd]?", head):
+                inner.pop(0)
+                continue
+            if not any(c.isalpha() for c in head):
+                # `5`, `{}`, `--`: not a program name under any spelling. Written as a
+                # character test rather than `re.search`, because a test in this repo forbids
+                # this function from running a regex over text at all -- and it caught this
+                # line the first time it was written. The guarantee is worth more than the
+                # one-liner.
+                inner.pop(0)
+                continue
+            break
         found = inspect_command(inner, depth + 1)
         if found:
             return found
