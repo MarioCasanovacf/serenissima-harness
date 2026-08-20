@@ -314,6 +314,76 @@ def _guard_module():
     return module
 
 
+# The escape a verifier found in the first version of the parsed guard, swept in every form
+# it takes. POSIX short flags bundle, so `-lc` is `-l` and `-c` together and hands the next
+# token to the shell as code -- and the first version asked whether a token EQUALLED `-c`.
+BUNDLED_CODE_FLAGS = (
+    'bash -lc "rm -rf /tmp/foo"',
+    'bash -cl "rm -rf /tmp/foo"',
+    'sh -lc "rm -rf /tmp/foo"',
+    'zsh -ic "rm -rf /tmp/foo"',
+    'dash -xc "rm -rf /tmp/foo"',
+    'ksh -lc "rm -rf /tmp/foo"',
+    'bash -ilc "rm -rf /tmp/foo"',
+    'bash -lc "git clean -xfd"',
+    'sudo bash -lc "rm -rf /tmp/foo"',
+    'env bash -lc "rm -rf /tmp/foo"',
+    'nohup sh -lc "rm -rf /tmp/foo"',
+    'nice bash -lc "rm -rf /tmp/foo"',
+    'xargs bash -lc "rm -rf /tmp/foo"',
+    'find . -exec bash -lc "rm -rf /tmp/foo" \\;',
+    'python3 -Ic "import shutil; shutil.rmtree(\'x\')"',
+    'node -pe "require(\'fs\').rmSync(\'x\')"',
+)
+
+
+class BundledShortFlagsAreCodeFlags(unittest.TestCase):
+    """The escape past the first version of the parsed guard, found by a verifier.
+
+    `bash -lc "rm -rf ..."` walked straight through: the check asked whether a token EQUALLED
+    `-c`, and `-lc` does not. Every bundling and every wrapper combination of it was allowed,
+    silently, past a guard whose whole claim was that nothing previously blocked had opened.
+    A single-dash token is now a code flag when it CONTAINS one of the executable's own
+    single-letter code flags.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.workspace = Path(self.temp.name)
+        (self.workspace / ".harness" / "logs").mkdir(parents=True)
+
+    def test_every_bundled_form_is_blocked(self):
+        for command in BUNDLED_CODE_FLAGS:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_counts_raw_and_distinct(self):
+        self.assertEqual((len(BUNDLED_CODE_FLAGS), len(set(BUNDLED_CODE_FLAGS))), (16, 16))
+
+    def test_the_unbundled_controls_were_never_the_problem(self):
+        """These always worked. They isolate the defect to the bundled spelling, so a future
+        change that breaks the ordinary form fails here instead of hiding behind the fix."""
+        for command in ('bash --login -c "rm -rf /tmp/foo"', 'bash -l -c "rm -rf /tmp/foo"'):
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_a_bundled_flag_carrying_a_harmless_payload_still_passes(self):
+        """NEGATIVE CONTROL. Without it the fix could be "block every bundled flag", which
+        would be a guard that stopped parsing and started refusing."""
+        for command in ('bash -lc "echo hola"', 'bash -lc "ls -la"'):
+            with self.subTest(command=command):
+                result = run_guard(self.workspace, command)
+                self.assertEqual(result.returncode, 0, (command, result.stderr))
+
+    def test_a_flag_after_the_script_name_belongs_to_the_script(self):
+        """`python3 tool.py -c "<prose>"` passes -c to tool.py, not to python. Reading that
+        payload as source is the exact false positive this repair exists to remove, and it is
+        the shape of the `attest.py sign --body` reproduction."""
+        result = run_guard(self.workspace, 'python3 tool.py -c "rm -rf project"')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
 class SafeDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

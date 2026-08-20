@@ -38,6 +38,12 @@ is treated according to what it is:
              code: ``sh -c``, ``python3 -c``, ``perl -e``, ``node -e``,
              ``powershell -Command``.  Scanned with the language rules, and a
              shell payload is parsed as a command line in its own right.
+             POSIX short flags BUNDLE, so ``bash -lc`` is as much a code flag
+             as ``bash -c``; a verifier found the bundled form walking straight
+             through an earlier version of this parser.  Only flags BEFORE the
+             script name count -- ``python3 tool.py -c "<prose>"`` passes -c to
+             tool.py, and reading that as source is the false positive this
+             whole repair exists to remove.
   COMMENTS   text after an unquoted ``#``.  Scanned with the language rules,
              because the guard blocked ``go run x.go  # os.RemoveAll(p)`` before
              this change and that block is kept rather than quietly dropped.
@@ -312,6 +318,33 @@ def _code_flag_names(exe: str) -> set:
     return {a.lower() for a in aliases}
 
 
+def _is_code_flag(token: str, names: set, letters: set) -> bool:
+    """Does this token hand the NEXT token to the executable as code?
+
+    THE BUNDLED FORM IS WHY THIS FUNCTION EXISTS. A verifier found `bash -lc "rm -rf ..."`
+    walking straight through the parser: the old check asked whether a token EQUALLED `-c`, and
+    `-lc` does not equal `-c`. POSIX short flags bundle, so `-lc`, `-ic`, `-xc`, `-cl` and every
+    other arrangement carrying `c` were all silently allowed, along with every wrapper and
+    `find -exec` combination of them. That was a real escape, undeclared, past a guard whose
+    whole claim was that nothing previously blocked had been opened.
+
+    A single-dash token is therefore a code flag when it CONTAINS one of the executable's
+    single-letter code flags. Long flags and non-dash spellings (`--eval`, powershell's `/c`)
+    still match by exact name.
+    """
+    low = token.lower()
+    if low in names:
+        return True
+    if not letters:
+        return False
+    if not token.startswith("-") or token.startswith("--"):
+        return False
+    body = token[1:]
+    if not body.isalpha():
+        return False
+    return bool(letters & set(body))
+
+
 def scan_source(text: str) -> Optional[Tuple[str, str]]:
     for rule, pattern in SOURCE_RULES:
         if pattern.search(text):
@@ -359,17 +392,27 @@ def inspect_command(argv: Sequence[str], depth: int = 0) -> Optional[Tuple[str, 
     code_flags = _code_flag_names(exe)
     if code_flags:
         kind = (CODE_FLAGS.get(exe) or ("", "source"))[1]
+        letters = {flag[1:] for flag in code_flags
+                   if len(flag) == 2 and flag.startswith("-")}
         for i, token in enumerate(rest):
-            if token.lower() in code_flags and i + 1 < len(rest):
-                payload = rest[i + 1]
-                if kind == "shell":
-                    found = inspect_text(payload, depth + 1)
-                    if found:
-                        return found
-                else:
-                    found = scan_source(payload)
-                    if found:
-                        return found
+            if _is_code_flag(token, code_flags, letters):
+                if i + 1 < len(rest):
+                    payload = rest[i + 1]
+                    if kind == "shell":
+                        found = inspect_text(payload, depth + 1)
+                        if found:
+                            return found
+                    else:
+                        found = scan_source(payload)
+                        if found:
+                            return found
+                break
+            # THE FIRST NON-FLAG TOKEN IS THE SCRIPT, and everything after it belongs to the
+            # script rather than to the interpreter. `python3 tool.py -c "<prose>"` passes -c
+            # to tool.py, and reading that payload as Python source is the very false positive
+            # this whole repair exists to remove.
+            if not token.startswith("-"):
+                break
 
     if exe in SHELL_WRAPPERS:
         inner = [a for a in rest]

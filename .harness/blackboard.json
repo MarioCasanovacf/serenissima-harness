@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-20T01:10:25Z",
+  "updated_at": "2026-08-20T01:28:35Z",
   "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -4371,7 +4371,7 @@
     "T-376": {
       "epic": "addendum-ii",
       "title": "REPAIR: precedent.py silently discards extra --voids targets (non-accumulating flag)",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
@@ -4387,7 +4387,9 @@
         "ts": "2026-08-19T22:44:59Z"
       },
       "created_at": "2026-08-12T23:11:45Z",
-      "created_by": "coordinator-fable"
+      "created_by": "coordinator-fable",
+      "completed_at": "2026-08-20T01:16:55Z",
+      "completed_by": "harness-verifier"
     },
     "T-377": {
       "epic": "codification",
@@ -5061,7 +5063,7 @@
     "T-404": {
       "epic": "E-01",
       "title": "Canon question: PR-022's validity condition lapsed in letter but not in purpose",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "any",
       "depends_on": [],
@@ -5069,15 +5071,24 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-404.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/disposal-T-404-PR-022-condition.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T01:17:48Z"
+      },
       "created_at": "2026-08-17T07:59:21Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:27:56Z",
+      "completed_by": "harness-verifier"
     },
     "T-405": {
       "epic": "E-01",
       "title": "stale cannot evaluate validity_conditions, so a lapsed condition is undetectable",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5096,12 +5107,14 @@
         "ts": "2026-08-20T01:10:25Z"
       },
       "created_at": "2026-08-17T07:59:21Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:21:44Z",
+      "completed_by": "harness-verifier"
     },
     "T-406": {
       "epic": "E-01",
       "title": "attest.py has no retraction verb, so a false act is permanent and uncorrectable",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "any",
       "depends_on": [],
@@ -5109,10 +5122,19 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-406.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/design-T-406-retraction.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T01:17:48Z"
+      },
       "created_at": "2026-08-17T08:18:08Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:27:56Z",
+      "completed_by": "harness-verifier"
     },
     "T-407": {
       "epic": "E-01",
@@ -5133,7 +5155,7 @@
         "to_role": "verifier",
         "from": "main",
         "note": null,
-        "ts": "2026-08-20T01:04:22Z"
+        "ts": "2026-08-20T01:28:35Z"
       },
       "created_at": "2026-08-17T08:18:08Z",
       "created_by": "coordinator-opus"
@@ -5141,7 +5163,7 @@
     "T-408": {
       "epic": "E-01",
       "title": "_match_intent ignora for_ref, asi que una intencion no fija el objetivo real del acto",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5160,12 +5182,14 @@
         "ts": "2026-08-20T00:55:24Z"
       },
       "created_at": "2026-08-19T22:44:38Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:15:48Z",
+      "completed_by": "harness-verifier"
     },
     "T-409": {
       "epic": "E-01",
       "title": "La separacion reconcile / delegations solo la sostiene la documentacion",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "any",
       "depends_on": [],
@@ -5173,10 +5197,19 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-409.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/design-T-409-reconcile-delegations.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T01:17:48Z"
+      },
       "created_at": "2026-08-19T22:44:38Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:27:56Z",
+      "completed_by": "harness-verifier"
     },
     "T-410": {
       "epic": "E-01",
@@ -5196,7 +5229,7 @@
         "to_role": "verifier",
         "from": "main",
         "note": null,
-        "ts": "2026-08-20T00:55:24Z"
+        "ts": "2026-08-20T01:28:35Z"
       },
       "created_at": "2026-08-19T22:44:38Z",
       "created_by": "coordinator-opus"
@@ -5204,7 +5237,7 @@
     "T-411": {
       "epic": "E-01",
       "title": "test_wall_clock_timeout falla de forma consistente en esta maquina, no es intermitente",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5223,7 +5256,9 @@
         "ts": "2026-08-20T00:48:03Z"
       },
       "created_at": "2026-08-19T22:44:38Z",
-      "created_by": "coordinator-opus"
+      "created_by": "coordinator-opus",
+      "completed_at": "2026-08-20T01:17:03Z",
+      "completed_by": "harness-verifier"
     },
     "T-412": {
       "epic": "E-01",
@@ -5236,7 +5271,9 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-412.json",
-      "artifacts": [],
+      "artifacts": [
+        ".harness/design-T-412-case-register.md"
+      ],
       "handoff": null,
       "created_at": "2026-08-19T22:46:45Z",
       "created_by": "revision-doctrina"

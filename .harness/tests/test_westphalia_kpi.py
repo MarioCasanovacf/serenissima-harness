@@ -276,9 +276,27 @@ class TheModuleCannotFabricateACost(unittest.TestCase):
         self.assertIn("dicta", doc, "the docstring must say why every clause binds")
 
 
+def as_published(out):
+    """The report as a CONSUMER sees it, not as Python holds it.
+
+    THE GUARD WALKS THIS AND NOT THE LIVE OBJECT, and that is the whole of the first repair.
+    The first version of the walker recursed into `dict` and `list` only, so a figure wrapped
+    in a one-element TUPLE was invisible to it -- while `json.dumps` serialized that tuple as
+    a JSON array and published the number anyway. A verifier demonstrated it with the exact
+    magnitude of the original attack sitting in real `--json` output.
+
+    Round-tripping through JSON first collapses every container the CLI can actually emit into
+    dict / list / number / string / bool / null. There is no third case to forget, because the
+    published form is by definition what json.dumps produces.
+    """
+    return json.loads(json.dumps(out))
+
+
 def numeric_leaves(value, path="$"):
-    """Every number the report emits, with the path it sits at. Booleans are excluded:
-    `True` is an int in Python and a flag is not a measurement."""
+    """Every number the published report carries, with the path it sits at.
+
+    Booleans are excluded: `True` is an int in Python and a flag is not a measurement.
+    """
     if isinstance(value, bool):
         return
     if isinstance(value, (int, float)):
@@ -291,66 +309,87 @@ def numeric_leaves(value, path="$"):
             yield from numeric_leaves(v, "%s[%d]" % (path, i))
 
 
-def recount_from_disk(root):
-    """Recount everything the report could legitimately be counting, WITHOUT calling the
-    module. Calling it would make the guard agree with whatever the module did.
+def expected_numbers(root):
+    """The COMPLETE specification of what numbers this report may carry, and where.
 
-    Returns the set of values a number in the report is allowed to take.
+    A path-to-value map, not a set of allowed values, and that is the second repair. The first
+    version asked "is this number in the allowed set", which a verifier beat by fabricating a
+    figure that landed on an allowed value by coincidence: `registries_distinct +
+    measurements_distinct` is 3 under the fixture, 3 was in the set, and a key named
+    `reconciliation_cost_hours` sailed through carrying a meaningless sum of two counts.
+
+    Membership was the wrong question. The right one is PROVENANCE: every number must sit at a
+    path this map names AND equal the value independently recounted for that path. A key the
+    map does not name fails whatever its value, so a fabricated figure cannot buy its way in by
+    matching some unrelated count.
+
+    The map is exhaustive on purpose. A new numeric key in the report fails here until somebody
+    adds it deliberately and justifies what it counts -- which is the review this guard exists
+    to force.
+
+    It does NOT call the module. A guard that asks the module what it counted agrees with it by
+    construction. Two declared CONSTANTS are read, because a report that prints a threshold the
+    record itself states is quoting, not measuring, and an AST test pins that short list.
     """
     root = pathlib.Path(root)
-    allowed = {0}
     registry_dirs = [d for d in sorted(root.iterdir()) if d.is_dir()] if root.is_dir() else []
-    with_records = [d for d in registry_dirs if list(d.glob("*-*.json")) or list(d.glob("PR-*.json"))]
-    allowed.add(len(with_records))
-    for d in with_records:
-        allowed.add(len(list(d.glob("*.json"))))
+    with_records = [d for d in registry_dirs if list(d.glob("PR-*.json"))]
     store = root / "kpi" / "westphalia"
     files = sorted(store.glob("*.json")) if store.is_dir() else []
-    allowed.add(len(files))
     quarters = set()
     for f in files:
         try:
             quarters.add(json.loads(f.read_text(encoding="utf-8")).get("quarter"))
         except json.JSONDecodeError:
             pass
-    allowed.add(len(quarters))
-    # Two DECLARED CONSTANTS, not counts. They are thresholds the record itself states, and a
-    # report that prints them is quoting, not measuring. Named here so the guard does not
-    # mistake a quotation for a fabrication -- and named as constants so it is visible that
-    # a fabricated figure landing exactly on 2 or 3 would slip through. That is a real hole
-    # and it is cheap: it buys an attacker the number 2.
-    allowed.add(kpi.REQUIRED_REGISTRIES)
-    allowed.add(kpi.MEASUREMENTS_NEEDED_FOR_REVISIT)
-    return allowed
+
+    expected = {
+        "$.registries_raw": len(with_records),
+        "$.registries_distinct": len({d.name for d in with_records}),
+        "$.registries_required": kpi.REQUIRED_REGISTRIES,
+        "$.measurements_raw": len(files),
+        "$.measurements_distinct": len(quarters) if files else 0,
+        "$.measurements_needed_for_revisit": kpi.MEASUREMENTS_NEEDED_FOR_REVISIT,
+    }
+    for i, d in enumerate(with_records):
+        expected["$.registries[%d].records" % i] = len(list(d.glob("PR-*.json")))
+    return expected
 
 
 class TheOutputCannotCarryAFabricatedFigure(Fixture):
     """T-410. The four AST guards watch NAMES; this one watches the OUTPUT.
 
     THE ATTACK THAT MOTIVATED IT, run by the verifier revision-mecanismo on 2026-08-17 and
-    demonstrated rather than asserted: inject `registries_distinct * 40 +
-    measurements_raw * 1200000` under a new key `projected_effort_estimate`, using variable
-    names containing none of the substrings the AST guards watch for, and never touching the
-    key `cost`. ALL 28 TESTS PASSED and the fabricated figure appeared in `--json`.
+    demonstrated rather than asserted: inject `registries_distinct * 40 + measurements_raw *
+    1200000` under a new key `projected_effort_estimate`, using variable names containing none
+    of the substrings the AST guards watch for, and never touching the key `cost`. ALL 28 TESTS
+    PASSED and the fabricated figure appeared in `--json`.
 
-    The rule this class enforces instead: every number the report prints must be RECOUNTABLE
-    from disk. A count is defensible. A product or a weighted sum of counts is an estimate,
-    and PR-029 clause 6 forbids estimating this cost today. The recount deliberately does not
-    call the module -- a guard that asks the module what it counted agrees with it by
-    construction.
+    THE FIRST REPAIR OF THIS CLASS WAS ITSELF BEATEN, twice, by a second verifier, and both
+    holes are closed above rather than documented as limits:
 
-    WHAT THIS GUARD DOES NOT COVER, said plainly rather than left to be discovered:
-      - PROSE. `operator_baseline` legitimately contains "3 months", so string leaves are
-        outside the rule. A figure smuggled into a sentence would pass. Bounding that needs a
-        ratified definition of what a cost-shaped sentence is, and there is none.
-      - THE NUMBERS 2 AND 3, which are declared constants of the record and therefore always
-        allowed. An attacker who can live with those two values is unaffected.
+      a figure inside a TUPLE, which the walker did not descend into while json.dumps published
+      it anyway -- closed by walking the published form (`as_published`);
+
+      a figure that landed on an allowed VALUE by coincidence -- closed by replacing the set of
+      allowed values with an exhaustive path-to-value map, so an unknown key fails whatever it
+      carries.
+
+    THE RULE NOW: every number the report publishes must sit at a path the specification names
+    and equal the value independently recounted for it. A count is defensible. A product, a
+    weighted sum, or a figure under a key nobody justified is an estimate, and PR-029 clause 6
+    forbids estimating this cost today.
+
+    WHAT IS STILL NOT COVERED, said plainly rather than left to be discovered: PROSE.
+    `operator_baseline` legitimately contains "3 months", so string leaves are outside the rule
+    and a figure smuggled into a sentence would pass. Bounding that needs a ratified definition
+    of what a cost-shaped sentence is, and there is none.
     """
 
     def setUp(self):
         super().setUp()
-        # Cardinalities chosen so that no product or sum of them collides with a legitimate
-        # count. 7 records, 3 measurement files, 2 distinct quarters, 1 registry.
+        # Cardinalities chosen so no product or sum of them collides with a legitimate count.
+        # 7 records, 3 measurement files, 2 distinct quarters, 1 registry.
         self.add_registry("precedents", "PR-", 7)
         store = self.root / "kpi" / "westphalia"
         store.mkdir(parents=True)
@@ -358,47 +397,86 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
             (store / "m{}.json".format(i)).write_text(
                 json.dumps({"quarter": quarter}) + "\n", encoding="utf-8")
 
-    def test_every_number_the_report_prints_can_be_recounted_from_disk(self):
-        out = kpi.report(self.root)
-        allowed = recount_from_disk(self.root)
-        offenders = [(path, n) for path, n in numeric_leaves(out) if n not in allowed]
-        self.assertEqual(
-            offenders, [],
-            "the report emits numbers that are not counts of anything on disk; allowed "
-            "values were %s" % sorted(allowed))
+    def published_numbers(self, out=None):
+        return dict(numeric_leaves(as_published(out if out is not None
+                                                else kpi.report(self.root))))
 
-    def test_the_guard_rejects_the_exact_figure_the_verifier_injected(self):
-        """NEGATIVE CONTROL. Without this the test above passes on a guard that checks
-        nothing, which is precisely how the four AST guards passed the original attack."""
+    def test_the_report_carries_exactly_the_numbers_the_specification_names(self):
+        self.assertEqual(self.published_numbers(), expected_numbers(self.root))
+
+    def test_a_fabricated_figure_is_caught_whatever_it_is_called(self):
+        """NEGATIVE CONTROL. Without it the test above passes on a guard that checks nothing,
+        which is precisely how the four AST guards passed the original attack."""
         out = kpi.report(self.root)
         out["projected_effort_estimate"] = (
             out["registries_distinct"] * 40 + out["measurements_raw"] * 1200000)
-        allowed = recount_from_disk(self.root)
-        offenders = [path for path, n in numeric_leaves(out) if n not in allowed]
-        self.assertIn("$.projected_effort_estimate", offenders)
+        self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
 
-    def test_the_guard_rejects_a_figure_buried_in_a_nested_structure(self):
-        """The injected key was top-level. A second attempt would not be."""
+    def test_a_figure_wrapped_in_a_tuple_is_caught(self):
+        """The first bypass a verifier found. `json.dumps` publishes a tuple as an array, so
+        a walker that skipped tuples skipped a number the CLI printed."""
+        out = kpi.report(self.root)
+        out["reconciliation_effort_estimate"] = (
+            out["registries_distinct"] * 40 + out["measurements_raw"] * 1200000,)
+        numbers = self.published_numbers(out)
+        self.assertIn("$.reconciliation_effort_estimate[0]", numbers)
+        self.assertNotEqual(numbers, expected_numbers(self.root))
+
+    def test_a_figure_that_lands_on_a_legitimate_count_by_coincidence_is_caught(self):
+        """The second bypass. `registries_distinct + measurements_distinct` is 3 here, and 3 is
+        a real count elsewhere in this report -- which is exactly why membership in a set of
+        allowed values was the wrong question."""
+        out = kpi.report(self.root)
+        out["reconciliation_cost_hours"] = (
+            out["registries_distinct"] + out["measurements_distinct"])
+        self.assertEqual(out["reconciliation_cost_hours"], 3)
+        self.assertIn(3, expected_numbers(self.root).values())
+        self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
+
+    def test_a_figure_buried_in_a_nested_structure_is_caught(self):
         out = kpi.report(self.root)
         out["instrumentation"] = dict(out["instrumentation"])
         out["instrumentation"]["modelled"] = {"hours": [{"q1": 640}]}
-        offenders = [path for path, n in numeric_leaves(out)
-                     if n not in recount_from_disk(self.root)]
-        self.assertIn("$.instrumentation.modelled.hours[0].q1", offenders)
+        self.assertIn("$.instrumentation.modelled.hours[0].q1", self.published_numbers(out))
+
+    def test_a_legitimate_count_that_stops_matching_its_own_recount_is_caught(self):
+        """The other direction: a key the specification names, carrying the wrong number.
+        Without this the map could be satisfied by any report with the right SHAPE."""
+        out = kpi.report(self.root)
+        out["measurements_raw"] = out["measurements_raw"] + 1
+        self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
 
     def test_a_flag_is_not_a_measurement(self):
-        """Booleans are ints in Python. Counting them as numbers would either force `True`
-        into the allowed set -- which admits every 1 -- or fail every report that has a flag."""
+        """Booleans are ints in Python. Counting them would either force `True` into the
+        specification -- which admits every 1 -- or fail every report that has a flag."""
         self.assertEqual(list(numeric_leaves({"store_exists": True, "n": 7})), [("$.n", 7)])
+
+    def test_the_specification_never_calls_the_module_it_checks(self):
+        """GUARD-MENTION-C, sixth occurrence: parsed, not scanned. A recount that delegated to
+        `kpi.domain_registries` would confirm the module against itself."""
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        fn = next(n for n in ast.walk(ast.parse(source))
+                  if isinstance(n, ast.FunctionDef) and n.name == "expected_numbers")
+        called = set()
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if isinstance(node.func.value, ast.Name):
+                    called.add("%s.%s" % (node.func.value.id, node.func.attr))
+        self.assertEqual({c for c in called if c.startswith("kpi.")}, set(),
+                         "the specification calls the module it is supposed to check")
+        constants = {n.attr for n in ast.walk(fn)
+                     if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+                     and n.value.id == "kpi"}
+        self.assertEqual(constants, {"REQUIRED_REGISTRIES", "MEASUREMENTS_NEEDED_FOR_REVISIT"})
 
     def test_the_verifiers_attack_replayed_against_a_patched_MODULE_is_caught(self):
         """The reproduction, not a paraphrase of it.
 
-        The three tests above inject into the returned dict. This one patches the module the
-        way the verifier did -- new key, variable names carrying none of the watched
-        substrings, `cost` untouched -- imports the patched copy, and runs it. It asserts two
-        things in order: that the four AST guards STILL pass on the patched module, which is
-        the finding; and that the output guard catches what they miss.
+        The tests above inject into the returned dict. This one patches the module the way the
+        verifier did -- new key, variable names carrying none of the watched substrings, `cost`
+        untouched -- imports the patched copy, and runs it. It asserts two things in order:
+        that the four AST guards STILL pass on the patched module, which is the finding; and
+        that the output guard catches what they miss.
         """
         patched = pathlib.Path(self._tmp.name) / "patched_kpi.py"
         source = CLI.read_text(encoding="utf-8")
@@ -430,31 +508,7 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
         spec.loader.exec_module(module)
         out = module.report(self.root)
         self.assertIn("projected_effort_estimate", out)
-
-        offenders = [path for path, n in numeric_leaves(out)
-                     if n not in recount_from_disk(self.root)]
-        self.assertEqual(offenders, ["$.projected_effort_estimate"])
-
-    def test_the_recount_never_calls_the_module_it_checks(self):
-        """GUARD-MENTION-C, sixth occurrence: parsed, not scanned. A recount that delegated to
-        `kpi.domain_registries` would confirm the module against itself."""
-        source = pathlib.Path(__file__).read_text(encoding="utf-8")
-        fn = next(n for n in ast.walk(ast.parse(source))
-                  if isinstance(n, ast.FunctionDef) and n.name == "recount_from_disk")
-        called = set()
-        for node in ast.walk(fn):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if isinstance(node.func.value, ast.Name):
-                    called.add("%s.%s" % (node.func.value.id, node.func.attr))
-        forbidden = {c for c in called if c.startswith("kpi.")}
-        self.assertEqual(forbidden, set(),
-                         "the recount calls the module it is supposed to check: %s" % forbidden)
-        # It may still READ the module's declared constants; that is a quotation, not a
-        # measurement, and the docstring says so.
-        constants = {n.attr for n in ast.walk(fn)
-                     if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
-                     and n.value.id == "kpi"}
-        self.assertEqual(constants, {"REQUIRED_REGISTRIES", "MEASUREMENTS_NEEDED_FOR_REVISIT"})
+        self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
 
 
 class ThePublishedRecordStillSaysThis(unittest.TestCase):
