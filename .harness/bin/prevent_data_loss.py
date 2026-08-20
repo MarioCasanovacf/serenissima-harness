@@ -133,6 +133,12 @@ CODE_FLAG_ALIASES = {
     "ruby": {"-e"},
 }
 
+# Flags whose VALUE is a whole command line rather than a program name.  `env -S` is the one
+# that matters today; the table exists so the next one is an entry rather than a rewrite.
+STRING_COMMAND_FLAGS = {
+    "env": ("-S", "--split-string"),
+}
+
 GIT_RULES = (
     ("git clean", lambda argv: "clean" in argv),
     ("git reset --hard", lambda argv: "reset" in argv and "--hard" in argv),
@@ -318,31 +324,49 @@ def _code_flag_names(exe: str) -> set:
     return {a.lower() for a in aliases}
 
 
-def _is_code_flag(token: str, names: set, letters: set) -> bool:
-    """Does this token hand the NEXT token to the executable as code?
+def _code_flag_payload(token: str, names: set, letters: set):
+    """Where this token's code payload is: ``("here", text)``, ``("next", None)``, or None.
 
-    THE BUNDLED FORM IS WHY THIS FUNCTION EXISTS. A verifier found `bash -lc "rm -rf ..."`
-    walking straight through the parser: the old check asked whether a token EQUALLED `-c`, and
-    `-lc` does not equal `-c`. POSIX short flags bundle, so `-lc`, `-ic`, `-xc`, `-cl` and every
-    other arrangement carrying `c` were all silently allowed, along with every wrapper and
-    `find -exec` combination of them. That was a real escape, undeclared, past a guard whose
-    whole claim was that nothing previously blocked had been opened.
+    TWO ESCAPES ARE CLOSED HERE, BOTH FOUND BY VERIFIERS, BOTH PAST EARLIER VERSIONS OF THIS
+    FUNCTION, and each one is the same lesson at a finer grain: a flag is a grammar, not a
+    string.
 
-    A single-dash token is therefore a code flag when it CONTAINS one of the executable's
-    single-letter code flags. Long flags and non-dash spellings (`--eval`, powershell's `/c`)
-    still match by exact name.
+    THE BUNDLED FORM. `bash -lc "rm -rf ..."` walked straight through when the check asked
+    whether a token EQUALLED `-c`. POSIX short flags bundle, so `-lc`, `-ic`, `-xc`, `-cl` and
+    every arrangement carrying `c` were allowed, along with every wrapper and `find -exec`
+    combination of them.
+
+    THE GLUED FORM. `python3 -cimport shutil; shutil.rmtree('x')` walked through the FIX for the
+    bundled form, because that fix required the token body to be alphabetic and real code stops
+    being alphabetic at its first character. `python3 -cCODE` is a form the interpreter actually
+    accepts -- verified by running it -- so the payload can live INSIDE the flag token.
+
+    The scan therefore walks only the LEADING run of letters. A code letter inside that run
+    means the rest of the token is the payload when there is a rest, and the next token
+    otherwise. Stopping at the leading run is what keeps `-Wignore::SomethingWithAC` from being
+    read as code from its middle.
     """
     low = token.lower()
     if low in names:
-        return True
-    if not letters:
-        return False
-    if not token.startswith("-") or token.startswith("--"):
-        return False
+        return ("next", None)
+    if not letters or not token.startswith("-") or token.startswith("--"):
+        return None
     body = token[1:]
-    if not body.isalpha():
-        return False
-    return bool(letters & set(body))
+    if not body:
+        return None
+    # AN ALL-ALPHABETIC BODY IS A FLAG BUNDLE, NOT A PAYLOAD. `-cl`, `-lc` and node's `-pe`
+    # are flags all the way down, and the code arrives in the NEXT token. Reading the tail of
+    # the bundle as code broke exactly those three the first time this was written.
+    if body.isalpha():
+        return ("next", None) if (letters & set(body.lower())) else None
+    # Otherwise the token stops being letters at some point, and real code stops being letters
+    # at its first character. The payload begins right after the code letter.
+    for i, ch in enumerate(body):
+        if not ch.isalpha():
+            return None
+        if ch.lower() in letters:
+            return ("here", body[i + 1:])
+    return None
 
 
 def scan_source(text: str) -> Optional[Tuple[str, str]]:
@@ -395,9 +419,12 @@ def inspect_command(argv: Sequence[str], depth: int = 0) -> Optional[Tuple[str, 
         letters = {flag[1:] for flag in code_flags
                    if len(flag) == 2 and flag.startswith("-")}
         for i, token in enumerate(rest):
-            if _is_code_flag(token, code_flags, letters):
-                if i + 1 < len(rest):
-                    payload = rest[i + 1]
+            where = _code_flag_payload(token, code_flags, letters)
+            if where is not None:
+                site, glued = where
+                payload = glued if site == "here" else (
+                    rest[i + 1] if i + 1 < len(rest) else None)
+                if payload is not None:
                     if kind == "shell":
                         found = inspect_text(payload, depth + 1)
                         if found:
@@ -415,6 +442,25 @@ def inspect_command(argv: Sequence[str], depth: int = 0) -> Optional[Tuple[str, 
                 break
 
     if exe in SHELL_WRAPPERS:
+        # `env -S "<command line>"` SPLITS its argument into a command and runs it -- verified
+        # by running it. The wrapper loop below pops leading flags and then treats what is left
+        # as an executable NAME, so the whole nested command line was read as one literal
+        # program name and never parsed. A verifier found it walking through. The value is a
+        # command line, so it is parsed as one.
+        for flag in STRING_COMMAND_FLAGS.get(exe, ()):
+            for i, token in enumerate(rest):
+                payload = None
+                if token == flag and i + 1 < len(rest):
+                    payload = rest[i + 1]
+                elif token.startswith(flag + "="):
+                    payload = token[len(flag) + 1:]
+                elif len(flag) == 2 and token.startswith(flag) and len(token) > 2:
+                    payload = token[2:]
+                if payload:
+                    found = inspect_text(payload, depth + 1)
+                    if found:
+                        return found
+
         inner = [a for a in rest]
         # `env FOO=bar rm -rf x` and `xargs -0 rm -rf x`: skip the wrapper's own
         # assignments and flags, then treat what remains as a command.

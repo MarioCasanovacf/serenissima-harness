@@ -25,6 +25,7 @@ import ast
 import importlib.util
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -292,21 +293,50 @@ def as_published(out):
     return json.loads(json.dumps(out))
 
 
+NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+
 def numeric_leaves(value, path="$"):
     """Every number the published report carries, with the path it sits at.
 
     Booleans are excluded: `True` is an int in Python and a flag is not a measurement.
+
+    A STRING THAT IS ENTIRELY A NUMBER COUNTS AS A NUMBER, and that is the third bypass a
+    verifier closed. `out["reconciliation_cost_hours"] = str(...)` was invisible to a walker
+    that checked `isinstance(value, (int, float))`, while the figure sat in `--json` output as
+    plain readable text. What a reader sees is a number; the type it was stored under is not
+    the reader's problem.
+
+    A string that merely CONTAINS a number is still exempt -- `operator_baseline` legitimately
+    says "3 months" -- and that limit is stated on the guard class.
     """
     if isinstance(value, bool):
         return
     if isinstance(value, (int, float)):
         yield path, value
+    elif isinstance(value, str):
+        text = value.strip()
+        if text and NUMBER.fullmatch(text):
+            yield path, float(text) if "." in text else int(text)
     elif isinstance(value, dict):
         for k, v in value.items():
             yield from numeric_leaves(v, "%s.%s" % (path, k))
     elif isinstance(value, list):
         for i, v in enumerate(value):
             yield from numeric_leaves(v, "%s[%d]" % (path, i))
+
+
+def strings_in(value):
+    """Every string leaf of the published report, so a number quoted inside prose can be told
+    from a number the renderer invented."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from strings_in(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings_in(v)
 
 
 def expected_numbers(root):
@@ -445,6 +475,42 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
         out = kpi.report(self.root)
         out["measurements_raw"] = out["measurements_raw"] + 1
         self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
+
+    def test_a_figure_stored_as_a_numeric_string_is_caught(self):
+        """The third bypass. A reader sees a number; the type it was stored under is not the
+        reader's problem, and `--json` prints it either way."""
+        out = kpi.report(self.root)
+        out["reconciliation_cost_hours"] = str(
+            out["registries_distinct"] * 40 + out["measurements_raw"] * 1200000)
+        numbers = self.published_numbers(out)
+        self.assertEqual(numbers.get("$.reconciliation_cost_hours"), 3600040)
+        self.assertNotEqual(numbers, expected_numbers(self.root))
+
+    def test_prose_that_merely_contains_a_number_is_still_exempt(self):
+        """NEGATIVE CONTROL for the rule above. `operator_baseline` says "3 months" and must
+        stay outside the rule, or the guard fails every honest report."""
+        out = kpi.report(self.root)
+        self.assertIn("3 months", out["operator_baseline"])
+        self.assertEqual(self.published_numbers(), expected_numbers(self.root))
+
+    def test_the_text_mode_prints_no_number_the_report_does_not_carry(self):
+        """The fourth bypass: a figure computed inside `_render` and printed only in TEXT mode
+        never touches the report dict, so every guard that inspects the dict is blind to it --
+        and text mode is what a human actually runs.
+
+        Every number the renderer prints has to be traceable to the published report: either a
+        numeric leaf, or text inside one of its strings (clause numbers, "3 months", record
+        ids). A number in neither was invented by the renderer.
+        """
+        proc = self.cli()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        out = as_published(kpi.report(self.root))
+        from_values = {str(v) for _, v in numeric_leaves(out)}
+        prose = " ".join(s for s in strings_in(out))
+        unexplained = [n for n in NUMBER.findall(proc.stdout)
+                       if n not in from_values and n not in prose]
+        self.assertEqual(unexplained, [],
+                         "text mode printed numbers that appear nowhere in the report")
 
     def test_a_flag_is_not_a_measurement(self):
         """Booleans are ints in Python. Counting them would either force `True` into the
