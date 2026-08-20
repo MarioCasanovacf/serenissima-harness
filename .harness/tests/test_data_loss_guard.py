@@ -163,6 +163,157 @@ class DataLossGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
 
 
+# --------------------------------------------------------------------------- T-407
+
+# BRAZO A de la matriz: toda forma destructiva que la implementacion de regex bloqueaba,
+# ENUMERADA DESDE ESA IMPLEMENTACION y verificada bloqueada contra ella antes de tocarla,
+# mas las formas que el parseo mismo podria haber abierto.
+STILL_BLOCKED = (
+    "git clean -xfd", "git -C repo clean -fdx", "sudo git clean -f",
+    "git reset --hard HEAD", "sudo git -C repo reset --hard HEAD",
+    "git push origin main --force", "git push -f origin main",
+    "git push --force-with-lease origin main",
+    "git checkout -- src/app.py", "git checkout -f feature", "git checkout --ours f",
+    "git restore src/app.py", "git switch --discard-changes feature",
+    "git rm -rf vendor", "git rm vendor/lib.js",
+    "find . -name '*.tmp' -delete", "find . -exec rm {} \\;",
+    "find . -exec rm -rf {} +", "find . -execdir rm -rf {} \\;",
+    "env rm -rf project", "/usr/bin/env rm -rf project", "nice rm -rf project",
+    "nohup rm -rf project", "bash -c 'rm -rf project'", 'sh -c "rm -rf project"',
+    "sudo rm -rf project", "command rm -rf project", "busybox rm -rf project",
+    "rm -rf project", "rm file.txt", "/bin/rm -rf project", "\\rm -rf foo",
+    "\\rm -rf foo; echo done", "echo hola && rm -rf project",
+    "printf '%s\\0' cache | xargs -0 rm -rf", "ls | xargs rm",
+    "unlink notes.txt", "rmdir old-project", "shred -u secret.txt",
+    "truncate -s 0 data.db",
+    'powershell -Command "Remove-Item -Recurse project"', "del archivo.txt",
+    "erase archivo.txt",
+    'python3 -c "import shutil; shutil.rmtree(\'project\')"',
+    'python3 -c "import os; os.unlink(\'data\')"',
+    'python3 -c "import os; os.remove(\'data\')"',
+    'python3 -c "import os; os.rmdir(\'data\')"',
+    'python3 -c "import os; os.removedirs(\'data\')"',
+    'python3 -c "import subprocess; subprocess.run([\'rm\', \'-rf\', \'project\'])"',
+    'python3 -c "import os; os.system(\'rm -rf project\')"',
+    'python3 -c "from pathlib import Path; Path(\'data\').unlink()"',
+    'node -e "require(\'fs\').rmSync(\'project\', {recursive:true})"',
+    'node -e "fs.promises.unlink(\'x\')"',
+    "go run cleanup.go  # os.RemoveAll(path)",
+    'ruby -e "FileUtils.rm_rf(\'project\')"',
+    'perl -e "unlink \'data\'"',
+)
+
+OPENED_BY_PARSING = (
+    "bash <<'EOF'\nrm -rf project\nEOF",
+    "sh <<EOF\ngit clean -xfd\nEOF",
+    "python3 - <<'PY'\nimport shutil; shutil.rmtree('project')\nPY",
+    "sudo env nice rm -rf project",
+    "timeout 5 rm -rf project",
+    "xargs -0 rm -rf < lista",
+    "true && sudo rm -rf project",
+    "FOO=bar rm -rf project",
+)
+
+# BRAZO B: las reproducciones. Prosa que DESCRIBE una remocion sin realizarla.
+PROSE_THAT_MUST_PASS = (
+    'python3 .harness/bin/attest.py sign --name x --key k --kind commit '
+    '--body "la guarda bloquea rm -rf, git clean -xfd y git reset --hard"',
+    "cat > nota.md <<'TXT'\nEl defecto: la guarda bloqueo rm -rf project.\nTXT",
+    "cat > nota.md <<'TXT'\nUna prueba AST prohibe llamar shutil.rmtree, os.remove y "
+    "Path(x).unlink().\nTXT",
+    'python3 .harness/bin/blackboard.py update T-1 --note "hay que evitar git reset --hard"',
+    'echo "el corpus incluye rm -rf project y find . -delete" > corpus.txt',
+)
+
+
+class TheDecisionIsMadeOnTheParsedCommand(unittest.TestCase):
+    """T-407. GUARD-MENTION-C, reproduced five times, closed by parsing.
+
+    A substring scan cannot tell a mention from a call. The guard blocked an
+    `attest.py sign --body` payload, this defect's own bug report, a handoff note listing
+    the methods an AST test FORBIDS a module from calling, and the very corpus written to
+    repair it. Three of the five were audit trails this harness wants written.
+
+    THE MATRIX HAS BOTH ARMS AND BOTH COUNTS. Only the second arm is the repair; without
+    the first it would be indistinguishable from deleting the guard.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.workspace = Path(self.temp.name)
+        (self.workspace / ".harness" / "logs").mkdir(parents=True)
+
+    def test_arm_a_every_destructive_form_the_regex_guard_blocked_is_still_blocked(self):
+        for command in STILL_BLOCKED:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_arm_a_counts_raw_and_distinct(self):
+        """TELEMETRY-PROVENANCE-A. A corpus counted once can hide duplicates, and a
+        duplicate inflates coverage without adding any."""
+        self.assertEqual((len(STILL_BLOCKED), len(set(STILL_BLOCKED))), (56, 56))
+        self.assertEqual((len(OPENED_BY_PARSING), len(set(OPENED_BY_PARSING))), (8, 8))
+
+    def test_arm_a_parsing_did_not_open_a_heredoc_into_an_interpreter(self):
+        """A heredoc body is data only until an interpreter is on the receiving end.
+        `cat > notes.md <<EOF` feeds prose to a file; `bash <<EOF` feeds a program to a
+        program. Stripping the body unconditionally would have opened the exact hole this
+        guard exists to close."""
+        for command in OPENED_BY_PARSING:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_arm_b_prose_describing_a_removal_is_no_longer_blocked(self):
+        for command in PROSE_THAT_MUST_PASS:
+            with self.subTest(command=command):
+                result = run_guard(self.workspace, command)
+                self.assertEqual(result.returncode, 0, (command, result.stderr))
+
+    def test_arm_b_counts_raw_and_distinct(self):
+        self.assertEqual((len(PROSE_THAT_MUST_PASS), len(set(PROSE_THAT_MUST_PASS))), (5, 5))
+
+    def test_the_lapse_is_named_rather_than_left_to_be_discovered(self):
+        """NO SILENT WEAKENING. Two forms the flat scan blocked are now allowed, both of
+        them the same shape as the false positives, and neither can be told apart from
+        prose without knowing the callee's convention. They are asserted here so the lapse
+        is a recorded decision instead of a surprise, and so a future tightening has a
+        place to land."""
+        for command in (
+            'somerunner "rm -rf /"',        # quoted argument to an unknown executable
+            'echo "rm -rf project" | sh',   # a command arriving through a pipe, not argv
+        ):
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 0, command)
+        doc = _guard_module().__doc__ or ""
+        self.assertIn("WHAT THIS GIVES UP", doc)
+
+    def test_an_unparseable_command_falls_back_to_the_flat_scan(self):
+        """Fail closed. An unbalanced quote is not a safe command, and the fallback is the
+        strictest behaviour available rather than the most permissive."""
+        self.assertEqual(run_guard(self.workspace, 'rm -rf "unterminated').returncode, 2)
+
+    def test_the_module_decides_on_tokens_and_not_on_the_raw_string(self):
+        """Parsed, not scanned -- checked by parsing this module rather than grepping it,
+        which is the same defect one level up (GUARD-MENTION-C, seventh occurrence)."""
+        import ast
+        tree = ast.parse(GUARD.read_text(encoding="utf-8"))
+        fn = next(n for n in ast.walk(tree)
+                  if isinstance(n, ast.FunctionDef) and n.name == "inspect_command")
+        calls = {n.func.attr for n in ast.walk(fn)
+                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)}
+        self.assertNotIn("search", calls,
+                         "inspect_command runs a regex over text; it must read tokens")
+        self.assertNotIn("match", calls)
+
+
+def _guard_module():
+    spec = importlib.util.spec_from_file_location("prevent_data_loss", GUARD)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class SafeDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

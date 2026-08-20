@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-20T00:55:24Z",
+  "updated_at": "2026-08-20T01:04:22Z",
   "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5109,7 +5109,7 @@
     "T-407": {
       "epic": "E-01",
       "title": "GUARD-MENTION-C in prevent_data_loss.py: it blocks prose that mentions a removal",
-      "status": "open",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5117,8 +5117,16 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-407.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/prevent_data_loss.py",
+        ".harness/tests/test_data_loss_guard.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": null,
+        "ts": "2026-08-20T01:04:22Z"
+      },
       "created_at": "2026-08-17T08:18:08Z",
       "created_by": "coordinator-opus"
     },
