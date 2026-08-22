@@ -490,6 +490,66 @@ class ThirdRoundEscapes(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+REPARSING_BUILTINS = (
+    'eval "' + _RM + '"',
+    "eval '" + _RM + "'",
+    "bash -c 'eval \"" + _RM + "\"'",
+    'sh -c "eval \'' + _RM + '\'"',
+    'source <(echo "' + _RM + '")',
+    '. <(echo "' + _RM + '")',
+    'sudo eval "' + _RM + '"',
+    'eval "cd /tmp && ' + _RM + '"',
+)
+
+
+class TheFourthRoundRegression(unittest.TestCase):
+    """Shell builtins that re-parse text as code, found by a verifier as a REGRESSION rather
+    than an escape: the pre-parser guard blocked every one of these because the destructive
+    text sat in the raw string, and the parsed guard allowed them because `eval` and `source`
+    were in no table at all.
+
+    Same doctrine as CODE_FLAGS and SHELL_OUT_CALLS: the argument of `eval` is a command line
+    by the builtin's own convention, and `source <(cmd)` executes whatever the substituted
+    command prints -- so the inner command AND its string arguments are candidate script text.
+
+    `exec "rm -rf project"` is deliberately NOT here: the same verifier confirmed it is not
+    destructive (exec does not re-split a quoted argument; a real shell says command not
+    found), so blocking it would be blocking a name, not a behavior.
+    """
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.workspace = Path(self.temp.name)
+        (self.workspace / ".harness" / "logs").mkdir(parents=True)
+
+    def test_a_builtin_that_reparses_its_argument_is_read_as_a_command_line(self):
+        for command in REPARSING_BUILTINS:
+            with self.subTest(command=command):
+                self.assertEqual(run_guard(self.workspace, command).returncode, 2, command)
+
+    def test_counts_raw_and_distinct(self):
+        self.assertEqual((len(REPARSING_BUILTINS), len(set(REPARSING_BUILTINS))), (8, 8))
+
+    def test_NEGATIVE_CONTROL_the_eval_and_source_a_developer_runs_daily_still_pass(self):
+        """Without this, the fix could be "block the word eval", which fails every shell
+        profile on this machine. `$(...)` output is unknowable at guard time and treating the
+        unknowable as destructive would make the guard unusable, which is how guards get
+        disabled -- the worst outcome of all."""
+        for command in (
+            'eval "$(pyenv init -)"',
+            'eval "$(direnv hook zsh)"',
+            "source ./setup.env",
+            ". ~/.zshrc",
+            "source <(kubectl completion zsh)",
+            'python3 .harness/bin/blackboard.py update T-1 --note '
+            '"el hueco era que eval no estaba cubierto"',
+        ):
+            with self.subTest(command=command):
+                result = run_guard(self.workspace, command)
+                self.assertEqual(result.returncode, 0, (command, result.stderr))
+
+
 class SafeDeleteTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

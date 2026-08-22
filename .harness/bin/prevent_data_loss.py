@@ -469,6 +469,34 @@ def inspect_command(argv: Sequence[str], depth: int = 0) -> Optional[Tuple[str, 
                 if found:
                     return "find -exec/-execdir " + found[0], display
 
+    # SHELL BUILTINS THAT RE-PARSE TEXT AS CODE, found by a verifier as a REGRESSION: the
+    # pre-parser guard blocked `eval "rm -rf project"` because the destructive text was in the
+    # raw string, and this parser allowed it because `eval` was in no table at all. Same
+    # doctrine as CODE_FLAGS: the argument of `eval` is a command line by the builtin's own
+    # convention, so it is parsed as one.
+    if exe == "eval" and rest:
+        found = inspect_text(" ".join(rest), depth + 1)
+        if found:
+            return "eval re-parses its argument: " + found[0], display
+
+    # `source <(cmd ...)` and `. <(cmd ...)` execute whatever the substituted command PRINTS.
+    # The producing command itself is usually harmless (`echo`), so the guard inspects both the
+    # inner command and each of its string arguments as candidate script text. A plain
+    # `source file.env` names a file this guard cannot read, and stays allowed on purpose.
+    if exe in ("source", ".") and rest:
+        for i, token in enumerate(rest):
+            if token.startswith("<("):
+                inner = [t for t in rest[i:] if t not in ("<(", ")")]
+                if token != "<(" and len(token) > 2:
+                    inner[0] = token[2:]
+                found = inspect_command(inner, depth + 1)
+                if found:
+                    return "source of process substitution: " + found[0], display
+                for arg in inner[1:]:
+                    found = inspect_text(arg, depth + 1)
+                    if found:
+                        return "source of process substitution: " + found[0], display
+
     code_flags = _code_flag_names(exe)
     if code_flags:
         kind = (CODE_FLAGS.get(exe) or ("", "source"))[1]

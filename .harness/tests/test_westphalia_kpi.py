@@ -26,6 +26,7 @@ import importlib.util
 import json
 import pathlib
 import re
+import os
 import subprocess
 import sys
 import tempfile
@@ -332,6 +333,18 @@ def numeric_leaves(value, path="$"):
             yield from numeric_leaves(v, "%s[%d]" % (path, i))
 
 
+def string_leaves(value, path="$"):
+    """Every string leaf WITH THE PATH IT SITS AT, so a sentence can be held to a rule."""
+    if isinstance(value, str):
+        yield path, value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from string_leaves(v, "%s.%s" % (path, k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from string_leaves(v, "%s[%d]" % (path, i))
+
+
 def strings_in(value):
     """Every string leaf of the published report, so a number quoted inside prose can be told
     from a number the renderer invented."""
@@ -392,6 +405,65 @@ def expected_numbers(root):
     return expected
 
 
+# Numbers the report's own SENTENCES may carry, path by path, and what each one IS.
+#
+# THE FOURTH ROUND CLOSED PROSE, which the three before it had declared uncoverable "without a
+# ratified definition of a cost-shaped sentence". No such definition is needed. The question
+# was never what a sentence MEANS; it is where its digits CAME FROM, and that has the same
+# answer numbers have: a path, and a value recounted for it. A verifier demonstrated the gap
+# live, smuggling 3600040 into a `reconciliation_chatter` sentence past all 42 tests.
+#
+# Exhaustive on purpose, exactly like expected_numbers. A new number in a new sentence fails
+# here until somebody names it and says what it is.
+PROSE_NUMBERS = {
+    "$.record": {"-029"},                                    # the record id, PR-029
+    "$.quarterly_watch": {"-349"},                           # the standing task, T-349
+    "$.operator_baseline": {"-029", "2", "3"},               # clause 2; the 3-month baseline
+    "$.instrumentation.wall_clock_hours": {"3"},             # clause 3 requires hours + tokens
+    "$.THIS_DEFINITION_IS_THE_TOOLS_NOT_THE_RECORDS": {"-029", "6"},
+    "$.A_COUNT_OF_ZERO_IS_NOT_A_COST_OF_ZERO": {"-029", "6"},
+    "$.NO_THRESHOLD_RATIFIED": {"-029", "3", "5"},           # clause 5; the 3-month basis
+    "$.WHY_NO_FIGURE": {"-029", "3", "5", "6"},              # clauses; count added below
+}
+
+
+def expected_prose_numbers(root):
+    """PROSE_NUMBERS plus the two things the report legitimately interpolates into a sentence.
+
+    WHY_NO_FIGURE quotes the registry count back to the reader in both of its branches, and in
+    the measurable branch it also quotes the measurement store's PATH. Registry names come off
+    the filesystem. All three are RECOUNTED here rather than asked of the module, for the same
+    reason expected_numbers recounts: a specification that asks the module what it wrote agrees
+    with it by construction.
+
+    Consequence worth stating rather than discovering: a digit sequence that already appears in
+    the root path is admissible inside WHY_NO_FIGURE. That is the price of quoting a real path,
+    and it is bounded by the path being recomputed here from `root`, not accepted from output.
+    """
+    root = pathlib.Path(root)
+    allowed = {k: set(v) for k, v in PROSE_NUMBERS.items()}
+    allowed["$.WHY_NO_FIGURE"] |= {str(v) for v in expected_numbers(root).values()}
+    allowed["$.WHY_NO_FIGURE"] |= set(NUMBER.findall(str(root / "kpi" / "westphalia")))
+    registry_dirs = [d for d in sorted(root.iterdir())
+                     if d.is_dir() and list(d.glob("PR-*.json"))] if root.is_dir() else []
+    for i, d in enumerate(registry_dirs):
+        from_disk = set(NUMBER.findall(d.name))
+        allowed["$.registries[%d].name" % i] = from_disk
+        allowed["$.registries[%d].prefix" % i] = from_disk
+    return allowed
+
+
+def unaccounted_prose_numbers(out, root):
+    """Every digit sequence in a published sentence that no path in the specification explains."""
+    allowed = expected_prose_numbers(root)
+    found = []
+    for path, text in string_leaves(as_published(out)):
+        for number in NUMBER.findall(text):
+            if number not in allowed.get(path, set()):
+                found.append((path, number))
+    return sorted(found)
+
+
 class TheOutputCannotCarryAFabricatedFigure(Fixture):
     """T-410. The four AST guards watch NAMES; this one watches the OUTPUT.
 
@@ -416,10 +488,26 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
     weighted sum, or a figure under a key nobody justified is an estimate, and PR-029 clause 6
     forbids estimating this cost today.
 
-    WHAT IS STILL NOT COVERED, said plainly rather than left to be discovered: PROSE.
-    `operator_baseline` legitimately contains "3 months", so string leaves are outside the rule
-    and a figure smuggled into a sentence would pass. Bounding that needs a ratified definition
-    of what a cost-shaped sentence is, and there is none.
+    THE FOURTH ROUND CLOSED THE TWO THINGS THE THIRD LEFT OPEN, both demonstrated live by a
+    verifier rather than argued:
+
+      THE CLI'S `--json` BRANCH WAS NEVER READ. Every rule above ran against `report()` called
+      in-process, or against text mode's subprocess output. Nothing ever ran `--json` and
+      inspected what came back, so `main()`'s JSON branch could add a key on the way out and no
+      guard would ever see it. The published artifact is now audited as a SUBPROCESS in both
+      modes, which is the only form a consumer ever gets. Note what this proves about the
+      seventh round's repair: the bypass sat inside `main` itself, maximally reachable, so
+      reachability was never the missing property.
+
+      PROSE IS NOW COVERED, and the earlier claim that it could not be is withdrawn. No
+      definition of a cost-shaped sentence is required, because meaning was never the question.
+      Every digit sequence inside a published sentence must trace to a path the specification
+      names, exactly as every number does -- see PROSE_NUMBERS and expected_prose_numbers.
+
+    WHAT IS STILL NOT COVERED, said plainly: a fabricated figure that happens to equal a digit
+    sequence already present in the root path, and only inside WHY_NO_FIGURE, which quotes that
+    path. The path is recomputed by the specification rather than accepted from the output, so
+    this is a collision, not a channel.
     """
 
     def setUp(self):
@@ -625,6 +713,135 @@ class TheOutputCannotCarryAFabricatedFigure(Fixture):
         out = module.report(self.root)
         self.assertIn("projected_effort_estimate", out)
         self.assertNotEqual(self.published_numbers(out), expected_numbers(self.root))
+
+
+    # ---- fourth round: the artifact a consumer actually receives ----------------------
+
+    def published_by_cli(self, *argv):
+        """What a CONSUMER gets, not what the test can reach in-process.
+
+        Every rule in this class used to run against `report()` in-process. A verifier put a
+        fabricated figure in `main()`'s `--json` branch, where `report()` never sees it, and
+        all 42 tests passed while the figure sat in real output.
+        """
+        proc = self.cli(*argv)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return proc
+
+    def test_the_json_mode_publishes_exactly_the_numbers_the_specification_names(self):
+        """THE EIGHTH BYPASS. `--json` is a separate branch of `main`, and it was unguarded."""
+        proc = self.published_by_cli("--json")
+        published = json.loads(proc.stdout)
+        self.assertEqual(dict(numeric_leaves(published)), expected_numbers(self.root))
+        from_values = {str(v) for _, v in numeric_leaves(published)}
+        prose = " ".join(s for s in strings_in(published))
+        unexplained = [n for n in NUMBER.findall(proc.stderr)
+                       if n not in from_values and n not in prose]
+        self.assertEqual(unexplained, [], "--json wrote numbers to stderr")
+
+    def test_the_json_mode_carries_no_number_in_a_sentence_that_is_unaccounted_for(self):
+        published = json.loads(self.published_by_cli("--json").stdout)
+        self.assertEqual(unaccounted_prose_numbers(published, self.root), [])
+
+    def test_the_report_carries_no_number_in_a_sentence_that_is_unaccounted_for(self):
+        self.assertEqual(unaccounted_prose_numbers(kpi.report(self.root), self.root), [])
+
+    def test_a_figure_smuggled_into_a_sentence_is_caught(self):
+        """NEGATIVE CONTROL, and the verifier's own reproduction. Three rounds declared this
+        uncoverable; it is covered, and the number does not have to be alone in the string."""
+        fabricated = (kpi.report(self.root)["registries_distinct"] * 40
+                      + kpi.report(self.root)["measurements_raw"] * 1200000)
+        for sentence in ("reconciliation is running at about {} hours".format(fabricated),
+                         "{}".format(fabricated),
+                         "cost so far: ${:,} and climbing".format(fabricated)):
+            with self.subTest(sentence=sentence):
+                out = kpi.report(self.root)
+                out["reconciliation_chatter"] = sentence
+                self.assertNotEqual(unaccounted_prose_numbers(out, self.root), [])
+
+    def test_a_figure_smuggled_into_an_EXISTING_sentence_is_caught(self):
+        """The harder case: not a new key, but a number appended to a sentence that is
+        legitimately there and legitimately carries clause numbers already."""
+        out = kpi.report(self.root)
+        out["NO_THRESHOLD_RATIFIED"] += " Reconciliation has cost 3600040 tokens so far."
+        self.assertEqual(unaccounted_prose_numbers(out, self.root),
+                         [("$.NO_THRESHOLD_RATIFIED", "3600040")])
+
+    def test_the_prose_rule_holds_once_the_precondition_flips(self):
+        """The measurable branch prints a different sentence, and it quotes a filesystem path.
+        A rule that only held on the refusing branch would be a rule about today."""
+        real = kpi.domain_registries
+
+        def widened(root):
+            out = real(root)
+            out["registries_raw"] += 1
+            out["registries_distinct"] += 1
+            out["registries"].append({"name": "domains", "prefix": "DR-", "records": 2})
+            return out
+
+        kpi.domain_registries = widened
+        self.addCleanup(setattr, kpi, "domain_registries", real)
+        out = kpi.report(self.root)
+        self.assertNotEqual(out["status"], kpi.NOT_MEASURABLE)
+        self.assertEqual([v for v in unaccounted_prose_numbers(out, self.root)
+                          if not v[0].startswith("$.registries")], [])
+
+    def test_the_verifiers_json_only_attack_replayed_as_a_SUBPROCESS_is_caught(self):
+        """The reproduction of the eighth bypass, in the form that found it.
+
+        It asserts two things in order, like the replay above: that the IN-PROCESS guard is
+        blind to it, which is the finding, and that reading the published artifact catches it.
+        """
+        patched = pathlib.Path(self._tmp.name) / "json_only_kpi.py"
+        source = CLI.read_text(encoding="utf-8")
+        needle = "    if args.json:\n"
+        self.assertIn(needle, source)
+        injection = ('    if args.json:\n'
+                     '        span = out["registries_distinct"]\n'
+                     '        weight = out["measurements_raw"]\n'
+                     '        out["reconciliation_projection_json_only"] = span * 40 + weight * 1200000\n')
+        patched.write_text(source.replace(needle, injection, 1), encoding="utf-8")
+
+        spec = importlib.util.spec_from_file_location("json_only_kpi", patched)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        # The finding: report() is untouched, so every in-process rule passes.
+        self.assertEqual(self.published_numbers(module.report(self.root)),
+                         expected_numbers(self.root))
+
+        env = dict(os.environ)
+        env["PYTHONPATH"] = os.pathsep.join(
+            [str(CLI.parent)] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+        proc = subprocess.run([sys.executable, str(patched), "--root", str(self.root), "--json"],
+                              capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        published = json.loads(proc.stdout)
+        self.assertIn("reconciliation_projection_json_only", published)
+        self.assertNotEqual(dict(numeric_leaves(published)), expected_numbers(self.root))
+
+    def test_the_module_is_flat_so_the_reachability_walk_is_exhaustive(self):
+        """The reachability guard walks TOP-LEVEL functions reached through bare-name calls. A
+        verifier pointed out it therefore cannot see a method, a nested function or a lambda --
+        it neither requires them to be reachable nor reports them as orphans.
+
+        Rather than grow the walk to chase every binding form, the module is held FLAT, which
+        is the property that makes the walk exhaustive. It is flat today; this test is what
+        makes it stay flat, and it fails loudly the day someone needs a class here.
+        """
+        tree = ast.parse(CLI.read_text(encoding="utf-8"))
+        classes = [n.name for n in tree.body if isinstance(n, ast.ClassDef)]
+        nested, lambdas = [], []
+        for fn in tree.body:
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for node in ast.walk(fn):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node is not fn:
+                    nested.append(node.name)
+                elif isinstance(node, ast.Lambda):
+                    lambdas.append(node.lineno)
+        self.assertEqual((classes, nested, lambdas), ([], [], []),
+                         "the KPI module stopped being flat, so the reachability walk above "
+                         "no longer covers every function in it")
 
 
 class ThePublishedRecordStillSaysThis(unittest.TestCase):
