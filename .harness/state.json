@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 32,
+        "tasks_done": 34,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-08-30T22:54:48Z"
+        "last_outcome_at": "2026-08-30T23:25:50Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 2,
+        "tasks_done": 3,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-05T06:21:39Z"
+        "last_outcome_at": "2026-08-30T23:23:09Z"
       },
       "probe-x": {
         "tasks_done": 5,
@@ -673,6 +673,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-08-25T04:09:32Z"
+      },
+      "verifier-t421": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-30T23:26:44Z"
       }
     }
   },

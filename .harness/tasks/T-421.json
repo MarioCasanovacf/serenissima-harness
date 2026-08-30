@@ -19,6 +19,11 @@
       "ts": "2026-08-30T23:00:58Z",
       "agent": "verifier-t421",
       "note": "HANDOFF -> verifier: Second-verdict request: adversarial pass found two blocking escapes (TOCTOU activation/parameter forgery; consolidations-never-decay) against reputation.py Phase B (T-420, already reopened with matching reproduction). Replay race_poc2.py / race_poc3_params.py / decay_evasion_test.py from this session's scratchpad against a fresh scratch root before confirming or refuting. Full detail in prior note on this task."
+    },
+    {
+      "ts": "2026-08-30T23:26:44Z",
+      "agent": "main",
+      "note": "DONE. T-421's mandate -- adversarially attack Phase B for capture, inflation, and any flag-flip without the operator -- was fully executed by verifier-t421, which found two REAL blocking escapes (TOCTOU activation/parameter forgery; consolidations-never-decay) and correctly reopened T-420. Both were closed in the mechanism (T-420 round 2) and, critically, INDEPENDENTLY re-verified by a third agent (verifier-t420-r2), which re-ran verifier-t421's own PoC scripts verbatim against the hardened code: race_poc2.py and race_poc3_params.py went from 2/3 and 1/1 hits to 0 hits in 3000 attempts each, and decay_evasion_test.py confirmed consolidations now follow a real EMA curve (1.78 -> 0.007 over 240d) instead of a permanent floor. The adversarial verification this task exists to perform happened, drove real fixes, and the fixes are confirmed by a party that is neither the producer nor the coordinator. Non-blocking family-1 findings (self-publish farming, Sybil across identity strings) are the standing FORCE-IDENTITY-A gap, bounded by PR-061 scope (operational-only, non-stakeable, D-17), and the caveat now prints on rank/dispatch so no consumer reads a score as more than a self-asserted figure. Closing on the strength of the independent re-verification, not the coordinator's own say-so."
     }
   ]
 }

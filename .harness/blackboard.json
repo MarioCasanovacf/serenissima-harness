@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T23:12:50Z",
+  "updated_at": "2026-08-30T23:26:44Z",
   "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5414,7 +5414,7 @@
     "T-418": {
       "epic": "gen-7-assembly-integrity",
       "title": "Deliberation-integrity guards: duration floor, discussion evidence, timestamp sanity",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [
@@ -5433,13 +5433,13 @@
       },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main",
-      "completed_at": "2026-08-30T22:54:48Z",
+      "completed_at": "2026-08-30T23:22:55Z",
       "completed_by": "harness-verifier"
     },
     "T-419": {
       "epic": "gen-7-assembly-integrity",
       "title": "Adversarial replay of the integrity guards",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -5452,12 +5452,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-08-30T09:08:35Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-08-30T23:23:09Z",
+      "completed_by": "harness-verifier"
     },
     "T-420": {
       "epic": "gen-7-reputation",
       "title": "reputation.py Phase B: EMA decay and operational-consequence engine BEHIND AN ACTIVATION FLAG",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5474,13 +5476,13 @@
       },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-08-30T23:25:50Z",
+      "completed_by": "verifier-t420-r2"
     },
     "T-421": {
       "epic": "gen-7-reputation",
       "title": "Adversarial verify of Phase B: capture, inflation, and the flag",
-      "status": "review",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -5498,7 +5500,9 @@
         "ts": "2026-08-30T23:00:58Z"
       },
       "created_at": "2026-08-30T09:08:35Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-08-30T23:26:44Z",
+      "completed_by": "main"
     }
   }
 }
