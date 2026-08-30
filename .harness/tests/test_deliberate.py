@@ -434,6 +434,56 @@ class DeliberationIntegrityGuards(unittest.TestCase):
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("not an alternative", r.stderr)
 
+    def test_emptying_alternatives_after_voting_does_not_skip_discussion(self):
+        """T-419 round-2 escape: hand-editing alternatives to [] made
+        undiscussed_alternatives vacuously empty and conclude passed a
+        zero-discussion docket. The requirement is now derived from the ballots
+        too, so emptying the field removes nothing that must be discussed."""
+        did = self.convene(("A", "B"))
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        data = self.dossier(did)
+        data["alternatives"] = []          # the exact attack
+        self.write_dossier(did, data)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no discussion recorded", r.stderr)
+
+    def test_deleting_the_alternatives_key_after_voting_is_caught(self):
+        did = self.convene(("A", "B"))
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        data = self.dossier(did)
+        del data["alternatives"]           # key-deletion variant
+        self.write_dossier(did, data)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no discussion recorded", r.stderr)
+
+    def test_conclude_on_no_candidates_at_all_is_refused_as_malformed(self):
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        # No alternatives, no candidate named in any ballot OR prior: nothing
+        # to decide among at all.
+        data["alternatives"] = []
+        data["priors"] = {}
+        data["final_ballots"] = {"w1": {"ranking": [], "weight": 1.0, "voted_at": hc.now_iso()}}
+        self.write_dossier(did, data)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no alternatives to decide among", r.stderr)
+
+    def test_emptying_alternatives_still_concludes_if_every_candidate_was_discussed(self):
+        """The fix must not break the honest path: with the field emptied but
+        every ballot candidate genuinely discussed, conclude still succeeds."""
+        did = self.convene(("A", "B"))
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w2", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        data = self.dossier(did)
+        data["alternatives"] = []
+        self.write_dossier(did, data)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
     def test_discuss_before_convening_is_refused(self):
         r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
                          "--proposer", "w1", "--alternatives", "A", "--alternatives", "B")

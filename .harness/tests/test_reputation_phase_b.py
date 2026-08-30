@@ -307,6 +307,105 @@ class TheOneAuthorizedConfigurationRuns(GateFixture):
         self.assertAlmostEqual(score2, score1 * 3.0, places=3)
 
 
+class VerificationIsBoundToTheBytesNotTheFile(GateFixture):
+    """T-420 round 2, the TOCTOU escape. The prior code read the constitutional
+    file twice -- once for the payload, once inside signature verification --
+    with check_anchor's subprocess in the window, so a same-OS-user process
+    (D-17) could swap the bytes between the reads and make a forged activated
+    payload verify against the genuine signed bytes. The fix reads once and
+    threads the bytes through; these tests pin that verification is bound to
+    the argument bytes, and that the payload is read exactly once."""
+
+    def test_verify_uses_argument_bytes_even_if_the_file_is_swapped(self):
+        self.enroll()
+        path = self.write_constitutional(activation="on", half_life=45.0)
+        sig = sign(path, self.operator_key)
+        genuine = path.read_bytes()
+        # Swap the file to garbage. Verifying the GENUINE bytes still succeeds,
+        # because verification never re-reads the file.
+        path.write_bytes(b"{}not-the-signed-bytes")
+        fp = rep._verify_constitutional_signature(self.root, genuine, sig)
+        self.assertTrue(fp)
+        # Restore the genuine file. Verifying TAMPERED bytes still FAILS,
+        # because verification is bound to the bytes passed in, not the file.
+        path.write_bytes(genuine)
+        with self.assertRaises(w.TrustError):
+            rep._verify_constitutional_signature(self.root, genuine + b" ", sig)
+
+    def test_constitutional_status_reads_the_payload_exactly_once(self):
+        tree = ast.parse(REPUTATION_PY.read_text(encoding="utf-8"))
+        fn = next(n for n in ast.walk(tree)
+                  if isinstance(n, ast.FunctionDef) and n.name == "_constitutional_status")
+        reads = [c for c in ast.walk(fn)
+                 if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                 and c.func.attr in ("read_bytes", "read_text")]
+        opens = [c for c in ast.walk(fn)
+                 if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+                 and c.func.id == "open"]
+        self.assertEqual(len(reads), 1,
+                         "the constitutional payload must be read exactly once (TOCTOU)")
+        self.assertEqual(opens, [], "no second read of the payload via open()")
+
+    def test_swap_after_verify_cannot_return_a_forged_payload(self):
+        """End to end: a VERIFIED, activated file, then the on-disk bytes are
+        swapped to an activated forgery with no valid signature. Because status
+        is derived from the single read, the module cannot return the forgery
+        as verified -- it either reports the genuine payload or fails."""
+        self.enroll()
+        path = self.write_constitutional(activation="off", half_life=45.0)
+        sign(path, self.operator_key)
+        # Forge an activated payload with the SAME namespace but no re-sign.
+        forged = json.dumps({"schema_version": 1, "namespace": rep.CONSTITUTIONAL_NAMESPACE,
+                             "activation": "on", "ema_half_life_days": 9999.0,
+                             "weights": {"rule_authorship": 500.0}}).encode("utf-8")
+        path.write_bytes(forged)
+        payload, st = rep._phase_b_activation(self.root)
+        # The forged bytes do not carry a valid signature, so activation refuses.
+        self.assertIsNone(payload)
+        self.assertEqual(st["state"], "BAD_SIGNATURE")
+
+
+class ConsolidationsDecayLikeEveryOtherComponent(GateFixture):
+    """T-420 round 2, the decay-evasion escape. decayed_f3 (consolidations) was
+    the raw count times a weight, with no EMA decay -- a permanent, non-decaying
+    floor that let a dormant identity outrank active ones forever. Now it decays
+    by the consolidated record's own timestamp, like f1/f2/f4/f5."""
+
+    def _seed_consolidation(self, author, when):
+        recs = {"PR-900": {"id": "PR-900", "status": "active", "published_by": author,
+                          "published_at": when, "tier": 2, "subject": "s", "ratio": "r"}}
+        for i, follower in enumerate(("follower-1", "follower-2", "follower-3")):
+            pid = "PR-90%d" % (i + 1)
+            recs[pid] = {"id": pid, "status": "active", "published_by": follower,
+                        "published_at": when, "tier": 2, "subject": "s", "ratio": "r",
+                        "relations": [{"target": "PR-900", "type": "follows",
+                                       "below_target_tier": False}]}
+        for pid, r in recs.items():
+            (self.root / "precedents" / (pid + ".json")).write_text(
+                json.dumps(r), encoding="utf-8")
+
+    def test_a_years_old_consolidation_does_not_hold_a_permanent_floor(self):
+        self._seed_consolidation("worker-a", "2020-01-01T00:00:00Z")
+        precedents = rep.load_precedents(self.root)
+        bb = rep.load_blackboard_tasks(self.root)
+        reopened = rep.load_reopened_tasks(self.root)
+        # Sanity: the record really is consolidated (3 qualifying applications).
+        f3 = rep.figure_consolidations_achieved("worker-a", precedents)
+        self.assertEqual(f3["value"], 1)
+
+        fresh = rep._compute_phase_b_figures(
+            "worker-a", self.root, precedents, bb, reopened, half_life_days=30.0,
+            now_dt=dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc))
+        later = rep._compute_phase_b_figures(
+            "worker-a", self.root, precedents, bb, reopened, half_life_days=30.0,
+            now_dt=dt.datetime(2020, 9, 1, tzinfo=dt.timezone.utc))  # ~8 half-lives
+        c_fresh = fresh["decayed_components"]["consolidations"]
+        c_later = later["decayed_components"]["consolidations"]
+        self.assertGreater(c_fresh, 0.0)
+        self.assertLess(c_later, 0.05 * c_fresh,
+                        "consolidations must decay, not sit as a permanent floor")
+
+
 class RankStaysAConsequenceFreeReport(GateFixture):
 
     def test_rank_runs_without_any_constitutional_file(self):
@@ -386,6 +485,7 @@ class LiveRootSmoke(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         data = json.loads(r.stdout)
         self.assertEqual(data["authority"], "PR-061 (RAT-01) / PR-060")
+        self.assertIn("self-asserted", data["caveat"])  # T-421: Phase B carries the caveat too
         self.assertIn("reporting only", data["consequence"])
         scores = [item["total_score"] for item in data["rankings"]]
         self.assertEqual(scores, sorted(scores, reverse=True))

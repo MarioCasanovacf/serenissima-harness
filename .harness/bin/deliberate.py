@@ -261,12 +261,33 @@ def refuse_future_stamps(dossier: Dict[str, Any]) -> bool:
     return False
 
 
+def effective_alternatives(dossier: Dict[str, Any]) -> Set[str]:
+    """The candidates a conclusion actually decides among: the DECLARED
+    alternatives UNION every candidate that appears in a ballot or a prior.
+
+    T-419 round-2 escape: keying the discussion requirement on the mutable
+    `alternatives` field alone let an attacker hand-edit it to `[]` after
+    voting, so `undiscussed_alternatives` came back vacuously empty and
+    conclude waved a zero-discussion docket through. The candidates are ALSO
+    written into the ballots the tally runs on, so deriving the set from the
+    ballots too means emptying `alternatives` removes nothing that has to be
+    discussed. A conclusion with no candidate at all anywhere is malformed and
+    refused separately (see cmd_conclude)."""
+    alts: Set[str] = set(str(a) for a in (dossier.get("alternatives", []) or []))
+    for b in (dossier.get("final_ballots", {}) or {}).values():
+        alts.update(str(c) for c in (b or {}).get("ranking", []) or [])
+    for p in (dossier.get("priors", {}) or {}).values():
+        alts.update(str(c) for c in (p or {}).get("ranking", []) or [])
+    return alts
+
+
 def undiscussed_alternatives(dossier: Dict[str, Any]) -> List[str]:
-    """Alternatives with no discussion round carrying non-empty text.
-    Membership and text are re-validated here, not trusted from write time:
-    a hand-edited empty round, or a round re-pointed at a nonexistent
-    alternative, counts for nothing."""
-    alternatives = list(dossier.get("alternatives", []))
+    """Effective alternatives (see effective_alternatives) with no discussion
+    round carrying non-empty text. Membership and text are re-validated here,
+    not trusted from write time: a hand-edited empty round, a round re-pointed
+    at a nonexistent alternative, or an emptied `alternatives` field counts for
+    nothing."""
+    alternatives = effective_alternatives(dossier)
     discussed = set()
     for entry in dossier.get("discussion", []) or []:
         if not isinstance(entry, dict):
@@ -275,7 +296,7 @@ def undiscussed_alternatives(dossier: Dict[str, Any]) -> List[str]:
         text = str(entry.get("text", "")).strip()
         if alt in alternatives and text:
             discussed.add(alt)
-    return [a for a in alternatives if a not in discussed]
+    return sorted(a for a in alternatives if a not in discussed)
 
 
 def unanimity_flag(dossier: Dict[str, Any]) -> bool:
@@ -546,9 +567,14 @@ def cmd_discuss(args) -> int:
                   "discussion happens inside a convened deliberation (schedule first)",
                   file=sys.stderr)
             return 1
-        if alt not in dossier.get("alternatives", []):
+        # Accept any EFFECTIVE alternative (declared or named in a prior), so a
+        # candidate that will require discussion at conclude can always be
+        # discussed -- no deadlock -- while a genuinely unrelated string is
+        # still refused.
+        eff = effective_alternatives(dossier)
+        if alt not in eff:
             print(f"refused: {alt!r} is not an alternative of {args.dossier_id} "
-                  f"(alternatives: {', '.join(dossier.get('alternatives', []))})",
+                  f"(alternatives: {', '.join(sorted(eff))})",
                   file=sys.stderr)
             return 1
 
@@ -622,6 +648,14 @@ def cmd_conclude(args) -> int:
 
         # Guard 1: discussion evidence, re-validated here (never trusted from
         # write time). Every alternative needs at least one non-empty round.
+        # Defense in depth (T-419 round 2): a conclusion that decides among no
+        # candidate at all -- alternatives emptied AND no ballot names one --
+        # is malformed, not a pass. Refuse rather than conclude on nothing.
+        if not effective_alternatives(dossier):
+            print(f"refused: {args.dossier_id} has no alternatives to decide among "
+                  f"(the alternatives field is empty and no ballot names a candidate); "
+                  f"a conclusion on nothing is malformed (T-418)", file=sys.stderr)
+            return 1
         missing = undiscussed_alternatives(dossier)
         if missing:
             print(f"refused: no discussion recorded for alternative(s) "

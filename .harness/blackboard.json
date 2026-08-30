@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T22:58:03Z",
-  "updated_by": "verifier-t419",
+  "updated_at": "2026-08-30T23:12:50Z",
+  "updated_by": "main",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5414,7 +5414,7 @@
     "T-418": {
       "epic": "gen-7-assembly-integrity",
       "title": "Deliberation-integrity guards: duration floor, discussion evidence, timestamp sanity",
-      "status": "done",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [
@@ -5428,8 +5428,8 @@
       "handoff": {
         "to_role": "verifier",
         "from": "main",
-        "note": "T-418 built: three deliberation-integrity guards, each answering a D-001 defect, each with its negative control. (1) DISCUSSION EVIDENCE: new 'discuss' verb (eligibility-gated, non-empty --text, --re must name a real alternative, status must be deliberating); conclude REFUSES unless every alternative carries at least one non-empty round, RE-VALIDATED at conclude so a hand-edited empty round or one pointed at a nonexistent alternative counts for nothing. Deliberate design note: the task title says 'duration floor' but I did NOT implement a wall-clock threshold -- no such threshold is ratified (currency.py doctrine) and speed is not the defect, absence of discussion is; 71 fast seconds WITH real discussion is legal, zero discussion is not however slow. (2) UNANIMITY FLAG: every final ballot identical to its voter's own prior -> record carries deliberation_flag=NO-DELIBERATION-OBSERVED; flag NOT block (unanimity can be honest); does not fire if any voter arrived without a prior or any ballot differs. (3) FUTURE-STAMP REFUSAL: exhaustive recursive scan of every ISO-shaped leaf in the dossier; any stamp beyond machine clock + 300s skew refuses every WRITE verb (sponsor/prior/discuss/vote/conclude); reads (show) stay open so a tampered dossier is auditable; unparseable stamp fails closed; skew constant is engineering tolerance not a constitutional threshold. Drive-by: T-417 verifier round-2 non-blocking finding 2 (non-dict colegiado value crashed with AttributeError) converted to clean 'roster inconsistent' refusal. Evidence: pytest .harness/tests/test_deliberate.py -q -> 41 passed (was 24); full suite 815 passed, 4 skipped. Regression class TheD001DefectCannotRecur replays D-001's shape under the live roster + guards together: clerk proposer never opens the dossier, and a legitimate non-clerk docket still cannot conclude without discussion. Files: .harness/bin/deliberate.py, .harness/tests/test_deliberate.py. Verify hints: try to conclude with a discussion round whose text is whitespace; try a future stamp nested in a ballot; check the flag fires on the exact D-001 priors==ballots pattern; check reads survive a future-dated dossier.",
-        "ts": "2026-08-30T22:49:28Z"
+        "note": "Round 2: T-419's blocking escape closed in the mechanism. The escape was that emptying the dossier's 'alternatives' field (or deleting the key) after voting made undiscussed_alternatives() vacuously [] so conclude passed a zero-discussion docket. Fix: new effective_alternatives() derives the required-discussion set from the UNION of declared alternatives + every candidate named in a ballot + every candidate named in a prior. The candidates are written into the ballots the tally runs on, so emptying 'alternatives' removes nothing that must be discussed. undiscussed_alternatives() and conclude both key on the effective set. Defense in depth: conclude refuses 'no alternatives to decide among' when the effective set is empty (alternatives emptied AND no ballot/prior names a candidate) -- a conclusion on nothing is malformed. discuss now accepts any effective alternative so a write-in candidate that will need discussion can always be discussed (no deadlock), while an unrelated string is still refused. Honest path preserved: emptying 'alternatives' but genuinely discussing every ballot candidate still concludes (test). Evidence: pytest .harness/tests/test_deliberate.py -q -> 46 passed (was 42); full suite 824 passed, 4 skipped. 4 new tests replay T-419's exact repro (empty-list and key-deletion variants), the malformed-empty case, and the honest-path non-regression. Files: .harness/bin/deliberate.py (effective_alternatives, undiscussed_alternatives, cmd_conclude, cmd_discuss), .harness/tests/test_deliberate.py. Verify hints: try candidates only in priors (not ballots); try a ballot naming a candidate never declared and never discussed (should refuse); confirm the honest full lifecycle still concludes.",
+        "ts": "2026-08-30T23:12:50Z"
       },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main",
@@ -5439,14 +5439,14 @@
     "T-419": {
       "epic": "gen-7-assembly-integrity",
       "title": "Adversarial replay of the integrity guards",
-      "status": "claimed",
+      "status": "open",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
         "T-418"
       ],
-      "claimed_by": "verifier-t419",
-      "claim_expires_at": "2026-08-30T23:58:03Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-419.json",
       "artifacts": [],
@@ -5457,7 +5457,7 @@
     "T-420": {
       "epic": "gen-7-reputation",
       "title": "reputation.py Phase B: EMA decay and operational-consequence engine BEHIND AN ACTIVATION FLAG",
-      "status": "done",
+      "status": "review",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5469,29 +5469,34 @@
       "handoff": {
         "to_role": "verifier",
         "from": "main",
-        "note": "T-420 built: the Phase B constitutional gate. Design: under D-17 the only boundary any agent cannot cross is the operator's off-machine private key, so activation and constitutional parameters live ONLY in .harness/constitutional/reputation.json + detached ssh signature, verified against the enrolled trust anchor (warrant.check_anchor reused as-is; NEW namespace harness-constitutional, never harness-warrant). dispatch (the one consequence verb) refuses unless the file VERIFIES and says activation on, and takes half-life/weights from the signed payload only; --half-life-days on dispatch is refused outright even when it agrees with the file. rank stays a consequence-free report, accepts trial params, labels them ratified/NOT RATIFIED. audit-immunity rewritten: the hardcoded six-True PASS dict is gone; it now reports mechanical figures (file state, activation, signed vs default params) and labels the rest NOT MECHANICALLY EVALUABLE with reasons, NO verdict (currency.py precedent). Evidence: pytest .harness/tests/test_reputation_phase_b.py -q -> 28 passed (was 6); full suite 786 passed, 4 skipped. Attack tests use REAL keys: absent/unsigned/wrong-key/wrong-namespace/tampered/activation-off/unenrolled all refuse; signed weights provably reach the score (3x weight -> 3x score); AST test pins the exhaustive map of write-capable calls to exactly one (allowed_signers rebuild in system temp dir) and that no ssh-keygen -Y mode other than verify appears. Zero-writes snapshot extended to every Phase B verb including activated dispatch. Bootstrap: before enrollment the gate is CLOSED (UNVERIFIABLE), not open. Files: .harness/bin/reputation.py, .harness/tests/test_reputation_phase_b.py. Verify hints: try to activate without the operator key; try to smuggle a param via CLI/env; check the AST map is exhaustive (not an allow-set that rots); check rank cannot be consumed as a gate.",
-        "ts": "2026-08-30T22:35:41Z"
+        "note": "Round 2: both blocking escapes closed IN THE MECHANISM, plus two non-blocking hardenings folded in. (1) TOCTOU race (verifier's Family-3 escape): _constitutional_status now reads the payload bytes EXACTLY ONCE and threads them to _verify_constitutional_signature, which takes bytes (not a path) and verifies over them via ssh-keygen stdin. There is no second file read for check_anchor's subprocess to sit between, so no same-OS-user byte-swap can make a forged activated payload verify against genuine signed bytes. Tests: verify uses argument bytes even if the file is swapped to garbage; verifying tampered bytes fails even if the file is genuine; AST test pins _constitutional_status to exactly one read_bytes and zero open(); end-to-end swap-to-forgery returns BAD_SIGNATURE not the forgery. (2) Decay evasion (verifier's Family-2 escape): decayed_f3 (consolidations) now calls _compute_ema_decay per consolidated record's published_at, like f1/f2/f4/f5 -- a years-old consolidation no longer sits as a permanent non-decaying floor. Test: a 2020 consolidation's component decays to <5% after ~8 half-lives. (3) Non-blocking, folded in: rank/dispatch now print PHASE_B_CAVEAT (self-asserted identities / FORCE-IDENTITY-A open), matching Phase A's discipline; a non-numeric parameter in the signed file now refuses cleanly instead of raising uncaught ValueError. Family-1 (self-publish farming, Sybil across identity strings) is BOUNDED by PR-061 scope (operational-only, non-stakeable, D-17) and is the standing FORCE-IDENTITY-A gap, not newly opened here -- documented, not closed. Evidence: pytest .harness/tests/test_reputation_phase_b.py -q -> 32 passed (was 28); full suite 820 passed, 4 skipped. Files: .harness/bin/reputation.py, .harness/tests/test_reputation_phase_b.py. Verify hints: re-run the race PoCs (race_poc2.py, race_poc3_params.py) against the single-read version; confirm the AST single-read pin is non-vacuous; check consolidations now decay in a live rank.",
+        "ts": "2026-08-30T23:08:22Z"
       },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main",
-      "completed_at": "2026-08-30T22:44:29Z",
-      "completed_by": "verifier-t420"
+      "completed_at": null,
+      "completed_by": null
     },
     "T-421": {
       "epic": "gen-7-reputation",
       "title": "Adversarial verify of Phase B: capture, inflation, and the flag",
-      "status": "in_progress",
+      "status": "review",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
         "T-420"
       ],
-      "claimed_by": "verifier-t421",
-      "claim_expires_at": "2026-08-30T23:50:46Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-421.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "verifier-t421",
+        "note": "Second-verdict request: adversarial pass found two blocking escapes (TOCTOU activation/parameter forgery; consolidations-never-decay) against reputation.py Phase B (T-420, already reopened with matching reproduction). Replay race_poc2.py / race_poc3_params.py / decay_evasion_test.py from this session's scratchpad against a fresh scratch root before confirming or refuting. Full detail in prior note on this task.",
+        "ts": "2026-08-30T23:00:58Z"
+      },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main"
     }

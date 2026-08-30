@@ -797,6 +797,17 @@ def cmd_caveat(args):
 
 DEFAULT_HALF_LIFE_DAYS = 30.0
 
+# The self-assertion caveat, carried on every Phase B verb (T-421 non-blocking
+# finding: Phase A prints its CAVEAT everywhere, Phase B printed none). The
+# Sybil / FORCE-IDENTITY-A gap does not close in Phase B: identities are still
+# self-asserted strings, so a score is only as trustworthy as the identity it
+# names, and D-17 gives no in-process way to tell two identities apart.
+PHASE_B_CAVEAT = (
+    "identities are self-asserted (FORCE-IDENTITY-A open); a Phase B score is "
+    "only as trustworthy as the identity string it names, and consequence "
+    "attaches to OPERATIONAL parameters only (PR-060 split, RAT-01)."
+)
+
 # NOT RATIFIED defaults: used by the read-only `rank` report and clearly
 # labeled there. The consequence verb never reads these -- it takes its
 # parameters from the operator-signed constitutional file or refuses.
@@ -821,29 +832,41 @@ def _constitutional_path(root):
     return Path(root) / "constitutional" / "reputation.json"
 
 
-def _verify_constitutional_signature(root, payload_path, sig_path):
-    """Verify sig_path over the EXACT bytes of payload_path against the
-    anchored root key, in the harness-constitutional namespace. Returns the
-    verified fingerprint or raises warrant.TrustError.
+def _verify_constitutional_signature(root, payload_bytes, sig_path):
+    """Verify sig_path over the EXACT bytes PASSED IN against the anchored root
+    key, in the harness-constitutional namespace. Returns the verified
+    fingerprint or raises warrant.TrustError.
 
-    Mirrors warrant.verify_signature (same temp-dir allowed_signers rebuild,
-    same wrong-key check) but under this module's own namespace; the shared
-    three-check anchor validation is warrant.check_anchor, reused as-is."""
+    Takes payload_bytes, NOT a path (T-420 round 2, TOCTOU escape found by the
+    verifier): the prior version opened the file a SECOND time here while the
+    caller had already read it once for the payload, with check_anchor's
+    subprocess spawn sitting in the window. Under D-17 a concurrent process on
+    the same OS user could swap the file so the caller's read saw a forged
+    activated payload and ssh-keygen's read saw the genuine signed bytes --
+    verify passes, the module returns the forgery. A signature covers bytes, so
+    verification MUST run over the very bytes the decision is read from, and
+    those bytes are read exactly once (in _constitutional_status) and threaded
+    through here. Same discipline warrant.verify_signature states in its own
+    docstring; this module split it and paid for it.
+
+    The .sig read timing is safe to leave to ssh-keygen: a swapped signature
+    either fails to verify or would require the operator's key, which no
+    on-machine process holds (that IS the boundary)."""
     fp = warrant.check_anchor(root)
     with tempfile.TemporaryDirectory() as tmp:
         allowed = Path(tmp) / "allowed_signers"
         pub = (Path(root) / "trust" / "root.pub").read_text(encoding="utf-8").strip()
         allowed.write_text("operator {}\n".format(pub), encoding="utf-8")
-        with open(payload_path, "rb") as fh:
-            r = subprocess.run(
-                ["ssh-keygen", "-Y", "verify", "-f", str(allowed), "-I", "operator",
-                 "-n", CONSTITUTIONAL_NAMESPACE, "-s", str(sig_path)],
-                stdin=fh, text=True, capture_output=True)
+        r = subprocess.run(
+            ["ssh-keygen", "-Y", "verify", "-f", str(allowed), "-I", "operator",
+             "-n", CONSTITUTIONAL_NAMESPACE, "-s", str(sig_path)],
+            input=payload_bytes, capture_output=True)
+    out = (r.stdout or b"").decode("utf-8", "replace")
+    err = (r.stderr or b"").decode("utf-8", "replace")
     if r.returncode != 0:
         raise warrant.TrustError(
-            "SIGNATURE DOES NOT VERIFY for {}: {}".format(
-                Path(payload_path).name, (r.stderr or r.stdout).strip()))
-    seen = warrant.FINGERPRINT_RE.search(r.stdout or "")
+            "SIGNATURE DOES NOT VERIFY: {}".format((err or out).strip()))
+    seen = warrant.FINGERPRINT_RE.search(out)
     if not seen:
         raise warrant.TrustError(
             "ssh-keygen reported success without naming a signing key; refusing "
@@ -862,13 +885,23 @@ def _constitutional_status(root):
     path = _constitutional_path(root)
     sig = Path(str(path) + ".sig")
     st = {"path": str(path), "state": None, "detail": None, "payload": None}
-    if not path.exists():
+    # Read the payload bytes EXACTLY ONCE (T-420 round 2). Everything below --
+    # the parsed decision AND the signature verification -- is derived from
+    # this single `raw`, so no file swap between a decision-read and a
+    # verify-read is possible; there is only one read.
+    try:
+        raw = path.read_bytes()
+    except FileNotFoundError:
         st["state"] = "NOT_PRESENT"
         st["detail"] = "no constitutional file at {}".format(path)
         return st
+    except OSError as e:
+        st["state"] = "UNREADABLE"
+        st["detail"] = str(e)
+        return st
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as e:
+        payload = json.loads(raw)
+    except ValueError as e:
         st["state"] = "UNREADABLE"
         st["detail"] = str(e)
         return st
@@ -892,7 +925,8 @@ def _constitutional_status(root):
                         "checked authorizes nothing")
         return st
     try:
-        fp = _verify_constitutional_signature(root, path, sig)
+        # Verify over the SAME bytes we parsed, never a re-read of the file.
+        fp = _verify_constitutional_signature(root, raw, sig)
     except warrant.TrustError as e:
         st["state"] = "BAD_SIGNATURE"
         st["detail"] = str(e)
@@ -957,7 +991,19 @@ def _compute_phase_b_figures(identity, root, precedents, blackboard_tasks, reope
         decayed_f2 += w["citations_received"] * _compute_ema_decay(citing_rec.get("published_at"), now_dt, half_life_days)
 
     f3 = figure_consolidations_achieved(identity, precedents)
-    decayed_f3 = float(f3.get("value", 0)) * w["consolidations"]
+    # Decay consolidations by the authored record's own timestamp, exactly like
+    # f1/f2/f4/f5 (T-420 round 2, decay-evasion escape). The prior version
+    # multiplied the raw count by the weight and NEVER called _compute_ema_decay,
+    # so a consolidation from years ago was a permanent, non-decaying floor that
+    # let a dormant identity outrank active ones forever. Standing decays or it
+    # is not standing; there is no reason this one component is exempt.
+    threshold = f3.get("threshold", precedent.REITERATION_N)
+    decayed_f3 = 0.0
+    for d in f3.get("detail", []):
+        if d.get("c", 0) >= threshold:
+            rec = precedents.get(d.get("record"), {})
+            decayed_f3 += w["consolidations"] * _compute_ema_decay(
+                rec.get("published_at"), now_dt, half_life_days)
 
     f4 = figure_overrulings_sustained(identity, precedents, blackboard_tasks, reopened)
     decayed_f4 = 0.0
@@ -1035,6 +1081,7 @@ def cmd_rank(args):
         print(json.dumps({
             "phase": "B",
             "authority": "PR-061 (RAT-01) / PR-060",
+            "caveat": PHASE_B_CAVEAT,
             "consequence": "none: rank is reporting only (PR-061 authorizes "
                            "dispatch, not rank; PR-022 clause 4)",
             "half_life_days": half_life,
@@ -1051,6 +1098,7 @@ def cmd_rank(args):
               "(constitutional file: {})".format(
                   "RATIFIED by the signed constitutional file" if params_ratified
                   else "NOT RATIFIED (trial/default values)", st["state"]))
+        print("caveat: " + PHASE_B_CAVEAT)
         print("-" * 60)
         for idx, item in enumerate(ranked, 1):
             print("  #{:<2} {:<24} Score: {:>7.4f} (rules:{:.2f}, cites:{:.2f}, verdicts:{:.2f})".format(
@@ -1112,11 +1160,19 @@ def cmd_dispatch(args):
         return 4
 
     now_dt = _parse_ts_utc(getattr(args, "now", None))
-    half_life = float(payload.get("ema_half_life_days", DEFAULT_HALF_LIFE_DAYS))
-    weights = dict(DEFAULT_WEIGHTS)
-    for k, v in (payload.get("weights") or {}).items():
-        if k in weights:
-            weights[k] = float(v)
+    # The signed file is operator-authored, but a malformed numeric value in it
+    # should refuse cleanly, not crash (T-421 non-blocking finding). It is a
+    # signed constitutional file with a typo, and the operator should be told so.
+    try:
+        half_life = float(payload.get("ema_half_life_days", DEFAULT_HALF_LIFE_DAYS))
+        weights = dict(DEFAULT_WEIGHTS)
+        for k, v in (payload.get("weights") or {}).items():
+            if k in weights:
+                weights[k] = float(v)
+    except (TypeError, ValueError) as e:
+        print("refused: the signed constitutional file carries a non-numeric "
+              "parameter ({}); fix and re-sign it".format(e), file=sys.stderr)
+        return 1
 
     scored = []
     for cand in candidates:
@@ -1131,6 +1187,7 @@ def cmd_dispatch(args):
     dispatch_plan = {
         "phase": "B",
         "authority": "PR-061 (RAT-01) / PR-060 (Operational Parameter: Claim Priority Queue)",
+        "caveat": PHASE_B_CAVEAT,
         "constitutional_file": {
             "state": st["state"],
             "detail": st["detail"],
@@ -1155,6 +1212,7 @@ def cmd_dispatch(args):
         print("=" * 60)
         print("OPERATIONAL DISPATCH QUEUE RECOMMENDATION (PR-061, RAT-01)")
         print("=" * 60)
+        print("caveat: " + PHASE_B_CAVEAT)
         print("Constitutional file: {} -- {}".format(st["state"], st["detail"]))
         print("Parameters from signed file: half-life {}d, weights {}".format(
             half_life, json.dumps(weights, sort_keys=True)))
