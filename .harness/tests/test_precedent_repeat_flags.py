@@ -169,7 +169,7 @@ class TheGuardItself(unittest.TestCase):
 
     def test_store_once_is_applied_to_publish_and_confirm_only(self):
         src = (ROOT / ".harness" / "bin" / "precedent.py").read_text(encoding="utf-8")
-        self.assertIn("_refuse_repeats(p_pub, p_conf)", src)
+        self.assertIn("_refuse_repeats(p_pub, p_conf", src)
 
     def test_the_reason_for_refusing_over_accumulating_is_recorded(self):
         # A future reader will want to accumulate instead. The trade-off must be on file so

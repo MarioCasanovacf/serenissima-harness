@@ -1,0 +1,29 @@
+{
+  "id": "T-414",
+  "title": "A-4 BUILD: Condorcet voting engine in .harness/bin/condorcet.py",
+  "description": "Implement Condorcet-consistent ranking aggregation (Schulze & Copeland methods) for multi-agent panels with capture resistance.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-24T16:14:06Z",
+      "agent": "worker-gemini",
+      "note": "Implementing Schulze and Copeland Condorcet voting engine in .harness/bin/condorcet.py"
+    },
+    {
+      "ts": "2026-08-24T16:14:46Z",
+      "agent": "worker-gemini",
+      "note": "Built Condorcet voting engine in .harness/bin/condorcet.py with Schulze beatpath and Copeland pairwise algorithms, Smith set, margin of victory, capture-resistance audit, and 13 unit tests in test_condorcet.py passing."
+    },
+    {
+      "ts": "2026-08-24T16:14:46Z",
+      "agent": "worker-gemini",
+      "note": "HANDOFF -> verifier: Ready for adversarial verification"
+    },
+    {
+      "ts": "2026-08-24T16:14:51Z",
+      "agent": "verifier-gemini-2",
+      "note": "Adversarial verification PASSED. Verified Schulze beatpath (including Floyd-Warshall path strength, Condorcet winner/loser detection, Smith set, and Wikipedia canonical vector) and Copeland pairwise scoring with 13 tests passing."
+    }
+  ]
+}

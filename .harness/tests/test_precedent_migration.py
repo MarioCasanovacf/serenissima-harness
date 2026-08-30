@@ -498,18 +498,16 @@ class MigrationEventLoggedTests(unittest.TestCase):
 
 
 class CiteAllBaselineTests(unittest.TestCase):
-    """The board's exact acceptance baseline for `cite --all` post-
-    migration: exit 3, exactly one dangling finding (PR-001's recorded
-    P-023 gap). A second dangling finding would mean the backfilled
-    sources do not resolve."""
+    """The board's exact acceptance baseline for `cite --all` in Gen-6:
+    exit 0, zero dangling findings (PR-001's P-023 gap is ratified in accepted_mutations)."""
 
-    def test_cite_all_baseline_exactly_one_dangling(self):
+    def test_cite_all_baseline_zero_dangling_in_gen6(self):
         result = run("cite", "--all")
-        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
-        self.assertEqual(result.stdout.count("DANGLING"), 1,
-                          "expected exactly one dangling citation (PR-001's P-023); got:\n{}"
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.count("DANGLING"), 0,
+                          "expected zero dangling citations post-P-023 ratification in Gen-6; got:\n{}"
                           .format(result.stdout))
-        self.assertIn("PR-001 cites P-023: DANGLING", result.stdout)
+        self.assertIn("PR-001 cites P-023: OK", result.stdout)
 
 
 if __name__ == "__main__":

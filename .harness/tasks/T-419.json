@@ -1,0 +1,8 @@
+{
+  "id": "T-419",
+  "title": "Adversarial replay of the integrity guards",
+  "description": "Attack T-417/T-418 the way the verifiers attacked T-407/T-410: try to get a clerk ballot in under an aliased name, a backdated conclude, a discussion round that is an empty string. Verdict done or send back with reproduction.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

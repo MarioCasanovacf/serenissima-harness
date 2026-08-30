@@ -512,6 +512,8 @@ FLIP_EVENT = {
 PR_RE = re.compile(r"^PR-\d{3,}$")
 T_RE = re.compile(r"^T-\d{3,}$")
 P_RE = re.compile(r"^P-\d{3}$")
+C_RE = re.compile(r"^C-\d{3,}$")
+CASE_ID_RE = re.compile(r"^C-(\d+)$")
 GEN_RE = re.compile(r"^gen:\d+$")
 AGENT_RE = re.compile(r"^agent:[A-Za-z0-9_.-]+$")
 EVENT_RE = re.compile(r"^event:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
@@ -545,7 +547,7 @@ VALIDITY_BAREPATH_RE = re.compile(r"^path:(\S+)$")
 
 def token_kind(token):
     """Classify a citation token per SDR-10's grammar table, extended by
-    T-353/V1-02 with `doi` and `decision`. None if none match."""
+    T-353/V1-02 with `doi` and `decision`, and T-412/S-1 with `C` (case). None if none match."""
     if not isinstance(token, str):
         return None
     if PR_RE.match(token):
@@ -554,6 +556,8 @@ def token_kind(token):
         return "T"
     if P_RE.match(token):
         return "P"
+    if C_RE.match(token):
+        return "C"
     if GEN_RE.match(token):
         return "gen"
     if AGENT_RE.match(token):
@@ -666,6 +670,9 @@ def resolve_citation(token, root):
         return True  # V1-18: UNCHECKED, never dangling, by design.
     if kind == "decision":
         return _decision_task_half_exists(token)
+    if kind == "C":
+        hroot = Path(root).parent
+        return (cases_dir(hroot) / "{}.json".format(token)).exists()
     return False
 
 
@@ -879,15 +886,191 @@ def harness_root_for_acts(args, prec_root):
     """
     explicit = getattr(args, "harness_root", None)
     hroot = Path(explicit) if explicit else Path(prec_root).parent
-    if not ((hroot / "warrants").exists() or (hroot / "trust").exists()):
+    if not ((hroot / "warrants").exists() or (hroot / "trust").exists() or (hroot / "cases").exists()):
         return None, (
-            "cannot find the harness root: {} has no warrants/ or trust/ directory. "
+            "cannot find the harness root: {} has no warrants/, trust/ or cases/ directory. "
             "`--root` here is the PRECEDENTS directory (SDR-13) and signing needs the "
             "HARNESS root, which defaults to its parent. Pass --harness-root explicitly. "
             "This is refused rather than guessed because a wrong root would surface as "
             "'that name can sign nothing', which points at the wrong problem."
             .format(hroot))
     return hroot, None
+
+
+# --------------------------------------------------------------------------
+# Case Register (T-412 / S-1): cases presented to the precedent layer
+# --------------------------------------------------------------------------
+
+def cases_dir(hroot):
+    """The directory storing registered cases (T-412/S-1)."""
+    return Path(hroot) / "cases"
+
+
+def resolve_harness_root(args, prec_root):
+    """Resolve the harness root from args or prec_root."""
+    explicit = getattr(args, "harness_root", None)
+    if explicit:
+        return Path(explicit)
+    return Path(prec_root).parent
+
+
+def open_case(hroot, question, task, agent=None):
+    """Open a new registered case (T-412/S-1).
+
+    Registration precedes disposal: opening is intentionally cheap and biased
+    toward over-registration, while closing is gated.
+    """
+    if not (question or "").strip():
+        return None, "question must be non-empty"
+    if not (task or "").strip():
+        return None, "task must be non-empty"
+    cdir = cases_dir(hroot)
+    cdir.mkdir(parents=True, exist_ok=True)
+    existing = []
+    for p in cdir.glob("C-*.json"):
+        m = CASE_ID_RE.match(p.stem)
+        if m:
+            existing.append(int(m.group(1)))
+    next_num = max(existing) + 1 if existing else 1
+    case_id = "C-{:03d}".format(next_num)
+    ts = hc.now_iso()
+    rec = {
+        "id": case_id,
+        "question": question.strip(),
+        "task": task.strip(),
+        "opened_by": agent or hc.agent_id(),
+        "ts": ts,
+        "status": "open",
+        "disposal": None,
+    }
+    cpath = cdir / "{}.json".format(case_id)
+    hc.atomic_write_json(cpath, rec)
+    return rec, None
+
+
+def load_case(hroot, case_id):
+    """Load a registered case by ID, or None if not found."""
+    cdir = cases_dir(hroot)
+    cpath = cdir / "{}.json".format(case_id)
+    if not cpath.exists():
+        return None
+    try:
+        return json.loads(cpath.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def validate_case_for_disposal(hroot, case_id, verb_name):
+    """Validate that a case exists and is open for disposal by verb_name (T-412/S-1)."""
+    if not case_id:
+        return "--case is required on every {} (T-412/S-1)".format(verb_name)
+    if not CASE_ID_RE.match(case_id):
+        return "--case '{}' is not a valid case id format (must match ^C-\\d+$)".format(case_id)
+    cdir = cases_dir(hroot)
+    cpath = cdir / "{}.json".format(case_id)
+    if not cpath.exists():
+        return ("--case {} is not registered in {}. "
+                "A {} must dispose of a registered case (T-412/S-1). "
+                "Call 'precedent.py case open' first.".format(case_id, cdir, verb_name))
+    try:
+        data = json.loads(cpath.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return "--case {} could not be read from {}: {}".format(case_id, cpath, exc)
+    if data.get("status") == "disposed":
+        disp = data.get("disposal") or {}
+        return ("--case {} is already disposed by {} ({}). "
+                "A second disposal of one case is refused (T-412/S-1)."
+                .format(case_id, disp.get("verb", "unknown"), disp.get("ref", "unknown")))
+    return None
+
+
+def dispose_case(hroot, case_id, verb, ref, by, task, ts=None):
+    """Mark a registered case as disposed (T-412/S-1)."""
+    cdir = cases_dir(hroot)
+    cpath = cdir / "{}.json".format(case_id)
+    if not cpath.exists():
+        return False
+    try:
+        data = json.loads(cpath.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    data["status"] = "disposed"
+    data["disposal"] = {
+        "verb": verb,
+        "ref": ref,
+        "by": by,
+        "task": task,
+        "ts": ts or hc.now_iso(),
+    }
+    hc.atomic_write_json(cpath, data)
+    return True
+
+
+def cmd_case_open(args):
+    prec = resolve_root(args)
+    hroot = resolve_harness_root(args, prec)
+    rec, err = open_case(hroot, args.question, args.task, args.agent)
+    if err:
+        return refuse("case_open_refused", err, prec, task=args.task)
+    emit_event(prec, "case_opened", id=rec["id"], question=rec["question"],
+               task=rec["task"], opened_by=rec["opened_by"])
+    if getattr(args, "json", False):
+        print(json.dumps(rec, indent=2, ensure_ascii=False))
+    else:
+        print("opened case {}: {!r}".format(rec["id"], rec["question"]))
+    return 0
+
+
+def cmd_case_list(args):
+    prec = resolve_root(args)
+    hroot = resolve_harness_root(args, prec)
+    cdir = cases_dir(hroot)
+    cases = []
+    if cdir.exists():
+        for p in sorted(cdir.glob("C-*.json")):
+            try:
+                cases.append(json.loads(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+    if args.status:
+        cases = [c for c in cases if c.get("status") == args.status]
+    if getattr(args, "json", False):
+        print(json.dumps(cases, indent=2, ensure_ascii=False))
+        return 0
+    print("registered cases ({}):".format(len(cases)))
+    for c in cases:
+        disp = c.get("disposal")
+        disp_str = "open" if c.get("status") == "open" else "disposed by {} ({})".format(
+            disp.get("verb") if disp else "?", disp.get("ref") if disp else "?")
+        print("  {} [{}] task={}: {}".format(c["id"], disp_str, c.get("task"), c.get("question")))
+    return 0
+
+
+def cmd_case_show(args):
+    prec = resolve_root(args)
+    hroot = resolve_harness_root(args, prec)
+    cdir = cases_dir(hroot)
+    cpath = cdir / "{}.json".format(args.case_id)
+    if not cpath.exists():
+        print("refused: case '{}' not found in {}".format(args.case_id, cdir), file=sys.stderr)
+        return 1
+    try:
+        data = json.loads(cpath.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print("error reading case file: {}".format(exc), file=sys.stderr)
+        return 1
+    if getattr(args, "json", False):
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        return 0
+    print("Case {}".format(data["id"]))
+    print("  Question:  {}".format(data.get("question")))
+    print("  Task:      {}".format(data.get("task")))
+    print("  Opened by: {} at {}".format(data.get("opened_by"), data.get("ts")))
+    print("  Status:    {}".format(data.get("status")))
+    if data.get("disposal"):
+        d = data["disposal"]
+        print("  Disposal:  {} via {} by {} at {}".format(d.get("verb"), d.get("ref"), d.get("by"), d.get("ts")))
+    return 0
 
 
 def cmd_distinguish(args):
@@ -897,6 +1080,12 @@ def cmd_distinguish(args):
     if hroot is None:
         return refuse("distinguish_refused", why, root, nearest=args.nearest,
                       case=args.case, by=args.by)
+
+    case_err = validate_case_for_disposal(hroot, args.case, "distinguish")
+    if case_err:
+        return refuse("distinguish_refused", case_err, root, nearest=args.nearest,
+                      case=args.case, by=args.by)
+
     facts = resolve_ratio_like(args)
     records = scan_registry(root)
     by_id = {r["id"]: r for _, r in records}
@@ -936,6 +1125,9 @@ def cmd_distinguish(args):
         return refuse("distinguish_refused", str(exc), root, nearest=args.nearest,
                       case=args.case, by=args.by)
 
+    dispose_case(hroot, args.case, "distinguish", "{}_{}".format(args.by, act["seq"]),
+                 args.by, args.task, act.get("ts"))
+
     emit_event(root, "case_distinguished", nearest=args.nearest, case=args.case,
                by=args.by, act_seq=act["seq"], task=act["task"])
     print("distinguished {} by citing {} (act {}#{})".format(
@@ -953,12 +1145,12 @@ def resolve_ratio_like(args):
 
 
 def disposition_counts(root, hroot=None):
-    """Cases disposed by CITATION versus by LEGISLATION.
+    """Cases disposed by CITATION versus by LEGISLATION (T-412 / S-1).
 
-    Two roots, for the reason spelled out in harness_root_for_acts: `root` is the PRECEDENTS
-    directory and holds the legislation side; `hroot` is the HARNESS root and holds the acts.
-
-    READ THE DENOMINATOR NOTE BELOW BEFORE QUOTING ANY OF THESE NUMBERS. It is not a caveat.
+    Reports three buckets:
+      - by_citation (distinguish acts with registered case)
+      - by_legislation_registered (publishes carrying a registered case id)
+      - by_legislation_pre_register (records published before C-001, frozen)
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import attest
@@ -977,6 +1169,18 @@ def disposition_counts(root, hroot=None):
                              "signed": a.get("_signed"),
                              "ts": a.get("ts")})
 
+    cdir = cases_dir(hroot)
+    cases = []
+    if cdir.exists():
+        for p in sorted(cdir.glob("C-*.json")):
+            try:
+                cases.append(json.loads(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+
+    c001 = next((c for c in cases if c.get("id") == "C-001"), None)
+    c001_ts = c001.get("ts") if c001 else None
+
     records = [r for _, r in scan_registry(root)]
     legislated = [r for r in records if r.get("status") == "active"]
 
@@ -984,40 +1188,77 @@ def disposition_counts(root, hroot=None):
         return len({key(r) for r in rows})
 
     cited_raw, cited_distinct = len(acts), distinct(acts, lambda a: (a["name"], a["seq"]))
-    leg_raw, leg_distinct = len(legislated), distinct(legislated, lambda r: r["id"])
-    total_raw = cited_raw + leg_raw
+
+    pre_reg = [r for r in legislated if (c001_ts is None or r.get("published_at", "") < c001_ts) and not r.get("case")]
+    reg_leg = [r for r in legislated if r.get("case") or (c001_ts and r.get("published_at", "") >= c001_ts)]
+
+    leg_pre_raw, leg_pre_distinct = len(pre_reg), distinct(pre_reg, lambda r: r["id"])
+    leg_reg_raw, leg_reg_distinct = len(reg_leg), distinct(reg_leg, lambda r: r["id"])
+    leg_total_raw = leg_pre_raw + leg_reg_raw
+    leg_total_distinct = leg_pre_distinct + leg_reg_distinct
+
+    cases_opened_raw = len(cases)
+    cases_opened_distinct = distinct(cases, lambda c: c["id"])
+    cases_disposed_raw = len([c for c in cases if c.get("status") == "disposed"])
+    cases_disposed_distinct = distinct([c for c in cases if c.get("status") == "disposed"], lambda c: c["id"])
+    cases_open_raw = len([c for c in cases if c.get("status") == "open"])
+    cases_open_distinct = distinct([c for c in cases if c.get("status") == "open"], lambda c: c["id"])
+
+    reg_dispositions_raw = cited_raw + leg_reg_raw
+    reg_dispositions_distinct = cited_distinct + leg_reg_distinct
+
+    total_raw = cited_raw + leg_total_raw
+    total_distinct = cited_distinct + leg_total_distinct
+
+    share = (round(cited_raw / reg_dispositions_raw, 4) if reg_dispositions_raw else None)
+
     return {
-        "by_citation_raw": cited_raw, "by_citation_distinct": cited_distinct,
-        "by_legislation_raw": leg_raw, "by_legislation_distinct": leg_distinct,
+        "cases_opened_raw": cases_opened_raw,
+        "cases_opened_distinct": cases_opened_distinct,
+        "cases_still_open_raw": cases_open_raw,
+        "cases_still_open_distinct": cases_open_distinct,
+        "by_citation_raw": cited_raw,
+        "by_citation_distinct": cited_distinct,
+        "by_legislation_pre_register_raw": leg_pre_raw,
+        "by_legislation_pre_register_distinct": leg_pre_distinct,
+        "by_legislation_registered_raw": leg_reg_raw,
+        "by_legislation_registered_distinct": leg_reg_distinct,
+        "by_legislation_raw": leg_total_raw,
+        "by_legislation_distinct": leg_total_distinct,
+        "registered_dispositions_raw": reg_dispositions_raw,
+        "registered_dispositions_distinct": reg_dispositions_distinct,
         "dispositions_raw": total_raw,
-        "dispositions_distinct": cited_distinct + leg_distinct,
-        "citation_share_of_dispositions": (round(cited_raw / total_raw, 4)
-                                           if total_raw else None),
+        "dispositions_distinct": total_distinct,
+        "citation_share_of_dispositions": share,
+        "published_before_register_raw": leg_pre_raw,
+        "published_before_register_distinct": leg_pre_distinct,
         "acts": acts,
+        "cases": cases,
+        "DENOMINATOR_DISCLAIMER": (
+            "The denominator is cases REGISTERED, not cases ARISING. Those are different "
+            "quantities, the gap between them is unmeasured, and the ratio must never be "
+            "reported as though registration were complete. Cases opened and never disposed "
+            "stay open and are counted as open."
+        ),
         "NO_DENOMINATOR_RATIFIED": (
-            "The figure above is the share of DISPOSITIONS MADE, not of NOVEL CASES ARISING, "
-            "and those are different denominators. This harness keeps no register of cases "
-            "PRESENTED: a case that was raised and never disposed of -- abandoned, forgotten, "
-            "routed around, or silently answered in prose without either verb -- is invisible "
-            "here. So the true denominator is unmeasured and no record defines it. "
-            "D4 called this ratio the differentiator because nobody else has the denominator; "
-            "the honest report is that THIS HARNESS DOES NOT HAVE IT EITHER YET. What it has "
-            "is the numerator split, which is real and is worth watching. "
-            "Building a case register would define the denominator, and it must not be done "
-            "by inferring cases retroactively from dispositions -- that would make the "
-            "denominator a function of the numerator and the ratio would read 1.0 forever."),
+            "The figure above is the share of DISPOSITIONS MADE among registered cases, not of "
+            "ALL NOVEL CASES ARISING, and those are different denominators. "
+            "The denominator is cases REGISTERED, not cases ARISING. Those are different "
+            "quantities, the gap between them is unmeasured, and the ratio must never be "
+            "reported as though registration were complete. "
+            "Published before register records are frozen and NOT folded into the registered share."
+        ),
         "WHAT_THE_SPLIT_MEANS": (
-            "by_legislation counts ACTIVE precedent records, every one of which is a case "
-            "disposed by growing the registry. by_citation counts distinguish acts, which "
-            "dispose without growing it. A layer whose citation share rises is answering "
-            "novel cases from existing law; one whose share falls is legislating its way "
-            "through them. Neither direction is graded here: NO THRESHOLD RATIFIED."),
+            "by_legislation_registered counts active precedent records carrying a registered case. "
+            "by_citation counts distinguish acts disposing of registered cases without growing the registry. "
+            "by_legislation_pre_register counts legacy records published before the register opened (frozen). "
+            "A layer whose citation share rises is answering novel cases from existing law; one whose share falls is "
+            "legislating its way through them. Neither direction is graded: NO THRESHOLD RATIFIED."
+        ),
         "COUNTS_ARE_REPORTED_TWICE": (
-            "raw and distinct, per TELEMETRY-PROVENANCE-A, whose measurement was that the "
-            "raw event log replays at 3.93x overall and up to 47x on some event types. These "
-            "counts are files rather than log lines, so raw and distinct should AGREE; when "
-            "they diverge, a chain was renumbered or a record id is duplicated, and that "
-            "divergence is the finding."),
+            "raw and distinct, per TELEMETRY-PROVENANCE-A. Counts are files rather than log lines, "
+            "so raw and distinct should agree; divergence indicates chain renumbering or duplicate IDs."
+        ),
     }
 
 
@@ -1027,20 +1268,26 @@ def cmd_disposition_ratio(args):
     if args.json:
         print(json.dumps(out, indent=2, ensure_ascii=False))
         return 0
+    print("casos abiertos             {} crudos / {} distintos".format(
+        out["cases_opened_raw"], out["cases_opened_distinct"]))
     print("dispuestos por cita        {} crudos / {} distintos".format(
         out["by_citation_raw"], out["by_citation_distinct"]))
     print("dispuestos por legislacion {} crudos / {} distintos".format(
-        out["by_legislation_raw"], out["by_legislation_distinct"]))
-    print("total de disposiciones     {} crudos / {} distintos".format(
-        out["dispositions_raw"], out["dispositions_distinct"]))
+        out["by_legislation_registered_raw"], out["by_legislation_registered_distinct"]))
+    print("aun abiertos               {} crudos / {} distintos".format(
+        out["cases_still_open_raw"], out["cases_still_open_distinct"]))
+    print("publicados pre-registro    {} crudos / {} distintos (congelados)".format(
+        out["by_legislation_pre_register_raw"], out["by_legislation_pre_register_distinct"]))
     share = out["citation_share_of_dispositions"]
     print("cuota de la cita           {}".format(
-        "sin disposiciones" if share is None else "{:.1%}".format(share)))
-    for a in out["acts"]:
-        print("  {} #{} caso={} cerca={} {}".format(
-            a["name"], a["seq"], a["case"], a["nearest"],
-            "firmado" if a["signed"] else "SIN FIRMAR"))
-    print("\nNO DENOMINATOR RATIFIED\n" + out["NO_DENOMINATOR_RATIFIED"])
+        "sin disposiciones registradas" if share is None else "{:.1%}".format(share)))
+    if out["acts"]:
+        print("\nActos de distincion:")
+        for a in out["acts"]:
+            print("  {} #{} caso={} cerca={} {}".format(
+                a["name"], a["seq"], a["case"], a["nearest"],
+                "firmado" if a["signed"] else "SIN FIRMAR"))
+    print("\n" + out["DENOMINATOR_DISCLAIMER"])
     print("\n" + out["WHAT_THE_SPLIT_MEANS"])
     print("\n" + out["COUNTS_ARE_REPORTED_TWICE"])
     return 0
@@ -1450,6 +1697,11 @@ def cmd_publish(args):
                                "--target-tier (V1-32, V1-42.24)".format(rel["target"]),
                                root, task=args.task)
 
+    hroot = resolve_harness_root(args, root)
+    case_err = validate_case_for_disposal(hroot, getattr(args, "case", None), "publish")
+    if case_err:
+        return refuse("precedent_publish_refused", case_err, root, task=args.task)
+
     # ---- SDR-17 items 6-14 (registry-dependent) + SDR-19 commit, ONE guard ----
     same_subject_missing = []
     dangling_tokens = []
@@ -1671,6 +1923,7 @@ def cmd_publish(args):
             record = {
                 "id": new_id,
                 "schema_version": SCHEMA_VERSION_V2,
+                "case": args.case,
                 "title": title,
                 "subject": subject,
                 "status": "active",
@@ -1701,6 +1954,7 @@ def cmd_publish(args):
                 "interpretive_code_version": code_version,
             }
             hc.atomic_write_json(record_path(root, new_id), record)
+            dispose_case(hroot, args.case, "publish", new_id, args.agent, args.task, record["published_at"])
 
             # SDR-19.3/19.4: cited_by back-references + status flips on targets.
             # decision:-anchored targets get NEITHER: "no cited_by side
@@ -2934,6 +3188,10 @@ def main(argv):
                              "(A3, V1-15)")
     p_pub.add_argument("--target-tier", dest="target_tier", type=int, default=None,
                         help="required iff any relation target is decision:-anchored (V1-32)")
+    p_pub.add_argument("--case", default=None,
+                        help="case id, C-NNN (required on every publish, T-412/S-1)")
+    p_pub.add_argument("--harness-root", dest="harness_root", default=None,
+                        help="the HARNESS root, where cases/ and warrants/ live")
     add_root_arg(p_pub)
     p_pub.set_defaults(func=cmd_publish)
 
@@ -3013,8 +3271,8 @@ def main(argv):
     p_dist = sub.add_parser(
         "distinguish", help="dispose of a novel case by citing the nearest record plus the "
                             "material difference, as a signed act. Publishes NO record.")
-    p_dist.add_argument("--case", required=True,
-                        help="what is being disposed of: a task id, a docket ref, a summary")
+    p_dist.add_argument("--case", default=None,
+                        help="what is being disposed of: registered case id, C-NNN (required, T-412/S-1)")
     p_dist.add_argument("--nearest", required=True, metavar="PR-NNN",
                         help="the nearest decided record this case falls outside of")
     facts_grp = p_dist.add_mutually_exclusive_group(required=True)
@@ -3032,15 +3290,42 @@ def main(argv):
 
     p_ratio = sub.add_parser(
         "disposition-ratio",
-        help="cases disposed by citation versus by legislation. Reports NO DENOMINATOR "
-             "RATIFIED, because no register of cases PRESENTED exists.")
+        help="cases disposed by citation versus by legislation. Reports registered denominator "
+             "and frozen pre-register counts (T-412 / S-1).")
     p_ratio.add_argument("--json", action="store_true", default=False)
     p_ratio.add_argument("--harness-root", dest="harness_root", default=None)
     add_root_arg(p_ratio)
     p_ratio.set_defaults(func=cmd_disposition_ratio)
 
+    # ---- case (T-412, S-1) ----
+    p_case = sub.add_parser("case", help="case register (T-412/S-1): cases presented to the layer")
+    case_sub = p_case.add_subparsers(dest="case_cmd", required=True)
+
+    p_case_open = case_sub.add_parser("open", help="open a new registered case")
+    p_case_open.add_argument("--question", default=None, help="the question being presented")
+    p_case_open.add_argument("--task", default=None, help="issuing task, T-NNN")
+    p_case_open.add_argument("--agent", default=hc.agent_id())
+    p_case_open.add_argument("--json", action="store_true", default=False)
+    p_case_open.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_open)
+    p_case_open.set_defaults(func=cmd_case_open)
+
+    p_case_list = case_sub.add_parser("list", help="list registered cases")
+    p_case_list.add_argument("--status", choices=["open", "disposed"], default=None)
+    p_case_list.add_argument("--json", action="store_true", default=False)
+    p_case_list.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_list)
+    p_case_list.set_defaults(func=cmd_case_list)
+
+    p_case_show = case_sub.add_parser("show", help="show one registered case")
+    p_case_show.add_argument("case_id", metavar="C-NNN")
+    p_case_show.add_argument("--json", action="store_true", default=False)
+    p_case_show.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_show)
+    p_case_show.set_defaults(func=cmd_case_show)
+
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
-    # Applied to `publish` and `confirm`, the two verbs that write a record.
+    # Applied to `publish`, `confirm`, `distinguish`, and `case open`.
     #
     # CORRECTED 2026-08-17 after a verifier rejected T-376 for a FALSE STATEMENT that stood
     # here. The old comment claimed "--root and the read-only verbs are left alone so a
@@ -3054,7 +3339,7 @@ def main(argv):
     # exists to stop -- picking the wrong registry is worse than picking the wrong relation.
     # No test covered `--root` at all, which is why a false sentence survived its own suite;
     # TheRootFlag in test_precedent_repeat_flags.py now covers both halves.
-    _refuse_repeats(p_pub, p_conf)
+    _refuse_repeats(p_pub, p_conf, p_dist, p_case_open)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -1,0 +1,240 @@
+{
+  "id": "D-001",
+  "title": "Revision of PR-022 & Operational Reputation Coupling",
+  "proposer": "clerk-relator",
+  "issuing_task": "T-416",
+  "created_at": "2026-08-25T04:07:49Z",
+  "status": "concluded",
+  "evidence": [
+    "PR-022",
+    "PR-060",
+    "T-399",
+    "C-001"
+  ],
+  "alternatives": [
+    "adopt-split-consequence",
+    "maintain-zero-consequence",
+    "unconstrained-coupling"
+  ],
+  "sponsors": [
+    "clerk-codifier",
+    "clerk-regulator",
+    "clerk-relator"
+  ],
+  "priors": {
+    "clerk-relator": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "recorded_at": "2026-08-25T04:08:00Z"
+    },
+    "clerk-regulator": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "recorded_at": "2026-08-25T04:08:00Z"
+    },
+    "clerk-codifier": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "recorded_at": "2026-08-25T04:08:01Z"
+    },
+    "worker-gemini": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "recorded_at": "2026-08-25T04:08:01Z"
+    }
+  },
+  "speaker_order": [
+    "clerk-relator",
+    "clerk-regulator",
+    "clerk-codifier",
+    "worker-gemini"
+  ],
+  "speaker_seed": "D-001:2026-08-25T04:07:49Z:3",
+  "final_ballots": {
+    "clerk-relator": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "voted_at": "2026-08-25T04:08:12Z"
+    },
+    "clerk-regulator": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "voted_at": "2026-08-25T04:08:13Z"
+    },
+    "clerk-codifier": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "voted_at": "2026-08-25T04:08:13Z"
+    },
+    "worker-gemini": {
+      "ranking": [
+        "adopt-split-consequence",
+        "maintain-zero-consequence",
+        "unconstrained-coupling"
+      ],
+      "weight": 1.0,
+      "voted_at": "2026-08-25T04:08:13Z"
+    }
+  },
+  "tally_result": {
+    "total_ballots": 4,
+    "total_weight": 4.0,
+    "candidates": [
+      "adopt-split-consequence",
+      "maintain-zero-consequence",
+      "unconstrained-coupling"
+    ],
+    "winner": "adopt-split-consequence",
+    "ranking": [
+      {
+        "rank": 1,
+        "candidate": "adopt-split-consequence",
+        "wins": 2,
+        "losses": 0,
+        "ties": 0,
+        "score": 2
+      },
+      {
+        "rank": 2,
+        "candidate": "maintain-zero-consequence",
+        "wins": 1,
+        "losses": 1,
+        "ties": 0,
+        "score": 0
+      },
+      {
+        "rank": 3,
+        "candidate": "unconstrained-coupling",
+        "wins": 0,
+        "losses": 2,
+        "ties": 0,
+        "score": -2
+      }
+    ],
+    "schulze_ranking": [
+      {
+        "rank": 1,
+        "candidate": "adopt-split-consequence",
+        "wins": 2,
+        "losses": 0,
+        "ties": 0,
+        "score": 2
+      },
+      {
+        "rank": 2,
+        "candidate": "maintain-zero-consequence",
+        "wins": 1,
+        "losses": 1,
+        "ties": 0,
+        "score": 0
+      },
+      {
+        "rank": 3,
+        "candidate": "unconstrained-coupling",
+        "wins": 0,
+        "losses": 2,
+        "ties": 0,
+        "score": -2
+      }
+    ],
+    "copeland_ranking": [
+      {
+        "rank": 1,
+        "candidate": "adopt-split-consequence",
+        "wins": 2,
+        "losses": 0,
+        "ties": 0,
+        "points": 2.0,
+        "score": 2
+      },
+      {
+        "rank": 2,
+        "candidate": "maintain-zero-consequence",
+        "wins": 1,
+        "losses": 1,
+        "ties": 0,
+        "points": 1.0,
+        "score": 0
+      },
+      {
+        "rank": 3,
+        "candidate": "unconstrained-coupling",
+        "wins": 0,
+        "losses": 2,
+        "ties": 0,
+        "points": 0.0,
+        "score": -2
+      }
+    ],
+    "condorcet_winner": "adopt-split-consequence",
+    "condorcet_loser": "unconstrained-coupling",
+    "has_condorcet_cycle": false,
+    "smith_set": [
+      "adopt-split-consequence"
+    ],
+    "margin_of_victory": 4.0,
+    "pairwise_matrix": {
+      "adopt-split-consequence": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 4.0,
+        "unconstrained-coupling": 4.0
+      },
+      "maintain-zero-consequence": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 0.0,
+        "unconstrained-coupling": 4.0
+      },
+      "unconstrained-coupling": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 0.0,
+        "unconstrained-coupling": 0.0
+      }
+    },
+    "beatpath_matrix": {
+      "adopt-split-consequence": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 4.0,
+        "unconstrained-coupling": 4.0
+      },
+      "maintain-zero-consequence": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 0.0,
+        "unconstrained-coupling": 4.0
+      },
+      "unconstrained-coupling": {
+        "adopt-split-consequence": 0.0,
+        "maintain-zero-consequence": 0.0,
+        "unconstrained-coupling": 0.0
+      }
+    }
+  },
+  "concluded_at": "2026-08-25T04:08:19Z"
+}

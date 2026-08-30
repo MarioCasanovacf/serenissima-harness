@@ -147,6 +147,20 @@ class LiveCLIReiterationTests(unittest.TestCase):
         if tier in (1, 2, 3):
             args += ["--scope", "role:worker", "--revisit-trigger", "revisit",
                       "--validity", "a validity condition"]
+        if not (extra_args and any(a == "--case" for a in extra_args)):
+            hroot = pathlib.Path(self.root).parent
+            cdir = hroot / "cases"
+            cdir.mkdir(parents=True, exist_ok=True)
+            existing = [int(p.stem[2:]) for p in cdir.glob("C-*.json") if p.stem[2:].isdigit()]
+            cnum = max(existing) + 1 if existing else 1
+            cid = "C-{:03d}".format(cnum)
+            cdata = {
+                "id": cid, "question": "case for {}".format(task), "task": task,
+                "opened_by": agent, "ts": "2026-08-24T00:00:00Z",
+                "status": "open", "disposal": None
+            }
+            (cdir / "{}.json".format(cid)).write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
+            args += ["--case", cid]
         if extra_args:
             args += extra_args
         return run(*args)

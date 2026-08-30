@@ -1,0 +1,70 @@
+{
+  "id": "PR-061",
+  "schema_version": 2,
+  "case": "C-001",
+  "title": "Phase B reputation: operational consequences authorized under PR-060 split",
+  "subject": "reputation-phase-b",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-416"
+  ],
+  "ratio": "(1) PHASE B REPUTATION CONSEQUENCES AUTHORIZED ON OPERATIONAL PARAMETERS. Consequent to Assembly Deliberation D-001 resolving case C-001, PR-022 clause 4 is operative under the PR-060 division: consequences derived from Phase B reputation figures may attach EXCLUSIVELY to OPERATIONAL parameters (claim priority queue ordering, iteration bounds, and parallel worker slot allocations). (2) CONSTITUTIONAL IMMUNITY PRESERVED. Zero consequence may attach to any CONSTITUTIONAL parameter: verification thresholds, quorum floors, proof burdens, and EMA decay rates belong to the operator alone and remain strictly immune to reputation weighting. (3) D-17 NON-STAKING PRESERVED. Reputation is non-transferable, non-stakeable, and carries no asset boundary. (4) DISPOSITION OF CASE C-001. This record completely disposes case C-001 by legislation under the PR-060 constitutional-operational framework.",
+  "dicta": [],
+  "scope_conditions": [
+    "any consumer or task queue evaluating reputation figures for operational parameter binding"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when the operator amends or withdraws the PR-060 split or when reputation.py Phase B is evaluated at the next evolution audit",
+  "confirmation_status": "confirmed",
+  "confirmed_by": "verifier-gemini-2",
+  "confirmed_at": "2026-08-25T04:09:21Z",
+  "narrowed_scope": null,
+  "confirmation_note": "Adversarial verification of PR-061: Confirmed ratio authorization of Phase B reputation on operational parameters only under PR-060 constitutional split, with case C-001 legally disposed and D-17 non-staking immunity preserved.",
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-022",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    },
+    {
+      "type": "follows",
+      "target": "PR-060",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-416",
+  "published_by": "clerk-relator",
+  "published_at": "2026-08-25T04:08:50Z",
+  "sources": [
+    "decision:T-416#assembly-dossier-d001",
+    "PR-022",
+    "PR-060"
+  ],
+  "validity_conditions": [
+    "PR-060 constitutional-operational parameter split remains in force and unamended",
+    "no staking or asset loss boundary is imported under D-17"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

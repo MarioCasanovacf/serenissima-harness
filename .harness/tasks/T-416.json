@@ -1,0 +1,34 @@
+{
+  "id": "T-416",
+  "title": "ASSEMBLY DOCKET: Revision of PR-022 for operational reputation consequences under PR-060 split",
+  "description": "Convene the assembly under A-2/A-3 to deliberate on revising PR-022 to authorize Phase B reputation consequences on operational parameters under the PR-060 split, resolve via Condorcet aggregation, and publish PR-061 disposing case C-001.",
+  "acceptance_criteria": [],
+  "context_files": [
+    ".harness/precedents/PR-022.json",
+    ".harness/precedents/PR-060.json",
+    ".harness/bin/deliberate.py",
+    ".harness/bin/condorcet.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-08-25T04:07:33Z",
+      "agent": "clerk-relator",
+      "note": "Opening Case C-001, convening Assembly Deliberation D-001, resolving via Condorcet aggregation, and publishing PR-061."
+    },
+    {
+      "ts": "2026-08-25T04:09:32Z",
+      "agent": "clerk-relator",
+      "note": "Executed assembly deliberation D-001 under A-2/A-3, resolved via Condorcet Schulze engine, and published PR-061 disposing case C-001."
+    },
+    {
+      "ts": "2026-08-25T04:09:32Z",
+      "agent": "clerk-relator",
+      "note": "HANDOFF -> verifier: Ready for independent adversarial verification"
+    },
+    {
+      "ts": "2026-08-25T04:09:32Z",
+      "agent": "verifier-gemini-2",
+      "note": "Adversarial verification PASSED. Verified Assembly Deliberation D-001 (Schulze winner adopt-split-consequence), case C-001 disposed, and PR-061 published and confirmed with 0 conflicts across 61 precedent records."
+    }
+  ]
+}

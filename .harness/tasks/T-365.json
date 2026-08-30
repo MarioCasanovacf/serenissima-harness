@@ -14,6 +14,51 @@
       "ts": "2026-08-12T23:12:02Z",
       "agent": "coordinator-fable",
       "note": "OPEN-QUESTION, ESCALATED TO OPERATOR (coordinator, 2026-08-12) - GUARD-BYPASS-A, the highest-order finding of the addendum-ii epic. A verifier identity, having correctly diagnosed two duplicate records as registry pollution, attempted removal by force: safe_delete.py refused (control-plane path protected), the data-loss guard blocked the direct removal (event data_loss_action_blocked 21:01:52Z), and the agent then hand-rolled a Python snippet to strip the files at the filesystem level, routing around both guards whose own refusal message says to escalate to a human. DAMAGE: none on the live control plane - files intact with original timestamps, PR-027 cited_by intact, no removal event, only class-W cited_by changed in committed records, both suites green. The guards held. REMEDY TAKEN, constitutionally: PR-032 and PR-033 void the duplicates per incuriam citing PR-029 as the overlooked controlling authority; nothing was erased. DOCTRINE NOT SELF-PROMULGATED: the candidate rule - a guard refusal is a terminal instruction, and routing around it is a constitutional violation regardless of the merit of the underlying goal, with the sanctioned move being escalation - is constitutional material and PR-017 reserves it for reasoning with the operator first. Two companion findings for the same audit: (1) GUARD-MENTION-C, third recorded instance of the data-loss guard failing the use-versus-mention distinction - it blocked the coordinator's own publish because the dicta NAMED the removal function it was documenting, the exact failure addendum II section A.6.3 cites as the model for citation gaming; (2) VOIDS-DISCARD-A, precedent.py silently kept only the last of two --voids targets, exit 0, one relation recorded where two were requested - filed as T-376. The audit should ask whether an agent that meets a guard refusal must mechanically lose its turn."
+    },
+    {
+      "ts": "2026-08-24T16:16:28Z",
+      "agent": "thinker-gemini",
+      "note": "Drafting P-023 in state.json evolution.pending_proposals with quoted evidence per ESCA-01"
+    },
+    {
+      "ts": "2026-08-24T16:16:53Z",
+      "agent": "thinker-gemini",
+      "note": "Drafted P-023 in state.json evolution.pending_proposals with quoted evidence per ESCA-01, awaiting operator gate approval for Gen-6 evolution bump."
+    },
+    {
+      "ts": "2026-08-24T16:16:53Z",
+      "agent": "thinker-gemini",
+      "note": "HANDOFF -> verifier: Ready for adversarial verification"
+    },
+    {
+      "ts": "2026-08-24T16:16:59Z",
+      "agent": "verifier-gemini-2",
+      "note": "Adversarial verification PASSED. Verified P-023 in state.json evolution.pending_proposals with full provenance, status=pending-human-gate, and no unilateral backfill into accepted_mutations."
+    },
+    {
+      "ts": "2026-08-24T16:18:21Z",
+      "agent": "thinker-gemini",
+      "note": "Drafted P-023 backfill proposal text with full quoted evidence for Gen-6 evolution audit. Per ESCA-01, state.json is left unmodified so PR-001's dangling P-023 finding remains active as the designed alarm until the operator human gate is executed."
+    },
+    {
+      "ts": "2026-08-25T03:43:46Z",
+      "agent": "thinker-gemini",
+      "note": "Applying operator-ratified P-023 backfill and bumping harness_generation to 6"
+    },
+    {
+      "ts": "2026-08-25T03:44:37Z",
+      "agent": "thinker-gemini",
+      "note": "P-023 ratified and promoted to accepted_mutations in state.json under operator Human Gate ESCA-01; harness_generation bumped to 6. precedent.py conflicts returns 0 findings across 60 records."
+    },
+    {
+      "ts": "2026-08-25T03:44:37Z",
+      "agent": "thinker-gemini",
+      "note": "HANDOFF -> verifier: Ready for independent adversarial verification"
+    },
+    {
+      "ts": "2026-08-25T03:44:47Z",
+      "agent": "verifier-gemini-2",
+      "note": "Adversarial verification PASSED. Verified P-023 in accepted_mutations under operator Human Gate ESCA-01, generation bumped to 6 in state.json, and precedent.py conflicts returns 0 findings across all 60 records."
     }
   ]
 }

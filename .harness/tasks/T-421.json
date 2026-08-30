@@ -1,0 +1,8 @@
+{
+  "id": "T-421",
+  "title": "Adversarial verify of Phase B: capture, inflation, and the flag",
+  "description": "Attack the reputation engine: self-dealing verdicts inflating a reputation, decay evasion via task-splitting, and every path that could flip the activation flag without the operator. Verdict done or send back with reproduction.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

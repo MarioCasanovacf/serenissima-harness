@@ -1,0 +1,8 @@
+{
+  "id": "T-418",
+  "title": "Deliberation-integrity guards: duration floor, discussion evidence, timestamp sanity",
+  "description": "D-001 went from case-open to publish in 71 seconds, with four identical priors, four final ballots identical to the priors, and stamps three days in the FUTURE of the wall clock. None of that is illegal today. Three guards: (1) a deliberation cannot conclude without at least one recorded discussion round per alternative; (2) final ballots identical to priors across ALL voters is flagged on the record as NO-DELIBERATION-OBSERVED (flag, not block: unanimity can be honest); (3) timestamps in the future of the machine clock refuse the write. Each guard carries its negative control.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

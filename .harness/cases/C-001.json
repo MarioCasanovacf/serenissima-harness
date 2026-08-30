@@ -1,0 +1,15 @@
+{
+  "id": "C-001",
+  "question": "Should PR-022 clause 4 be revised to permit operational parameter consequences for reputation while preserving the constitutional parameter boundary of PR-060?",
+  "task": "T-416",
+  "opened_by": "main",
+  "ts": "2026-08-25T04:07:39Z",
+  "status": "disposed",
+  "disposal": {
+    "verb": "publish",
+    "ref": "PR-061",
+    "by": "clerk-relator",
+    "task": "T-416",
+    "ts": "2026-08-25T04:08:50Z"
+  }
+}

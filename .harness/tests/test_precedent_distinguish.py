@@ -52,7 +52,7 @@ class Distinguishing(Enrolled):
         self.reg.mkdir(parents=True, exist_ok=True)
         self.write_record("PR-001", scope=["aplica solo a nombres con warrant vigente"])
 
-    def write_record(self, pr_id, scope=None, status="active", title="registro de prueba"):
+    def write_record(self, pr_id, scope=None, status="active", title="registro de prueba", case=None):
         rec = {
             "id": pr_id, "title": title, "subject": "prueba", "status": status,
             "authority_tier": 2, "ratio": "una regla que obliga",
@@ -64,6 +64,7 @@ class Distinguishing(Enrolled):
             "operation": "determination", "issuing_task": "T-000",
             "tier_evidence": ["T-000"], "confirmation_status": "unconfirmed",
             "sources": ["prueba"],
+            "case": case,
         }
         (self.reg / (pr_id + ".json")).write_text(
             json.dumps(rec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -83,8 +84,16 @@ class Distinguishing(Enrolled):
         return attest.declare_intent(self.root, name, self.keys[name], "distinguish", task,
                                      "dispongo del caso citando PR-001")
 
-    def distinguish(self, *, case="T-9", nearest="PR-001", facts=FACTS, name="orso",
+    def open_case(self, question="cuestion de prueba", task="T-1"):
+        return self.cli("case", "open", "--question", question, "--task", task)
+
+    def distinguish(self, *, case=None, nearest="PR-001", facts=FACTS, name="orso",
                     task="T-1"):
+        if case is None:
+            self.open_case(task=task)
+            cdir = self.root / "cases"
+            cases = sorted(cdir.glob("C-*.json"))
+            case = cases[-1].stem if cases else "C-001"
         return self.cli("distinguish", "--case", case, "--nearest", nearest,
                         "--facts", facts, "--by", name,
                         "--key", str(self.keys[name]), "--task", task)
@@ -102,7 +111,7 @@ class TheDisposal(Distinguishing):
         self.assertEqual(len(acts), 1)
         body = acts[0]["body"]
         self.assertEqual(body["nearest"], "PR-001")
-        self.assertEqual(body["case"], "T-9")
+        self.assertEqual(body["case"], "C-001")
         self.assertEqual(body["material_difference"], FACTS)
 
     def test_it_writes_no_precedent_record(self):
@@ -138,7 +147,8 @@ class TheDisposal(Distinguishing):
         self.assertIn("no open intent", r.stderr)
 
     def test_an_unissued_name_cannot_distinguish(self):
-        r = self.cli("distinguish", "--case", "T-9", "--nearest", "PR-001",
+        self.open_case()
+        r = self.cli("distinguish", "--case", "C-001", "--nearest", "PR-001",
                      "--facts", FACTS, "--by", "fantasma",
                      "--key", str(self.keys["orso"]), "--task", "T-1")
         self.assertEqual(r.returncode, 1)
@@ -149,7 +159,8 @@ class TheDisposal(Distinguishing):
         p = pathlib.Path(self._tmp.name) / "facts.txt"
         p.write_text(FACTS, encoding="utf-8")
         self.intent()
-        r = self.cli("distinguish", "--case", "T-9", "--nearest", "PR-001",
+        self.open_case()
+        r = self.cli("distinguish", "--case", "C-001", "--nearest", "PR-001",
                      "--facts-file", str(p), "--by", "orso",
                      "--key", str(self.keys["orso"]), "--task", "T-1")
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -234,10 +245,11 @@ class TheRatio(Distinguishing):
     def test_the_split_counts_both_paths(self):
         self.intent()
         self.distinguish()
+        self.write_record("PR-002", case="C-002")
         out = precedent.disposition_counts(self.reg, self.root)
         self.assertEqual(out["by_citation_raw"], 1)
-        self.assertEqual(out["by_legislation_raw"], 1)      # PR-001, active
-        self.assertEqual(out["dispositions_raw"], 2)
+        self.assertEqual(out["by_legislation_registered_raw"], 1)
+        self.assertEqual(out["registered_dispositions_raw"], 2)
         self.assertAlmostEqual(out["citation_share_of_dispositions"], 0.5)
 
     def test_only_active_records_count_as_legislation(self):
@@ -255,13 +267,10 @@ class TheRatio(Distinguishing):
     def test_no_denominator_is_claimed(self):
         """The honest half, and the half the task explicitly asked for."""
         out = precedent.disposition_counts(self.reg, self.root)
-        note = out["NO_DENOMINATOR_RATIFIED"]
-        self.assertIn("DISPOSITIONS MADE", note)
-        self.assertIn("NOVEL CASES ARISING", note)
-        self.assertIn("no register of cases PRESENTED", note)
-        # It must also name the specific wrong way to fix it, or someone will fix it that way.
-        self.assertIn("function of the numerator", note)
-        self.assertIn("1.0 forever", note)
+        note = out["DENOMINATOR_DISCLAIMER"]
+        self.assertIn("cases REGISTERED", note)
+        self.assertIn("cases ARISING", note)
+        self.assertIn("different quantities", note)
 
     def test_no_threshold_is_claimed_either(self):
         out = precedent.disposition_counts(self.reg, self.root)
@@ -284,14 +293,14 @@ class TheRatio(Distinguishing):
         self.distinguish()
         r = self.cli("disposition-ratio")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("NO DENOMINATOR RATIFIED", r.stdout)
-        self.assertIn("50.0%", r.stdout)
+        self.assertIn("The denominator is cases REGISTERED, not cases ARISING", r.stdout)
+        self.assertIn("100.0%", r.stdout)
 
     def test_json_output_carries_the_same_disclaimers(self):
         r = self.cli("disposition-ratio", "--json")
         self.assertEqual(r.returncode, 0, r.stderr)
         out = json.loads(r.stdout)
-        self.assertIn("NO_DENOMINATOR_RATIFIED", out)
+        self.assertIn("DENOMINATOR_DISCLAIMER", out)
         self.assertIn("COUNTS_ARE_REPORTED_TWICE", out)
 
 

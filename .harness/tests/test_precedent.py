@@ -79,9 +79,25 @@ class PrecedentCLITestCase(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self._tmp.name) / "registry"
+        self.harness_root = pathlib.Path(self._tmp.name)
+        (self.harness_root / "cases").mkdir(parents=True, exist_ok=True)
 
     def tearDown(self):
         self._tmp.cleanup()
+
+    def open_case(self, task="T-100", question="case question"):
+        cdir = self.harness_root / "cases"
+        cdir.mkdir(parents=True, exist_ok=True)
+        existing = [int(p.stem[2:]) for p in cdir.glob("C-*.json") if p.stem[2:].isdigit()]
+        cnum = max(existing) + 1 if existing else 1
+        cid = "C-{:03d}".format(cnum)
+        cdata = {
+            "id": cid, "question": question, "task": task,
+            "opened_by": "worker", "ts": "2026-08-24T00:00:00Z",
+            "status": "open", "disposal": None
+        }
+        (cdir / "{}.json".format(cid)).write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
+        return cid
 
     # -- shared helpers -----------------------------------------------
 
@@ -122,6 +138,20 @@ class PrecedentCLITestCase(unittest.TestCase):
             if validity is not None:
                 for v in validity:
                     args += ["--validity", v]
+        if not (extra_args and any(a == "--case" for a in extra_args)):
+            hroot = pathlib.Path(root).parent
+            cdir = hroot / "cases"
+            cdir.mkdir(parents=True, exist_ok=True)
+            existing = [int(p.stem[2:]) for p in cdir.glob("C-*.json") if p.stem[2:].isdigit()]
+            cnum = max(existing) + 1 if existing else 1
+            cid = "C-{:03d}".format(cnum)
+            cdata = {
+                "id": cid, "question": "case for {}".format(task), "task": task,
+                "opened_by": "worker", "ts": "2026-08-24T00:00:00Z",
+                "status": "open", "disposal": None
+            }
+            (cdir / "{}.json".format(cid)).write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
+            args += ["--case", cid]
         if extra_args:
             args += extra_args
         return run(*args)
@@ -223,29 +253,32 @@ class PublishSuccessTests(PrecedentCLITestCase):
         # exercised via raw run() calls instead of the publish() helper.
         rfile = pathlib.Path(self._tmp.name) / "ratio.txt"
         rfile.write_text("ratio via file, with `backticks` and $(danger)", encoding="utf-8")
+        c1 = self.open_case("T-110")
         result = run("publish", "--root", str(self.root), "--task", "T-110", "--title", "t",
                      "--subject", "subj-file", "--tier", "4", "--tier-evidence", "T-110",
                      "--ratio-file", str(rfile), "--width", "narrow",
-                     "--sources", "T-110", "--code-version", "v1")
+                     "--sources", "T-110", "--code-version", "v1", "--case", c1)
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]
         rec = self.load(pr_id)
         self.assertEqual(rec["ratio"], "ratio via file, with `backticks` and $(danger)")
 
+        c2 = self.open_case("T-111")
         result2 = run("publish", "--root", str(self.root), "--task", "T-111", "--title", "t",
                      "--subject", "subj-file2", "--tier", "4", "--tier-evidence", "T-111",
                      "--ratio-stdin", "--width", "narrow", "--sources", "T-111",
-                     "--code-version", "v1", input_text="ratio via stdin")
+                     "--code-version", "v1", "--case", c2, input_text="ratio via stdin")
         self.assertEqual(result2.returncode, 0, result2.stderr)
 
     def test_scope_file_newline_delimited(self):
         sfile = pathlib.Path(self._tmp.name) / "scope.txt"
         sfile.write_text("role:worker\n\nrole:verifier\n", encoding="utf-8")
+        c = self.open_case("T-120")
         result = run("publish", "--root", str(self.root), "--task", "T-120", "--title", "t",
                      "--subject", "subj-scopefile", "--tier", "3", "--tier-evidence", "T-120",
                      "--ratio", "r", "--width", "narrow", "--scope-file", str(sfile),
                      "--revisit-trigger", "x", "--sources", "T-120", "--code-version", "v1",
-                     "--validity", "validity condition placeholder")
+                     "--validity", "validity condition placeholder", "--case", c)
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]
         rec = self.load(pr_id)
@@ -650,15 +683,19 @@ class ConcurrentPublishTests(PrecedentCLITestCase):
         subprocesses before waiting on either, so they genuinely race for the
         guard rather than running sequentially."""
 
-        def build(task, subject):
+        c1 = self.open_case("T-401")
+        c2 = self.open_case("T-402")
+
+        def build(task, subject, case_id):
             return [sys.executable, str(PRECEDENT_PY), "publish", "--root", str(self.root),
                     "--task", task, "--title", "concurrent test", "--subject", subject,
                     "--tier", "4", "--tier-evidence", task, "--ratio", "concurrent ratio text",
-                    "--width", "narrow", "--sources", task, "--code-version", "v1"]
+                    "--width", "narrow", "--sources", task, "--code-version", "v1",
+                    "--case", case_id]
 
-        p1 = subprocess.Popen(build("T-401", "concurrent-a"), stdout=subprocess.PIPE,
+        p1 = subprocess.Popen(build("T-401", "concurrent-a", c1), stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, text=True)
-        p2 = subprocess.Popen(build("T-402", "concurrent-b"), stdout=subprocess.PIPE,
+        p2 = subprocess.Popen(build("T-402", "concurrent-b", c2), stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE, text=True)
         out1, err1 = p1.communicate(timeout=30)
         out2, err2 = p2.communicate(timeout=30)
@@ -705,12 +742,13 @@ class RootIsolationTests(PrecedentCLITestCase):
         """SDR-13: PRECEDENT_ROOT env var also redirects the registry (no
         --root flag passed at all here)."""
         before = self._live_pr_files()
+        c = self.open_case("T-411")
         env = dict(os.environ)
         env["PRECEDENT_ROOT"] = str(self.root)
         result = run("publish", "--task", "T-411", "--title", "env override test",
                      "--subject", "subj-isolation-env", "--tier", "4",
                      "--tier-evidence", "T-411", "--ratio", "r", "--width", "narrow",
-                     "--sources", "T-411", "--code-version", "v1",
+                     "--sources", "T-411", "--code-version", "v1", "--case", c,
                      env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         after = self._live_pr_files()
@@ -722,12 +760,13 @@ class RootIsolationTests(PrecedentCLITestCase):
     def test_root_flag_wins_over_env_var(self):
         """SDR-13: --root wins over PRECEDENT_ROOT when both are given."""
         other_root = pathlib.Path(self._tmp.name) / "other-registry"
+        c = self.open_case("T-412")
         env = dict(os.environ)
         env["PRECEDENT_ROOT"] = str(other_root)
         result = run("publish", "--root", str(self.root), "--task", "T-412",
                      "--title", "flag wins", "--subject", "subj-flag-wins", "--tier", "4",
                      "--tier-evidence", "T-412", "--ratio", "r", "--width", "narrow",
-                     "--sources", "T-412", "--code-version", "v1",
+                     "--sources", "T-412", "--code-version", "v1", "--case", c,
                      env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         pr_id = result.stdout.strip().splitlines()[-1].split()[-1]

@@ -110,9 +110,20 @@ class ConflictsTestCase(unittest.TestCase):
                 args += ["--scope", s]
             args += ["--revisit-trigger", rt]
             args += ["--validity", "validity condition placeholder"]
-        elif scope is not None:
-            for s in scope:
-                args += ["--scope", s]
+        if not (extra_args and any(a == "--case" for a in extra_args)):
+            hroot = pathlib.Path(self.root).parent
+            cdir = hroot / "cases"
+            cdir.mkdir(parents=True, exist_ok=True)
+            existing = [int(p.stem[2:]) for p in cdir.glob("C-*.json") if p.stem[2:].isdigit()]
+            cnum = max(existing) + 1 if existing else 1
+            cid = "C-{:03d}".format(cnum)
+            cdata = {
+                "id": cid, "question": "case for {}".format(task), "task": task,
+                "opened_by": "worker", "ts": "2026-08-24T00:00:00Z",
+                "status": "open", "disposal": None
+            }
+            (cdir / "{}.json".format(cid)).write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
+            args += ["--case", cid]
         if extra_args:
             args += extra_args
         return run(*args)
@@ -548,28 +559,21 @@ class Detector5DanglingCitationTests(ConflictsTestCase):
         self.assertIn("T-999999", findings[0]["evidence"])
 
     def test_p023_shaped_fixture_dangling_tier_evidence(self):
-        """AC-5: reproduce the P-023-shaped case -- a record whose cited
-        authority does not resolve. P-023 (the `reopen` verb) is applied in
-        both code (`blackboard.py:470`) and prose (`ORCHESTRATION.md:58`)
-        but has NO entry in `evolution.accepted_mutations` or
-        `pending_proposals` in the live state.json (verified: this is a
-        standing, deliberately-unfixed gap -- SDR out-of-scope item 4,
-        `.harness/context-brief-precedent-layer.md` sec 2.4, `state.json:791`
-        gen-5 backlog note -- so this fixture's non-resolution is not a
-        flaky assumption about transient state, it is the documented
-        permanent shape of the gap this detector exists to catch). A tier-2
-        record citing "P-023" as tier_evidence therefore never resolves."""
-        pr_id, _ = self.publish_ok(task="T-651", subject="d5-p023-shaped", tier=2,
-                                    tier_evidence=["P-023"], scope=["role:worker"],
-                                    revisit_trigger="revisit if P-023 is ever ledgered")
+        """AC-5: a record whose cited P authority does not resolve.
+        An un-ledgered P-token (e.g. P-999) has NO entry in state.json evolution,
+        testing that a tier-2 record citing an un-ledgered P token triggers
+        the dangling citation conflict detector."""
+        pr_id, _ = self.publish_ok(task="T-651", subject="d5-unledgered-p-shaped", tier=2,
+                                    tier_evidence=["P-999"], scope=["role:worker"],
+                                    revisit_trigger="revisit if P-999 is ever ledgered")
         result, payload = self.conflicts_json()
         self.assertEqual(result.returncode, 3, result.stderr)
         findings = self.findings_for(payload, 5)
         matching = [f for f in findings if f["records"] == [pr_id]]
         self.assertEqual(len(matching), 1,
                           "expected exactly one dangling-citation finding for {} citing "
-                          "P-023, got {}".format(pr_id, findings))
-        self.assertIn("P-023", matching[0]["evidence"])
+                          "P-999, got {}".format(pr_id, findings))
+        self.assertIn("P-999", matching[0]["evidence"])
 
     def test_flags_dangling_relation_controlling_authority(self):
         target_id, _ = self.publish_ok(task="T-652", subject="d5-void-target", tier=3)

@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "harness_generation": 4,
+  "harness_generation": 6,
   "created_at": "2026-07-03T00:00:00Z",
   "created_by": "fable-5-coordinator (Claude Code session, generation-0 bootstrap)",
   "run": {
@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 27,
+        "tasks_done": 29,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-08-20T01:43:52Z"
+        "last_outcome_at": "2026-08-24T15:57:19Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -658,12 +658,27 @@
         "tasks_done": 7,
         "tasks_failed": 0,
         "last_outcome_at": "2026-08-20T01:16:55Z"
+      },
+      "worker-gemini": {
+        "tasks_done": 3,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-24T16:15:58Z"
+      },
+      "thinker-gemini": {
+        "tasks_done": 2,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-25T03:44:47Z"
+      },
+      "clerk-relator": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-08-25T04:09:32Z"
       }
     }
   },
   "evolution": {
-    "generation": 4,
-    "last_audit_at": "2026-07-05T07:15:00Z",
+    "generation": 6,
+    "last_audit_at": "2026-08-24T21:43:36Z",
     "pending_proposals": [
       {
         "id": "P-027",
@@ -1017,6 +1032,19 @@
         "gate": "code-level",
         "applied_note": "applied in T-056, verified done by verifier-b (consolidated sonnet verdict; P-021 self-demonstrated in its own handoff)",
         "applied_at": "2026-07-05T07:50:00Z"
+      },
+      {
+        "id": "P-023",
+        "source": "PR-001 / T-302 / ESCA-01 (terminal-state reopen verb)",
+        "target": [
+          ".harness/bin/blackboard.py",
+          "ORCHESTRATION.md"
+        ],
+        "summary": "Terminal-state --reopen: mandatory note, event-logged, resets claim/completion state so task re-enters claimable frontier cleanly.",
+        "status": "applied",
+        "gate": "claude.md §5A.4 verification gate + operator approval (ESCA-01, 2026-08-24)",
+        "applied_note": "applied in T-302 (.harness/bin/blackboard.py:470-517, ORCHESTRATION.md:58-67, PR-001); formal backfill ratified by operator in T-365",
+        "applied_at": "2026-08-24T21:43:36Z"
       },
       {
         "id": "P-024",

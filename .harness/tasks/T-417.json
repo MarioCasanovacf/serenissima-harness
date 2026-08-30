@@ -1,0 +1,14 @@
+{
+  "id": "T-417",
+  "title": "deliberate.py refuses clerk ballots mechanically",
+  "description": "LIVE-FIRE FINDING from D-001: the W-002 charter says clerks NO legisla, NO vota, NO tiene stake, and deliberate.py accepted a proposer, three sponsors and three ballots from clerks anyway. A charter constraint nobody enforces mechanically is prose. deliberate.py must load the roster, resolve each identity's office, and REFUSE sponsor/ballot/proposer roles for clerk seats with a distinct error naming the charter line. Regression test: replay D-001's exact inputs and assert refusal at the first clerk sponsor.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-30T09:21:19Z",
+      "agent": "main",
+      "note": "T-417 CONSTRUIDO. La restriccion de la carta W-002 (clerks: NO legisla, NO vota) es ahora\nmecanica en deliberate.py, con dos reglas y una postura:\n\n1. NOMBRES NO EMITIDOS NO ACTUAN: los votantes de D-001 (clerk-relator etc.) ni siquiera\n   estaban en el roster; un nombre sin plaza no tiene legitimacion para proponer, patrocinar\n   ni votar.\n2. PLAZAS CLERK NO LEGISLAN: la regla lee los marcadores de la carta DECLARADA del colegiado\n   (NO legisla / NO vota) en vez de un nombre de colegio codificado, asi que un colegio clerk\n   futuro con otro nombre queda cubierto el dia que se declare, y un colegio que retire la\n   restriccion de su carta deja de tratarse como clerk.\nBOOTSTRAP: una raiz sin roster.json no tiene gate (misma postura sin dia de bandera que\nwarrant.py); todas las pruebas preexistentes corren en ese estado y siguen verdes.\n\nGate instalado en los cuatro puntos de entrada: propose (proposer), sponsor (--by), prior y\nvote (--voter). El replay de D-001 muere en su PRIMERA entrada, el propose de clerk-relator,\nantes de que exista dossier -- y la prueba lo fija.\n\nEVIDENCIA: 8 pruebas nuevas en test_deliberate.py (12 en el archivo), incluidos dos controles\nnegativos (ciclo de vida completo con nombres emitidos no-clerk; raiz sin roster conserva\nbootstrap) y la prueba de que el colegio es clerk POR SU CARTA y no por su nombre. Suite\ncompleta: 765 passed, 4 skipped.\n"
+    }
+  ]
+}

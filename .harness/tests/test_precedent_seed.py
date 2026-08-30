@@ -294,35 +294,24 @@ class CitationResolutionTests(unittest.TestCase):
         tokens = list(rec.get("cites", [])) + list(rec.get("tier_evidence", []))
         return [t for t in tokens if not precedent.resolve_citation(t, LIVE_REGISTRY)]
 
-    def test_non_gap_records_have_zero_dangling_citations_cli(self):
-        for pr_id in ("PR-002", "PR-003", "PR-004"):
+    def test_seed_records_have_zero_dangling_citations_cli(self):
+        for pr_id in ("PR-001", "PR-002", "PR-003", "PR-004"):
             with self.subTest(pr_id=pr_id):
                 result = run("cite", "--record", pr_id)
                 self.assertEqual(result.returncode, 0,
                                   "{} cite --record: {}".format(pr_id, result.stdout + result.stderr))
                 self.assertNotIn("DANGLING", result.stdout)
 
-    def test_non_gap_records_have_zero_dangling_citations_module(self):
-        for pr_id in ("PR-002", "PR-003", "PR-004"):
+    def test_seed_records_have_zero_dangling_citations_module(self):
+        for pr_id in ("PR-001", "PR-002", "PR-003", "PR-004"):
             with self.subTest(pr_id=pr_id):
                 dangling = self._dangling_via_module(load_record(pr_id))
                 self.assertEqual(dangling, [], "{}: {}".format(pr_id, dangling))
 
-    def test_pr001_dangles_on_exactly_the_recorded_p023_gap_cli(self):
+    def test_pr001_cites_ratified_p023_ok(self):
         result = run("cite", "--record", "PR-001")
-        self.assertEqual(result.returncode, 3,
-                          "PR-001 cite --record must report exactly the P-023 finding "
-                          "(exit 3, SDR-15); got {}: {}".format(result.returncode, result.stdout))
-        self.assertIn("cites P-023: DANGLING", result.stdout)
-        self.assertEqual(result.stdout.count("DANGLING"), 1,
-                          "PR-001 must dangle on exactly one token (P-023), not more: {}"
-                          .format(result.stdout))
-
-    def test_pr001_dangles_on_exactly_the_recorded_p023_gap_module(self):
-        dangling = self._dangling_via_module(load_record("PR-001"))
-        self.assertEqual(dangling, ["P-023"],
-                          "PR-001 must dangle on exactly the recorded P-023 gap citation and "
-                          "nothing else (SDR-12); got {}".format(dangling))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("cites P-023: OK", result.stdout)
 
 
 class ShowAndListCommandTests(unittest.TestCase):

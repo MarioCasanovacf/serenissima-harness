@@ -1,0 +1,8 @@
+{
+  "id": "T-420",
+  "title": "reputation.py Phase B: EMA decay and operational-consequence engine BEHIND AN ACTIVATION FLAG",
+  "description": "Build the coupling the valley has and PR-060 permits: EMA reputation decay feeding claim priority ordering, iteration bounds and worker slot allocation - OPERATIONAL parameters only, exactly the three PR-061 names. NO STAKING (D-17: no asset boundary). The engine ships with activation OFF and a guard test asserting it cannot activate while PR-061's authority is unresolved; constitutional parameters (decay rate, weights, thresholds) read from an operator-owned file that agents cannot legislate.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

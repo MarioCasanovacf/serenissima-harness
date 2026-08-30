@@ -107,6 +107,20 @@ class V2TestCase(unittest.TestCase):
             args += ["--operation", operation]
         if operation_subtype is not None:
             args += ["--operation-subtype", operation_subtype]
+        if not (extra_args and any(a == "--case" for a in extra_args)):
+            hroot = pathlib.Path(root).parent
+            cdir = hroot / "cases"
+            cdir.mkdir(parents=True, exist_ok=True)
+            existing = [int(p.stem[2:]) for p in cdir.glob("C-*.json") if p.stem[2:].isdigit()]
+            cnum = max(existing) + 1 if existing else 1
+            cid = "C-{:03d}".format(cnum)
+            cdata = {
+                "id": cid, "question": "case for {}".format(task), "task": task,
+                "opened_by": "worker", "ts": "2026-08-24T00:00:00Z",
+                "status": "open", "disposal": None
+            }
+            (cdir / "{}.json".format(cid)).write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
+            args += ["--case", cid]
         if extra_args:
             args += extra_args
         return run(*args, env=env)
@@ -732,10 +746,18 @@ class TestEventIsolationTests(V2TestCase):
         before = live_events_line_count()
         env = dict(os.environ)
         env["PRECEDENT_ROOT"] = str(self.root)
+        cdir = self.root.parent / "cases"
+        cdir.mkdir(parents=True, exist_ok=True)
+        cdata = {
+            "id": "C-001", "question": "case for T-544", "task": "T-544",
+            "opened_by": "worker", "ts": "2026-08-24T00:00:00Z",
+            "status": "open", "disposal": None
+        }
+        (cdir / "C-001.json").write_text(json.dumps(cdata, indent=2) + "\n", encoding="utf-8")
         result = run("publish", "--task", "T-544", "--title", "env isolation", "--subject",
                       "subj-env-iso", "--tier", "4", "--tier-evidence", REAL_TASK_A,
                       "--ratio", "r", "--width", "narrow", "--sources", REAL_TASK_A,
-                      "--code-version", "v1", env=env)
+                      "--code-version", "v1", "--case", "C-001", env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         after = live_events_line_count()
         self.assertEqual(before, after)

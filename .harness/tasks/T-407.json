@@ -61,6 +61,11 @@
       "ts": "2026-08-22T03:05:08Z",
       "agent": "main",
       "note": "CUARTO RECHAZO ACEPTADO Y REPARADO, y este era el mas serio: no un escape sino una REGRESION.\nLa guarda pre-parser bloqueaba `eval` y `source <(...)` porque el texto destructivo estaba en\nla cadena cruda; la reescritura con parser los dejaba pasar porque esos builtins no estaban en\nninguna tabla.\n\nLA REGLA, misma doctrina que CODE_FLAGS y SHELL_OUT_CALLS: el argumento de `eval` ES una linea\nde comando por la convencion del builtin, y se parsea como tal. `source <(cmd)` y `. <(cmd)`\nejecutan lo que el comando sustituido IMPRIME, asi que se inspecciona el comando interno y cada\nuno de sus argumentos de cadena como texto de guion candidato.\n\nLO QUE NO SE BLOQUEA, a proposito y con la confirmacion del propio verificador:\n- `exec \"rm -rf project\"` NO es destructivo (exec no re-divide un argumento entrecomillado; un\n  shell real dice command not found). Bloquearlo seria bloquear un nombre, no una conducta.\n- `eval \"$(pyenv init -)\"`, `source <(kubectl completion zsh)`, `source ./setup.env`: la salida\n  de `$(...)` es incognoscible en tiempo de guarda, y tratar lo incognoscible como destructivo\n  vuelve la guarda inusable -- que es como las guardas terminan deshabilitadas.\n\nEVIDENCIA. Las 6 formas de la tabla del verificador bloqueadas, mas `sudo eval` y un compuesto\n`cd && rm`: 8 en total. Controles negativos: los eval/source que un desarrollador corre a\ndiario siguen pasando, y la prosa que NOMBRA a eval sigue pasando. 42 pruebas en el archivo,\ntodas las clases de las rondas anteriores intactas. Suite completa: 721 passed, 4 skipped.\n"
+    },
+    {
+      "ts": "2026-08-24T15:57:19Z",
+      "agent": "verifier-gemini",
+      "note": "VERIFICACION ADVERSARIAL EXITOSA: 4 rondas de ataques cubiertas, eval/source builtins validados, regresiones resueltas, 721 tests en verde."
     }
   ]
 }
