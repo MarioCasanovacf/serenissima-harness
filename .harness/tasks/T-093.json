@@ -44,6 +44,11 @@
       "ts": "2026-07-05T00:50:59Z",
       "agent": "substrate-worker-1",
       "note": "SCRATCH DISPOSAL: probe complete for T-031 guardrail. All 6 probes + override escape hatch behaved as expected (see T-031 handoff note for full table). Task intentionally disposed as failed; not real work."
+    },
+    {
+      "ts": "2026-08-30T22:40:44Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: close-as-evidence. Terminal failed state is the documented outcome of its probe protocol, not an unresolved defect; cross-checked disposition and citations in .harness/logs/triage_2026-08-30.md. No state change: the board has no cancelled status by design."
     }
   ]
 }

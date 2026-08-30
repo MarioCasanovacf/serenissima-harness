@@ -103,11 +103,14 @@ stdlib only; MUST run under python3 3.9.6 -- no match statement, no
 import argparse
 import json
 import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import harness_common as hc
 import precedent
+import warrant
 
 # --------------------------------------------------------------------------
 # AD2-61: the fixed sybil caveat, character-for-character, quoted from
@@ -754,10 +757,166 @@ def cmd_caveat(args):
 
 # --------------------------------------------------------------------------
 # Phase B: Exponential Moving Average (EMA) Decay & Operational Consequences
-# Authorized by PR-060 and PR-061 (enacting Phase B under constitutional split)
+# Authorized by PR-060 and PR-061. PR-061's authority is operator ruling
+# RAT-01 (.harness/operator-rulings-2026-08-22.md), not deliberation D-001,
+# which was found per incuriam and survives only as a regression fixture.
+#
+# THE CONSTITUTIONAL GATE (T-420). PR-060's split says consequences may
+# attach to OPERATIONAL parameters only, and CONSTITUTIONAL parameters (the
+# EMA decay rate, the component weights, any threshold) are the operator's
+# alone. D-17 says every agent shares one OS user, so no in-repo flag, env
+# var or config file can mark an operator decision -- any agent can write
+# all of them. The ONE boundary D-17 leaves standing is the operator's
+# private key, held off-machine. Therefore:
+#
+#   * The consequence verb (`dispatch`) runs ONLY when
+#     `.harness/constitutional/reputation.json` carries a detached ssh
+#     signature (`.sig`) that verifies against the enrolled trust anchor
+#     (`trust/root.pub` + `trust/root.fingerprint`, warrant.py's three
+#     checks, reused as-is) AND the signed payload says `"activation": "on"`.
+#   * Constitutional parameters on the consequence verb come ONLY from that
+#     signed payload. `--half-life-days` on `dispatch` is refused outright,
+#     agreeing or not: a knob that must match the file is a knob that leaks.
+#   * `rank` stays a read-only REPORT: it accepts trial parameters and says
+#     so -- "reporting only, no consequence attaches" -- because analysis is
+#     not consequence (PR-022 clause 4 protects figures from consequence,
+#     not from being computed).
+#   * No code path in this module can create, sign, or modify the
+#     constitutional file (the module is read-only in its entirety; the
+#     AST test in test_reputation_phase_b.py pins it, the same discipline
+#     as warrant.py's no-sign-path test).
+#   * The ssh namespace is "harness-constitutional", NEVER "harness-warrant":
+#     warrant.py declares its namespace is never reused elsewhere, and a
+#     shared namespace would let a signed warrant payload double as a
+#     constitutional file or vice versa.
+#
+# Bootstrap, no flag day: before the operator signs a constitutional file,
+# `dispatch` refuses and says exactly why; `rank` and `audit-immunity`
+# keep working as reports.
 # --------------------------------------------------------------------------
 
 DEFAULT_HALF_LIFE_DAYS = 30.0
+
+# NOT RATIFIED defaults: used by the read-only `rank` report and clearly
+# labeled there. The consequence verb never reads these -- it takes its
+# parameters from the operator-signed constitutional file or refuses.
+DEFAULT_WEIGHTS = {
+    "rule_authorship": 1.0,
+    "citations_received": 1.0,
+    "consolidations": 2.0,
+    "overrulings_sustained": 1.5,
+    "verdicts_upheld": 1.0,
+}
+
+CONSTITUTIONAL_NAMESPACE = "harness-constitutional"
+CONSTITUTIONAL_RELPATH = "constitutional/reputation.json"
+
+# The operator creates and signs the constitutional file OFF this process:
+#   SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root \
+#       -n harness-constitutional .harness/constitutional/reputation.json
+# This module only ever reads and verifies it.
+
+
+def _constitutional_path(root):
+    return Path(root) / "constitutional" / "reputation.json"
+
+
+def _verify_constitutional_signature(root, payload_path, sig_path):
+    """Verify sig_path over the EXACT bytes of payload_path against the
+    anchored root key, in the harness-constitutional namespace. Returns the
+    verified fingerprint or raises warrant.TrustError.
+
+    Mirrors warrant.verify_signature (same temp-dir allowed_signers rebuild,
+    same wrong-key check) but under this module's own namespace; the shared
+    three-check anchor validation is warrant.check_anchor, reused as-is."""
+    fp = warrant.check_anchor(root)
+    with tempfile.TemporaryDirectory() as tmp:
+        allowed = Path(tmp) / "allowed_signers"
+        pub = (Path(root) / "trust" / "root.pub").read_text(encoding="utf-8").strip()
+        allowed.write_text("operator {}\n".format(pub), encoding="utf-8")
+        with open(payload_path, "rb") as fh:
+            r = subprocess.run(
+                ["ssh-keygen", "-Y", "verify", "-f", str(allowed), "-I", "operator",
+                 "-n", CONSTITUTIONAL_NAMESPACE, "-s", str(sig_path)],
+                stdin=fh, text=True, capture_output=True)
+    if r.returncode != 0:
+        raise warrant.TrustError(
+            "SIGNATURE DOES NOT VERIFY for {}: {}".format(
+                Path(payload_path).name, (r.stderr or r.stdout).strip()))
+    seen = warrant.FINGERPRINT_RE.search(r.stdout or "")
+    if not seen:
+        raise warrant.TrustError(
+            "ssh-keygen reported success without naming a signing key; refusing "
+            "rather than assuming it was the anchored root.")
+    if seen.group(0) != fp:
+        raise warrant.TrustError(
+            "SIGNED BY THE WRONG KEY: {} is not the anchored root {}.".format(
+                seen.group(0), fp))
+    return seen.group(0)
+
+
+def _constitutional_status(root):
+    """The mechanical status of the operator's constitutional file. A REPORT,
+    not a verdict: one of NOT_PRESENT / UNREADABLE / WRONG_NAMESPACE /
+    UNSIGNED / UNVERIFIABLE / BAD_SIGNATURE / VERIFIED, with detail."""
+    path = _constitutional_path(root)
+    sig = Path(str(path) + ".sig")
+    st = {"path": str(path), "state": None, "detail": None, "payload": None}
+    if not path.exists():
+        st["state"] = "NOT_PRESENT"
+        st["detail"] = "no constitutional file at {}".format(path)
+        return st
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        st["state"] = "UNREADABLE"
+        st["detail"] = str(e)
+        return st
+    if not isinstance(payload, dict):
+        st["state"] = "UNREADABLE"
+        st["detail"] = "payload is not a JSON object"
+        return st
+    st["payload"] = payload
+    if payload.get("namespace") != CONSTITUTIONAL_NAMESPACE:
+        st["state"] = "WRONG_NAMESPACE"
+        st["detail"] = "payload namespace {!r} is not {!r}".format(
+            payload.get("namespace"), CONSTITUTIONAL_NAMESPACE)
+        return st
+    if not sig.exists():
+        st["state"] = "UNSIGNED"
+        st["detail"] = "no detached signature at {}".format(sig)
+        return st
+    if not warrant.is_enrolled(root):
+        st["state"] = "UNVERIFIABLE"
+        st["detail"] = ("no trust root enrolled; a signature that cannot be "
+                        "checked authorizes nothing")
+        return st
+    try:
+        fp = _verify_constitutional_signature(root, path, sig)
+    except warrant.TrustError as e:
+        st["state"] = "BAD_SIGNATURE"
+        st["detail"] = str(e)
+        return st
+    st["state"] = "VERIFIED"
+    st["detail"] = "signed by anchored root {}".format(fp)
+    return st
+
+
+def _phase_b_activation(root):
+    """The gate itself. Returns (payload, status): payload is the signed
+    constitutional payload when and only when the file VERIFIES against the
+    anchor and says activation on; otherwise payload is None and status says
+    exactly which condition failed."""
+    st = _constitutional_status(root)
+    if st["state"] != "VERIFIED":
+        return None, st
+    if st["payload"].get("activation") != "on":
+        st = dict(st)
+        st["state"] = "VERIFIED_OFF"
+        st["detail"] = "signature verifies but activation is {!r}, not 'on'".format(
+            st["payload"].get("activation"))
+        return None, st
+    return st["payload"], st
 
 
 def _parse_ts_utc(ts_str):
@@ -779,45 +938,46 @@ def _compute_ema_decay(event_ts_str, now_dt, half_life_days):
     return 2.0 ** (-delta_days / half_life_days)
 
 
-def _compute_phase_b_figures(identity, root, precedents, blackboard_tasks, reopened, half_life_days=30.0, now_dt=None):
+def _compute_phase_b_figures(identity, root, precedents, blackboard_tasks, reopened, half_life_days=DEFAULT_HALF_LIFE_DAYS, now_dt=None, weights=None):
     if now_dt is None:
         now_dt = hc.now_utc()
+    w = weights or DEFAULT_WEIGHTS
 
     f1 = figure_rule_authorship(identity, precedents)
     decayed_f1 = 0.0
     for rec in precedents.values():
         if rec.get("published_by") == identity and rec.get("status") == "active":
-            decayed_f1 += 1.0 * _compute_ema_decay(rec.get("published_at"), now_dt, half_life_days)
+            decayed_f1 += w["rule_authorship"] * _compute_ema_decay(rec.get("published_at"), now_dt, half_life_days)
 
     f2 = figure_load_bearing_citations_received(identity, precedents)
     decayed_f2 = 0.0
     for d in f2.get("detail", []):
         citing_id = d.get("citing_record")
         citing_rec = precedents.get(citing_id, {})
-        decayed_f2 += 1.0 * _compute_ema_decay(citing_rec.get("published_at"), now_dt, half_life_days)
+        decayed_f2 += w["citations_received"] * _compute_ema_decay(citing_rec.get("published_at"), now_dt, half_life_days)
 
     f3 = figure_consolidations_achieved(identity, precedents)
-    decayed_f3 = float(f3.get("value", 0)) * 2.0
+    decayed_f3 = float(f3.get("value", 0)) * w["consolidations"]
 
     f4 = figure_overrulings_sustained(identity, precedents, blackboard_tasks, reopened)
     decayed_f4 = 0.0
     for d in f4.get("detail", []):
         if d.get("sustained"):
             r_rec = precedents.get(d.get("record"), {})
-            decayed_f4 += 1.5 * _compute_ema_decay(r_rec.get("published_at"), now_dt, half_life_days)
+            decayed_f4 += w["overrulings_sustained"] * _compute_ema_decay(r_rec.get("published_at"), now_dt, half_life_days)
 
     f5 = figure_verification_verdicts_upheld(identity, root, blackboard_tasks, reopened)
     decayed_f5 = 0.0
     for d in f5.get("detail", []):
         if d.get("outcome") == "upheld":
             t_data = blackboard_tasks.get(d.get("task"), {})
-            decayed_f5 += 1.0 * _compute_ema_decay(t_data.get("completed_at"), now_dt, half_life_days)
+            decayed_f5 += w["verdicts_upheld"] * _compute_ema_decay(t_data.get("completed_at"), now_dt, half_life_days)
 
     total_score = round(decayed_f1 + decayed_f2 + decayed_f3 + decayed_f4 + decayed_f5, 4)
     return {
         "identity": identity,
         "phase": "B",
-        "authority": "PR-061 / PR-060",
+        "authority": "PR-061 (RAT-01) / PR-060",
         "half_life_days": half_life_days,
         "total_score": total_score,
         "decayed_components": {
@@ -832,7 +992,13 @@ def _compute_phase_b_figures(identity, root, precedents, blackboard_tasks, reope
 
 
 def cmd_rank(args):
-    """Rank discovered identities by Phase B decayed standing score."""
+    """Rank discovered identities by Phase B decayed standing score.
+
+    A read-only REPORT: no consequence attaches to its output, and it says
+    so on every path. Trial parameters (--half-life-days) are accepted here
+    BECAUSE this verb carries no consequence -- analysis is not consequence.
+    The parameters used are labeled ratified or not against the operator's
+    signed constitutional file."""
     root = resolve_root(args)
     if not root_is_valid(root):
         print("refused: invalid root '{}'".format(root), file=sys.stderr)
@@ -850,6 +1016,14 @@ def cmd_rank(args):
     now_dt = _parse_ts_utc(getattr(args, "now", None))
     half_life = float(getattr(args, "half_life_days", None) or DEFAULT_HALF_LIFE_DAYS)
 
+    # Ratified means the payload VERIFIES against the anchor and the value in
+    # use matches it. Activation is a separate question: an operator can
+    # ratify parameters while leaving the consequence verb off.
+    st = _constitutional_status(root)
+    params_ratified = bool(
+        st["state"] == "VERIFIED"
+        and half_life == float(st["payload"].get("ema_half_life_days", -1)))
+
     ranked = []
     for ident, _ in identities:
         score_data = _compute_phase_b_figures(ident, root, precedents, blackboard_tasks, reopened, half_life, now_dt)
@@ -860,15 +1034,23 @@ def cmd_rank(args):
     if args.json:
         print(json.dumps({
             "phase": "B",
-            "authority": "PR-061 / PR-060",
+            "authority": "PR-061 (RAT-01) / PR-060",
+            "consequence": "none: rank is reporting only (PR-061 authorizes "
+                           "dispatch, not rank; PR-022 clause 4)",
             "half_life_days": half_life,
+            "parameters_ratified": params_ratified,
+            "constitutional_file_state": st["state"],
             "rankings": ranked,
             "count": len(ranked),
         }, indent=2, ensure_ascii=False))
     else:
         print("=" * 60)
         print("PHASE B REPUTATION RANKINGS (EMA Decay: {}d)".format(half_life))
-        print("Authority: PR-061 / PR-060 (Operational consequences only)")
+        print("Authority: PR-061 (RAT-01) / PR-060 (Operational consequences only)")
+        print("reporting only, no consequence attaches; parameters {} "
+              "(constitutional file: {})".format(
+                  "RATIFIED by the signed constitutional file" if params_ratified
+                  else "NOT RATIFIED (trial/default values)", st["state"]))
         print("-" * 60)
         for idx, item in enumerate(ranked, 1):
             print("  #{:<2} {:<24} Score: {:>7.4f} (rules:{:.2f}, cites:{:.2f}, verdicts:{:.2f})".format(
@@ -882,10 +1064,37 @@ def cmd_rank(args):
 
 
 def cmd_dispatch(args):
-    """Operational parameter binding: rank candidate workers for task claim queue."""
+    """Operational parameter binding: rank candidate workers for task claim queue.
+
+    THE CONSEQUENCE VERB. This is the one output of this module a consumer
+    may act on (claim priority ordering -- an operational parameter under
+    PR-060's split), and therefore the one verb behind the constitutional
+    gate: it refuses unless the operator-signed constitutional file verifies
+    against the trust anchor and says activation on, and it takes its
+    constitutional parameters from that file ONLY."""
     root = resolve_root(args)
     if not root_is_valid(root):
         print("refused: invalid root '{}'".format(root), file=sys.stderr)
+        return 1
+
+    payload, st = _phase_b_activation(root)
+    if payload is None:
+        print("refused: dispatch is a consequence verb (PR-061) and no verified, "
+              "activated constitutional file authorizes it", file=sys.stderr)
+        print("  constitutional file: {} -- {}".format(st["state"], st["detail"]),
+              file=sys.stderr)
+        print("  activation is the operator's act alone: write {} and sign it with\n"
+              "  SSH_AUTH_SOCK= ssh-keygen -Y sign -f <operator key> -n {} {}".format(
+                  st["path"], CONSTITUTIONAL_NAMESPACE, st["path"]), file=sys.stderr)
+        return 1
+
+    if getattr(args, "half_life_days", None) is not None:
+        print("refused: --half-life-days is a CONSTITUTIONAL parameter (PR-060) and "
+              "on a consequence verb it comes ONLY from the signed constitutional "
+              "file (which says {}). A CLI knob that must match the file is a knob "
+              "that leaks; use `rank` for trial values.".format(
+                  payload.get("ema_half_life_days", DEFAULT_HALF_LIFE_DAYS)),
+              file=sys.stderr)
         return 1
 
     candidates_str = getattr(args, "candidates", None) or ""
@@ -903,11 +1112,15 @@ def cmd_dispatch(args):
         return 4
 
     now_dt = _parse_ts_utc(getattr(args, "now", None))
-    half_life = float(getattr(args, "half_life_days", None) or DEFAULT_HALF_LIFE_DAYS)
+    half_life = float(payload.get("ema_half_life_days", DEFAULT_HALF_LIFE_DAYS))
+    weights = dict(DEFAULT_WEIGHTS)
+    for k, v in (payload.get("weights") or {}).items():
+        if k in weights:
+            weights[k] = float(v)
 
     scored = []
     for cand in candidates:
-        score_data = _compute_phase_b_figures(cand, root, precedents, blackboard_tasks, reopened, half_life, now_dt)
+        score_data = _compute_phase_b_figures(cand, root, precedents, blackboard_tasks, reopened, half_life, now_dt, weights)
         scored.append(score_data)
 
     scored.sort(key=lambda x: (-x["total_score"], x["identity"]))
@@ -917,24 +1130,34 @@ def cmd_dispatch(args):
 
     dispatch_plan = {
         "phase": "B",
-        "authority": "PR-061 / PR-060 (Operational Parameter: Claim Priority Queue)",
+        "authority": "PR-061 (RAT-01) / PR-060 (Operational Parameter: Claim Priority Queue)",
+        "constitutional_file": {
+            "state": st["state"],
+            "detail": st["detail"],
+            "path": st["path"],
+        },
+        "parameters": {
+            "source": "signed constitutional file",
+            "ema_half_life_days": half_life,
+            "weights": weights,
+        },
+        "consequence_scope": "claim priority ordering ONLY; nothing here may "
+                             "modulate verification burdens, quorums, or any "
+                             "constitutional parameter (PR-060)",
         "tasks": tasks,
         "recommended_claim_order": [s["identity"] for s in scored],
         "candidates": scored,
-        "constitutional_immunity": {
-            "verification_burdens_modulated": False,
-            "quorum_floors_modulated": False,
-            "staking_or_asset_loss": False,
-            "status": "PASS"
-        }
     }
 
     if args.json:
         print(json.dumps(dispatch_plan, indent=2, ensure_ascii=False))
     else:
         print("=" * 60)
-        print("OPERATIONAL DISPATCH QUEUE RECOMMENDATION (PR-061)")
+        print("OPERATIONAL DISPATCH QUEUE RECOMMENDATION (PR-061, RAT-01)")
         print("=" * 60)
+        print("Constitutional file: {} -- {}".format(st["state"], st["detail"]))
+        print("Parameters from signed file: half-life {}d, weights {}".format(
+            half_life, json.dumps(weights, sort_keys=True)))
         if tasks:
             print("Target Tasks: {}".format(", ".join(tasks)))
         print("-" * 60)
@@ -943,34 +1166,91 @@ def cmd_dispatch(args):
             print("  Priority {}: {:<20} (Operational Standing Score: {:.4f})".format(
                 idx, cand["identity"], cand["total_score"]))
         print("-" * 60)
-        print("Constitutional Immunity Check: PASSED (Zero effect on verification/quorums)")
+        print("Consequence scope: claim priority ordering ONLY (PR-060 split)")
         print("=" * 60)
     return 0
 
 
 def cmd_audit_immunity(args):
-    """Audit that PR-060/PR-061 constitutional split and D-17 non-staking hold."""
-    report = {
-        "status": "PASS",
-        "constitutional_invariants": {
-            "PR-060_split_enforced": True,
-            "PR-061_operational_consequences_only": True,
-            "verification_burdens_uniform": True,
-            "quorum_floors_immutable_by_standing": True,
-            "D-17_non_staking_no_asset_loss": True,
-            "stored_balances_absent": True
-        }
+    """Report the mechanical state of the Phase B constitutional gate.
+
+    FIGURES, NOT VERDICTS (currency.py's NO THRESHOLD RATIFIED precedent,
+    and defect GUARD-MENTION-C's lesson generalized): the prior version of
+    this verb printed a hardcoded PASS dict -- six invariants asserted True
+    by literal, no input read, no way to fail. An audit that cannot fail is
+    not an audit; it was replaced under T-420. This version reports what is
+    mechanically checkable from here (the constitutional file's state, the
+    activation value, the signed parameters against the source defaults) and
+    labels everything else NOT MECHANICALLY EVALUABLE with the reason. It
+    emits NO overall verdict."""
+    root = resolve_root(args)
+    if not root_is_valid(root):
+        print("refused: invalid root '{}'".format(root), file=sys.stderr)
+        return 1
+
+    st = _constitutional_status(root)
+    verified = st["state"] == "VERIFIED"
+    payload = st["payload"] if verified else None
+
+    checkable = {
+        "constitutional_file_state": st["state"],
+        "constitutional_file_detail": st["detail"],
+        "activation": (payload or {}).get("activation") if verified else None,
+        "signed_parameters": {
+            "ema_half_life_days": (payload or {}).get("ema_half_life_days"),
+            "weights": (payload or {}).get("weights"),
+        } if verified else None,
+        "source_default_parameters": {
+            "ema_half_life_days": DEFAULT_HALF_LIFE_DAYS,
+            "weights": DEFAULT_WEIGHTS,
+            "ratified": False,
+        },
     }
+    not_evaluable = {
+        "verification_burdens_uniform":
+            "a property of every CONSUMER of these figures, not of this reader; "
+            "no consumer can be audited from inside the module it consumes",
+        "quorum_floors_unmodulated":
+            "no quorum machinery reads this module today; tomorrow's consumers "
+            "cannot be enumerated from here",
+        "no_stored_balances":
+            "this module's read-only discipline is pinned by the AST test in "
+            "test_reputation_phase_b.py, not provable by the running module "
+            "about itself",
+        "D-17_shared_os_user":
+            "identities are self-asserted (see CAVEAT); no in-process check "
+            "distinguishes one agent from another",
+    }
+
     if args.json:
-        print(json.dumps(report, indent=2, ensure_ascii=False))
+        print(json.dumps({
+            "verdict": None,
+            "no_verdict_reason": "an audit that cannot fail is not an audit; "
+                                 "this verb reports figures and refuses to "
+                                 "verdict what it cannot mechanically evaluate",
+            "mechanically_checked": checkable,
+            "not_mechanically_evaluable": not_evaluable,
+        }, indent=2, ensure_ascii=False))
     else:
         print("=" * 60)
-        print("REPUTATION CONSTITUTIONAL IMMUNITY AUDIT (PR-060/PR-061)")
+        print("PHASE B GATE REPORT (PR-060/PR-061, RAT-01)")
         print("=" * 60)
-        for k, v in report["constitutional_invariants"].items():
-            print("  {:<45}: {}".format(k, "PASSED" if v else "FAILED"))
+        print("Mechanically checked:")
+        print("  constitutional file : {} -- {}".format(st["state"], st["detail"]))
+        if verified:
+            print("  activation          : {}".format(payload.get("activation")))
+            print("  signed parameters   : half-life {}d, weights {}".format(
+                payload.get("ema_half_life_days"),
+                json.dumps(payload.get("weights"), sort_keys=True)))
+        print("  source defaults     : half-life {}d (NOT RATIFIED, rank-only)".format(
+            DEFAULT_HALF_LIFE_DAYS))
         print("-" * 60)
-        print("OVERALL STATUS: PASS")
+        print("NOT MECHANICALLY EVALUABLE from this module:")
+        for k, why in not_evaluable.items():
+            print("  {} :".format(k))
+            print("      {}".format(why))
+        print("-" * 60)
+        print("NO VERDICT: an audit that cannot fail is not an audit.")
         print("=" * 60)
     return 0
 
@@ -1040,26 +1320,31 @@ def main(argv):
     p_caveat.add_argument("--json", action="store_true", default=False)
     p_caveat.set_defaults(func=cmd_caveat)
 
-    # ---- rank (Phase B, PR-061) ----
-    p_rank = sub.add_parser("rank", help="rank identities by Phase B EMA-decayed operational standing score (PR-061)")
+    # ---- rank (Phase B, PR-061 via RAT-01) ----
+    p_rank = sub.add_parser("rank", help="REPORT: rank identities by Phase B EMA-decayed score; no consequence attaches")
     _add_root_arg(p_rank)
-    p_rank.add_argument("--half-life-days", type=float, default=30.0, help="half life decay in days (default: 30)")
+    p_rank.add_argument("--half-life-days", type=float, default=None,
+                        help="TRIAL value for the report (default 30, NOT RATIFIED); "
+                             "the consequence verb ignores this flag entirely")
     p_rank.add_argument("--now", default=None, help="override current timestamp (ISO UTC)")
     p_rank.add_argument("--json", action="store_true", default=False)
     p_rank.set_defaults(func=cmd_rank)
 
-    # ---- dispatch (Phase B, PR-061) ----
-    p_dispatch = sub.add_parser("dispatch", help="recommend task claim queue priority based on Phase B operational score")
+    # ---- dispatch (Phase B, PR-061 via RAT-01; gated by T-420) ----
+    p_dispatch = sub.add_parser("dispatch", help="CONSEQUENCE VERB: claim queue priority; refuses without an operator-signed, activated constitutional file")
     _add_root_arg(p_dispatch)
     p_dispatch.add_argument("--candidates", required=True, help="comma-separated candidate worker identities")
     p_dispatch.add_argument("--tasks", default=None, help="comma-separated task IDs")
-    p_dispatch.add_argument("--half-life-days", type=float, default=30.0, help="half life decay in days (default: 30)")
+    p_dispatch.add_argument("--half-life-days", type=float, default=None,
+                            help="REFUSED here: constitutional parameter, comes only "
+                                 "from the signed file (PR-060); use `rank` for trials")
     p_dispatch.add_argument("--now", default=None, help="override current timestamp (ISO UTC)")
     p_dispatch.add_argument("--json", action="store_true", default=False)
     p_dispatch.set_defaults(func=cmd_dispatch)
 
-    # ---- audit-immunity (Phase B, PR-060/PR-061) ----
-    p_audit = sub.add_parser("audit-immunity", help="audit that constitutional immunity and D-17 non-staking hold")
+    # ---- audit-immunity (Phase B gate report; figures, not verdicts) ----
+    p_audit = sub.add_parser("audit-immunity", help="report the mechanical state of the Phase B gate; emits NO verdict")
+    _add_root_arg(p_audit)
     p_audit.add_argument("--json", action="store_true", default=False)
     p_audit.set_defaults(func=cmd_audit_immunity)
 

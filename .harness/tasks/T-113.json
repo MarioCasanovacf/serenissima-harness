@@ -9,6 +9,11 @@
       "ts": "2026-07-05T03:15:23Z",
       "agent": "verifier-b",
       "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    },
+    {
+      "ts": "2026-08-30T22:40:54Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: obsolete. Premise retired (operator ruling + PR-014 for T-324..T-329; never-probed spare for T-113); do-not-reopen stands, PR-014 revisit_trigger is the only reversal path. Details in .harness/logs/triage_2026-08-30.md. No state change."
     }
   ]
 }

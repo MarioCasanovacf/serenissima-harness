@@ -19,6 +19,11 @@
       "ts": "2026-07-05T03:15:23Z",
       "agent": "verifier-b",
       "note": "scratch-guardrail-v2 disposed after T-036 attack verification"
+    },
+    {
+      "ts": "2026-08-30T22:40:44Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: close-as-evidence. Terminal failed state is the documented outcome of its probe protocol, not an unresolved defect; cross-checked disposition and citations in .harness/logs/triage_2026-08-30.md. No state change: the board has no cancelled status by design."
     }
   ]
 }

@@ -14,6 +14,11 @@
       "ts": "2026-08-17T01:13:25Z",
       "agent": "coordinator",
       "note": "KILLED by operator ruling 2026-08-16: \"Mario taste calibration matala. Eso es <retired-skill> primitivo.\" The epic existed to A/B a design-taste toolchain that has since been superseded; the current toolchain lives outside this repository, so the comparison no longer measures anything real. This task is NOT to be reopened and its failure is not a defect to repair. T-322 and T-323 shipped and their output (the profile, the rubric, the executive-presentation reference) was absorbed into the successor toolchain, so the epic is retired, not wasted."
+    },
+    {
+      "ts": "2026-08-30T22:40:54Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: obsolete. Premise retired (operator ruling + PR-014 for T-324..T-329; never-probed spare for T-113); do-not-reopen stands, PR-014 revisit_trigger is the only reversal path. Details in .harness/logs/triage_2026-08-30.md. No state change."
     }
   ]
 }

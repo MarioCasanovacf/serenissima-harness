@@ -99,6 +99,11 @@
       "ts": "2026-07-05T03:09:02Z",
       "agent": "substrate-worker-1",
       "note": "CLOSURE: disposable scratch probe for T-036/P-011 acceptance criteria. All 7 probes (self-done-no-handoff refused, handoff+self-done refused, handoff+claim-by-Y+done accepted-no-override [P-011 measurable], handoff+Y-claims+in_progress+done accepted, override-with/without-note, regression incl. failed-stays-ungated + full normal cycle, historical-board-untouched) passed against the restructured cmd_update done-guard in .harness/bin/blackboard.py. Disposing per protocol -- no further action needed on T-099."
+    },
+    {
+      "ts": "2026-08-30T22:40:44Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: close-as-evidence. Terminal failed state is the documented outcome of its probe protocol, not an unresolved defect; cross-checked disposition and citations in .harness/logs/triage_2026-08-30.md. No state change: the board has no cancelled status by design."
     }
   ]
 }

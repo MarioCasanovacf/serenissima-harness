@@ -278,5 +278,65 @@ class TheClerkConstraintIsMechanical(unittest.TestCase):
         self.assertIn("clerk seat", r.stderr)
 
 
+class AnInconsistentRosterFailsClosed(TheClerkConstraintIsMechanical):
+    """T-417, round-2 regression (verifier rejection replayed verbatim). The first cut
+    resolved a missing colegiado to charter="", the clerk markers never matched, and an
+    orphan seat was waved through with NO refusal at all: with colegiados["fedatario"]
+    deleted and names["fed-relator"] unchanged, `sponsor --by fed-relator` exited 0.
+    An inconsistent roster now gets the same posture as an unreadable one: refuse rather
+    than guess. Inherits the intact-roster fixture (and the parent's tests, which re-run
+    here as the A/B control: same roster minus the mutation, opposite outcome).
+    """
+
+    def mutate_roster(self, fn):
+        roster = json.loads((self.hroot / "roster.json").read_text(encoding="utf-8"))
+        fn(roster)
+        (self.hroot / "roster.json").write_text(json.dumps(roster), encoding="utf-8")
+
+    def test_the_verifier_repro_sponsor_by_orphan_colegiado_is_refused(self):
+        dossier = self.propose_ok()
+        self.mutate_roster(lambda r: r["colegiados"].pop("fedatario"))
+        r = self.run_cli("sponsor", dossier, "--by", "fed-relator")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("roster inconsistent", r.stderr)
+        self.assertIn("fedatario", r.stderr)
+
+    def test_the_verifier_repro_propose_by_orphan_colegiado_is_refused(self):
+        self.mutate_roster(lambda r: r["colegiados"].pop("registro"))
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "registro-a")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("roster inconsistent", r.stderr)
+
+    def test_prior_and_vote_by_orphan_colegiado_are_refused(self):
+        dossier = self.propose_ok()
+        for by in ("revision-doctrina", "revision-ataque", "revision-mecanismo"):
+            r = self.run_cli("sponsor", dossier, "--by", by)
+            self.assertEqual(r.returncode, 0, r.stderr)
+        self.mutate_roster(lambda r: r["colegiados"].pop("revision"))
+        r = self.run_cli("prior", dossier, "--voter", "revision-doctrina",
+                         "--ranking", "adopt,reject")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("roster inconsistent", r.stderr)
+        r = self.run_cli("vote", dossier, "--voter", "revision-doctrina",
+                         "--ranking", "adopt,reject")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("roster inconsistent", r.stderr)
+
+    def test_a_colegiado_with_no_charter_text_is_refused(self):
+        """The sibling hole: an EXISTING colegiado whose incentive is empty or absent
+        also resolves to an uncheckable charter -- same fail-closed posture."""
+        self.mutate_roster(lambda r: r["colegiados"]["registro"].update({"incentive": ""}))
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "registro-a")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no charter text", r.stderr)
+        self.mutate_roster(lambda r: r["colegiados"]["registro"].pop("incentive"))
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "registro-a")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no charter text", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

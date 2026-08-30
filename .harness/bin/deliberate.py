@@ -134,7 +134,24 @@ def assembly_eligibility(hroot: pathlib.Path, name: str) -> Optional[str]:
         return ("unissued name: %r holds no seat in the roster; assembly acts are reserved "
                 "to issued names (W-002)" % name)
     colegiado = (names[name] or {}).get("colegiado", "")
-    charter = ((data.get("colegiados", {}) or {}).get(colegiado, {}) or {}).get("incentive", "")
+    colegiados = data.get("colegiados", {}) or {}
+    # FAIL CLOSED on a charter that cannot be resolved (T-417 verifier
+    # rejection, round 1): the first cut defaulted a missing colegiado to
+    # charter="", the clerk markers never matched, and an orphan seat was
+    # waved through with no message at all. A name whose declared colegiado
+    # is absent from the roster's colegiados dict -- or whose colegiado
+    # declares no charter text -- is a roster inconsistency, and an
+    # inconsistent roster gets the same posture as an unreadable one:
+    # refuse rather than guess.
+    if colegiado not in colegiados:
+        return ("roster inconsistent: %r declares colegiado %r which does not exist in "
+                "the roster; refusing rather than resolving its charter to nothing"
+                % (name, colegiado))
+    charter = (colegiados[colegiado] or {}).get("incentive", "")
+    if not charter:
+        return ("roster inconsistent: colegiado %r declares no charter text (incentive); "
+                "a charter that cannot be read cannot be checked for the clerk "
+                "constraint -- refusing rather than guessing" % colegiado)
     if any(marker in charter for marker in CLERK_MARKERS):
         return ("clerk seat: %r sits in colegiado %r whose charter reads %r -- clerks do "
                 "not propose, sponsor, or vote (AgentCity constraint, W-002)"

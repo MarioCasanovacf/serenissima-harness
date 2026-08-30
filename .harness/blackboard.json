@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T09:21:19Z",
-  "updated_by": "main",
+  "updated_at": "2026-08-30T22:42:40Z",
+  "updated_by": "verifier-t417-r2",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5391,7 +5391,7 @@
     "T-417": {
       "epic": "gen-7-assembly-integrity",
       "title": "deliberate.py refuses clerk ballots mechanically",
-      "status": "review",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -5403,11 +5403,13 @@
       "handoff": {
         "to_role": "verifier",
         "from": "main",
-        "note": null,
-        "ts": "2026-08-30T09:21:19Z"
+        "note": "Round 2. The rejected escape is closed IN THE MECHANISM: assembly_eligibility no longer resolves a missing colegiado to charter='' -- an orphan colegiado (name's declared college absent from colegiados) now refuses with 'roster inconsistent', same fail-closed posture as an unreadable roster. Sibling hole closed in the same move: an existing colegiado with empty/absent incentive text also refuses ('no charter text'), because a charter that cannot be read cannot be checked for the clerk markers. Regression class AnInconsistentRosterFailsClosed subclasses TheClerkConstraintIsMechanical so the parent's 8 tests re-run against the same fixture as the A/B control; 4 new tests replay the verifier's exact repro (sponsor --by fed-relator with colegiados['fedatario'] deleted -> was exit 0, now exit 1 'roster inconsistent'), plus propose, prior and vote via the same hole, plus the empty-charter sibling. Evidence: pytest .harness/tests/test_deliberate.py -q -> 24 passed; full suite 798 passed, 4 skipped. The two non-blocking findings from round 1 stand as declared scope: broken-symlink roster reopens bootstrap (bounded by D-17 + git-tracked roster; documented, not gated) and schedule --speakers remains ungated (relator persona runs the deliberation; no actor arg exists on cmd_schedule). Files: .harness/bin/deliberate.py (assembly_eligibility), .harness/tests/test_deliberate.py.",
+        "ts": "2026-08-30T22:38:13Z"
       },
       "created_at": "2026-08-30T09:08:22Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-08-30T22:42:40Z",
+      "completed_by": "verifier-t417-r2"
     },
     "T-418": {
       "epic": "gen-7-assembly-integrity",
@@ -5448,16 +5450,21 @@
     "T-420": {
       "epic": "gen-7-reputation",
       "title": "reputation.py Phase B: EMA decay and operational-consequence engine BEHIND AN ACTIVATION FLAG",
-      "status": "open",
+      "status": "claimed",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "verifier-t420",
+      "claim_expires_at": "2026-08-30T23:39:03Z",
       "priority": 1,
       "detail_file": ".harness/tasks/T-420.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "T-420 built: the Phase B constitutional gate. Design: under D-17 the only boundary any agent cannot cross is the operator's off-machine private key, so activation and constitutional parameters live ONLY in .harness/constitutional/reputation.json + detached ssh signature, verified against the enrolled trust anchor (warrant.check_anchor reused as-is; NEW namespace harness-constitutional, never harness-warrant). dispatch (the one consequence verb) refuses unless the file VERIFIES and says activation on, and takes half-life/weights from the signed payload only; --half-life-days on dispatch is refused outright even when it agrees with the file. rank stays a consequence-free report, accepts trial params, labels them ratified/NOT RATIFIED. audit-immunity rewritten: the hardcoded six-True PASS dict is gone; it now reports mechanical figures (file state, activation, signed vs default params) and labels the rest NOT MECHANICALLY EVALUABLE with reasons, NO verdict (currency.py precedent). Evidence: pytest .harness/tests/test_reputation_phase_b.py -q -> 28 passed (was 6); full suite 786 passed, 4 skipped. Attack tests use REAL keys: absent/unsigned/wrong-key/wrong-namespace/tampered/activation-off/unenrolled all refuse; signed weights provably reach the score (3x weight -> 3x score); AST test pins the exhaustive map of write-capable calls to exactly one (allowed_signers rebuild in system temp dir) and that no ssh-keygen -Y mode other than verify appears. Zero-writes snapshot extended to every Phase B verb including activated dispatch. Bootstrap: before enrollment the gate is CLOSED (UNVERIFIABLE), not open. Files: .harness/bin/reputation.py, .harness/tests/test_reputation_phase_b.py. Verify hints: try to activate without the operator key; try to smuggle a param via CLI/env; check the AST map is exhaustive (not an allow-set that rots); check rank cannot be consumed as a gate.",
+        "ts": "2026-08-30T22:35:41Z"
+      },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main"
     },

@@ -9,6 +9,11 @@
       "ts": "2026-07-04T08:05:24Z",
       "agent": "fable-5-coordinator",
       "note": "SCRATCH closure: disposable dep-gate demo task, intentionally never executed (its purpose was to show the cascade-gate refusal in USAGE.md 3). Terminal state failed=abandoned per protocol, mirroring T-090."
+    },
+    {
+      "ts": "2026-08-30T22:40:44Z",
+      "agent": "main",
+      "note": "TRIAGE 2026-08-30: close-as-evidence. Terminal failed state is the documented outcome of its probe protocol, not an unresolved defect; cross-checked disposition and citations in .harness/logs/triage_2026-08-30.md. No state change: the board has no cancelled status by design."
     }
   ]
 }
