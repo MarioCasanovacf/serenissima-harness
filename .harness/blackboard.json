@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T22:42:40Z",
-  "updated_by": "verifier-t417-r2",
+  "updated_at": "2026-08-30T22:50:27Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5414,18 +5414,23 @@
     "T-418": {
       "epic": "gen-7-assembly-integrity",
       "title": "Deliberation-integrity guards: duration floor, discussion evidence, timestamp sanity",
-      "status": "open",
+      "status": "claimed",
       "role": "worker",
       "engine": "any",
       "depends_on": [
         "T-417"
       ],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "harness-verifier",
+      "claim_expires_at": "2026-08-30T23:50:27Z",
       "priority": 1,
       "detail_file": ".harness/tasks/T-418.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "T-418 built: three deliberation-integrity guards, each answering a D-001 defect, each with its negative control. (1) DISCUSSION EVIDENCE: new 'discuss' verb (eligibility-gated, non-empty --text, --re must name a real alternative, status must be deliberating); conclude REFUSES unless every alternative carries at least one non-empty round, RE-VALIDATED at conclude so a hand-edited empty round or one pointed at a nonexistent alternative counts for nothing. Deliberate design note: the task title says 'duration floor' but I did NOT implement a wall-clock threshold -- no such threshold is ratified (currency.py doctrine) and speed is not the defect, absence of discussion is; 71 fast seconds WITH real discussion is legal, zero discussion is not however slow. (2) UNANIMITY FLAG: every final ballot identical to its voter's own prior -> record carries deliberation_flag=NO-DELIBERATION-OBSERVED; flag NOT block (unanimity can be honest); does not fire if any voter arrived without a prior or any ballot differs. (3) FUTURE-STAMP REFUSAL: exhaustive recursive scan of every ISO-shaped leaf in the dossier; any stamp beyond machine clock + 300s skew refuses every WRITE verb (sponsor/prior/discuss/vote/conclude); reads (show) stay open so a tampered dossier is auditable; unparseable stamp fails closed; skew constant is engineering tolerance not a constitutional threshold. Drive-by: T-417 verifier round-2 non-blocking finding 2 (non-dict colegiado value crashed with AttributeError) converted to clean 'roster inconsistent' refusal. Evidence: pytest .harness/tests/test_deliberate.py -q -> 41 passed (was 24); full suite 815 passed, 4 skipped. Regression class TheD001DefectCannotRecur replays D-001's shape under the live roster + guards together: clerk proposer never opens the dossier, and a legitimate non-clerk docket still cannot conclude without discussion. Files: .harness/bin/deliberate.py, .harness/tests/test_deliberate.py. Verify hints: try to conclude with a discussion round whose text is whitespace; try a future stamp nested in a ballot; check the flag fires on the exact D-001 priors==ballots pattern; check reads survive a future-dated dossier.",
+        "ts": "2026-08-30T22:49:28Z"
+      },
       "created_at": "2026-08-30T09:08:35Z",
       "created_by": "main"
     },
@@ -5450,12 +5455,12 @@
     "T-420": {
       "epic": "gen-7-reputation",
       "title": "reputation.py Phase B: EMA decay and operational-consequence engine BEHIND AN ACTIVATION FLAG",
-      "status": "claimed",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
-      "claimed_by": "verifier-t420",
-      "claim_expires_at": "2026-08-30T23:39:03Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-420.json",
       "artifacts": [],
@@ -5466,7 +5471,9 @@
         "ts": "2026-08-30T22:35:41Z"
       },
       "created_at": "2026-08-30T09:08:35Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-08-30T22:44:29Z",
+      "completed_by": "verifier-t420"
     },
     "T-421": {
       "epic": "gen-7-reputation",

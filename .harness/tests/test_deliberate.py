@@ -8,6 +8,7 @@ Verifies:
   5. Post-deliberation ranked voting and Condorcet conclusion via Schulze/Copeland engine.
   6. CLI subcommands and JSON outputs.
 """
+import datetime as dt
 import json
 import pathlib
 import subprocess
@@ -18,6 +19,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".harness" / "bin"))
 import deliberate  # noqa: E402
+import harness_common as hc  # noqa: E402
 
 CLI = ROOT / ".harness" / "bin" / "deliberate.py"
 
@@ -131,6 +133,13 @@ class DeliberationProtocolTests(unittest.TestCase):
         sched_data = json.loads(r_sched.stdout)
         self.assertEqual(sched_data["status"], "deliberating")
         self.assertEqual(len(sched_data["speaker_order"]), 3)
+
+        # 4b. Discussion: T-418 guard 1 requires at least one non-empty round
+        # per alternative before a deliberation may conclude.
+        for alt in ("AdamW", "SGD", "Lion"):
+            rd = self.run_cli("discuss", "D-001", "--by", "worker-1", "--re", alt,
+                              "--text", "case for/against %s on the benchmarks" % alt)
+            self.assertEqual(rd.returncode, 0, rd.stderr)
 
         # 5. Vote Post-Deliberation
         self.run_cli("vote", "D-001", "--voter", "worker-1", "--ranking", "AdamW,Lion,SGD")
@@ -336,6 +345,252 @@ class AnInconsistentRosterFailsClosed(TheClerkConstraintIsMechanical):
                          "--proposer", "registro-a")
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("no charter text", r.stderr)
+
+
+class DeliberationIntegrityGuards(unittest.TestCase):
+    """T-418. D-001 concluded in 71 seconds with no recorded discussion, four
+    ballots identical to four identical priors, and stamps three days in the
+    future. Three guards answer those three defects; each carries its negative
+    control. These run in a rosterless root (no eligibility gate), so they test
+    the integrity guards in isolation from T-417's clerk gate."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def convene(self, alternatives=("A", "B")):
+        """Propose -> 3 sponsors -> priors -> schedule. Returns dossier id."""
+        alt_args = []
+        for a in alternatives:
+            alt_args += ["--alternatives", a]
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "w1", *alt_args)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        did = r.stdout.split()[3].rstrip(":")
+        for by in ("w2", "w3"):
+            self.assertEqual(self.run_cli("sponsor", did, "--by", by).returncode, 0)
+        self.run_cli("prior", did, "--voter", "w1", "--ranking", ",".join(alternatives))
+        self.assertEqual(self.run_cli("schedule", did, "--speakers", "w1,w2,w3").returncode, 0)
+        return did
+
+    def dossier(self, did):
+        return json.loads((self.hroot / "deliberations" / (did + ".json")).read_text())
+
+    def write_dossier(self, did, data):
+        (self.hroot / "deliberations" / (did + ".json")).write_text(
+            json.dumps(data), encoding="utf-8")
+
+    # -- Guard 1: discussion evidence --------------------------------------
+
+    def test_conclude_refused_when_an_alternative_has_no_discussion(self):
+        did = self.convene(("A", "B"))
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "case for A")
+        # B is never discussed.
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no discussion recorded", r.stderr)
+        self.assertIn("'B'", r.stderr)
+
+    def test_conclude_succeeds_once_every_alternative_is_discussed(self):
+        did = self.convene(("A", "B"))
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w2", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_empty_discussion_text_is_refused_at_write(self):
+        did = self.convene(("A", "B"))
+        r = self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "   ")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("non-empty", r.stderr)
+
+    def test_hand_edited_empty_round_does_not_satisfy_the_guard(self):
+        """Re-validated at conclude: an empty-text round injected straight into
+        the JSON counts for nothing."""
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        data["discussion"] = [{"by": "w1", "re": "A", "text": "", "at": hc.now_iso()},
+                              {"by": "w1", "re": "B", "text": "  ", "at": hc.now_iso()}]
+        self.write_dossier(did, data)
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no discussion recorded", r.stderr)
+
+    def test_discussion_round_pointed_at_a_nonexistent_alternative_is_refused(self):
+        did = self.convene(("A", "B"))
+        r = self.run_cli("discuss", did, "--by", "w1", "--re", "Z", "--text", "for Z")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not an alternative", r.stderr)
+
+    def test_discuss_before_convening_is_refused(self):
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "w1", "--alternatives", "A", "--alternatives", "B")
+        did = r.stdout.split()[3].rstrip(":")
+        r = self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "early")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("convened", r.stderr)
+
+    # -- Guard 2: NO-DELIBERATION-OBSERVED flag ----------------------------
+
+    def test_flag_fires_when_every_ballot_equals_its_prior(self):
+        did = self.convene(("A", "B"))
+        self.run_cli("prior", did, "--voter", "w1", "--ranking", "A,B")
+        self.run_cli("prior", did, "--voter", "w2", "--ranking", "A,B")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w2", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        self.run_cli("vote", did, "--voter", "w2", "--ranking", "A,B")
+        r = self.run_cli("conclude", did, "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["deliberation_flag"], "NO-DELIBERATION-OBSERVED")
+
+    def test_flag_is_a_flag_not_a_block(self):
+        """The conclusion still succeeds and the tally is present -- unanimity
+        can be honest."""
+        did = self.convene(("A", "B"))
+        self.run_cli("prior", did, "--voter", "w1", "--ranking", "A,B")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        r = self.run_cli("conclude", did, "--json")
+        data = json.loads(r.stdout)
+        self.assertEqual(data["status"], "concluded")
+        self.assertIsNotNone(data["tally_result"])
+
+    def test_flag_does_not_fire_when_a_ballot_differs_from_its_prior(self):
+        did = self.convene(("A", "B"))
+        self.run_cli("prior", did, "--voter", "w1", "--ranking", "A,B")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "B", "--text", "for B")
+        # ballot flips relative to the prior: the discussion moved someone.
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "B,A")
+        r = self.run_cli("conclude", did, "--json")
+        self.assertEqual(json.loads(r.stdout)["deliberation_flag"], "deliberation-observed")
+
+    def test_flag_does_not_fire_when_a_voter_arrived_without_a_prior(self):
+        did = self.convene(("A", "B"))
+        # w1 has a prior (from convene) but w2 votes with none.
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w2", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        self.run_cli("vote", did, "--voter", "w2", "--ranking", "A,B")
+        r = self.run_cli("conclude", did, "--json")
+        self.assertEqual(json.loads(r.stdout)["deliberation_flag"], "deliberation-observed")
+
+    # -- Guard 3: future-stamp refusal -------------------------------------
+
+    def test_future_dated_stamp_refuses_every_write_verb(self):
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        future = (hc.now_utc() + dt.timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        data["created_at"] = future
+        self.write_dossier(did, data)
+        for verb, extra in (
+            ("sponsor", ["--by", "w4"]),
+            ("prior", ["--voter", "w5", "--ranking", "A,B"]),
+            ("discuss", ["--by", "w1", "--re", "A", "--text", "x"]),
+            ("vote", ["--voter", "w1", "--ranking", "A,B"]),
+            ("conclude", []),
+        ):
+            r = self.run_cli(verb, did, *extra)
+            self.assertEqual(r.returncode, 1, "%s should refuse: %s" % (verb, r.stdout))
+            self.assertIn("future-dated stamp", r.stderr)
+
+    def test_future_stamp_buried_deep_in_the_dossier_is_caught(self):
+        """The scan is exhaustive, not a fixed key list: a future stamp on a
+        nested ballot is caught as surely as one on created_at."""
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        future = (hc.now_utc() + dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        data["final_ballots"] = {"w1": {"ranking": ["A", "B"], "weight": 1.0,
+                                        "voted_at": future}}
+        self.write_dossier(did, data)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("future-dated stamp", r.stderr)
+        self.assertIn("final_ballots", r.stderr)
+
+    def test_reads_still_work_on_a_future_dated_dossier(self):
+        """A tampered dossier must stay readable -- show is the audit path."""
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        data["created_at"] = (hc.now_utc() + dt.timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.write_dossier(did, data)
+        r = self.run_cli("show", did)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_stamp_within_skew_is_allowed(self):
+        """A stamp a minute ahead (clock jitter) is not 'from the future'."""
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        data["created_at"] = (hc.now_utc() + dt.timedelta(seconds=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.write_dossier(did, data)
+        r = self.run_cli("sponsor", did, "--by", "w4")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_unparseable_stamp_fails_closed(self):
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        data["created_at"] = "2026-13-99T99:99:99Z"  # matches the shape, cannot be ordered
+        self.write_dossier(did, data)
+        r = self.run_cli("sponsor", did, "--by", "w4")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("future-dated stamp", r.stderr)
+
+
+class TheD001DefectCannotRecur(unittest.TestCase):
+    """The three guards, composed: replay D-001's shape end to end under the
+    live roster and the integrity guards together, and show it can no longer
+    conclude. This is the regression fixture RAT-01 promised."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+        # Real roster copied from the live one, so clerk names are refused too.
+        live = ROOT / ".harness" / "roster.json"
+        (self.hroot / "roster.json").write_text(live.read_text(encoding="utf-8"),
+                                                encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def test_a_clerk_proposer_never_even_opens_the_dossier(self):
+        r = self.run_cli("propose", "--title", "Phase B", "--evidence", "C-001",
+                         "--task", "T-1", "--proposer", "fed-relator")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("clerk seat", r.stderr)
+        self.assertFalse((self.hroot / "deliberations" / "D-001.json").exists())
+
+    def test_a_non_clerk_docket_still_cannot_skip_discussion(self):
+        r = self.run_cli("propose", "--title", "Phase B", "--evidence", "C-001",
+                         "--task", "T-1", "--proposer", "registro-a",
+                         "--alternatives", "adopt", "--alternatives", "reject")
+        did = r.stdout.split()[3].rstrip(":")
+        for by in ("revision-doctrina", "revision-ataque"):
+            self.run_cli("sponsor", did, "--by", by)
+        self.run_cli("schedule", did, "--speakers", "registro-a,revision-doctrina,revision-ataque")
+        self.run_cli("vote", did, "--voter", "registro-a", "--ranking", "adopt,reject")
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("no discussion recorded", r.stderr)
 
 
 if __name__ == "__main__":
