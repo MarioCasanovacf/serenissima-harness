@@ -522,6 +522,19 @@ class DeliberationIntegrityGuards(unittest.TestCase):
         self.assertIn("future-dated stamp", r.stderr)
         self.assertIn("final_ballots", r.stderr)
 
+    def test_future_stamp_smuggled_as_a_dict_key_is_caught(self):
+        """T-418 verifier finding, closed: a future ISO string used as a KEY,
+        not a value, was slipping the scan. No legitimate write emits a stamp
+        as a key, so scanning keys only ever closes forgery."""
+        did = self.convene(("A", "B"))
+        data = self.dossier(did)
+        future = (hc.now_utc() + dt.timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        data[future] = "smuggled audit note"
+        self.write_dossier(did, data)
+        r = self.run_cli("sponsor", did, "--by", "w4")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("future-dated stamp", r.stderr)
+
     def test_reads_still_work_on_a_future_dated_dossier(self):
         """A tampered dossier must stay readable -- show is the audit path."""
         did = self.convene(("A", "B"))

@@ -220,6 +220,13 @@ def _stamp_leaves(value: Any, path: str = "$") -> List[Tuple[str, str]]:
             found.append((path, value))
     elif isinstance(value, dict):
         for k, v in value.items():
+            # Scan KEYS as well as values (T-418 verifier finding): a
+            # dossier hand-edited to carry a future ISO string as a key --
+            # {"2026-09-02T...": "note"} -- would otherwise slip the scan and
+            # make the "exhaustive over every leaf" claim false. No legitimate
+            # write emits a stamp as a key, so this only ever closes forgery.
+            if isinstance(k, str) and ISO_STAMP_RE.match(k):
+                found.append(("%s.<key>%s" % (path, k), k))
             found.extend(_stamp_leaves(v, "%s.%s" % (path, k)))
     elif isinstance(value, (list, tuple)):
         for i, v in enumerate(value):

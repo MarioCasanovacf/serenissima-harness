@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T22:50:27Z",
-  "updated_by": "harness-verifier",
+  "updated_at": "2026-08-30T22:58:03Z",
+  "updated_by": "verifier-t419",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5414,14 +5414,14 @@
     "T-418": {
       "epic": "gen-7-assembly-integrity",
       "title": "Deliberation-integrity guards: duration floor, discussion evidence, timestamp sanity",
-      "status": "claimed",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [
         "T-417"
       ],
-      "claimed_by": "harness-verifier",
-      "claim_expires_at": "2026-08-30T23:50:27Z",
+      "claimed_by": null,
+      "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-418.json",
       "artifacts": [],
@@ -5432,19 +5432,21 @@
         "ts": "2026-08-30T22:49:28Z"
       },
       "created_at": "2026-08-30T09:08:35Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-08-30T22:54:48Z",
+      "completed_by": "harness-verifier"
     },
     "T-419": {
       "epic": "gen-7-assembly-integrity",
       "title": "Adversarial replay of the integrity guards",
-      "status": "open",
+      "status": "claimed",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
         "T-418"
       ],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "verifier-t419",
+      "claim_expires_at": "2026-08-30T23:58:03Z",
       "priority": 2,
       "detail_file": ".harness/tasks/T-419.json",
       "artifacts": [],
@@ -5478,14 +5480,14 @@
     "T-421": {
       "epic": "gen-7-reputation",
       "title": "Adversarial verify of Phase B: capture, inflation, and the flag",
-      "status": "open",
+      "status": "in_progress",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
         "T-420"
       ],
-      "claimed_by": null,
-      "claim_expires_at": null,
+      "claimed_by": "verifier-t421",
+      "claim_expires_at": "2026-08-30T23:50:46Z",
       "priority": 2,
       "detail_file": ".harness/tasks/T-421.json",
       "artifacts": [],

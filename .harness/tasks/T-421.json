@@ -4,5 +4,11 @@
   "description": "Attack the reputation engine: self-dealing verdicts inflating a reputation, decay evasion via task-splitting, and every path that could flip the activation flag without the operator. Verdict done or send back with reproduction.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-08-30T22:50:52Z",
+      "agent": "main",
+      "note": "Claimed as verifier-t421. Plan: replay pytest suite, then adversarial attack in scratch root against three families (self-dealing/inflation, decay evasion via task-splitting, activation-flag capture) per task mandate. Never touch live .harness/trust or .harness/constitutional."
+    }
+  ]
 }
