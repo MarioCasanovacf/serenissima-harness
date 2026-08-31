@@ -1,0 +1,15 @@
+{
+  "namespace": "harness-constitutional",
+  "activation": "on",
+  "ema_half_life_days": 30.0,
+  "weights": {
+    "rule_authorship": 1.0,
+    "citations_received": 1.0,
+    "consolidations": 2.0,
+    "overrulings_sustained": 1.5,
+    "verdicts_upheld": 1.0
+  },
+  "ratified": "Operator selection 2026-08-31: all three pending ratifications answered yes. Values are the source defaults, ratified by the operator's detached signature over this exact file.",
+  "authority": "PR-060 split; PR-061 as cured by RAT-01 (.harness/operator-rulings-2026-08-22.md). Consequences attach to operational parameters only.",
+  "note": "UNSIGNED DRAFT until reputation.json.sig exists beside this file. reputation.py treats an unsigned file as gate-closed (state UNSIGNED). Any edit after signing invalidates the signature: the signature covers bytes."
+}
