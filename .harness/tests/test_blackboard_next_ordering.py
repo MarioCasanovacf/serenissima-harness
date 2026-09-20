@@ -622,5 +622,281 @@ class ZeroWriteAcrossTheGatedAdvisory(PhaseBAdvisoryFixture):
         self.assertEqual(before, self._snapshot())
 
 
+# --------------------------------------------------------------------------
+# T-426 / PR-062 (YIELD-AT-NEXT, docket C-002): the CONSEQUENCE attached to
+# `cmd_next` -- pure-function coverage of `phase_b_yield_check`, then
+# end-to-end coverage (real ed25519 keypair, real signed constitutional
+# file, real `reputation.py dispatch` subprocess, real precedent authorship
+# feeding a genuine nonzero Phase B score) of the consequence firing, the
+# common-floor fallback (ties/unranked never yield), and the MUTATION check
+# that the same underlying data produces NO consequence once the gate is
+# closed -- proving the consequence is gated, not innate to the score.
+# --------------------------------------------------------------------------
+
+class YieldCheckPureFunction(unittest.TestCase):
+    """`phase_b_yield_check(plan, agent)` in isolation -- no subprocess, no
+    fixture. `plan['candidates']` mirrors dispatch's own sorted
+    (-total_score, identity) shape verbatim."""
+
+    def test_outranked_returns_the_outranking_identity(self):
+        plan = {"candidates": [{"identity": "top-dog", "total_score": 5.0},
+                               {"identity": "me", "total_score": 1.0}]}
+        self.assertEqual(bbmod.phase_b_yield_check(plan, "me"), "top-dog")
+
+    def test_tie_at_the_top_never_yields(self):
+        # alphabetical tiebreak puts 'aaa' first even though the score ties
+        # 'me' exactly -- clause 4 (strictly greater, zero margin) forbids
+        # keying on that position/name.
+        plan = {"candidates": [{"identity": "aaa", "total_score": 5.0},
+                               {"identity": "me", "total_score": 5.0}]}
+        self.assertIsNone(bbmod.phase_b_yield_check(plan, "me"))
+
+    def test_already_at_the_top_never_yields(self):
+        plan = {"candidates": [{"identity": "me", "total_score": 9.0},
+                               {"identity": "someone-else", "total_score": 1.0}]}
+        self.assertIsNone(bbmod.phase_b_yield_check(plan, "me"))
+
+    def test_agent_absent_from_scored_candidates_never_yields(self):
+        # unranked/unknown to dispatch -- common floor, never yields.
+        plan = {"candidates": [{"identity": "top-dog", "total_score": 5.0}]}
+        self.assertIsNone(bbmod.phase_b_yield_check(plan, "me"))
+
+    def test_plan_none_never_yields(self):
+        self.assertIsNone(bbmod.phase_b_yield_check(None, "me"))
+
+    def test_empty_candidates_list_never_yields(self):
+        self.assertIsNone(bbmod.phase_b_yield_check({"candidates": []}, "me"))
+
+    def test_alone_never_yields(self):
+        plan = {"candidates": [{"identity": "me", "total_score": 0.0}]}
+        self.assertIsNone(bbmod.phase_b_yield_check(plan, "me"))
+
+
+class RealDispatchYieldFixture(PhaseBAdvisoryFixture):
+    """Extends the real-gate fixture with a way to give one synthetic
+    identity a genuine nonzero Phase B score: a minimal active precedent
+    record authored by it. `precedent.load_record_or_raise` requires only a
+    dict with an 'id' key (precedent.py:725-732) -- no further schema is
+    needed to feed `figure_rule_authorship` -> `dispatch`'s real
+    `total_score`, so this is a real subprocess call against real data, not
+    a mock."""
+
+    def write_precedent(self, pr_id, published_by, status="active", published_at=None):
+        (self.harness / "precedents").mkdir(parents=True, exist_ok=True)
+        path = self.harness / "precedents" / "{}.json".format(pr_id)
+        path.write_text(json.dumps({
+            "id": pr_id,
+            "published_by": published_by,
+            "status": status,
+            "published_at": published_at or hc.now_iso(),
+        }), encoding="utf-8")
+        return path
+
+    def events(self):
+        if not hc.EVENTS.exists():
+            return []
+        out = []
+        for line in hc.EVENTS.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                out.append(json.loads(line))
+        return out
+
+    def open_gate(self):
+        self.enroll()
+        path = self.write_constitutional(activation="on")
+        trpb.sign(path, self.operator_key)
+
+
+class CmdNextYieldConsequence(RealDispatchYieldFixture):
+    """THE CONSEQUENCE: gate open, `worker-x` carries a real nonzero score
+    (one active precedent it authored), `worker-y` carries none -- `worker-y`
+    is outranked and `next` yields."""
+
+    def test_outranked_requester_gets_distinct_exit_code_and_named_event(self):
+        self.open_gate()
+        self.write_precedent("PR-900", published_by="worker-x")
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future,
+                       priority=5, title="held by worker-x"),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        code, out = self.run_next(agent="worker-y")
+        self.assertEqual(code, bbmod.PHASE_B_YIELD_EXIT)
+        self.assertNotIn(code, (0, 1))
+        self.assertIn("next: T-9 ", out)
+        self.assertIn("claim it: python3 .harness/bin/blackboard.py claim T-9 --agent worker-y", out)
+        self.assertIn("yield:", out)
+        self.assertIn("worker-x", out)
+
+        events = [e for e in self.events() if e.get("event") == "phase_b_yield"]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["task"], "T-9")
+        self.assertEqual(events[0]["agent"], "worker-y")
+        self.assertEqual(events[0]["outranked_by"], "worker-x")
+
+    def test_next_and_claim_it_lines_are_byte_identical_whether_or_not_it_yields(self):
+        self.open_gate()
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        _, out_no_yield = self.run_next(agent="worker-y")  # tie at 0.0 -- no yield
+        self.write_precedent("PR-900", published_by="worker-x")
+        _, out_yield = self.run_next(agent="worker-y")  # now outranked -- yields
+
+        def anchor_lines(text):
+            return [ln for ln in text.splitlines()
+                    if ln.startswith("next: ") or ln.startswith("claim it: ")]
+
+        self.assertEqual(anchor_lines(out_no_yield), anchor_lines(out_yield))
+
+    def test_claim_stays_first_come_untouched_by_a_yield(self):
+        self.open_gate()
+        self.write_precedent("PR-900", published_by="worker-x")
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        code, _ = self.run_next(agent="worker-y")
+        self.assertEqual(code, bbmod.PHASE_B_YIELD_EXIT)
+        claim_code, claim_out = self.run_claim("T-9", "worker-y")
+        self.assertEqual(claim_code, 0)
+        self.assertIn("claimed T-9 for worker-y", claim_out)
+
+    def run_claim(self, task_id, agent):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = bbmod.cmd_claim(argparse.Namespace(task_id=task_id, agent=agent, lease=None))
+        return code, buf.getvalue()
+
+
+class CmdNextYieldFallback(RealDispatchYieldFixture):
+    """COMMON FLOOR: ties and unranked identities never yield (PR-062
+    clause 5) -- the everyday case (82/147 live identities at 0.0 in the
+    live registry), exercised here with two identities that both score
+    0.0 (no precedent authorship at all)."""
+
+    def test_tied_zero_scores_never_yield(self):
+        self.open_gate()
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        code, out = self.run_next(agent="worker-y")
+        self.assertEqual(code, 0)
+        self.assertNotIn("yield:", out)
+        self.assertEqual([e for e in self.events() if e.get("event") == "phase_b_yield"], [])
+
+    def test_solo_requester_with_no_other_live_candidate_never_yields(self):
+        self.open_gate()
+        self.write_precedent("PR-900", published_by="worker-y")  # score itself, alone
+        self.set_tasks({"T-9": task(status="open", priority=1, title="claimable")})
+        code, out = self.run_next(agent="worker-y")
+        self.assertEqual(code, 0)
+        self.assertNotIn("yield:", out)
+
+
+class ConsequenceDisappearsWhenGateCloses(RealDispatchYieldFixture):
+    """MUTATION CHECK (T-426 acceptance criterion): the EXACT same task/score
+    setup that fires a yield with the gate open (proved by
+    `CmdNextYieldConsequence` above) produces NO consequence at all -- exit
+    0, no 'yield:' line, no `phase_b_yield` event -- once the gate is
+    closed. This proves the consequence is CONDITIONED on the operator's
+    signed, activated constitutional file and not on the underlying score
+    data alone."""
+
+    def test_gate_closed_same_score_data_produces_no_yield(self):
+        # deliberately NOT calling self.open_gate() -- no enroll(), no
+        # constitutional file, no signature: the everyday closed-gate state.
+        self.write_precedent("PR-900", published_by="worker-x")
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        code, out = self.run_next(agent="worker-y")
+        self.assertEqual(code, 0)
+        self.assertNotIn("yield:", out)
+        self.assertIn("phase-b claim order not applied:", out)
+        self.assertEqual([e for e in self.events() if e.get("event") == "phase_b_yield"], [])
+
+    def test_reopening_the_gate_on_the_same_data_now_yields(self):
+        # the flip side of the mutation check, same fixture/data, only the
+        # gate changes -- proves the closed-gate result above was not a
+        # fluke of the setup.
+        self.write_precedent("PR-900", published_by="worker-x")
+        future = hc.iso_in(3600)
+        self.set_tasks({
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        })
+        code_closed, _ = self.run_next(agent="worker-y")
+        self.assertEqual(code_closed, 0)
+        self.open_gate()
+        code_open, out_open = self.run_next(agent="worker-y")
+        self.assertEqual(code_open, bbmod.PHASE_B_YIELD_EXIT)
+        self.assertIn("yield:", out_open)
+
+
+class SingleDispatchReadForYield(unittest.TestCase):
+    """PR-062 clause 4: outranked-by is read 'from one read and with no
+    second dispatch run'. Mocks `bbmod.subprocess.run` (SeamContract's own
+    pattern) to prove `cmd_next` invokes it exactly ONCE even though both
+    the advisory line and the yield check need dispatch's answer."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.harness = pathlib.Path(self._tmp.name) / "harness"
+        (self.harness / "tasks").mkdir(parents=True)
+        (self.harness / "logs").mkdir()
+        self._orig = {name: getattr(hc, name) for name in
+                       ("HARNESS", "BLACKBOARD", "STATE", "TASKS", "EVENTS", "GUARD")}
+        hc.HARNESS = self.harness
+        hc.BLACKBOARD = self.harness / "blackboard.json"
+        hc.STATE = self.harness / "state.json"
+        hc.TASKS = self.harness / "tasks"
+        hc.EVENTS = self.harness / "logs" / "events.jsonl"
+        hc.GUARD = self.harness / "locks" / ".guard"
+        self.addCleanup(self._restore)
+        hc.atomic_write_json(hc.BLACKBOARD, empty_bb())
+
+    def _restore(self):
+        for name, value in self._orig.items():
+            setattr(hc, name, value)
+
+    def test_cmd_next_calls_dispatch_subprocess_exactly_once(self):
+        bb = hc.read_json(hc.BLACKBOARD)
+        future = hc.iso_in(3600)
+        bb["tasks"] = {
+            "T-1": task(status="claimed", claimed_by="worker-x", claim_expires_at=future),
+            "T-9": task(status="open", priority=1, title="claimable"),
+        }
+        hc.atomic_write_json(hc.BLACKBOARD, bb)
+
+        calls = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(argv)
+            out = json.dumps({
+                "recommended_claim_order": ["worker-x", "worker-y"],
+                "candidates": [{"identity": "worker-x", "total_score": 5.0},
+                               {"identity": "worker-y", "total_score": 0.0}],
+            })
+            return subprocess.CompletedProcess(argv, 0, stdout=out, stderr="")
+
+        with mock.patch.object(bbmod.subprocess, "run", side_effect=fake_run):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                code = bbmod.cmd_next(argparse.Namespace(agent="worker-y", role=None, engine=None))
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(code, bbmod.PHASE_B_YIELD_EXIT)
+
+
 if __name__ == "__main__":
     unittest.main()

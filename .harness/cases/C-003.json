@@ -1,0 +1,15 @@
+{
+  "id": "C-003",
+  "question": "PR-060 clause 6's own record: which operational parameter, which consequence and which act does T-426's implementation of PR-062's YIELD-AT-NEXT in blackboard.py name?",
+  "task": "T-426",
+  "opened_by": "registro-a",
+  "ts": "2026-09-20T19:32:27Z",
+  "status": "disposed",
+  "disposal": {
+    "verb": "publish",
+    "ref": "PR-063",
+    "by": "registro-a",
+    "task": "T-426",
+    "ts": "2026-09-20T19:32:32Z"
+  }
+}

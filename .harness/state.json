@@ -698,6 +698,21 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-09-20T19:21:00Z"
+      },
+      "verifier-g8-docket": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T19:22:40Z"
+      },
+      "worker-g8-attach": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T19:41:28Z"
+      },
+      "verifier-g8-attach": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T19:43:10Z"
       }
     }
   },

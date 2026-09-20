@@ -9,6 +9,11 @@
       "ts": "2026-09-20T19:21:08Z",
       "agent": "verifier-g8-docket",
       "note": "HANDOFF -> verifier: T-424 verdicted done: replayed all commands in the producer handoff (case show, publisher-report, PR-062/D-002 field dumps, cite --record PR-062 = 0 dangling, grep checks), plus independent checks the producer did not run: roster.py eligible --record PR-062 (all 5 panelists issued non-clerk), programmatic timestamp-monotonicity + no-future-stamp check over every dossier stamp, independent recomputation of compute_deterministic_speaker_order from deliberate.py matching stored speaker_order (tamper check), PR-060/PR-061 cited_by bidirectional consistency, currency.py before/after via a read-only git worktree at HEAD (typed-share direction NOT REPORTABLE both sides, edges 46->48 exactly matching PR-062's 2 typed relations), full pytest suite 897 passed/4 skipped, precedent.py conflicts 0 findings/62 records, and a leak scan of the new/changed tracked files. precedent.py confirm PR-062 --agent verifier-g8-docket --outcome confirmed was required by the done-guard (PR-015/PR-038 distinct-identity confirmation) and was run before blackboard.py update T-424 --status done succeeded. No blocking defects found. Housekeeping: lock.py status showed no active locks both before and after (no source files were written -- verifier role only)."
+    },
+    {
+      "ts": "2026-09-20T19:22:40Z",
+      "agent": "closer-g8-b",
+      "note": "CLOSED: spot-checked case show C-002 (disposed via PR-062) and cite --record PR-062 (9/9 citation tokens OK, 0 dangling), matching handoff note; see <workspace>/.harness/tasks/T-425.json"
     }
   ]
 }

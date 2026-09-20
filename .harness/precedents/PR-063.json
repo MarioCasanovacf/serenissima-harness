@@ -1,0 +1,65 @@
+{
+  "id": "PR-063",
+  "schema_version": 2,
+  "case": "C-003",
+  "title": "T-426: YIELD-AT-NEXT wired into blackboard.py next (PR-062 consequence)",
+  "subject": "reputation-phase-b-consumer",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-426"
+  ],
+  "ratio": "(1) THE PARAMETER. The operational parameter this record attaches a consequence to is CLAIM PRIORITY ORDERING (PR-061 clause 1; PR-060 clause 1's \"which task is claimed, in what order\"), settled operational under PR-060 as cured by RAT-01 by PR-061, and specified for next by PR-062 disposing case C-002. (2) THE CONSEQUENCE, YIELD-AT-NEXT, ATTACHED VERBATIM. blackboard.py next now yields its own recommendation -- not the recommended task, not claim -- when the requesting identity is outranked by another live candidate (an identity holding an unexpired claim): \"outranked\" means that candidate's Phase B total_score, read from the SAME dispatch --json call that already produced the advisory line, is STRICTLY GREATER than the requester's, zero margin. On a yield, next prints the identical \"next:\"/\"claim it:\" lines it always has, adds one line naming the outranking identity, logs one named event (phase_b_yield, carrying task/agent/outranked_by) to the blackboard's own events.jsonl, and returns PHASE_B_YIELD_EXIT (2) -- a code distinct from 0 (recommendation given) and 1 (no claimable task at all). Ties and identities unranked by dispatch never yield and fall back to today's (priority, id) order; a closed gate or any dispatch refusal keeps today's order with the printed reason and never yields; claim is untouched -- it stays first-come exactly as before. The two other alternatives D-002 considered, ADVISORY (print the order, bind nothing) and DEFER-AT-CLAIM (refuse claim itself for a bounded window), are NOT what this record attaches; YIELD-AT-NEXT is, verbatim, the Schulze winner PR-062 adopted. (3) THE ACT. This is T-426's own act of setting that parameter for the first time, at .harness/bin/blackboard.py:522-575 (cmd_next, phase_b_yield_check, PHASE_B_YIELD_EXIT): one subprocess read of reputation.py dispatch serves both the advisory line and the yield check -- never a second dispatch run, per PR-062 clause 4; no field is added to blackboard.json; no file reputation.py owns is written. The rename bypass PR-062 clause 5 names is documented, not hidden, in phase_b_yield_check's own docstring: identity is self-asserted (PR-023 clause 4), so a requester running next --agent <top identity> is never outranked, its payoff is nil because claim stays first-come, and the deviation is legible in events.jsonl without a verdict. (4) WHAT THIS RECORD DOES NOT DO. It sets no margin, threshold or window; reads no Phase A figure; binds no verb but next; and authorizes no second consequence -- PR-060 clause 6 requires its own published record for any further one.\n",
+  "dicta": [],
+  "scope_conditions": [
+    "blackboard.py next only, gate open (VERIFIED, activation on); status, claim and every other verb are untouched. Applies only while PR-062 stands and while blackboard.py's dispatch seam (T-422) reads recommended_claim_order and candidates[].total_score from one reputation.py dispatch --json call per next invocation."
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when PR-062 is amended, narrowed or overruled; when a later record proposes a second consequence under PR-060 clause 6 (e.g. binding claim, or a consequence on iteration bounds or parallel worker slots); when PHASE_B_YIELD_EXIT's value changes; or when identity stops being self-asserted (PR-023 clause 4 amended, or blackboard.py binds --agent to a warrant), which would close the documented rename bypass.",
+  "confirmation_status": "confirmed",
+  "confirmed_by": "verifier-g8-attach",
+  "confirmed_at": "2026-09-20T19:41:25Z",
+  "narrowed_scope": null,
+  "confirmation_note": "Independent verifier replay (T-427): ratio names parameter (claim priority ordering), consequence (YIELD-AT-NEXT verbatim, alternatives named), act (T-426, code path). follows PR-062 (typed relation) -- PR-062 is the record disposing C-002, so this satisfies \"follows the C-002 record\". cite --record PR-063: all tokens OK, zero dangling. conflicts: 0 findings across 63 records. C-003 correctly disposed under T-412/S-1's mandatory case-per-publish rule (C-002 already disposed by PR-062, so a fresh case was the only mechanically valid shape). No path/user-name leakage in PR-063.json or C-003.json. Adversarial replay of the attached consequence itself (a)-(g) in a fresh scratch harness root with real keypair + signed constitutional file all pass -- see T-426 verdict note. No blocking defects.\n",
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-062",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [
+    "PR-060",
+    "PR-061"
+  ],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-426",
+  "published_by": "registro-a",
+  "published_at": "2026-09-20T19:32:32Z",
+  "sources": [
+    "decision:T-426#attach",
+    "C-002",
+    ".harness/bin/blackboard.py:522-575"
+  ],
+  "validity_conditions": [
+    "PR-062 stands as the sole authority for YIELD-AT-NEXT and is unamended",
+    "PHASE_B_YIELD_EXIT stays fixed at 2 in blackboard.py and distinct from 0 and 1",
+    "blackboard.py next still runs exactly one reputation.py dispatch subprocess per invocation, and phase_b_yield_check reads only that call's own candidates list",
+    "blackboard.py claim remains first-come under the claimant's own --lease, with no stored field added to blackboard.json for this consequence",
+    "PR-023 clause 4 unamended: identity stays self-asserted, so the rename bypass documented in phase_b_yield_check's docstring remains accurate and undhidden"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

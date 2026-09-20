@@ -76,6 +76,12 @@ VALID_STATUS = ["open", "claimed", "in_progress", "blocked", "review", "done", "
 VALID_ROLES = ["thinker", "worker", "verifier"]
 VALID_ENGINES = ["claude", "gemini", "codex", "any"]
 
+# T-426 / PR-062 (YIELD-AT-NEXT, docket C-002): `next`'s yield exit code.
+# Distinct from 0 (recommendation given) and 1 (no claimable task at all --
+# the ratio's own words: "neither 0 nor 1, since 1 already means no
+# claimable task"). Unused elsewhere in this file's return codes.
+PHASE_B_YIELD_EXIT = 2
+
 # T-422: fixed by this file's own location, NEVER by hc.HARNESS -- a test
 # fixture redirects hc.HARNESS to a scratch root (it is the --root value
 # reputation.py reads data from), but the reputation.py SCRIPT itself always
@@ -237,14 +243,24 @@ def report_expirations(released):
 # exposes, gated by an operator-signed, activated constitutional file; PR-060
 # clause 6 splits parameters into CONSTITUTIONAL (the operator's alone --
 # decay rate, weights) versus OPERATIONAL (claim priority ordering -- the one
-# thing a consumer may act on). Everything below builds the READ side only:
-# it asks dispatch what it would recommend and prints the answer as an
-# ADVISORY line. NO CONSEQUENCE ATTACHES HERE. Whether, and how, `claim`'s
-# actual ordering (or anything else) ever adopts this recommendation is
-# docket C-002 / T-424's decision to make, wired into this file (if accepted)
-# by T-426 -- not this task. Until then `phase_b_claim_order`'s return value
-# is printed and nothing more; `cmd_next`'s and `cmd_status`'s existing
-# sort/candidate-selection logic above is untouched, byte-identical.
+# thing a consumer may act on). Everything below builds the READ side: it
+# asks dispatch what it would recommend and prints the answer as an ADVISORY
+# line, in `cmd_status` (unconditionally) and in `cmd_next` (unconditionally,
+# on every path -- byte-identical to before this task).
+#
+# T-426 / PR-062 (YIELD-AT-NEXT, docket C-002 disposition) ATTACHES the one
+# consequence C-002 authorized, and no other: on `cmd_next`'s success path
+# ONLY (never `status`, never `claim`), when the SAME dispatch read that
+# produced the advisory line also shows the requesting agent is OUTRANKED
+# (PR-062 clause 4: another live candidate's Phase B `total_score` is
+# STRICTLY GREATER, zero margin) by another live candidate, the dispatcher's
+# RECOMMENDATION yields: `cmd_next` prints one additional line, logs one
+# named event (`phase_b_yield`, carrying task/agent/outranked_by) to this
+# board's OWN event log, and returns `PHASE_B_YIELD_EXIT` instead of 0. The
+# 'next:' and 'claim it:' lines stay byte-identical under a yield (see
+# `cmd_next` below) and `cmd_claim` is untouched -- claim stays first-come.
+# See `phase_b_yield_check`'s docstring for the outranked-by rule and the
+# documented (not hidden) rename bypass.
 
 def live_candidates(bb, agent):
     """T-422's definition of 'live candidates' for the Phase B claim-order
@@ -292,17 +308,16 @@ def _phase_b_reason_from_stderr(stderr, returncode):
     return "dispatch exited {}".format(returncode)
 
 
-def phase_b_claim_order(candidates):
-    """Read-only consumer seam onto reputation.py's `dispatch` verb (T-422).
+def _phase_b_dispatch_plan(candidates):
+    """The ONE subprocess call onto reputation.py's `dispatch` verb (T-422,
+    extended by T-426 to also hand back per-candidate scores from that SAME
+    read -- PR-062 clause 4 requires the outranked-by check run "from one
+    read and with no second dispatch run"). `phase_b_claim_order` (the
+    order-only view) and `phase_b_yield_check` (the T-426 consequence) both
+    read from whatever ONE call to this function already produced; neither
+    calls `dispatch` again.
 
-    Cites PR-061 (RAT-01, the ruling that authorizes `dispatch` at all) and
-    PR-060 clause 6 (the constitutional/operational parameter split): this
-    helper only reads dispatch's recommended operational ordering and hands
-    it back for a caller to PRINT. NO CONSEQUENCE BINDS HERE -- see the
-    module comment above this function; attaching a consequence is docket
-    C-002 / T-424's decision, not this one.
-
-    Contract:
+    Contract (unchanged from T-422's `phase_b_claim_order`, restated here):
       - Runs `<python> reputation.py dispatch --json --root <hc.HARNESS>
         --candidates <csv>` as a SUBPROCESS (sys.executable running the
         script at `_REPUTATION_PY`). Never imports reputation.py, never
@@ -310,14 +325,17 @@ def phase_b_claim_order(candidates):
       - NEVER passes --half-life-days: that is a CONSTITUTIONAL parameter
         under PR-060 and `dispatch` itself refuses it on the CLI; this seam
         does not attempt it either.
-      - Returns `(order, reason)`. `order` is dispatch's own
-        `recommended_claim_order` list from its `--json` output, and ONLY
-        when the subprocess exits 0 AND stdout parses as JSON carrying that
-        key (a non-empty list). Every other outcome -- exit 1 (gate closed:
-        NOT_PRESENT / UNSIGNED / BAD_SIGNATURE / WRONG_NAMESPACE /
-        UNVERIFIABLE / VERIFIED_OFF / UNREADABLE), exit 4 (REGISTRY
-        INTEGRITY ERROR), any other nonzero code, a missing/empty stdout, or
-        stdout that fails to parse -- returns `(None, reason)` instead.
+      - Returns `(plan, reason)`. `plan` is dispatch's own parsed `--json`
+        payload (a dict carrying `recommended_claim_order` and `candidates`
+        -- the latter a list of `{"identity": ..., "total_score": ...}`
+        sorted `(-total_score, identity)`, the same sort `dispatch` itself
+        performs) and ONLY when the subprocess exits 0, stdout parses as
+        JSON, and that JSON carries a non-empty `recommended_claim_order`
+        list. Every other outcome -- exit 1 (gate closed: NOT_PRESENT /
+        UNSIGNED / BAD_SIGNATURE / WRONG_NAMESPACE / UNVERIFIABLE /
+        VERIFIED_OFF / UNREADABLE), exit 4 (REGISTRY INTEGRITY ERROR), any
+        other nonzero code, a missing/empty stdout, or stdout that fails to
+        parse -- returns `(None, reason)` instead.
       - `reason` is built from dispatch's own stderr (see
         `_phase_b_reason_from_stderr`) or, on success, is the fixed string
         'VERIFIED, activation on' (the only state `dispatch` can exit 0
@@ -348,21 +366,113 @@ def phase_b_claim_order(candidates):
         order = plan.get("recommended_claim_order") if isinstance(plan, dict) else None
         if not isinstance(order, list) or not order:
             return None, "dispatch JSON carried no recommended_claim_order"
-        return order, "VERIFIED, activation on"
+        return plan, "VERIFIED, activation on"
     except Exception as e:  # malformed JSON, ... -- never raise
         return None, "dispatch output could not be parsed: {}".format(e)
 
 
-def phase_b_advisory_line(bb, agent):
-    """The ONE advisory line `cmd_next`/`cmd_status` print (T-422 spec item
-    4): 'phase-b claim order: a, b, c (VERIFIED, activation on)' when
-    `phase_b_claim_order` returns an order, else 'phase-b claim order not
-    applied: <reason>'. Pure function of (bb, agent) plus one read-only
-    subprocess call -- never mutates `bb`."""
-    order, reason = phase_b_claim_order(live_candidates(bb, agent))
+def phase_b_claim_order(candidates):
+    """Read-only consumer seam onto reputation.py's `dispatch` verb (T-422).
+
+    Cites PR-061 (RAT-01, the ruling that authorizes `dispatch` at all) and
+    PR-060 clause 6 (the constitutional/operational parameter split): this
+    helper reads dispatch's recommended operational ordering and hands it
+    back for a caller to PRINT. NO CONSEQUENCE BINDS HERE -- it is a thin
+    `(order, reason)` view over `_phase_b_dispatch_plan`, used by
+    `phase_b_advisory_line` (the `status` advisory and, unconditionally, the
+    `next` advisory). Attaching the one consequence PR-062 authorizes is
+    `phase_b_yield_check`'s job, called separately by `cmd_next` against the
+    SAME plan on its own success path -- not this function's concern.
+
+    Returns `(order, reason)`: `order` is `_phase_b_dispatch_plan`'s plan's
+    `recommended_claim_order` on success, else `None`; `reason` is that
+    call's own second return value, verbatim.
+    """
+    plan, reason = _phase_b_dispatch_plan(candidates)
+    if plan is None:
+        return None, reason
+    return plan.get("recommended_claim_order"), reason
+
+
+def _phase_b_advisory_text(order, reason):
+    """Shared by `phase_b_advisory_line` and `cmd_next`'s success path (T-426
+    -- the latter builds `order`/`reason` from the single dispatch plan it
+    already read for the yield check, rather than calling
+    `phase_b_claim_order` a second time) so both print the byte-identical
+    line for the same (order, reason)."""
     if order:
         return "phase-b claim order: {} ({})".format(", ".join(order), reason)
     return "phase-b claim order not applied: {}".format(reason)
+
+
+def phase_b_advisory_line(bb, agent):
+    """The ONE advisory line `cmd_status` prints (T-422 spec item 4):
+    'phase-b claim order: a, b, c (VERIFIED, activation on)' when
+    `phase_b_claim_order` returns an order, else 'phase-b claim order not
+    applied: <reason>'. Pure function of (bb, agent) plus one read-only
+    subprocess call -- never mutates `bb`. `cmd_next`'s success path builds
+    the identical text itself from its own single dispatch read instead of
+    calling this (see `_phase_b_advisory_text`) so T-426's yield check never
+    triggers a second `dispatch` subprocess."""
+    order, reason = phase_b_claim_order(live_candidates(bb, agent))
+    return _phase_b_advisory_text(order, reason)
+
+
+def phase_b_yield_check(plan, agent):
+    """T-426 / PR-062 (YIELD-AT-NEXT, docket C-002): decides whether
+    `cmd_next`'s recommendation for `agent` YIELDS to a live candidate with a
+    strictly greater Phase B score, from the SAME dispatch `plan` already
+    read for the advisory line (`_phase_b_dispatch_plan`'s first return
+    value) -- this function never runs a subprocess itself and never
+    triggers a second `dispatch` call.
+
+    Returns the outranking identity's name (truthy) when a yield fires, or
+    `None` when it does not: gate closed / dispatch refused (`plan` is
+    `None` or carries no `candidates`), `agent` is alone or unranked (its
+    identity is absent from `plan['candidates']` -- score unknown to
+    dispatch), tied for the top score, or already at the top.
+
+    'Outranked' (PR-062 clause 4): STRICTLY GREATER Phase B `total_score`,
+    ZERO MARGIN -- a margin would be a threshold, and PR-060 clause 1 makes
+    any threshold constitutional, unsettable by any agent under clause 3.
+    `plan['candidates']` is already sorted `(-total_score, identity)` (the
+    same sort `recommended_claim_order` is derived from), so its first entry
+    already carries the maximum score in the set: if that entry's identity
+    is not `agent`, its score is compared to `agent`'s own score in that
+    same list. A lower list POSITION never yields by itself (ties break
+    lexicographically on the identity string, an attribute PR-060 clause 5
+    forbids keying on) -- with 82 of 147 live identities at 0.0 that would
+    make position-based yielding the common case, not the edge; ties and
+    unranked identities never yield (PR-062's common floor).
+
+    RENAME BYPASS (PR-062 clause 5, documented here rather than hidden):
+    identity stays self-asserted (PR-023 clause 4 unamended); a requester
+    that runs `next --agent <top identity>` is never outranked, because ties
+    never yield and the rename inherits that identity's score. The payoff is
+    nil -- `claim` stays first-come, entirely untouched by this function --
+    and the deviation is legible without a verdict: a `phase_b_yield` row
+    followed within seconds by `task_claimed` from the same agent, or a top
+    identity claiming tasks its genuine holder never touched.
+    """
+    if not plan:
+        return None
+    scored = plan.get("candidates")
+    if not isinstance(scored, list) or not scored:
+        return None
+    requester_score = None
+    for c in scored:
+        if isinstance(c, dict) and c.get("identity") == agent:
+            requester_score = c.get("total_score")
+            break
+    if requester_score is None:
+        return None
+    top = scored[0]
+    if not isinstance(top, dict) or top.get("identity") == agent:
+        return None
+    top_score = top.get("total_score")
+    if isinstance(top_score, (int, float)) and top_score > requester_score:
+        return top.get("identity")
+    return None
 
 
 # ------------------------------- commands ---------------------------------
@@ -445,7 +555,22 @@ def cmd_next(args):
     print("claim it: python3 .harness/bin/blackboard.py claim {} --agent {}".format(tid, args.agent))
     if len(cands) > 1:
         print("also claimable: " + ", ".join(c[1] for c in cands[1:]))
-    print(phase_b_advisory_line(bb, args.agent))
+
+    # T-426 / PR-062 (YIELD-AT-NEXT): ONE dispatch read serves both the
+    # advisory line (unchanged text/placement) and the yield check below --
+    # never two `dispatch` subprocess calls for one `next` invocation.
+    plan, reason = _phase_b_dispatch_plan(live_candidates(bb, args.agent))
+    order = plan.get("recommended_claim_order") if plan else None
+    print(_phase_b_advisory_text(order, reason))
+
+    outranked_by = phase_b_yield_check(plan, args.agent)
+    if outranked_by:
+        hc.log_event("phase_b_yield", task=tid, agent=args.agent, outranked_by=outranked_by)
+        print("yield: {} is outranked by live candidate '{}' on Phase B score "
+              "(PR-062 YIELD-AT-NEXT) -- the recommendation above stands unchanged and "
+              "`claim` stays first-come; this exit code ({}) marks the yield only.".format(
+                  args.agent, outranked_by, PHASE_B_YIELD_EXIT))
+        return PHASE_B_YIELD_EXIT
     return 0
 
 
