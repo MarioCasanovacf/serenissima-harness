@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-09-20T18:55:11Z",
-  "updated_by": "verifier-g8-guards",
+  "updated_at": "2026-09-20T19:21:08Z",
+  "updated_by": "verifier-g8-docket",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5533,7 +5533,7 @@
     "T-423": {
       "epic": "gen-8-dispatch-consumer",
       "title": "VERIFY T-422: adversarial replay of the consumer scaffold (zero consequence, zero writes, fallback on every refusal)",
-      "status": "review",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -5551,7 +5551,9 @@
         "ts": "2026-09-20T18:49:29Z"
       },
       "created_at": "2026-09-20T18:28:28Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-09-20T18:58:27Z",
+      "completed_by": "closer-g8-a"
     },
     "T-428": {
       "epic": "gen-8-first-docket",
@@ -5585,7 +5587,7 @@
     "T-429": {
       "epic": "gen-8-first-docket",
       "title": "VERIFY T-428: attack the four new deliberation guards and the case linkage",
-      "status": "review",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -5603,12 +5605,14 @@
         "ts": "2026-09-20T18:55:11Z"
       },
       "created_at": "2026-09-20T18:28:28Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-09-20T18:58:29Z",
+      "completed_by": "closer-g8-a"
     },
     "T-424": {
       "epic": "gen-8-first-docket",
       "title": "gen-8 first real docket: case C-002 decides which claim-ordering consequence the first dispatch consumer attaches (PR-061, PR-060 c5/c6)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [
@@ -5619,14 +5623,21 @@
       "priority": 1,
       "detail_file": ".harness/tasks/T-424.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g8-docket",
+        "note": "Case C-002 disposed by PR-062 from dossier D-002. Winner: YIELD-AT-NEXT (Schulze, 5 ballots, weight 5.0, Condorcet winner, no cycle, Smith set of one, margin 5.0; ADVISORY second, DEFER-AT-CLAIM Condorcet loser). Deliberation flag: NO-DELIBERATION-OBSERVED (all five priors equal all five final ballots), disclosed in PR-062 dicta; the dossier records fifteen discussion contributions in seeded speaker order, one per panelist per alternative, no clerk seat involved. Wall clock: case opened 2026-09-20T18:57:35Z, PR-062 published 2026-09-20T19:15:46Z, span 18 min 11 s (1091 s). Proposer: registro-a. Sponsors: registro-a, registro-b, revision-doctrina. Speakers (seed D-002:2026-09-20T18:57:46Z:3): registro-a, revision-mecanismo, revision-ataque, registro-b, revision-doctrina. Concluded by registro-b at 19:12:41Z (method schulze). Published by registro-a (issued non-clerk seat) under T-424, tier 1 with tier-evidence T-424 (accepted on first attempt, no fallback to tier 2), width narrow, operation determination, code-version v1, follows PR-061 and PR-060 (typed), sources decision:T-424#dossier-D-002, <workspace>/.harness/operator-rulings-2026-08-22.md:11-58 (RAT-01, path token), PR-061, PR-060, C-002, T-424. Ratio quotes the winner verbatim, names the PR-060 clause 6 triple (parameter: claim priority ordering; act: the identity running next --agent itself; consequence: distinct exit code plus phase_b_yield event) with the attaching act assigned to T-426, fixes 'outranked' as strictly greater Phase B total_score with zero margin (positional tiebreak never yields), and carries the common floor (ties and unranked -> priority asc, id asc; closed gate or any dispatch refusal -> today's order with printed gate state; no writes to reputation-owned files, never --half-life-days; rename bypass documented). Registry written only through precedent.py; locks on the record and case file were acquired and released; nothing signed. Replay for the verifier, from <workspace> root: python3 .harness/bin/precedent.py case show C-002 (expect status disposed, disposal.ref PR-062, disposal.by registro-a); python3 .harness/bin/precedent.py case publisher-report C-002 --json (expect issued non-clerk name); python3 -c \"import json;d=json.load(open('.harness/precedents/PR-062.json'));print(d['authority_tier'],d['case'],[r['type']+':'+r['target'] for r in d['relations']],d['published_by'],d['interpretive_code_version'])\" (expect 1 C-002 ['follows:PR-061','follows:PR-060'] registro-a v1); python3 -c \"import json;d=json.load(open('.harness/deliberations/D-002.json'));print(d['status'],d['concluded_by'],d['deliberation_flag'],d['tally_result']['winner'],len(d['discussion']))\" (expect concluded registro-b NO-DELIBERATION-OBSERVED YIELD-AT-NEXT 15); grep -c \"next reports 'yield'\" .harness/precedents/PR-062.json (expect 1); grep -l \"/Users/\" .harness/precedents/PR-062.json (expect no output). Open for the verifier: whether the sources token for RAT-01 should be the path form used here or a decision: anchor; and whether the NO-DELIBERATION-OBSERVED flag on a dossier with a full recorded discussion round is one mind or five.\n",
+        "ts": "2026-09-20T19:16:25Z"
+      },
       "created_at": "2026-09-20T18:28:28Z",
-      "created_by": "main"
+      "created_by": "main",
+      "completed_at": "2026-09-20T19:21:00Z",
+      "completed_by": "verifier-g8-docket"
     },
     "T-425": {
       "epic": "gen-8-first-docket",
       "title": "VERIFY T-424: integrity of the first real docket and of the record that disposed C-002",
-      "status": "open",
+      "status": "review",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -5637,7 +5648,12 @@
       "priority": 1,
       "detail_file": ".harness/tasks/T-425.json",
       "artifacts": [],
-      "handoff": null,
+      "handoff": {
+        "to_role": "verifier",
+        "from": "verifier-g8-docket",
+        "note": "T-424 verdicted done: replayed all commands in the producer handoff (case show, publisher-report, PR-062/D-002 field dumps, cite --record PR-062 = 0 dangling, grep checks), plus independent checks the producer did not run: roster.py eligible --record PR-062 (all 5 panelists issued non-clerk), programmatic timestamp-monotonicity + no-future-stamp check over every dossier stamp, independent recomputation of compute_deterministic_speaker_order from deliberate.py matching stored speaker_order (tamper check), PR-060/PR-061 cited_by bidirectional consistency, currency.py before/after via a read-only git worktree at HEAD (typed-share direction NOT REPORTABLE both sides, edges 46->48 exactly matching PR-062's 2 typed relations), full pytest suite 897 passed/4 skipped, precedent.py conflicts 0 findings/62 records, and a leak scan of the new/changed tracked files. precedent.py confirm PR-062 --agent verifier-g8-docket --outcome confirmed was required by the done-guard (PR-015/PR-038 distinct-identity confirmation) and was run before blackboard.py update T-424 --status done succeeded. No blocking defects found. Housekeeping: lock.py status showed no active locks both before and after (no source files were written -- verifier role only).",
+        "ts": "2026-09-20T19:21:08Z"
+      },
       "created_at": "2026-09-20T18:28:28Z",
       "created_by": "main"
     },

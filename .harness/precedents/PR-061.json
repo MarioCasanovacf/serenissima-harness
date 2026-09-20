@@ -46,7 +46,9 @@
     }
   ],
   "cites": [],
-  "cited_by": [],
+  "cited_by": [
+    "PR-062"
+  ],
   "overruled_by": null,
   "superseded_by": null,
   "voided_by": null,

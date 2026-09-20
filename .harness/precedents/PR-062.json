@@ -1,0 +1,81 @@
+{
+  "id": "PR-062",
+  "schema_version": 2,
+  "case": "C-002",
+  "title": "First dispatch consumer: YIELD-AT-NEXT binds the recommendation, not the claim",
+  "subject": "reputation-phase-b-consumer",
+  "status": "active",
+  "authority_tier": 1,
+  "tier_evidence": [
+    "T-424"
+  ],
+  "ratio": "(1) THE QUESTION AND ITS DISPOSITION. Case C-002 asked: under PR-061 as cured by RAT-01, which claim-ordering consequence does the first consumer of reputation.py dispatch attach in blackboard.py, and how does it treat ties, unranked identities and a closed gate? Assembly deliberation D-002, sponsored by registro-a, registro-b and revision-doctrina, spoken to by all five issued non-clerk panelists (registro-a, revision-mecanismo, revision-ataque, registro-b, revision-doctrina) and concluded by registro-b under the Schulze method on five ballots of weight 5.0 (Condorcet winner, no cycle, Smith set of one, margin of victory 5.0, ADVISORY second, DEFER-AT-CLAIM the Condorcet loser), returned YIELD-AT-NEXT, and this record disposes C-002 by adopting that winner verbatim as the binding rule for the first consumer. (2) THE RULE, YIELD-AT-NEXT, VERBATIM. \"next reports 'yield' (distinct exit code, named event) when the requesting identity is outranked by another live candidate (an identity holding an unexpired claim); claim stays first-come, so the yield binds the dispatcher's recommendation, not the claim.\" (3) THE NAMING PR-060 CLAUSE 6 REQUIRES. The operational parameter is CLAIM PRIORITY ORDERING: named in PR-061 clause 1 and operational under PR-060 clause 1 as \"which task is claimed, in what order\". PR-060 clause 5's deciding test would on its own pull any score-fed parameter toward constitutional; it is PR-061 as ratified by RAT-01, a tier-1 act of the operator, that settles this one parameter as operational despite that test, and this record relies on RAT-01 for that and on nothing in D-001. The agent's own act is the requesting identity running blackboard.py next --agent <itself>: the holding lands on the identity that asked and on nothing set by another. The consequence is that the dispatcher's recommendation yields, by one distinct exit code (neither 0 nor 1, since 1 already means no claimable task) and one named event, phase_b_yield, carrying task, agent and outranked_by, appended to the blackboard's own event log; the 'next:' and 'claim it:' lines are byte-identical under a yield and blackboard.py claim is untouched. The act of attaching this consequence is assigned to T-426 and its adversarial verification to T-427; this record authorizes exactly this one consequence and no other, and a consumer reading it as licence for a second violates PR-060 clause 6. (4) OUTRANKED MEANS STRICTLY GREATER PHASE B SCORE, WITH ZERO MARGIN. Another live candidate outranks the requester only when its Phase B total_score is strictly greater than the requester's, both read from the same dispatch output that carries recommended_claim_order, from one read and with no second dispatch run. No margin is permitted: a margin is a threshold, constitutional under PR-060 clause 1, unsettable by any agent under clause 3, and kept the operator's by RAT-01; zero margin is the absence of a parameter, any other number is a figure an agent chose. A lower position in recommended_claim_order never yields by itself, because dispatch breaks ties lexicographically on the identity string and a name is an identity attribute PR-060 clause 5 forbids keying on. The lease that makes a candidate live is the claimant's own operational --lease, 3600 s by default, and is not a constitutional figure. (5) THE COMMON FLOOR, BINDING ON THIS CONSUMER. Ties and unranked identities (score 0.0 or unknown to dispatch) never yield and fall back to today's order, priority ascending then id ascending; with 82 of 147 live identities at 0.0 this is the common case, not the edge. A closed gate or any dispatch refusal (exit 1 on closed gate, --half-life-days or empty candidates; exit 4 on registry integrity; empty stdout; the seam's timeout) keeps today's order with a printed reason naming the gate state and never yields: the consumer fails open to today's order and exits as it does today. The consumer writes nothing that reputation.py owns and never passes --half-life-days; its only write is the phase_b_yield row in the blackboard event log, which narrows the T-422 'never writes' statement to blackboard.json. Identity stays self-asserted under PR-023 clause 4 and the rename bypass is documented here rather than hidden: a requester that runs next --agent <top identity> is never outranked, because ties never yield and the rename inherits the score; its payoff is nil because claim stays first-come, and the deviation is legible without a verdict, as a phase_b_yield row followed within seconds by task_claimed from the same agent, or a top identity claiming tasks its genuine holder never touched. Nothing in this rule keys on any identity attribute beyond the Phase B score itself. (6) WHAT THIS RECORD DOES NOT DO. It does not bind claim, invents no window, sets no threshold or margin, reads no Phase A figure, adds no stored field to blackboard.json, attaches nothing to iteration bounds or worker slots, and lifts no refusal. A later case proposing to bind claim is distinguishable from this one by the verb alone.\n",
+  "dicta": [
+    "D-002 carries the deliberation flag NO-DELIBERATION-OBSERVED: all five priors equal all five final ballots (YIELD-AT-NEXT, ADVISORY, DEFER-AT-CLAIM). Unlike D-001 the dossier records a full discussion round, fifteen contributions in seeded speaker order, one per panelist per alternative, and no clerk seat proposed, sponsored, spoke or voted; the flag is reported here as the honest state of the record and the verifier of T-425 should read the discussion before treating the unanimity as one mind or five. The strictly-greater, zero-margin reading of 'outranked' in clause 4 was proposed by registro-a and joined by every other speaker; it is ratio, not dicta."
+  ],
+  "scope_conditions": [
+    "blackboard.py next as the first consumer of reputation.py dispatch, and only that verb; claim, status and every other verb keep today's order (priority asc, id asc)",
+    "Operative only while the Phase B gate is live (constitutional file VERIFIED, activation on); with the gate closed or dispatch refusing, the consumer keeps today's order and this rule is dormant",
+    "Attaches to claim priority ordering only; iteration bounds and parallel worker slot allocations are named in PR-061 clause 1 but receive no consequence under this record",
+    "Does NOT apply to the operator; does NOT bind claim; authorizes no margin, window or threshold; keys on no identity attribute beyond the Phase B score"
+  ],
+  "declared_width": "narrow",
+  "revisit_trigger": "Revisit when a consumer proposes a consequence on iteration bounds or parallel worker slots; when any consumer proposes to bind claim or to introduce a margin, window or threshold into the yield; when identity stops being self-asserted (PR-023 clause 4 amended, or blackboard.py binds --agent to a warrant); or when the operator withdraws RAT-01 or amends the PR-060 split",
+  "confirmation_status": "confirmed",
+  "confirmed_by": "verifier-g8-docket",
+  "confirmed_at": "2026-09-20T19:20:49Z",
+  "narrowed_scope": null,
+  "confirmation_note": "Independent verifier replay: eligibility, discussion coverage, monotonic non-future stamps, ratio=winner, typed follows relations to PR-061/PR-060, RAT-01 in sources, issued non-clerk publisher, 897 tests passing, 0 precedent conflicts, no tracked-file path leakage. No blocking defects found (see T-424 handoff for full detail).",
+  "relations": [
+    {
+      "type": "follows",
+      "target": "PR-061",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    },
+    {
+      "type": "follows",
+      "target": "PR-060",
+      "distinguishing_facts": null,
+      "factors": [],
+      "factor_note": null,
+      "controlling_authority": null,
+      "target_tier_declared": null,
+      "overruled_predecessor": null,
+      "below_target_tier": false
+    }
+  ],
+  "cites": [],
+  "cited_by": [],
+  "overruled_by": null,
+  "superseded_by": null,
+  "voided_by": null,
+  "issuing_task": "T-424",
+  "published_by": "registro-a",
+  "published_at": "2026-09-20T19:15:46Z",
+  "sources": [
+    "decision:T-424#dossier-D-002",
+    ".harness/operator-rulings-2026-08-22.md:11-58",
+    "PR-061",
+    "PR-060",
+    "C-002",
+    "T-424"
+  ],
+  "validity_conditions": [
+    "RAT-01 stands as the sole authority of PR-061 and the signed bytes of the operator ruling of 2026-08-22 are unchanged",
+    "PR-060 clause 6 remains unamended: every further consequence still requires its own published record naming parameter, consequence and act",
+    "reputation.py dispatch continues to emit recommended_claim_order and candidates[].total_score from one read of the operator-owned constitutional file, and a closed gate continues to refuse (exit 1) rather than emit an order",
+    "blackboard.py claim remains first-come under the claimant's own --lease and no stored field is added to blackboard.json for this consequence",
+    "PR-023 clause 4 unamended: identity is self-asserted, so the rename bypass in clause 5 remains documented and unhidden"
+  ],
+  "operation": {
+    "type": "determination",
+    "subtype": null
+  },
+  "interpretive_code_version": "v1"
+}

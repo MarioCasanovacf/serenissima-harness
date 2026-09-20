@@ -1,0 +1,15 @@
+{
+  "id": "C-002",
+  "question": "Under PR-061 as cured by RAT-01, which claim-ordering consequence does the first consumer of reputation.py dispatch attach in blackboard.py, and how does it treat ties, unranked identities and a closed gate?",
+  "task": "T-424",
+  "opened_by": "registro-a",
+  "ts": "2026-09-20T18:57:35Z",
+  "status": "disposed",
+  "disposal": {
+    "verb": "publish",
+    "ref": "PR-062",
+    "by": "registro-a",
+    "task": "T-424",
+    "ts": "2026-09-20T19:15:46Z"
+  }
+}

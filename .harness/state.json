@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 3,
+        "tasks_done": 4,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-08-30T23:23:09Z"
+        "last_outcome_at": "2026-09-20T18:58:27Z"
       },
       "probe-x": {
         "tasks_done": 5,
@@ -688,6 +688,16 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-09-20T18:55:00Z"
+      },
+      "verifier-g8-guards": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T18:58:29Z"
+      },
+      "worker-g8-docket": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T19:21:00Z"
       }
     }
   },
