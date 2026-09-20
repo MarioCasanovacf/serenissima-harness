@@ -678,6 +678,16 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-08-30T23:26:44Z"
+      },
+      "worker-g8-consumer": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T18:48:58Z"
+      },
+      "worker-g8-guards": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-09-20T18:55:00Z"
       }
     }
   },

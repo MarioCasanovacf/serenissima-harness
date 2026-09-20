@@ -649,11 +649,363 @@ class TheD001DefectCannotRecur(unittest.TestCase):
         did = r.stdout.split()[3].rstrip(":")
         for by in ("revision-doctrina", "revision-ataque"):
             self.run_cli("sponsor", did, "--by", by)
-        self.run_cli("schedule", did, "--speakers", "registro-a,revision-doctrina,revision-ataque")
+        r_sched = self.run_cli("schedule", did, "--speakers",
+                               "registro-a,revision-doctrina,revision-ataque",
+                               "--by", "registro-a")
+        self.assertEqual(r_sched.returncode, 0, r_sched.stderr)
         self.run_cli("vote", did, "--voter", "registro-a", "--ranking", "adopt,reject")
-        r = self.run_cli("conclude", did)
+        r = self.run_cli("conclude", did, "--by", "registro-a")
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("no discussion recorded", r.stderr)
+
+
+CLERK_CHARTER = ("integridad del proceso; NO legisla, NO vota, NO tiene stake "
+                  "(AgentCity clerk constraint)")
+
+
+class ScheduleEligibilityGuards(unittest.TestCase):
+    """T-428 item 1: `assembly_eligibility` now runs over every scheduled
+    speaker AND the scheduler's own --by, with the SAME fail-closed posture
+    as a ballot (clerk seat / unissued name / roster inconsistent all
+    refuse the whole call, not just drop the offending entry)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+        roster = {
+            "schema_version": 1,
+            "colegiados": {
+                "fedatario": {"incentive": CLERK_CHARTER},
+                "registro": {"incentive": "registros confirmados que sobreviven"},
+            },
+            "names": {
+                "fed-relator": {"colegiado": "fedatario", "role": "relator"},
+                "registro-a": {"colegiado": "registro", "role": "author"},
+                "registro-b": {"colegiado": "registro", "role": "author"},
+                "registro-c": {"colegiado": "registro", "role": "author"},
+            },
+        }
+        (self.hroot / "roster.json").write_text(json.dumps(roster), encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def convene_to_sponsored(self):
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "registro-a", "--alternatives", "A", "--alternatives", "B")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        did = r.stdout.split()[3].rstrip(":")
+        self.run_cli("sponsor", did, "--by", "registro-b")
+        self.run_cli("sponsor", did, "--by", "registro-c")
+        return did
+
+    def dossier(self, did):
+        return json.loads((self.hroot / "deliberations" / (did + ".json")).read_text())
+
+    def test_a_clerk_speaker_refuses_the_whole_schedule_call(self):
+        did = self.convene_to_sponsored()
+        r = self.run_cli("schedule", did, "--speakers",
+                         "registro-a,registro-b,fed-relator", "--by", "registro-a")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("clerk seat", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "sponsored")
+
+    def test_an_unissued_speaker_is_refused(self):
+        did = self.convene_to_sponsored()
+        r = self.run_cli("schedule", did, "--speakers",
+                         "registro-a,registro-b,ghost-speaker", "--by", "registro-a")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("unissued name", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "sponsored")
+
+    def test_a_clerk_scheduler_by_is_refused(self):
+        did = self.convene_to_sponsored()
+        r = self.run_cli("schedule", did, "--speakers",
+                         "registro-a,registro-b,registro-c", "--by", "fed-relator")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("clerk seat", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "sponsored")
+
+    def test_an_unissued_scheduler_by_is_refused(self):
+        did = self.convene_to_sponsored()
+        r = self.run_cli("schedule", did, "--speakers",
+                         "registro-a,registro-b,registro-c", "--by", "ghost-scheduler")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("unissued name", r.stderr)
+
+    def test_NEGATIVE_CONTROL_eligible_speakers_and_scheduler_record_scheduled_by(self):
+        did = self.convene_to_sponsored()
+        r = self.run_cli("schedule", did, "--speakers",
+                         "registro-a,registro-b,registro-c", "--by", "registro-b", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = json.loads(r.stdout)
+        self.assertEqual(out["scheduled_by"], "registro-b")
+        self.assertEqual(self.dossier(did)["scheduled_by"], "registro-b")
+        self.assertEqual(self.dossier(did)["status"], "deliberating")
+
+    def test_NEGATIVE_CONTROL_rosterless_root_keeps_bootstrap_behavior(self):
+        """No roster, no gate -- same bootstrap posture as every other verb."""
+        bare = pathlib.Path(self._tmp.name) / "bare"
+        (bare / "deliberations").mkdir(parents=True)
+        r = subprocess.run(
+            [sys.executable, str(CLI), "propose", "--title", "t", "--evidence", "T-1",
+             "--task", "T-1", "--proposer", "w1", "--alternatives", "A", "--alternatives", "B",
+             "--harness-root", str(bare)],
+            capture_output=True, text=True)
+        did = r.stdout.split()[3].rstrip(":")
+        for by in ("w2", "w3"):
+            subprocess.run([sys.executable, str(CLI), "sponsor", did, "--by", by,
+                           "--harness-root", str(bare)], capture_output=True, text=True)
+        r_sched = subprocess.run(
+            [sys.executable, str(CLI), "schedule", did, "--speakers", "w1,w2,anybody",
+             "--harness-root", str(bare)], capture_output=True, text=True)
+        self.assertEqual(r_sched.returncode, 0, r_sched.stderr)
+
+
+class VoteBeforeScheduleIsRefused(unittest.TestCase):
+    """T-428 item 2: a ballot cast while the dossier is still 'sponsored'
+    (schedule never ran) is refused with a named reason, not silently
+    accepted. This is D-001's actual defect shape in miniature: a vote with
+    no speaker order and no opportunity to discuss."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def propose_and_sponsor_to_quorum(self):
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "w1", "--alternatives", "A", "--alternatives", "B")
+        did = r.stdout.split()[3].rstrip(":")
+        self.run_cli("sponsor", did, "--by", "w2")
+        self.run_cli("sponsor", did, "--by", "w3")
+        return did
+
+    def dossier(self, did):
+        return json.loads((self.hroot / "deliberations" / (did + ".json")).read_text())
+
+    def test_ballot_before_schedule_is_refused(self):
+        did = self.propose_and_sponsor_to_quorum()
+        self.assertEqual(self.dossier(did)["status"], "sponsored")
+        r = self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not open for voting", r.stderr)
+        self.assertIn("schedule", r.stderr)
+        self.assertEqual(self.dossier(did)["final_ballots"], {})
+
+    def test_NEGATIVE_CONTROL_ballot_after_schedule_succeeds(self):
+        did = self.propose_and_sponsor_to_quorum()
+        r_sched = self.run_cli("schedule", did, "--speakers", "w1,w2,w3")
+        self.assertEqual(r_sched.returncode, 0, r_sched.stderr)
+        r = self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_ballot_after_conclude_is_still_refused(self):
+        did = self.propose_and_sponsor_to_quorum()
+        self.run_cli("schedule", did, "--speakers", "w1,w2,w3")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "w1", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", "A,B")
+        r_conc = self.run_cli("conclude", did)
+        self.assertEqual(r_conc.returncode, 0, r_conc.stderr)
+        r = self.run_cli("vote", did, "--voter", "w2", "--ranking", "A,B")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not open for voting", r.stderr)
+
+
+class ConcludeEligibilityGuards(unittest.TestCase):
+    """T-428 item 3: `conclude --by` is eligibility-checked (clerk seats and
+    unissued names refused, same posture as every other assembly act), and
+    the eligible concluder is recorded as `concluded_by`."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+        roster = {
+            "schema_version": 1,
+            "colegiados": {
+                "fedatario": {"incentive": CLERK_CHARTER},
+                "registro": {"incentive": "registros confirmados que sobreviven"},
+            },
+            "names": {
+                "fed-relator": {"colegiado": "fedatario", "role": "relator"},
+                "registro-a": {"colegiado": "registro", "role": "author"},
+                "registro-b": {"colegiado": "registro", "role": "author"},
+                "registro-c": {"colegiado": "registro", "role": "author"},
+            },
+        }
+        (self.hroot / "roster.json").write_text(json.dumps(roster), encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def dossier(self, did):
+        return json.loads((self.hroot / "deliberations" / (did + ".json")).read_text())
+
+    def convene_ready_for_conclude(self):
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "registro-a", "--alternatives", "A", "--alternatives", "B")
+        did = r.stdout.split()[3].rstrip(":")
+        self.run_cli("sponsor", did, "--by", "registro-b")
+        self.run_cli("sponsor", did, "--by", "registro-c")
+        r_sched = self.run_cli("schedule", did, "--speakers",
+                               "registro-a,registro-b,registro-c", "--by", "registro-a")
+        self.assertEqual(r_sched.returncode, 0, r_sched.stderr)
+        self.run_cli("discuss", did, "--by", "registro-a", "--re", "A", "--text", "for A")
+        self.run_cli("discuss", did, "--by", "registro-b", "--re", "B", "--text", "for B")
+        self.run_cli("vote", did, "--voter", "registro-a", "--ranking", "A,B")
+        return did
+
+    def test_a_clerk_concluder_is_refused(self):
+        did = self.convene_ready_for_conclude()
+        r = self.run_cli("conclude", did, "--by", "fed-relator")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("clerk seat", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "deliberating")
+
+    def test_an_unissued_concluder_is_refused(self):
+        did = self.convene_ready_for_conclude()
+        r = self.run_cli("conclude", did, "--by", "ghost-concluder")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("unissued name", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "deliberating")
+
+    def test_NEGATIVE_CONTROL_an_eligible_concluder_succeeds_and_is_recorded(self):
+        did = self.convene_ready_for_conclude()
+        r = self.run_cli("conclude", did, "--by", "registro-c", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = json.loads(r.stdout)
+        self.assertEqual(out["concluded_by"], "registro-c")
+        self.assertEqual(self.dossier(did)["concluded_by"], "registro-c")
+
+
+PRECEDENT_CLI = ROOT / ".harness" / "bin" / "precedent.py"
+
+
+class CaseLinkageGuard(unittest.TestCase):
+    """T-428 item 4: `propose --case C-NNN` stores dossier.case; `conclude`
+    re-validates it against precedent.py's LIVE case register (never
+    trusted from propose time) -- an unregistered or no-longer-open case
+    refuses the conclusion."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.hroot = pathlib.Path(self._tmp.name)
+        (self.hroot / "deliberations").mkdir(parents=True)
+        (self.hroot / "precedents").mkdir(parents=True)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(CLI)] + list(args) + ["--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def precedent_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(PRECEDENT_CLI)] + list(args) +
+            ["--root", str(self.hroot / "precedents"), "--harness-root", str(self.hroot)],
+            capture_output=True, text=True)
+
+    def open_case(self, question="q", task="T-1"):
+        r = self.precedent_cli("case", "open", "--question", question, "--task", task,
+                               "--agent", "worker-x")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return r.stdout.split()[2].rstrip(":")
+
+    def dossier(self, did):
+        return json.loads((self.hroot / "deliberations" / (did + ".json")).read_text())
+
+    def convene(self, case_id=None, alternatives=("A", "B")):
+        alt_args = []
+        for a in alternatives:
+            alt_args += ["--alternatives", a]
+        argv = ["propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                "--proposer", "w1"] + alt_args
+        if case_id:
+            argv += ["--case", case_id]
+        r = self.run_cli(*argv)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        did = r.stdout.split()[3].rstrip(":")
+        for by in ("w2", "w3"):
+            self.run_cli("sponsor", did, "--by", by)
+        r_sched = self.run_cli("schedule", did, "--speakers", "w1,w2,w3")
+        self.assertEqual(r_sched.returncode, 0, r_sched.stderr)
+        for alt in alternatives:
+            self.run_cli("discuss", did, "--by", "w1", "--re", alt,
+                         "--text", "case for %s" % alt)
+        self.run_cli("vote", did, "--voter", "w1", "--ranking", ",".join(alternatives))
+        return did
+
+    def test_case_id_is_stored_on_propose(self):
+        cid = self.open_case()
+        did = self.convene(case_id=cid)
+        self.assertEqual(self.dossier(did)["case"], cid)
+
+    def test_propose_refuses_a_malformed_case_id(self):
+        r = self.run_cli("propose", "--title", "t", "--evidence", "T-1", "--task", "T-1",
+                         "--proposer", "w1", "--case", "T-100")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not a valid case id format", r.stderr)
+
+    def test_conclude_refuses_an_unregistered_case(self):
+        did = self.convene(case_id="C-999")
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not registered", r.stderr)
+        self.assertEqual(self.dossier(did)["status"], "deliberating")
+
+    def test_conclude_refuses_a_disposed_case(self):
+        """Re-validated at conclude, not trusted from propose time: the case
+        can be disposed by someone else in the interval between propose and
+        conclude. Hand-edit the case record to 'disposed' the same way
+        DeliberationIntegrityGuards hand-edits dossiers to probe
+        re-validation."""
+        cid = self.open_case()
+        did = self.convene(case_id=cid)
+        case_path = self.hroot / "cases" / (cid + ".json")
+        data = json.loads(case_path.read_text(encoding="utf-8"))
+        data["status"] = "disposed"
+        data["disposal"] = {"verb": "distinguish", "ref": "orso_1", "by": "orso",
+                            "task": "T-1", "ts": hc.now_iso()}
+        case_path.write_text(json.dumps(data), encoding="utf-8")
+
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("not open", r.stderr)
+
+    def test_NEGATIVE_CONTROL_conclude_succeeds_with_no_case_at_all(self):
+        did = self.convene(case_id=None)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIsNone(self.dossier(did)["case"])
+
+    def test_NEGATIVE_CONTROL_conclude_succeeds_with_a_registered_open_case(self):
+        cid = self.open_case()
+        did = self.convene(case_id=cid)
+        r = self.run_cli("conclude", did)
+        self.assertEqual(r.returncode, 0, r.stderr)
 
 
 if __name__ == "__main__":

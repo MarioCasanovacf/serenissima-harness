@@ -898,6 +898,70 @@ def harness_root_for_acts(args, prec_root):
 
 
 # --------------------------------------------------------------------------
+# T-428 item 5: read-only publisher classification for a disposed case.
+#
+# The gen-8 survey found that W-002 assigns fed-codificador -- a seat in the
+# `fedatario` colegiado, whose OWN charter carries the clerk markers -- the
+# office of turning consensus into a precedent record (`publish`). That is a
+# real contradiction between the clerk constraint ("NO legisla") and the
+# codificador role, but it is a DOCKET's business (or the operator's) to
+# resolve, not this tool's: adding a clerk gate to `publish` here would
+# unilaterally pre-empt that decision. What this module CAN do without
+# deciding anything is make the contradiction, if it exists on a given case,
+# VISIBLE: a read-only report of whether the name that published the record
+# disposing a case is a clerk seat, an issued non-clerk name, or unissued.
+# Report only -- it never refuses, and `publish` calls nothing here.
+#
+# CLERK_MARKERS is kept BYTE-IDENTICAL to deliberate.py's CLERK_MARKERS
+# constant (same tuple, same strings) by construction; a cross-module test
+# (test_precedent_case_publisher_report.py::TheClerkMarkersDoNotDrift) pins
+# the two together mechanically so a change to one can't silently orphan the
+# other. Not imported directly from deliberate.py to avoid a module-load-time
+# circular import (deliberate.py already imports this module, for item 4's
+# case-linkage re-validation).
+# --------------------------------------------------------------------------
+
+CLERK_MARKERS = ("NO legisla", "NO vota")
+
+
+def classify_seat(hroot, name):
+    """Classify `name` against hroot/roster.json. Returns one of:
+      'clerk'               -- seated in a colegiado whose charter carries a
+                                CLERK_MARKERS token
+      'issued-non-clerk'    -- seated, charter resolves, no clerk marker
+      'unissued'            -- name holds no seat in the roster (or is empty)
+      'no-roster'           -- hroot has no roster.json to classify against
+      'roster-inconsistent' -- colegiado missing/unresolvable/no charter text
+
+    Mirrors deliberate.py's `assembly_eligibility` (T-417) in what it reads,
+    but NEVER refuses anything -- this is a classification for a report, not
+    a gate (T-428 item 5)."""
+    if not name:
+        return "unissued"
+    roster_path = Path(hroot) / "roster.json"
+    if not roster_path.exists():
+        return "no-roster"
+    try:
+        data = json.loads(roster_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "roster-inconsistent"
+    names = data.get("names", {}) or {}
+    if name not in names:
+        return "unissued"
+    colegiado = (names[name] or {}).get("colegiado", "")
+    colegiados = data.get("colegiados", {}) or {}
+    entry = colegiados.get(colegiado)
+    if not isinstance(entry, dict):
+        return "roster-inconsistent"
+    charter = entry.get("incentive", "") or ""
+    if not charter:
+        return "roster-inconsistent"
+    if any(marker in charter for marker in CLERK_MARKERS):
+        return "clerk"
+    return "issued-non-clerk"
+
+
+# --------------------------------------------------------------------------
 # Case Register (T-412 / S-1): cases presented to the precedent layer
 # --------------------------------------------------------------------------
 
@@ -1070,6 +1134,67 @@ def cmd_case_show(args):
     if data.get("disposal"):
         d = data["disposal"]
         print("  Disposal:  {} via {} by {} at {}".format(d.get("verb"), d.get("ref"), d.get("by"), d.get("ts")))
+    return 0
+
+
+def cmd_case_publisher_report(args):
+    """T-428 item 5: read-only report classifying the publisher of the record
+    that disposes --case, if any. NEVER refuses; NEVER gates `publish`."""
+    prec = resolve_root(args)
+    hroot = resolve_harness_root(args, prec)
+    case_rec = load_case(hroot, args.case_id)
+    if case_rec is None:
+        print("refused: case '{}' not found in {}".format(args.case_id, cases_dir(hroot)),
+              file=sys.stderr)
+        return 1
+
+    report = {
+        "case": args.case_id,
+        "case_status": case_rec.get("status"),
+        "disposal_verb": None,
+        "record_id": None,
+        "published_by": None,
+        "classification": None,
+        "note": None,
+    }
+
+    if case_rec.get("status") != "disposed":
+        report["note"] = "case is still open; no disposing record to classify"
+    else:
+        disp = case_rec.get("disposal") or {}
+        verb = disp.get("verb")
+        report["disposal_verb"] = verb
+        if verb != "publish":
+            report["note"] = ("case disposed by {!r}, not 'publish'; that verb writes no "
+                               "precedent record, so there is no published_by to classify"
+                               .format(verb))
+        else:
+            record_id = disp.get("ref")
+            report["record_id"] = record_id
+            path = record_path(prec, record_id) if record_id else None
+            if not record_id or not path.exists():
+                report["note"] = "disposing record {!r} not found in {}".format(record_id, prec)
+            else:
+                try:
+                    record = load_record_or_raise(path)
+                except RegistryIntegrityError as exc:
+                    report["note"] = "disposing record unreadable: {}".format(exc)
+                else:
+                    published_by = record.get("published_by")
+                    report["published_by"] = published_by
+                    report["classification"] = classify_seat(hroot, published_by)
+
+    if getattr(args, "json", False):
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+    else:
+        print("case {} publisher report".format(args.case_id))
+        print("  case status:    {}".format(report["case_status"]))
+        print("  disposal verb:  {}".format(report["disposal_verb"]))
+        print("  record id:      {}".format(report["record_id"]))
+        print("  published_by:   {}".format(report["published_by"]))
+        print("  classification: {}".format(report["classification"]))
+        if report["note"]:
+            print("  note:           {}".format(report["note"]))
     return 0
 
 
@@ -3323,6 +3448,17 @@ def main(argv):
     p_case_show.add_argument("--harness-root", dest="harness_root", default=None)
     add_root_arg(p_case_show)
     p_case_show.set_defaults(func=cmd_case_show)
+
+    p_case_pub = case_sub.add_parser(
+        "publisher-report",
+        help="read-only report (T-428): classify the name that published the record "
+             "disposing a case as clerk seat / issued non-clerk name / unissued. Never "
+             "refuses; never gates `publish`.")
+    p_case_pub.add_argument("case_id", metavar="C-NNN")
+    p_case_pub.add_argument("--json", action="store_true", default=False)
+    p_case_pub.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_pub)
+    p_case_pub.set_defaults(func=cmd_case_publisher_report)
 
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
     # Applied to `publish`, `confirm`, `distinguish`, and `case open`.

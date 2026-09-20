@@ -27,6 +27,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".harness" / "bin"))
 import condorcet  # noqa: E402
 import harness_common as hc  # noqa: E402
+import precedent  # noqa: E402 -- T-428 item 4: conclude re-validates dossier.case
+# against precedent.py's live case register (cases_dir/load_case), never trusting
+# the value stamped at propose time.
 
 DELIBERATIONS_DIR = ROOT / ".harness" / "deliberations"
 DOSSIER_RE = re.compile(r"^D-(\d+)$")
@@ -348,6 +351,18 @@ def cmd_propose(args) -> int:
         # Default binary proposal alternatives if none specified
         alternatives = ["adopt", "reject"]
 
+    # T-428 item 4: --case links this dossier to a precedent.py case register
+    # entry (C-NNN). Only the SHAPE is checked here -- whether the case is
+    # actually registered and still open is re-validated at conclude, never
+    # trusted from propose time (same posture as every other guard in this
+    # module: write-time checks are cheap and shallow, conclude-time checks
+    # are authoritative).
+    case_id = (args.case or "").strip() or None
+    if case_id and not precedent.CASE_ID_RE.match(case_id):
+        print(f"refused: --case {case_id!r} is not a valid case id format "
+              f"(must match ^C-\\d+$)", file=sys.stderr)
+        return 1
+
     with hc.guarded():
         dossier_id = allocate_dossier_id(delib_dir)
         dossier = {
@@ -359,12 +374,15 @@ def cmd_propose(args) -> int:
             "status": "proposed",  # proposed -> sponsored -> deliberating -> concluded
             "evidence": evidence,
             "alternatives": alternatives,
+            "case": case_id,        # T-428: registered case this dossier decides, or None
             "sponsors": [proposer],  # Proposer is initial sponsor
             "priors": {},            # voter -> ranking
             "speaker_order": [],
             "speaker_seed": None,
+            "scheduled_by": None,    # T-428: eligibility-checked --by of `schedule`
             "final_ballots": {},     # voter -> ranking
             "tally_result": None,
+            "concluded_by": None,    # T-428: eligibility-checked --by of `conclude`
             "concluded_at": None,
         }
         save_dossier(delib_dir, dossier)
@@ -469,8 +487,24 @@ def cmd_prior(args) -> int:
 
 
 def cmd_schedule(args) -> int:
+    """T-428 item 1: the gen-8 survey found that `--speakers` was never run
+    through `assembly_eligibility` -- a clerk seat or an unissued name could
+    be scheduled to speak (and, since `vote` used to accept status
+    'sponsored', to vote) even though the same names are refused at
+    propose/sponsor/prior/vote/discuss. Every entry of the EFFECTIVE speaker
+    list (whether given via --speakers or defaulted from sponsors+priors) is
+    now checked, fail closed with the SAME 'roster inconsistent'/'clerk
+    seat'/'unissued name' posture as a ballot. Who convened the deliberation
+    is also recorded (--by, itself eligibility-checked)."""
     hroot = pathlib.Path(args.harness_root) if args.harness_root else hc.HARNESS
     delib_dir = resolve_delib_dir(hroot)
+
+    scheduler = (args.by or hc.agent_id()).strip()
+    if not scheduler:
+        print("refused: --by must be non-empty", file=sys.stderr)
+        return 1
+    if refuse_ineligible(hroot, scheduler):
+        return 1
 
     with hc.guarded():
         try:
@@ -499,6 +533,18 @@ def cmd_schedule(args) -> int:
             all_participants.update(dossier.get("priors", {}).keys())
             speaker_list = sorted(all_participants)
 
+        # T-428 item 1: every scheduled speaker must be eligible to act in
+        # the assembly -- same posture as a ballot. Refuse the WHOLE call on
+        # the first ineligible entry rather than silently dropping it: a
+        # silently-shrunk speaker list is exactly the kind of unobserved
+        # change this guard exists to prevent.
+        for sp in speaker_list:
+            reason = assembly_eligibility(hroot, sp)
+            if reason:
+                print(f"refused: speaker {sp!r} is not eligible to be scheduled on "
+                      f"{args.dossier_id}: {reason}", file=sys.stderr)
+                return 1
+
         if len(speaker_list) < 2:
             print("refused: deliberation requires at least 2 distinct speakers", file=sys.stderr)
             return 1
@@ -509,6 +555,7 @@ def cmd_schedule(args) -> int:
         dossier["speaker_order"] = shuffled
         dossier["speaker_seed"] = seed
         dossier["status"] = "deliberating"
+        dossier["scheduled_by"] = scheduler
         save_dossier(delib_dir, dossier)
 
     if args.json:
@@ -516,13 +563,15 @@ def cmd_schedule(args) -> int:
             "dossier": args.dossier_id,
             "speaker_order": shuffled,
             "seed": seed,
+            "scheduled_by": scheduler,
             "status": "deliberating"
         }, indent=2))
     else:
         print("=" * 60)
         print(f"DELIBERATION SPEAKER SCHEDULE: {args.dossier_id}")
         print("=" * 60)
-        print(f"Seed: {seed}")
+        print(f"Seed:       {seed}")
+        print(f"Scheduled by: {scheduler}")
         print("-" * 60)
         for idx, speaker in enumerate(shuffled, start=1):
             print(f"  Speaker {idx}: {speaker}")
@@ -613,8 +662,16 @@ def cmd_vote(args) -> int:
         if refuse_future_stamps(dossier):
             return 1
 
-        if dossier["status"] not in ("deliberating", "sponsored"):
-            print(f"refused: dossier {args.dossier_id} is in status '{dossier['status']}', not open for voting", file=sys.stderr)
+        # T-428 item 2: a ballot is only legal inside a CONVENED deliberation.
+        # The prior code also accepted status 'sponsored' -- a ballot cast
+        # before `schedule` ever ran, with no speaker order and no
+        # opportunity to discuss. That is D-001's shape (vote before
+        # convene), so it is refused with a named reason, not silently
+        # accepted.
+        if dossier["status"] != "deliberating":
+            print(f"refused: dossier {args.dossier_id} is in status '{dossier['status']}', "
+                  f"not open for voting; a ballot is only accepted inside a convened "
+                  f"deliberation (run `schedule` first) (T-428)", file=sys.stderr)
             return 1
 
         dossier["final_ballots"][voter] = {
@@ -629,8 +686,23 @@ def cmd_vote(args) -> int:
 
 
 def cmd_conclude(args) -> int:
+    """T-428 item 3: `conclude` now takes --by (eligibility-checked,
+    non-clerk -- same `assembly_eligibility` gate as every other assembly
+    act) and records `concluded_by`. Item 4: if the dossier carries a `case`
+    (set at propose via --case), conclude re-validates it against
+    precedent.py's live case register -- not registered, or registered but
+    no longer 'open', both refuse. Re-validated here rather than trusted
+    from propose time: the case could be disposed by another act, or never
+    registered at all, in the interval between propose and conclude."""
     hroot = pathlib.Path(args.harness_root) if args.harness_root else hc.HARNESS
     delib_dir = resolve_delib_dir(hroot)
+
+    concluder = (args.by or hc.agent_id()).strip()
+    if not concluder:
+        print("refused: --by must be non-empty", file=sys.stderr)
+        return 1
+    if refuse_ineligible(hroot, concluder):
+        return 1
 
     with hc.guarded():
         try:
@@ -640,6 +712,24 @@ def cmd_conclude(args) -> int:
             return 1
         if refuse_future_stamps(dossier):
             return 1
+
+        # T-428 item 4: case linkage, re-validated against the live register.
+        case_id = dossier.get("case")
+        if case_id:
+            case_rec = precedent.load_case(hroot, case_id)
+            if case_rec is None:
+                print(f"refused: {args.dossier_id} names case {case_id!r} which is not "
+                      f"registered in {precedent.cases_dir(hroot)}; a docket cannot "
+                      f"conclude against an unregistered case (T-428; call "
+                      f"'precedent.py case open' first)", file=sys.stderr)
+                return 1
+            if case_rec.get("status") != "open":
+                disp = case_rec.get("disposal") or {}
+                print(f"refused: {args.dossier_id} names case {case_id!r} which is not open "
+                      f"(status={case_rec.get('status')!r}, disposed by "
+                      f"{disp.get('verb', 'unknown')}); a docket cannot conclude against a "
+                      f"case that is no longer open (T-428)", file=sys.stderr)
+                return 1
 
         ballots_dict = dossier.get("final_ballots", {})
         if not ballots_dict:
@@ -673,6 +763,7 @@ def cmd_conclude(args) -> int:
         dossier["tally_result"] = tally
         dossier["status"] = "concluded"
         dossier["concluded_at"] = hc.now_iso()
+        dossier["concluded_by"] = concluder
 
         # Guard 2: flag, not block. Unanimity can be honest, so the record
         # carries the observation and conclude still succeeds.
@@ -691,6 +782,7 @@ def cmd_conclude(args) -> int:
         print(f"Condorcet Winner: {tally['condorcet_winner'] or 'None (Cycle)'}")
         print(f"Total Ballots:    {tally['total_ballots']}")
         print(f"Deliberation:     {dossier['deliberation_flag']}")
+        print(f"Concluded by:     {concluder}")
         print("-" * 60)
         print("Final Ranking:")
         for r in tally["ranking"]:
@@ -719,8 +811,12 @@ def cmd_show(args) -> int:
         print(f"Proposer:  {dossier['proposer']} (Task: {dossier['issuing_task']})")
         print(f"Evidence:  {', '.join(dossier['evidence'])}")
         print(f"Sponsors:  {', '.join(dossier['sponsors'])} ({len(dossier['sponsors'])}/{MIN_SPONSORS})")
+        if dossier.get("case"):
+            print(f"Case:      {dossier['case']}")
         if dossier.get("speaker_order"):
             print(f"Speakers:  {' -> '.join(dossier['speaker_order'])}")
+        if dossier.get("scheduled_by"):
+            print(f"Scheduled by: {dossier['scheduled_by']}")
         rounds = dossier.get("discussion", []) or []
         if rounds:
             print(f"Discussion: {len(rounds)} round(s) on "
@@ -730,6 +826,8 @@ def cmd_show(args) -> int:
             print(f"Winner:    {dossier['tally_result']['winner']}")
         if dossier.get("deliberation_flag"):
             print(f"Flag:      {dossier['deliberation_flag']}")
+        if dossier.get("concluded_by"):
+            print(f"Concluded by: {dossier['concluded_by']}")
         print("=" * 60)
     return 0
 
@@ -747,6 +845,10 @@ def main(argv=None) -> int:
     p_prop.add_argument("--proposer", default=None, help="proposing agent identity")
     p_prop.add_argument("--task", required=True, help="issuing task ID, T-NNN")
     p_prop.add_argument("--alternatives", action="append", default=None, help="options to rank (defaults to adopt, reject)")
+    p_prop.add_argument("--case", default=None,
+                        help="registered case id, C-NNN (T-428): links this dossier to "
+                             "precedent.py's case register. Optional; re-validated as "
+                             "registered-and-open at conclude, not here.")
     p_prop.add_argument("--harness-root", dest="harness_root", default=None)
     p_prop.add_argument("--json", action="store_true", default=False)
     p_prop.set_defaults(func=cmd_propose)
@@ -773,6 +875,8 @@ def main(argv=None) -> int:
     p_sched.add_argument("dossier_id", metavar="D-NNN")
     p_sched.add_argument("--speakers", default=None, help="comma-separated speaker identities")
     p_sched.add_argument("--seed", default=None, help="randomization seed (defaults to SHA-256 derived seed)")
+    p_sched.add_argument("--by", default=None,
+                         help="scheduling agent identity (T-428, eligibility-checked)")
     p_sched.add_argument("--harness-root", dest="harness_root", default=None)
     p_sched.add_argument("--json", action="store_true", default=False)
     p_sched.set_defaults(func=cmd_schedule)
@@ -799,6 +903,8 @@ def main(argv=None) -> int:
     p_conc = sub.add_parser("conclude", help="tally final votes using Condorcet engine and conclude deliberation")
     p_conc.add_argument("dossier_id", metavar="D-NNN")
     p_conc.add_argument("--method", choices=["schulze", "copeland"], default="schulze")
+    p_conc.add_argument("--by", default=None,
+                        help="concluding agent identity (T-428, eligibility-checked, non-clerk)")
     p_conc.add_argument("--harness-root", dest="harness_root", default=None)
     p_conc.add_argument("--json", action="store_true", default=False)
     p_conc.set_defaults(func=cmd_conclude)

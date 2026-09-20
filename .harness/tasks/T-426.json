@@ -1,0 +1,8 @@
+{
+  "id": "T-426",
+  "title": "gen-8 attach the consequence chosen by C-002's record to blackboard.py, and publish the act",
+  "description": "Implement in .harness/bin/blackboard.py exactly the alternative that the record disposing C-002 adopted (read the record: precedent.py show <id> or the JSON in .harness/precedents/), on top of T-422's scaffold. Whatever the alternative: ties and unranked fall back to (priority, id); closed gate keeps today's order with the printed reason; no write to anything reputation.py owns; named refusal/yield events in events.jsonl; the rename bypass documented in the docstring. Tests in test_blackboard_next_ordering.py for the consequence, for the fallback, and a mutation check that the consequence disappears when the gate closes. Then satisfy PR-060 clause 6: publish a declarative record (precedent.py publish, --agent registro-a, --follows the C-002 record, sources decision:T-426 and the code path) that names the operational parameter, the consequence, and this act of setting it. Full suite green. Standing rules: claim with blackboard.py claim <ID> --agent <you>; lock every file you edit with lock.py acquire; no emojis; nothing tracked may contain user paths, sibling-project names or personal tooling; never sign anything; never touch .harness/keys, trust/, constitutional/; never route around prevent_data_loss.py; commit is done by the coordinator, not you; hand off with blackboard.py handoff <ID> --agent <you> --to-role verifier with replayable evidence (exact commands + expected output). A crash is not a refusal: fail closed with a named reason.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

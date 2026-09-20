@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-08-30T23:26:44Z",
-  "updated_by": "main",
+  "updated_at": "2026-09-20T18:55:11Z",
+  "updated_by": "verifier-g8-guards",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5503,6 +5503,180 @@
       "created_by": "main",
       "completed_at": "2026-08-30T23:26:44Z",
       "completed_by": "main"
+    },
+    "T-422": {
+      "epic": "gen-8-dispatch-consumer",
+      "title": "gen-8 consumer scaffold: blackboard.py reads Phase B dispatch order with a printed fallback, consequence NOT yet attached",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-422.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py",
+        ".harness/tests/test_blackboard_next_ordering.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g8-consumer",
+        "note": "DEVIATION: none from spec; DECISION: advisory helpers are pure/testable (live_candidates, phase_b_claim_order, phase_b_advisory_line), printed in both cmd_next and cmd_status (both success and no-claimable-task paths for cmd_next), right after the existing output so all existing lines stay byte-identical (pinned by PriorityAndIdOrdering/ReviewRoutesToVerifierOnly/EngineAnyPassesThrough/ClaimIsFirstCome in the new test file).\n\nWHAT WAS BUILT (.harness/bin/blackboard.py, +146 lines, no existing lines changed):\n  - _REPUTATION_PY = Path(__file__).resolve().parent / \"reputation.py\" -- fixed by\n    this file's own location, never by hc.HARNESS (that is redirected by test\n    fixtures / is the --root data value; the script itself always lives beside\n    blackboard.py).\n  - live_candidates(bb, agent): identities holding an unexpired claim (status\n    claimed/in_progress, claim_expires_at unset or in the future) plus the\n    requesting agent, deduplicated, first-seen order.\n  - _phase_b_reason_from_stderr(stderr, returncode): extracts \"<STATE> -- <detail>\"\n    from dispatch's stderr line 2 (\"  constitutional file: ...\"), else \"dispatch\n    exited <code>\".\n  - phase_b_claim_order(candidates): subprocess-only (sys.executable, never\n    imports reputation.py) call to `reputation.py dispatch --json --root\n    <hc.HARNESS> --candidates <csv>`; never passes --half-life-days; returns\n    (order, reason) -- order only on returncode 0 with a parseable JSON\n    recommended_claim_order; never raises (all subprocess/JSON errors caught);\n    never writes. Docstring cites PR-061 (RAT-01) and PR-060 clause 6 and states\n    explicitly: no consequence binds here (that is docket C-002 / T-424, wired by\n    T-426).\n  - phase_b_advisory_line(bb, agent): builds \"phase-b claim order: a, b, c\n    (VERIFIED, activation on)\" or \"phase-b claim order not applied: <reason>\".\n  - cmd_status and cmd_next (both the found-a-task and no-claimable-task\n    branches) print this ONE line, appended after all pre-existing output.\n\nNEW TEST FILE: .harness/tests/test_blackboard_next_ordering.py (38 tests, all\nin-process, no subprocess CLI spawning except where explicitly cross-checking\nagainst the real `reputation.py dispatch` CLI). Two fixture bases:\n  - PinnedContractFixture / PhaseBAdvisoryFixture: BOTH redirect all six of\n    hc.HARNESS/BLACKBOARD/STATE/TASKS/EVENTS/GUARD (not just HARNESS), per the\n    spec's own warning that reassigning HARNESS alone still hits the live root.\n  - PhaseBAdvisoryFixture copies GateFixture's keygen/enroll/write_constitutional\n    /sign pattern from test_reputation_phase_b.py (imported, not duplicated, to\n    avoid drift) and lays the fixture root out exactly like hc.HARNESS itself\n    (precedents/, tasks/, blackboard.json, logs/events.jsonl, constitutional/,\n    trust/) so the same root value is valid as reputation.py's --root.\nCoverage: priority-asc/id-asc ordering + missing-priority==5 tie; review-status\nroutes to verifier-or-no-filter only; engine 'any' passes any --engine filter;\nclaim is first-come (SystemExit on the second claimant); zero-write snapshot\nassertions for next/status (plain and across the gated fixture, open+closed);\nlive_candidates unit tests (unexpired/expired/unset-expiry/dedup/exclusions);\nseam contract (fixed reputation.py path, no in-process import of reputation,\nnever passes --half-life-days -- verified via a mocked subprocess.run capturing\nargv, never raises on subprocess OSError / malformed JSON / empty stdout,\nreason-line extraction from stderr line 2 and the exit-code fallback); gate\nclosed -> same task selection + reason line carrying the NOT_PRESENT state\ntoken; gate open -> advisory order asserted equal to a live, independently-run\n`reputation.py dispatch --json` call for the identical candidate set; two\nunknown identities tie at score 0 and the advisory documents dispatch's own\nalphabetical tie-break; dispatch exit 4 (corrupt PR-*.json -> RegistryIntegrityError)\nand exit 1 (gate closed) both fold into a printed reason with today's task\nselection untouched, never a crash.\n\nMUTATION-CHECK (per protocol, never on the live file): copied .harness/bin/*.py\nand the two test files into a throwaway tree under the session scratchpad\nmirroring the real .harness/{bin,tests} layout, then applied 9 targeted\nmutations one at a time (each restored from a clean copy first) and reran\ntest_blackboard_next_ordering.py against the mutated copy:\n  1. suppressed the advisory print in cmd_next/cmd_status -> 7 tests failed\n  2. leaked --half-life-days into the dispatch subprocess call -> 5 tests failed\n  3. live_candidates() neutered to always return [] -> 11 tests failed\n  4. removed the try/except around subprocess.run (never-raise broken) ->\n     1 test failed with an actual uncaught OSError propagating\n  5. derived _REPUTATION_PY from hc.HARNESS instead of __file__ -> 0 tests\n     failed (an equivalent mutant in THIS process: both forms freeze at\n     blackboard.py's own import time, before any fixture ever redirects\n     hc.HARNESS, so they evaluate identically within one Python process;\n     flagged honestly here as a real but practically unobservable gap rather\n     than hidden)\n  6. added an in-process `import reputation` -> 1 test failed (the AST/substring\n     guard against in-process import)\n  7. forced cmd_next to call save_bb() unconditionally -> 4 zero-write tests\n     failed\n  8. dropped priority from cmd_next's sort key (id-only) -> 2 tests failed\n  9. removed the engine 'any' pass-through (`!= args.engine` instead of\n     `not in (args.engine, \"any\")`) -> 1 test failed\n  8/9 mutations caught; item 5 is disclosed as an equivalent mutant, not a gap\n  in the guard's actual production behaviour (which is correct: fixed by\n  __file__, independent of any --root).\n\nREPLAY COMMANDS (from the workspace root):\n  python3 -m pytest .harness/tests/test_blackboard_next_ordering.py -q\n    -> expected: 38 passed\n  python3 -m pytest .harness/tests/test_reputation.py -q\n    -> expected: 41 passed (untouched, per spec item 6)\n  python3 -m pytest .harness/tests/test_reputation_phase_b.py -q\n    -> expected: 32 passed (untouched, per spec item 6)\n  python3 -m pytest .harness/tests -q\n    -> expected: all green (observed 897 passed, 4 skipped at handoff time;\n       note two OTHER in-flight tasks in this swarm were concurrently touching\n       test_deliberate.py / adding test_precedent_case_publisher_report.py, so\n       the exact total may differ slightly on replay -- zero failures is the\n       actual bar)\n  python3 .harness/bin/blackboard.py status --agent <you>\n    -> last line: \"phase-b claim order: ... (VERIFIED, activation on)\" against\n       the LIVE repo (Phase B is already activated here per T-420/RAT-01), or\n       \"phase-b claim order not applied: <STATE> -- <detail>\" if that changes\n  python3 .harness/bin/blackboard.py next --agent <you>\n    -> same advisory line appended after the existing next:/claim it:/also\n       claimable: lines, which are byte-identical to pre-T-422 output\n\nSCOPE DISCIPLINE: no consequence attaches anywhere in this change -- `claim`'s\nactual first-come behaviour, `cmd_next`'s sort, and `cmd_claim`'s refusal logic\nare byte-identical to before; the only new output is the advisory line. Docket\nC-002 / T-424 decides whether any consequence should ever attach; T-426 is the\nwiring task if accepted. Nothing under .harness/keys, trust/, constitutional/\nwas touched; nothing was signed; no absolute paths / user names / sibling-\nproject names / personal tooling in any tracked text (checked by eye across\nblackboard.py and the new test file).\n",
+        "ts": "2026-09-20T18:43:38Z"
+      },
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main",
+      "completed_at": "2026-09-20T18:48:58Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-423": {
+      "epic": "gen-8-dispatch-consumer",
+      "title": "VERIFY T-422: adversarial replay of the consumer scaffold (zero consequence, zero writes, fallback on every refusal)",
+      "status": "review",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-422"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-423.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "harness-verifier",
+        "note": "T-422 verdicted done by harness-verifier (see T-422 notes for full VERIFIED\nevidence + a correction note repairing one shell-mangled line). Summary of\nwhat was actually replayed for this tracking task's own closure:\n\n- pytest .harness/tests/test_blackboard_next_ordering.py -q -> 38 passed\n- pytest .harness/tests/test_reputation.py -q -> 41 passed (untouched)\n- pytest .harness/tests/test_reputation_phase_b.py -q -> 32 passed (untouched)\n- pytest .harness/tests -q -> 897 passed, 4 skipped\n- sha256 of blackboard.json/state.json identical before/after live\n  `status`/`next` calls -> zero writes confirmed\n- independent standalone script (own GateFixture-style scratch root, ssh-keygen\n  operator+mallory keys) calling phase_b_claim_order() directly: no-file/\n  unsigned/wrong-namespace all refuse with the right state token\n  (NOT_PRESENT/UNSIGNED/BAD_SIGNATURE), gate-open order matches a live\n  independently-run `reputation.py dispatch --json` call, corrupted\n  precedents/PR-999.json -> real dispatch exit 4, helper returns None with\n  reason 'dispatch exited 4', no traceback -- 15/15 checks passed\n- AST walk: zero in-process `import reputation`; grep: `--half-life-days`\n  only appears inside a docstring, never passed to subprocess.run\n- mutation test on a COPY under <session-scratchpad> (never the live file):\n  dropped priority from cmd_next's sort key -> 2/38 tests failed, confirming\n  the new test file actually pins the ordering contract\n- git diff -- .harness/bin/blackboard.py: 146 insertions, 0\n  deletions/modifications -- additive-only, pre-existing lines byte-identical\n- hygiene: .harness/keys, trust/, constitutional/ untouched; nothing signed;\n  no user paths/sibling-project names/emojis in the new or modified files\n\nOPEN-QUESTION: T-423's own depends_on:[T-422] cascade-gated its own claim\nuntil T-422 reached done, which is circular with a \"claim the verify-tracking\ntask first\" instruction -- resolved here by verdicting T-422 first (permitted\nwithout claiming it, per the producer!=approver contract: update --status\ndone only checks handoff.from != acting agent, not current claim) and\nclaiming/handing off this tracking task second. Future verify-tracking tasks\nshould not depends_on the task they track.\n\nHousekeeping: lock.py status showed no active lock files at verification\ntime; lock.py sweep swept 0 expired locks.\n",
+        "ts": "2026-09-20T18:49:29Z"
+      },
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
+    },
+    "T-428": {
+      "epic": "gen-8-first-docket",
+      "title": "gen-8 deliberation hardening before the first real docket: speaker eligibility, vote-before-schedule, concluder attribution, case linkage",
+      "status": "done",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-428.json",
+      "artifacts": [
+        ".harness/bin/deliberate.py",
+        ".harness/bin/precedent.py",
+        ".harness/tests/test_deliberate.py",
+        ".harness/tests/test_precedent_case_publisher_report.py",
+        "claude.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g8-guards",
+        "note": "Built all 6 items of T-428's spec. Files touched: .harness/bin/deliberate.py, .harness/bin/precedent.py, .harness/tests/test_deliberate.py, .harness/tests/test_precedent_case_publisher_report.py (new), claude.md.\n\nITEM 1 (schedule eligibility): cmd_schedule now takes --by (scheduler, eligibility-checked via assembly_eligibility before the guarded block) and runs assembly_eligibility over every entry of the EFFECTIVE speaker list (explicit --speakers or the sponsors+priors default), refusing the WHOLE call on the first ineligible entry with the same clerk-seat/unissued-name/roster-inconsistent posture as a ballot. Records dossier.scheduled_by.\nReplay: python3 .harness/bin/lock.py acquire (n/a, read-only replay) then:\n  python3 -m pytest .harness/tests/test_deliberate.py::ScheduleEligibilityGuards -v\nExpected: 6 passed (4 refusal cases: clerk speaker, unissued speaker, clerk scheduler, unissued scheduler; 2 negative controls: eligible schedule succeeds and records scheduled_by; rosterless bootstrap unaffected).\n\nITEM 2 (vote-before-schedule refusal): cmd_vote now refuses unless dossier status == 'deliberating' exactly (previously also accepted 'sponsored', which is D-001's actual defect: a ballot with no speaker order and no chance to discuss). Named refusal message points at `schedule`.\nReplay: python3 -m pytest .harness/tests/test_deliberate.py::VoteBeforeScheduleIsRefused -v\nExpected: 3 passed.\n\nITEM 3 (conclude --by): cmd_conclude takes --by (eligibility-checked, non-clerk, same assembly_eligibility gate), refused before the dossier is even loaded on an ineligible name; records dossier.concluded_by.\nReplay: python3 -m pytest .harness/tests/test_deliberate.py::ConcludeEligibilityGuards -v\nExpected: 3 passed.\n\nITEM 4 (case linkage): `propose --case C-NNN` stores dossier.case (format-checked only at write time); `conclude` re-validates it against precedent.py's LIVE case register (precedent.cases_dir/load_case, imported as a module -- deliberate.py -> precedent.py is one-directional, no cycle) -- unregistered or no-longer-open both refuse, never trusted from propose time.\nReplay: python3 -m pytest .harness/tests/test_deliberate.py::CaseLinkageGuard -v\nExpected: 6 passed.\n\nITEM 5 (precedent.py read-only report, explicitly NOT a publish gate): new `precedent.py case publisher-report C-NNN [--json]` verb + `classify_seat(hroot, name)` helper classify the name that published the record disposing a case as clerk/issued-non-clerk/unissued/no-roster/roster-inconsistent. `publish` itself carries zero new checks -- proven by a negative-control test that a clerk-seated --agent still publishes successfully and the report then classifies it 'clerk'. CLERK_MARKERS is duplicated (not imported, to avoid a circular import since deliberate.py already imports precedent.py) and pinned equal to deliberate.py's constant by a dedicated cross-module test.\nReplay: python3 -m pytest .harness/tests/test_precedent_case_publisher_report.py -v\nExpected: 17 passed.\n\nITEM 6 (claude.md correction): fixed the false claim that .harness/trust/ is \"untracked by git\" -- `git ls-files .harness/trust` shows root.pub, root.fingerprint and README.md ARE tracked (and .harness/constitutional/reputation.json{,.sig} too), private keys never are. Kept the \"trust/ is writable by every agent\" sentence and its underlying point (git-tracked != protected against a same-session working-tree overwrite before the next commit). Did NOT touch .harness/operator-rulings-2026-08-22.md. NOTE for the verifier: .harness/tests/test_warrant.py:781-782 carries the same stale phrase in a docstring (not an assertion) -- left untouched as out of this task's declared scope (CLAUDE.md only); flagging for a follow-up task if wanted.\n\nREGRESSION FIX (not a new guard, a repair forced by item 3): TheD001DefectCannotRecur::test_a_non_clerk_docket_still_cannot_skip_discussion called `schedule`/`conclude` with no --by; against the real roster.json fixture the default agent 'main' has no seat, so it now hits 'unissued name' before reaching the discussion guard it means to test. Fixed by passing --by registro-a on both calls, preserving the test's original intent (verified the failure message is still 'no discussion recorded').\n\nMUTATION-CHECK (never on the live files, all under <session-scratchpad>/mutants): copied deliberate.py, precedent.py, condorcet.py, harness_common.py and patched copies of both test files (CLI/ROOT/PRECEDENT_CLI/sys.path repointed at the scratch copies) into the scratchpad. Sanity-ran both patched test files against PRISTINE scratch copies first (81 passed, confirming the harness itself is correct), then individually neutered each of the 4 deliberate.py guards and the precedent.py classify_seat clerk-detection (plus CLERK_MARKERS itself) and reran the matching test class each time:\n  guard 1 neutered -> 4/6 ScheduleEligibilityGuards tests failed (the 2 negative controls still passed)\n  guard 2 neutered -> 1/3 VoteBeforeScheduleIsRefused tests failed (post-conclude refusal is a separate pre-existing check, unaffected)\n  guard 3 neutered -> 2/3 ConcludeEligibilityGuards tests failed\n  guard 4 neutered -> 2/6 CaseLinkageGuard tests failed (format-check test is a separate write-time check, unaffected)\n  classify_seat clerk-branch neutered -> 3/17 test_precedent_case_publisher_report.py tests failed\n  CLERK_MARKERS drift-mutated -> ClerkMarkersDoNotDrift failed\nEvery new guard has at least one test that demonstrably fails without it.\n\nFULL SUITE (live tree, not the scratch mutants): python3 -m pytest .harness/tests -q\nObserved: 897 passed, 4 skipped (pre-existing skips, unrelated to this task) in ~67s.\n\nLocks released (lock.py release on all 5 touched files). Did not commit (coordinator's job). Note: .harness/bin/blackboard.py, .harness/tests/test_blackboard_next_ordering.py and new T-422..T-429 task files show as modified/untracked in git status -- those are a CONCURRENT worker's changes (T-422's worker), not mine; I never locked or touched them, verified via git log/diff before handoff.",
+        "ts": "2026-09-20T18:47:29Z"
+      },
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main",
+      "completed_at": "2026-09-20T18:55:00Z",
+      "completed_by": "verifier-g8-guards"
+    },
+    "T-429": {
+      "epic": "gen-8-first-docket",
+      "title": "VERIFY T-428: attack the four new deliberation guards and the case linkage",
+      "status": "review",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-428"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-429.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "verifier-g8-guards",
+        "note": "VERDICT ON T-428: done (see T-428's own note for full evidence). T-429's spec items (a)-(g) all executed and passed: (a) schedule refuses clerk speaker fed-codificador and invented name ghost-agent-999 with no write, and refuses a clerk scheduler; (b) vote in status 'sponsored' refused, final_ballots untouched; (c) conclude refused with no --by (defaults to unissued 'main') and with clerk --by fed-codificador, concluded_by stays None; (d) propose --case with an unregistered case (C-999) and with a hand-built disposed-case fixture (C-002, scratch JSON only, no signing) both make conclude refuse, dossier stays 'deliberating'; (e) git diff --stat -- .harness/operator-rulings-2026-08-22.md is empty (byte-identical to HEAD) and ssh-keygen -Y verify against <workspace>/.harness/trust/root.pub (namespace harness-ruling) returns 'Good harness-ruling signature' matching trust/root.fingerprint SHA256:9Ya45T4LytgZjcPKr0Aj5YrFqWmZT0SNoK3ExeQQnVM; (f) mutation on fresh scratch copies under <session-scratchpad>/mutants (separate from the producer's own mutants): neutering guard 1 (schedule speaker-eligibility loop) lets a clerk speaker be scheduled (exit 0) where pristine refuses; neutering guard 2 (vote status check) lets a vote succeed in status 'sponsored' where pristine refuses -- both guards are load-bearing; (g) full suite replayed live: python3 -m pytest .harness/tests -q -> 897 passed, 4 skipped in ~67s, matching the producer's claim exactly. All work done in a fresh scratch root under the session scratchpad (root_a/root_b/root_c + mutants), never touching live files; no signing performed anywhere (used a hand-built scratch JSON fixture instead of precedent.py distinguish to reach a 'disposed' case, since distinguish requires --key). Housekeeping: lock.py status showed no active lock files before and after; lock.py sweep swept 0 expired locks both times. T-428 set to status=done by me (verifier-g8-guards) via blackboard.py update.",
+        "ts": "2026-09-20T18:55:11Z"
+      },
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
+    },
+    "T-424": {
+      "epic": "gen-8-first-docket",
+      "title": "gen-8 first real docket: case C-002 decides which claim-ordering consequence the first dispatch consumer attaches (PR-061, PR-060 c5/c6)",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-428"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-424.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
+    },
+    "T-425": {
+      "epic": "gen-8-first-docket",
+      "title": "VERIFY T-424: integrity of the first real docket and of the record that disposed C-002",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-424"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-425.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
+    },
+    "T-426": {
+      "epic": "gen-8-dispatch-consumer",
+      "title": "gen-8 attach the consequence chosen by C-002's record to blackboard.py, and publish the act",
+      "status": "open",
+      "role": "worker",
+      "engine": "claude",
+      "depends_on": [
+        "T-422",
+        "T-424"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-426.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
+    },
+    "T-427": {
+      "epic": "gen-8-dispatch-consumer",
+      "title": "VERIFY T-426: adversarial attack on the attached consequence and its PR-060 c6 record",
+      "status": "open",
+      "role": "verifier",
+      "engine": "claude",
+      "depends_on": [
+        "T-426"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-427.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-09-20T18:28:28Z",
+      "created_by": "main"
     }
   }
 }

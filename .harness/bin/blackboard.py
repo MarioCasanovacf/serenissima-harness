@@ -66,13 +66,21 @@ import argparse
 import datetime as dt
 import json
 import re
+import subprocess
 import sys
+from pathlib import Path
 
 import harness_common as hc
 
 VALID_STATUS = ["open", "claimed", "in_progress", "blocked", "review", "done", "failed"]
 VALID_ROLES = ["thinker", "worker", "verifier"]
 VALID_ENGINES = ["claude", "gemini", "codex", "any"]
+
+# T-422: fixed by this file's own location, NEVER by hc.HARNESS -- a test
+# fixture redirects hc.HARNESS to a scratch root (it is the --root value
+# reputation.py reads data from), but the reputation.py SCRIPT itself always
+# lives next to this one, in the real .harness/bin/ directory.
+_REPUTATION_PY = Path(__file__).resolve().parent / "reputation.py"
 
 
 # ---------- shared helpers (call only while holding hc.guarded()) ----------
@@ -222,6 +230,141 @@ def report_expirations(released):
         print("note: lease on {} (held by {}) expired -> task released to open".format(tid, holder))
 
 
+# ------------------- T-422: Phase B claim-order CONSUMER -------------------
+#
+# gen-8 consumer scaffold (docket C-002). PR-061 (RAT-01) authorizes
+# reputation.py's `dispatch` as the one consequence verb reputation.py
+# exposes, gated by an operator-signed, activated constitutional file; PR-060
+# clause 6 splits parameters into CONSTITUTIONAL (the operator's alone --
+# decay rate, weights) versus OPERATIONAL (claim priority ordering -- the one
+# thing a consumer may act on). Everything below builds the READ side only:
+# it asks dispatch what it would recommend and prints the answer as an
+# ADVISORY line. NO CONSEQUENCE ATTACHES HERE. Whether, and how, `claim`'s
+# actual ordering (or anything else) ever adopts this recommendation is
+# docket C-002 / T-424's decision to make, wired into this file (if accepted)
+# by T-426 -- not this task. Until then `phase_b_claim_order`'s return value
+# is printed and nothing more; `cmd_next`'s and `cmd_status`'s existing
+# sort/candidate-selection logic above is untouched, byte-identical.
+
+def live_candidates(bb, agent):
+    """T-422's definition of 'live candidates' for the Phase B claim-order
+    ADVISORY: identities holding an UNEXPIRED claim in blackboard.json
+    (status 'claimed' or 'in_progress', and claim_expires_at either unset or
+    still in the future -- an already-expired claim is stale data that
+    `expire_claims()` releases separately and is never a live candidate)
+    PLUS the requesting --agent, deduplicated, first-seen order preserved.
+
+    This is bookkeeping for what to ask reputation.py to SCORE, nothing
+    more -- it does not decide who may claim anything, and it is not a
+    quorum, standing, or eligibility computation of any kind."""
+    now = hc.now_utc()
+    seen = []
+    for t in bb.get("tasks", {}).values():
+        if t.get("status") not in ("claimed", "in_progress"):
+            continue
+        holder = t.get("claimed_by")
+        if not holder:
+            continue
+        exp = hc.parse_iso(t.get("claim_expires_at") or "")
+        if exp is not None and exp < now:
+            continue
+        if holder not in seen:
+            seen.append(holder)
+    if agent and agent not in seen:
+        seen.append(agent)
+    return seen
+
+
+def _phase_b_reason_from_stderr(stderr, returncode):
+    """Builds the one-line refusal reason named by the spec. On every refusal
+    path, `reputation.py dispatch` prints line 2 of stderr as
+    '  constitutional file: <STATE> -- <detail>' (the `_phase_b_activation`
+    status token); this strips the label and surfaces '<STATE> -- <detail>'
+    verbatim. Falls back to naming the exit code when stderr doesn't have
+    that shape -- e.g. exit 4 (REGISTRY INTEGRITY ERROR) prints exactly one
+    stderr line, no 'constitutional file:' line at all."""
+    lines = (stderr or "").splitlines()
+    marker = "constitutional file: "
+    if len(lines) >= 2:
+        idx = lines[1].find(marker)
+        if idx != -1:
+            return lines[1][idx + len(marker):].strip()
+    return "dispatch exited {}".format(returncode)
+
+
+def phase_b_claim_order(candidates):
+    """Read-only consumer seam onto reputation.py's `dispatch` verb (T-422).
+
+    Cites PR-061 (RAT-01, the ruling that authorizes `dispatch` at all) and
+    PR-060 clause 6 (the constitutional/operational parameter split): this
+    helper only reads dispatch's recommended operational ordering and hands
+    it back for a caller to PRINT. NO CONSEQUENCE BINDS HERE -- see the
+    module comment above this function; attaching a consequence is docket
+    C-002 / T-424's decision, not this one.
+
+    Contract:
+      - Runs `<python> reputation.py dispatch --json --root <hc.HARNESS>
+        --candidates <csv>` as a SUBPROCESS (sys.executable running the
+        script at `_REPUTATION_PY`). Never imports reputation.py, never
+        calls any of its functions -- public or private -- in-process.
+      - NEVER passes --half-life-days: that is a CONSTITUTIONAL parameter
+        under PR-060 and `dispatch` itself refuses it on the CLI; this seam
+        does not attempt it either.
+      - Returns `(order, reason)`. `order` is dispatch's own
+        `recommended_claim_order` list from its `--json` output, and ONLY
+        when the subprocess exits 0 AND stdout parses as JSON carrying that
+        key (a non-empty list). Every other outcome -- exit 1 (gate closed:
+        NOT_PRESENT / UNSIGNED / BAD_SIGNATURE / WRONG_NAMESPACE /
+        UNVERIFIABLE / VERIFIED_OFF / UNREADABLE), exit 4 (REGISTRY
+        INTEGRITY ERROR), any other nonzero code, a missing/empty stdout, or
+        stdout that fails to parse -- returns `(None, reason)` instead.
+      - `reason` is built from dispatch's own stderr (see
+        `_phase_b_reason_from_stderr`) or, on success, is the fixed string
+        'VERIFIED, activation on' (the only state `dispatch` can exit 0
+        under -- `_phase_b_activation` returns a payload only when the
+        signature verifies AND activation is 'on').
+      - NEVER RAISES: subprocess errors/timeouts, an unreadable script,
+        malformed JSON, and any other unexpected condition are all caught
+        and folded into `(None, reason)`.
+      - NEVER WRITES: this function performs no file I/O of its own, and
+        `dispatch` itself is read-only (T-421's `ZeroWritesAcrossPhaseB`).
+    """
+    if not candidates:
+        return None, "no live candidates"
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(_REPUTATION_PY), "dispatch", "--json",
+             "--root", str(hc.HARNESS), "--candidates", ",".join(candidates)],
+            capture_output=True, text=True, timeout=30)
+    except Exception as e:  # subprocess.SubprocessError, OSError, ... -- never raise
+        return None, "reputation.py dispatch could not run: {}".format(e)
+
+    try:
+        if proc.returncode != 0:
+            return None, _phase_b_reason_from_stderr(proc.stderr, proc.returncode)
+        if not proc.stdout or not proc.stdout.strip():
+            return None, "dispatch exited 0 with no stdout"
+        plan = json.loads(proc.stdout)
+        order = plan.get("recommended_claim_order") if isinstance(plan, dict) else None
+        if not isinstance(order, list) or not order:
+            return None, "dispatch JSON carried no recommended_claim_order"
+        return order, "VERIFIED, activation on"
+    except Exception as e:  # malformed JSON, ... -- never raise
+        return None, "dispatch output could not be parsed: {}".format(e)
+
+
+def phase_b_advisory_line(bb, agent):
+    """The ONE advisory line `cmd_next`/`cmd_status` print (T-422 spec item
+    4): 'phase-b claim order: a, b, c (VERIFIED, activation on)' when
+    `phase_b_claim_order` returns an order, else 'phase-b claim order not
+    applied: <reason>'. Pure function of (bb, agent) plus one read-only
+    subprocess call -- never mutates `bb`."""
+    order, reason = phase_b_claim_order(live_candidates(bb, agent))
+    if order:
+        return "phase-b claim order: {} ({})".format(", ".join(order), reason)
+    return "phase-b claim order not applied: {}".format(reason)
+
+
 # ------------------------------- commands ---------------------------------
 
 def cmd_status(args):
@@ -262,6 +405,7 @@ def cmd_status(args):
         print("gated (cascade): {} waits for {}".format(tid, ", ".join(unmet)))
     for ann in bb.get("announcements", [])[-2:]:
         print("announcement [{}]: {}".format(ann.get("ts", "?"), ann.get("message", "")))
+    print(phase_b_advisory_line(bb, args.agent))
     return 0
 
 
@@ -292,6 +436,7 @@ def cmd_next(args):
     if not cands:
         print("no claimable task for role={} engine={}. Run `blackboard.py status` "
               "to see cascade gates.".format(args.role or "any", args.engine or "any"))
+        print(phase_b_advisory_line(bb, args.agent))
         return 1
     cands.sort(key=lambda c: (c[0], c[1]))
     prio, tid, t = cands[0]
@@ -300,6 +445,7 @@ def cmd_next(args):
     print("claim it: python3 .harness/bin/blackboard.py claim {} --agent {}".format(tid, args.agent))
     if len(cands) > 1:
         print("also claimable: " + ", ".join(c[1] for c in cands[1:]))
+    print(phase_b_advisory_line(bb, args.agent))
     return 0
 
 

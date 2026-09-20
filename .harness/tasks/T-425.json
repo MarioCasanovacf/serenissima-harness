@@ -1,0 +1,8 @@
+{
+  "id": "T-425",
+  "title": "VERIFY T-424: integrity of the first real docket and of the record that disposed C-002",
+  "description": "Verifier for T-424. Check mechanically, from the files alone: (a) every proposer/sponsor/speaker/ballot/concluder name is an issued non-clerk seat (run assembly_eligibility on each); (b) every effective alternative carries at least one non-empty discuss round by at least two distinct speakers, and the dossier stamps are monotonic and not in the future; (c) the published record's ratio equals the tally winner, its case field is C-002, the case is disposed by that record, relations to PR-061 and PR-060 are typed, RAT-01 is among the sources, published_by is an issued non-clerk name; (d) compare with D-001's defect pattern: report the wall-clock span, whether any ballot differs from its voter's prior, and the flag state, as FIGURES not verdicts on quality; (e) currency.py before/after: A.8.1 typed-share direction reported as a fact; (f) full suite green; (g) precedent.py conflicts clean. Verdict via blackboard.py update T-424 --status done|open. Standing rules: claim with blackboard.py claim <ID> --agent <you>; lock every file you edit with lock.py acquire; no emojis; nothing tracked may contain user paths, sibling-project names or personal tooling; never sign anything; never touch .harness/keys, trust/, constitutional/; never route around prevent_data_loss.py; commit is done by the coordinator, not you; hand off with blackboard.py handoff <ID> --agent <you> --to-role verifier with replayable evidence (exact commands + expected output). A crash is not a refusal: fail closed with a named reason.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

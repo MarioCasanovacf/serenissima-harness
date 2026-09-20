@@ -1,0 +1,8 @@
+{
+  "id": "T-427",
+  "title": "VERIFY T-426: adversarial attack on the attached consequence and its PR-060 c6 record",
+  "description": "Verifier for T-426. Attack in a scratch root with fixture keypair + signed constitutional file: (a) rename bypass: an outranked identity renaming itself to the top-ranked name gets the top slot (this MUST work; confirm it is documented, not hidden); (b) gate closed mid-run: swap in an unsigned constitutional file and confirm the consequence disappears and the reason prints; (c) ties: identical scores fall back to (priority, id); (d) unknown identity in candidates never crashes; (e) hash blackboard.json/state.json/precedents/constitutional/trust before and after next/claim: the only writes are the ones the alternative names (claims, events); (f) the c6 record exists, follows the C-002 record with a typed relation, names parameter + consequence + act; (g) test_reputation.py 41 and test_reputation_phase_b.py 32 unchanged; full suite green. Verdict via blackboard.py update T-426 --status done|open. Standing rules: claim with blackboard.py claim <ID> --agent <you>; lock every file you edit with lock.py acquire; no emojis; nothing tracked may contain user paths, sibling-project names or personal tooling; never sign anything; never touch .harness/keys, trust/, constitutional/; never route around prevent_data_loss.py; commit is done by the coordinator, not you; hand off with blackboard.py handoff <ID> --agent <you> --to-role verifier with replayable evidence (exact commands + expected output). A crash is not a refusal: fail closed with a named reason.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}
