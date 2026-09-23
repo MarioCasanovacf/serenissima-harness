@@ -1,0 +1,8 @@
+{
+  "id": "T-431",
+  "title": "VERIFY T-430: attack the merged branch before anything is pushed",
+  "description": "Adversarially verify T-430 on sync/github-2026-09-22. (1) No commit in origin/main..HEAD carries the personal profile flag or any leak-scan pattern, commit messages included. (2) Every signed file is byte-identical to backup/pre-sync-2026-09-22 and still verifies. (3) Each PR #3 fix is present, its test passes, and reverting the fix makes that test fail. (4) gen-8 yield behavior is intact. (5) Zero precedent citation tokens dangle. (6) Full suite: 0 failures, count at least 912 plus the new tests. (7) The example board lives under examples/ and is not the live board. Verdict T-430 done, or reopen it with the failing evidence.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}
