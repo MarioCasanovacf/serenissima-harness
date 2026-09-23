@@ -1,0 +1,14 @@
+{
+  "id": "T-432",
+  "title": "Design: verifiable agent identity, per-agent keys the other agents cannot read",
+  "description": "Operator ratified 2026-09-23 (decision 4): gen-9 starts with a DESIGN, no code. Question: how can each agent hold a signing key the other agents cannot read, when every agent runs as the same OS user on one filesystem (D-17)? Survey what exists (OS keychains, per-agent OS users, hardware tokens, an external signer process holding keys on behalf of named agents, short-lived tokens minted by the operator). For each option: what it closes, what it leaves open, what the operator must run by hand, and a falsifier. State plainly if no option closes impersonation on 1 machine. Output: .harness/design-T-432-agent-identity.md. Do not touch trust/, constitutional/ or keys/. The operator approves the design before any worker task is created.",
+  "acceptance_criteria": [
+    "A design document exists at .harness/design-T-432-agent-identity.md and cites D-17 as the standing limit.",
+    "Every option lists: what it closes, what stays open, what the operator runs by hand, and 1 falsifier a verifier can run.",
+    "The document states in 1 sentence whether any option closes impersonation on 1 machine.",
+    "No file under .harness/trust, .harness/constitutional or .harness/keys is read or written.",
+    "Handed off to a verifier; not self-marked done."
+  ],
+  "context_files": [],
+  "notes": []
+}

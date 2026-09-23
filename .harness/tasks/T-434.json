@@ -1,0 +1,14 @@
+{
+  "id": "T-434",
+  "title": "blackboard.py reset refuses while any precedent cites a task on the live board",
+  "description": "Operator ratified 2026-09-23 (decision 7). Today reset only warns when precedents cite the board. Change: reset refuses (non-zero exit, named event) when precedent.py cite --all finds any citation to a task on the board, unless an explicit override flag is passed and a reason is recorded. Keep the archive copy behavior. Add tests: refuses with citations, proceeds with override and logs the reason, proceeds on a board nobody cites. PR-063's cited lines 522-575 must stay byte-identical. Hand off to a verifier; never mark done.",
+  "acceptance_criteria": [
+    "blackboard.py reset exits non-zero and logs a named event when precedent.py cite --all finds a citation to a task on the live board.",
+    "An explicit override flag lets reset proceed and records the given reason in the event.",
+    "Tests cover: refusal with citations, override with reason, and a board nobody cites proceeding.",
+    "Lines 522-575 of .harness/bin/blackboard.py are byte-identical to before the change (PR-063 citation).",
+    "Full suite passes; handed off to a verifier."
+  ],
+  "context_files": [],
+  "notes": []
+}

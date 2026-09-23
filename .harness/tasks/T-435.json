@@ -1,0 +1,12 @@
+{
+  "id": "T-435",
+  "title": "VERIFY T-434: reset guard, mutation-tested",
+  "description": "Replay the T-434 tests; neuter the guard and confirm the refusal test fails; confirm lines 522-575 of blackboard.py are byte-identical to before; confirm the full suite passes.",
+  "acceptance_criteria": [
+    "The refusal test fails when the guard is neutered in a throwaway worktree.",
+    "Lines 522-575 of blackboard.py confirmed byte-identical against the pre-change commit.",
+    "Full suite replayed with the count recorded."
+  ],
+  "context_files": [],
+  "notes": []
+}

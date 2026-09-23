@@ -1,0 +1,12 @@
+{
+  "id": "T-433",
+  "title": "VERIFY T-432: attack the identity design before the operator reads it",
+  "description": "Adversarial read of .harness/design-T-432-agent-identity.md. For each option, try to name a path by which one agent still signs as another under the stated assumptions. Check every cited limit against D-17 and the warrant.py/attest.py tests that pin current limits. Verdict done only if each option carries a falsifier and the document says what stays open.",
+  "acceptance_criteria": [
+    "Every option in the design was attacked and the attack is written next to it, with a result.",
+    "Each falsifier was checked for runnability against the current warrant.py and attest.py tests.",
+    "Verdict recorded on the board with the checks replayed, not copied from the thinker's note."
+  ],
+  "context_files": [],
+  "notes": []
+}
