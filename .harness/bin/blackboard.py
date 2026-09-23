@@ -1019,6 +1019,174 @@ def cmd_add_task(args):
     return 0
 
 
+# Shortest literal `redact` accepts. Anything shorter matches ordinary words and
+# would rewrite prose nobody asked to change.
+REDACT_MIN_LITERAL = 4
+
+
+def _redact_node(node, literal, replacement):
+    """Replace `literal` in every string VALUE under `node`.
+
+    Returns (new_node, occurrences, key_hits). Dict keys are never rewritten,
+    because on this board they are identifiers (task ids, field names); a key
+    that contains the literal is counted in key_hits so the caller can refuse.
+    Insertion order is kept, so a rewritten file differs from the original only
+    in the strings that held the literal.
+    """
+    if isinstance(node, str):
+        count = node.count(literal)
+        return (node.replace(literal, replacement) if count else node), count, 0
+    if isinstance(node, list):
+        out, total, keys = [], 0, 0
+        for item in node:
+            new, count, k = _redact_node(item, literal, replacement)
+            out.append(new)
+            total += count
+            keys += k
+        return out, total, keys
+    if isinstance(node, dict):
+        out, total, keys = {}, 0, 0
+        for key, value in node.items():
+            if isinstance(key, str) and literal in key:
+                keys += 1
+            new, count, k = _redact_node(value, literal, replacement)
+            out[key] = new
+            total += count
+            keys += k
+        return out, total, keys
+    return node, 0, 0
+
+
+def _read_literal(path):
+    try:
+        with open(path, "rb") as f:
+            raw = f.read().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        sys.exit("refused: cannot read --literal-file {}: {}".format(path, e))
+    # One trailing newline is what `printf '%s\n'`, `echo` and most editors add.
+    # It is not part of the literal.
+    if raw.endswith("\r\n"):
+        return raw[:-2]
+    if raw.endswith("\n"):
+        return raw[:-1]
+    return raw
+
+
+def cmd_redact(args):
+    """Take a leaked literal back out of the board -- the audited alternative to hand-editing.
+
+    T-430 round 2: an operator identifier was quoted inside an old handoff note,
+    and the reopen note that reported it quoted it again. blackboard.py is the
+    only sanctioned writer of blackboard.json and tasks/*.json, and until this
+    verb it had no way to take text back out, so a leak in a note could only stay
+    or be hand-edited. This verb:
+      (1) reads the literal from --literal-file, never from argv, so the literal
+          is not echoed into shell history or tool-call transcripts;
+      (2) refuses a literal shorter than REDACT_MIN_LITERAL characters, a literal
+          that spans lines, a --replacement that still contains the literal, and
+          a note that contains it (the REDACTED note would put it straight back);
+      (3) replaces the literal in every string VALUE of blackboard.json and of
+          every tasks/*.json. Keys are identifiers and are never rewritten, so a
+          key that contains the literal refuses the whole run, and so does a task
+          file that does not parse: "every occurrence" is the promise, and a file
+          it cannot read would break it;
+      (4) requires --note/--note-file/--note-stdin, appends a "REDACTED" note to
+          each task whose index entry or detail file changed, and logs
+          `notes_redacted` with the literal's sha256 (never the literal) and the
+          per-file counts;
+      (5) with --dry-run prints the per-file counts and writes nothing, so a
+          verifier can replay the check with its own copy of the literal and
+          expect 0.
+
+    It changes the working board only. Committed history is a git matter with its
+    own record (.harness/logs/commit-map-2026-09-22.md, second table).
+    """
+    # Imported here, not at module top, so the line numbers PR-063 cites
+    # (.harness/bin/blackboard.py:522-575, cmd_next) stay exact.
+    import hashlib
+
+    literal = _read_literal(args.literal_file)
+    replacement = args.replacement
+    if len(literal) < REDACT_MIN_LITERAL:
+        sys.exit("refused: the literal is {} character(s); redact needs at least {} so it "
+                 "cannot rewrite ordinary words".format(len(literal), REDACT_MIN_LITERAL))
+    if "\n" in literal or "\r" in literal:
+        sys.exit("refused: the literal spans lines; redact replaces one single-line literal per run")
+    if literal in replacement:
+        sys.exit("refused: --replacement contains the literal, so the redaction would not remove it")
+    note = resolve_note(args)
+    if not args.dry_run:
+        if not note:
+            sys.exit("refused: redact requires --note (or --note-file/--note-stdin) saying why "
+                     "these records are being changed -- no note means no redaction")
+        if literal in note:
+            sys.exit("refused: the note contains the literal; the REDACTED note would put it back")
+
+    board_rel = str(hc.BLACKBOARD.relative_to(hc.ROOT))
+    with hc.guarded():
+        bb = load_bb()
+        released = [] if args.dry_run else expire_claims(bb)
+        new_bb, board_hits, key_hits = _redact_node(bb, literal, replacement)
+        per_task = {}
+        for tid, entry in bb.get("tasks", {}).items():
+            count = _redact_node(entry, literal, replacement)[1]
+            if count:
+                per_task[tid] = per_task.get(tid, 0) + count
+        changed = {}
+        if board_hits:
+            changed[board_rel] = (board_hits, new_bb)
+        unreadable = []
+        for path in sorted(hc.TASKS.glob("*.json")):
+            data = hc.read_json(path)
+            if data is None:
+                unreadable.append(path.name)
+                continue
+            new_data, count, k = _redact_node(data, literal, replacement)
+            key_hits += k
+            if count:
+                changed[str(path.relative_to(hc.ROOT))] = (count, new_data)
+                per_task[path.stem] = per_task.get(path.stem, 0) + count
+        if unreadable:
+            sys.exit("refused: task file(s) that do not parse, so redact cannot promise every "
+                     "occurrence is gone: {}".format(", ".join(unreadable)))
+        if key_hits:
+            sys.exit("refused: the literal appears in {} key(s); keys are identifiers and redact "
+                     "never rewrites them".format(key_hits))
+        total = sum(count for count, _ in changed.values())
+        for rel in sorted(changed):
+            print("{}: {} occurrence(s)".format(rel, changed[rel][0]))
+        if args.dry_run:
+            print("dry run: {} occurrence(s) in {} file(s); nothing written".format(total, len(changed)))
+            return 0
+        if total == 0:
+            if released:
+                save_bb(bb, args.agent)
+        else:
+            if board_rel in changed:
+                save_bb(new_bb, args.agent)
+            elif released:
+                save_bb(bb, args.agent)
+            for rel in sorted(changed):
+                if rel != board_rel:
+                    hc.atomic_write_json(hc.ROOT / rel, changed[rel][1])
+            for tid in sorted(per_task):
+                append_note(tid, args.agent,
+                            "REDACTED: {} occurrence(s) of a withheld literal in this task's records "
+                            "replaced with '{}'. Why: {}".format(per_task[tid], replacement, note))
+    report_expirations(released)
+    if total == 0:
+        print("no occurrences of the literal on the board; nothing redacted")
+        return 0
+    hc.log_event("notes_redacted", agent=args.agent,
+                 literal_sha256=hashlib.sha256(literal.encode("utf-8")).hexdigest(),
+                 replacement=replacement, occurrences=total,
+                 files={rel: changed[rel][0] for rel in sorted(changed)},
+                 tasks=sorted(per_task), note=note)
+    print("redacted {} occurrence(s) in {} file(s) by {}; REDACTED note appended to {}; "
+          "event notes_redacted logged".format(total, len(changed), args.agent, ", ".join(sorted(per_task))))
+    return 0
+
+
 def add_note_args(parser):
     """P-021: shared --note / --note-file / --note-stdin mutually-exclusive group.
 
@@ -1108,6 +1276,21 @@ def main(argv):
     p_add.add_argument("--priority", type=int, default=5)
     p_add.add_argument("--epic", default="E-01")
     p_add.set_defaults(func=cmd_add_task)
+
+    # allow_abbrev=False: `--literal <text>` must not be read as an abbreviation
+    # of --literal-file, which would put the literal on argv after all.
+    p_redact = sub.add_parser("redact", parents=[common], allow_abbrev=False,
+                              help="replace a leaked literal in the board's notes (literal read from a "
+                                   "file; --note mandatory; logged as notes_redacted)")
+    p_redact.add_argument("--literal-file", dest="literal_file", required=True,
+                          help="file holding the literal to remove (one trailing newline is ignored); "
+                               "never passed on argv, so it stays out of shell history")
+    p_redact.add_argument("--replacement", required=True,
+                          help="text that takes the literal's place, e.g. '<operator>'")
+    p_redact.add_argument("--dry-run", dest="dry_run", action="store_true", default=False,
+                          help="print per-file occurrence counts and write nothing")
+    add_note_args(p_redact)
+    p_redact.set_defaults(func=cmd_redact)
 
     args = parser.parse_args(argv)
     return args.func(args)
