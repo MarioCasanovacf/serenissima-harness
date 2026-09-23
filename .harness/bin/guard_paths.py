@@ -44,7 +44,7 @@ def _extract_targets(command):
     """Best-effort extraction of candidate target paths from a Bash command
     string: arguments to a destructive verb (skipping flags), plus the
     target of any `>`/`>>` redirect. Heuristic, not a full shell parser —
-    mirrors the scope of the Portfolio source pattern this generalizes.
+    mirrors the scope of a sibling repository's source pattern this generalizes.
     Uses shlex so quoted paths containing spaces stay one token; falls back
     to a naive whitespace split if shlex chokes on unbalanced quoting."""
     targets = []
