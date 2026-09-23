@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-09-23T01:30:58Z",
+  "updated_at": "2026-09-23T01:41:42Z",
   "updated_by": "sync-worker",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5718,7 +5718,7 @@
     "T-430": {
       "epic": "sync-2026-09",
       "title": "Sync with GitHub: merge origin/main into the rewritten branch, live board wins, both sides' fixes hold",
-      "status": "claimed",
+      "status": "in_progress",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
