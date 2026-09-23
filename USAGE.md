@@ -6,6 +6,19 @@ harness itself. This is the only doc you need to get from zero to a finished tas
 and [.harness/README.md](.harness/README.md) (substrate reference) — this doc never
 contradicts either.
 
+## Start here: the onboarding example (step 0)
+
+The live board in `.harness/blackboard.json` is this repository's own working history, more
+than two hundred tasks deep, so a first `status` there is a wall of rows. To see the whole
+lifecycle at a glance first, load the 4-task onboarding example into a throwaway copy of the
+harness. It has `T-001` **done**, `T-002` in **review** waiting on a *different* agent's
+verdict, `T-003` **open** and claimable, and `T-004` **open but gated** behind `T-003` (the
+cascade gate). The sandbox commands are in
+[examples/onboarding/README.md](examples/onboarding/README.md). That file also has the
+`blackboard.py reset --yes` recipe for an adopter starting their own project clean. Never run
+`reset` on this repository's live board: the precedent registry and the signed acts cite its
+task ids.
+
 ## 1. The mental model, in one paragraph
 
 Work lives as tasks on a shared **blackboard** (`.harness/blackboard.json`), wired into a
@@ -148,9 +161,9 @@ exactly why it exists.
 - **Worked reality**: the `mdtoc` epic (T-020..T-029, `projects/mdtoc/`) is a real external
   project built entirely through this protocol — planner decomposition, a disjoint-ownership
   parallel frontier, a tournament node (3 candidate sluggers + one verifier verdict), and a
-  final join. Read any `T-02X.json` handoff note for a real replayable evidence string. As of
-  this writing T-028 is still `in_progress` (claimed by another worker) — do not touch
-  `projects/mdtoc/` files; only read them.
+  final join. Read any `T-02X.json` handoff note for a real replayable evidence string. The
+  epic is closed (T-028 is `done`); treat `projects/mdtoc/` as a finished worked example and
+  read it for evidence rather than rebuilding it.
 
 ## 7. Evolution, in two lines
 

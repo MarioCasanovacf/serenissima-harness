@@ -30,12 +30,15 @@ const { MONTH_DISPLAY, DOW_DISPLAY } = require('./fields');
  * SENTENCE TEMPLATE (stable, documented so tests can pin exact strings):
  *   "<time clause>, <day clause>[, <month clause>]."
  *   - <time clause> describes minute+hour jointly (see timeSegment below).
- *   - <day clause> describes dayOfMonth/dayOfWeek. When neither is
- *     textually restricted (both raw tokens are '*'): "every day". When
- *     exactly one is restricted: that field's clause alone. When BOTH are
- *     restricted (the classic Vixie OR/union quirk — see parser.js), the
- *     clause is "on <dom-phrase> or on <dow-phrase>" to make the
- *     union/OR coupling explicit in the prose.
+ *   - <day clause> describes dayOfMonth/dayOfWeek per the Vixie coupling
+ *     (see parser.js/schedule.js). When BOTH fields are restricted (neither
+ *     begins with '*'), the clause is "on <dom-phrase> or on <dow-phrase>"
+ *     to make the union/OR quirk explicit. Otherwise the coupling is an AND:
+ *     each field whose expanded Set actually constrains the day is spelled
+ *     out and joined with "and" ("<dom> and <dow>"); a full-domain field is
+ *     a no-op and omitted, so if neither constrains it collapses to "every
+ *     day". A '*\/n'-rooted field is unrestricted for the decision but still
+ *     constrains, so it appears in the AND clause.
  *   - <month clause> is included only when the month field is not the bare
  *     wildcard; otherwise it is omitted entirely (kept out of the sentence
  *     rather than rendered as a no-op "every month").
@@ -308,19 +311,29 @@ function dowPhraseForOr(wc) {
 }
 
 /**
- * Render the day clause. domRestricted/dowRestricted are the parser's
- * TEXTUAL flags (raw token !== '*'), which is exactly what decides whether
- * the Vixie OR/union coupling applies (see lib/parser.js docblock).
+ * Render the day clause. domRestricted/dowRestricted are the parser's Vixie
+ * ROOT flags (field does NOT begin with '*'), which decide the coupling:
+ * both restricted -> OR/union prose ("on X or on Y"); otherwise -> AND prose
+ * ("X and Y"), spelling out each field whose expanded Set actually
+ * constrains the day (a full-domain Set is a no-op and is omitted). A
+ * '*\/n'-rooted field is unrestricted for the decision yet still constrains,
+ * so it appears in the AND clause (see lib/parser.js / lib/schedule.js).
  */
 function daySegment(parsed) {
   const { domRestricted, dowRestricted, fields } = parsed;
   const domClass = classify(fields.dayOfMonth, 1, 31);
   const dowClass = classify(fields.dayOfWeek, 0, 6);
 
-  if (!domRestricted && !dowRestricted) return 'every day';
-  if (domRestricted && !dowRestricted) return domPhraseStandalone(domClass);
-  if (!domRestricted && dowRestricted) return dowPhraseStandalone(dowClass);
-  return `on ${domPhraseForOr(domClass)} or on ${dowPhraseForOr(dowClass)}`;
+  if (domRestricted && dowRestricted) {
+    return `on ${domPhraseForOr(domClass)} or on ${dowPhraseForOr(dowClass)}`;
+  }
+
+  const parts = [];
+  if (domClass.kind !== 'every') parts.push(domPhraseStandalone(domClass));
+  if (dowClass.kind !== 'every') parts.push(dowPhraseStandalone(dowClass));
+  if (parts.length === 0) return 'every day';
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} and ${parts[1]}`;
 }
 
 // --- month rendering -----------------------------------------------------
@@ -361,11 +374,17 @@ function explainParsed(parsed) {
   const hourClass = classify(fields.hour, 0, 23);
   const monthClass = classify(fields.month, 1, 12);
 
+  // Every field must be full-domain for the "Every minute." collapse. This
+  // is checked on the expanded Sets (via classify), NOT on the coupling
+  // flags: a '*'-rooted step like '*/2' is unrestricted for the coupling
+  // yet is NOT full-domain, so it must keep its day clause.
+  const domClass = classify(fields.dayOfMonth, 1, 31);
+  const dowClass = classify(fields.dayOfWeek, 0, 6);
   const allWildcard =
     minuteClass.kind === 'every' &&
     hourClass.kind === 'every' &&
-    !parsed.domRestricted &&
-    !parsed.dowRestricted &&
+    domClass.kind === 'every' &&
+    dowClass.kind === 'every' &&
     monthClass.kind === 'every';
 
   if (allWildcard) {

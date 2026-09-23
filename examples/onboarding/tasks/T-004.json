@@ -1,0 +1,8 @@
+{
+  "id": "T-004",
+  "title": "EXAMPLE (gated): blocked until T-003 is done (the cascade gate)",
+  "description": "Placeholder. Demonstrates the cascade gate: not claimable until T-003 is done.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

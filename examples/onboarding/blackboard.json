@@ -1,0 +1,93 @@
+{
+  "schema_version": "0.1.0",
+  "generation": 4,
+  "tasks": {
+    "T-001": {
+      "epic": "onboarding",
+      "title": "EXAMPLE (done): a finished task -- read its evidence with 'show T-001'",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-001.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "example-worker",
+        "note": "replay: cat greeting.txt -> ciao (this is what a real evidence note looks like)",
+        "ts": "2026-08-06T06:41:33Z"
+      },
+      "created_at": "2026-08-06T06:41:33Z",
+      "created_by": "onboarding",
+      "completed_at": "2026-08-06T06:41:33Z",
+      "completed_by": "example-verifier"
+    },
+    "T-002": {
+      "epic": "onboarding",
+      "title": "EXAMPLE (review): waiting for a DIFFERENT agent to verdict (producer != approver)",
+      "status": "review",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-002.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "example-worker",
+        "note": "handed off; a verifier (not me) must verdict this",
+        "ts": "2026-08-06T06:41:33Z"
+      },
+      "created_at": "2026-08-06T06:41:33Z",
+      "created_by": "onboarding"
+    },
+    "T-003": {
+      "epic": "onboarding",
+      "title": "EXAMPLE (claimable): try me -> blackboard.py claim T-003 --agent you",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-003.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-06T06:41:33Z",
+      "created_by": "onboarding"
+    },
+    "T-004": {
+      "epic": "onboarding",
+      "title": "EXAMPLE (gated): blocked until T-003 is done (the cascade gate)",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-003"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-004.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-08-06T06:41:33Z",
+      "created_by": "onboarding"
+    }
+  },
+  "epics": {},
+  "protocol": {
+    "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
+    "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
+    "read_rule": "Read freely at any time; reading requires no lock.",
+    "collision_model": "One guarded mutable index (this file) + one detail file per task in .harness/tasks/ (written only by the claiming agent, via blackboard.py --note) + append-only event logs in .harness/logs/. Source-file edits additionally require a write lock (lock.py / .harness/locks/)."
+  },
+  "updated_at": "2026-08-06T06:41:33Z",
+  "updated_by": "example-worker"
+}

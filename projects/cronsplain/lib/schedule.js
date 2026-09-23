@@ -60,8 +60,10 @@
  *         Set<int>), domRestricted: boolean, dowRestricted: boolean }.
  *   - Returns `count` UTC Date objects (seconds=0, ms=0), STRICTLY AFTER
  *     fromDate (exclusive), ascending, satisfying `parsed` including the
- *     DOM/DOW OR-coupling rule (both restricted -> union; one restricted ->
- *     that field alone; neither -> every day matches).
+ *     Vixie DOM/DOW coupling rule: both fields restricted (neither begins
+ *     with '*') -> union/OR of the two Sets; otherwise (at least one field
+ *     is '*'-rooted, i.e. '*' or '*\/n') -> AND of the two Sets, where a
+ *     bare '*' Set (full domain) degenerates the AND to the other field.
  *
  * METHOD: FIELD-CASCADE CARRY INCREMENT.
  *   1. Start from a lower-bound minute one past fromDate (single arithmetic
@@ -180,22 +182,26 @@ function nextOccurrences(parsed, fromDate, count) {
   const hoursSorted = sortedOf(hourSet);
 
   /**
-   * DOM/DOW OR-coupling predicate for a single calendar day (does NOT
-   * check the month field — callers combine it with monthSet.has(month)).
+   * DOM/DOW coupling predicate for a single calendar day (does NOT check
+   * the month field — callers combine it with monthSet.has(month)).
+   *
+   * This mirrors Vixie/cronie exactly (src/cron.c find_jobs):
+   *   (DOM_STAR || DOW_STAR) ? (dom AND dow) : (dom OR dow)
+   * where DOM_STAR == !domRestricted (the field begins with '*'). The two
+   * fully-expanded Sets are used directly, so a '*\/n'-rooted field — which
+   * is a "star" field for the OR/AND decision yet carries a PARTIAL Set —
+   * still constrains via the AND branch (e.g. '0 0 *\/2 * 5' matches only
+   * odd-numbered Fridays). When the star field is a bare '*', its Set is the
+   * full domain and the AND degenerates to the other field alone.
    */
   function dayOfMonthDowMatches(year, month, day) {
+    const domMatch = domSet.has(day);
+    const dow = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+    const dowMatch = dowSet.has(dow);
     if (domRestricted && dowRestricted) {
-      const dow = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-      return domSet.has(day) || dowSet.has(dow);
+      return domMatch || dowMatch; // OR-union: neither field is '*'-rooted
     }
-    if (domRestricted) {
-      return domSet.has(day);
-    }
-    if (dowRestricted) {
-      const dow = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-      return dowSet.has(dow);
-    }
-    return true;
+    return domMatch && dowMatch; // AND: at least one field is '*'-rooted
   }
 
   function isValidDay(year, month, day) {

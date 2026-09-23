@@ -106,7 +106,7 @@ layout-matching criterion command is `node --test tests/*.js` (T-044/T-052 join 
 messenger/notify activation), the epic join MUST produce an explainer artifact plus exactly
 3 comprehension questions for the human, and the gate request cites them — "no publicar lo
 que no se entiende" (`audit_gen3.md` §5.7, input U4 — `state.json:358`; worked example:
-`docs/harness-explainer.html` §11 "Unknowns").
+`docs/harness-explainer.html` §11 "Unknowns" — operator-local, not tracked in the public tree).
 
 ## 4. Roles and engines
 
@@ -253,3 +253,8 @@ graph TD
 T-002/T-003/T-004/T-005 are the parallel frontier (no edges between them — no shared
 artifacts). T-006 is a real join: the audit consumes their logs. T-007 is a real cascade:
 mutations require the audit's verdicts. That is the whole philosophy in one picture.
+
+> **Historical note**: this is the generation-0 *seed*. Its `T-001`–`T-007` are still the first
+> rows of the live board in `.harness/`, all `done` since, and the board has grown far past them.
+> The 4-task onboarding example reuses the ids `T-001`–`T-004` for EXAMPLE placeholders; it lives
+> in `examples/onboarding/`, never on the live board (see `examples/onboarding/README.md`).

@@ -29,7 +29,7 @@ this file is the substrate reference.
  │    └── events.jsonl      Semantic events: claims, hand-offs, locks, expiries
  │                          (written by the CLIs).
  └── bin/                   The deterministic control plane (python3 >= 3.9, stdlib-only):
-      ├── blackboard.py     status | next | show | claim | update | handoff | add-task
+      ├── blackboard.py     status | next | show | claim | update | handoff | reopen | reset | add-task
       ├── lock.py           acquire | release | status | sweep
       ├── session.py        register <name> [--ttl 7200] [--task T-ID] | unregister <name> | list — session-holder registry (P-002 fix; register/unregister are coordinator-only, see §Identity)
       ├── ast_index.py      build | query <symbol> [--contains] — AST symbol map (.harness/index/symbols.json)
@@ -115,7 +115,7 @@ holders, `agent` ≠ `holder` **by design** — read `holder` for ownership, `ag
 who executed the command.
 
 ### Locks
-- One lock file per workspace file; name = relative path with `/` → `__`, plus `.lock`.
+- One lock file per workspace file; name = relative path, `%` → `%25` then `/` → `%2F`, plus `.lock`.
 - TTL (default 900 s from `state.json`) — a crashed holder never stalls the swarm;
   re-acquiring your own lock refreshes it (heartbeat).
 - Claude Code sessions get **mechanical** enforcement via the PreToolUse hook
@@ -124,6 +124,19 @@ who executed the command.
 - TTL precision is whole seconds (`ISO_FMT` has no sub-second field); `lock_is_expired`
   floors both the acquired-at and now-side timestamps before comparing, so effective
   lock lifetime is `(ttl, ttl+1]` seconds — never shorter than the requested TTL (P-005).
+
+### Terminal states and the board reset
+`done` and `failed` are terminal for every verb (P-023). The only sanctioned way back is
+`blackboard.py reopen <T-ID>`, which acts solely on a terminal task, refuses without a
+`--note` explaining the resurrection, and logs a `task_reopened` event (who/why) — the single
+audited path from a terminal state back to `open`.
+
+`blackboard.py reset --yes` is the sanctioned board-wipe for an adopter starting their own
+project: it archives the current board, task files, and state to `.harness/trash/` first
+(reversible), then empties the board; never hand-edit `blackboard.json` to clear it. Never run
+it on this repository's live board, whose task ids the precedent registry and the signed acts
+cite. The 4-task onboarding example and the start-clean recipe are in
+`examples/onboarding/README.md`.
 
 ### Observability pillars → concrete files
 | Pillar (AHE) | Implementation here |

@@ -52,7 +52,6 @@ persona capped at PERSONA_MAX characters, no history. The event log carries the 
 from __future__ import annotations
 
 import argparse
-import fcntl
 import json
 import os
 import pathlib
@@ -60,6 +59,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import harness_common as hc  # noqa: E402
+import portalock  # noqa: E402  (PR #1: one lock primitive on POSIX and Windows)
 
 DEFAULT_ROOT = hc.HARNESS
 PRECEDENTS_SUBDIR = "precedents"
@@ -130,13 +130,13 @@ class _guard:
             path = pathlib.Path(self._root) / "locks" / ".guard"
             path.parent.mkdir(parents=True, exist_ok=True)
             self._fh = open(path, "a+")
-            fcntl.flock(self._fh, fcntl.LOCK_EX)
+            portalock.lock_ex(self._fh)
         return self
 
     def __exit__(self, *exc):
         if self._inner is not None:
             return self._inner.__exit__(*exc)
-        fcntl.flock(self._fh, fcntl.LOCK_UN)
+        portalock.unlock(self._fh)
         self._fh.close()
         return False
 

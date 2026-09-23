@@ -85,6 +85,43 @@ test('next: naive --from (no offset/Z) is interpreted as UTC', () => {
   assert.strictEqual(naive.stdout, withZ.stdout);
 });
 
+test('next: space-separated naive --from is interpreted as UTC (same as the T form)', () => {
+  // The documented contract is "naive (no offset/Z) = UTC". A space between
+  // the date and time (RFC 3339's accepted alternative to 'T') must obey the
+  // same rule as the 'T' form; otherwise new Date("2026-01-01 00:00:00")
+  // reads it in LOCAL time. A non-UTC zone is pinned for the duration of the
+  // test so the divergence is observable regardless of the runner's timezone.
+  const savedTZ = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  try {
+    // An every-minute schedule makes the first occurrence reflect the parsed
+    // --from instant directly (+1 min), so any local-vs-UTC misparse shows.
+    const spaced = run(['next', '* * * * *', '--from', '2026-01-01 00:00:00', '--count', '1']);
+    const withT = run(['next', '* * * * *', '--from', '2026-01-01T00:00:00Z', '--count', '1']);
+    assert.strictEqual(spaced.code, 0);
+    assert.strictEqual(spaced.stdout, '2026-01-01T00:01:00.000Z\n');
+    assert.strictEqual(spaced.stdout, withT.stdout);
+  } finally {
+    if (savedTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = savedTZ;
+  }
+});
+
+test('next: space-separated --from with a SINGLE-digit hour is UTC (zero-padded)', () => {
+  // Regression: normalizing only 2-digit hours left "5:00" on the local-time
+  // path; the single-digit hour must be zero-padded to '05' and read as UTC.
+  const savedTZ = process.env.TZ;
+  process.env.TZ = 'America/New_York';
+  try {
+    const spaced = run(['next', '* * * * *', '--from', '2026-01-01 5:00', '--count', '1']);
+    assert.strictEqual(spaced.code, 0);
+    assert.strictEqual(spaced.stdout, '2026-01-01T05:01:00.000Z\n');
+  } finally {
+    if (savedTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = savedTZ;
+  }
+});
+
 test('next: --from with an explicit offset is converted to its UTC instant', () => {
   // 2026-01-01T00:00:00+02:00 == 2025-12-31T22:00:00Z; the next 00:00 UTC
   // daily occurrence strictly after that instant is 2026-01-01T00:00:00Z.

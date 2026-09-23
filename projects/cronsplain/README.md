@@ -69,14 +69,26 @@ silent best-effort interpretation.
 
 ### The day-of-month / day-of-week OR note
 
-This is the classic cron quirk, preserved here on purpose: when **both**
-the day-of-month and day-of-week fields are restricted (i.e. neither is
-the bare `*`), a day matches if it satisfies **either** field (a union/OR
-of the two, not an AND). When only one of the two fields is restricted,
-only that field constrains matching. When both are `*`, every day
-matches. For example, `0 0 13 * 5` fires at midnight on the 13th of
-**every** month **and** on **every** Friday — not only on Fridays that
-happen to be the 13th.
+This is the classic cron quirk, preserved here on purpose exactly as
+Vixie/cronie implement it (`src/entry.c` sets `DOM_STAR`/`DOW_STAR` from a
+field's **first character**; `src/cron.c` then does
+`(DOM_STAR || DOW_STAR) ? (dom AND dow) : (dom OR dow)`):
+
+- When **both** the day-of-month and day-of-week fields are restricted —
+  i.e. **neither begins with `*`**, so neither the bare `*` **nor** a
+  `*/n` step — a day matches if it satisfies **either** field (a union/OR
+  of the two, not an AND). For example, `0 0 13 * 5` fires at midnight on
+  the 13th of **every** month **and** on **every** Friday — not only on
+  Fridays that happen to be the 13th.
+- Otherwise (at least one field is `*`-rooted, i.e. `*` or `*/n`), the
+  coupling is an **AND** of the two fields' value sets. A bare `*` matches
+  every day, so the AND degenerates to the other field alone; but a `*/n`
+  step is `*`-rooted **yet still constrains** — e.g. `0 0 */2 * 5` fires
+  only on **odd-numbered Fridays** (odd day-of-month **AND** Friday), not
+  on the OR-union of every odd day and every Friday. A `*/n` in the
+  day-of-month or day-of-week field therefore does **not** trigger the
+  OR-union, matching real Vixie cron (whose star-flag is decided by the
+  field's leading `*`, not by whether the field is literally just `*`).
 
 ### UTC / timezone note
 
@@ -84,7 +96,10 @@ All matching and all `next` output is in **UTC**. `--from` accepts an
 ISO-8601 string:
 
 - A **naive** value with no offset and no trailing `Z` (e.g.
-  `2026-01-01T00:00:00`) is interpreted **as UTC**.
+  `2026-01-01T00:00:00`) is interpreted **as UTC**. A single space between
+  the date and time (RFC 3339's accepted alternative to `T`, e.g.
+  `2026-01-01 00:00:00`) is normalized to `T` first, so it follows the
+  identical naive→UTC rule rather than being read in the host's local time.
 - A value carrying an explicit offset or a trailing `Z` (e.g.
   `2026-01-01T00:00:00+02:00`) is respected and converted to its UTC
   instant before matching.

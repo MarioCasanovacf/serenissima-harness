@@ -151,6 +151,11 @@ def _load_config():
     data = hc.read_json(CONFIG_PATH)
     if data is None:
         return None, "config at {} exists but could not be parsed as JSON".format(CONFIG_PATH)
+    if not isinstance(data, dict):
+        # Valid JSON that isn't an object (a list, string, or number) would reach
+        # config.get(...) in _should_dry_run and raise AttributeError, breaking
+        # the "notify never crashes" contract. Treat it as an unusable config.
+        return None, "config at {} is valid JSON but not an object".format(CONFIG_PATH)
     return data, None
 
 

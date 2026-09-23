@@ -3,17 +3,19 @@
 All tools under .harness/bin/ are stdlib-only (python3 >= 3.9) and fail-safe:
 they must never corrupt shared state. Invariants:
   - Shared JSON files are mutated only through read-modify-write cycles
-    serialized by the `guarded()` context manager (flock on .harness/locks/.guard).
-  - NEVER nest `guarded()` blocks (flock on a second file handle would deadlock).
+    serialized by the `guarded()` context manager (an exclusive lock on
+    .harness/locks/.guard, via portalock -- POSIX fcntl / Windows msvcrt).
+  - NEVER nest `guarded()` blocks (locking a second file handle would deadlock).
   - All JSON writes are atomic (tempfile in the same directory + os.replace).
-  - JSONL appends take an exclusive flock on the log file for the write.
+  - JSONL appends take an exclusive lock on the log file for the write.
 """
 import datetime as _dt
-import fcntl
 import json
 import os
 import tempfile
 from pathlib import Path
+
+import portalock
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = ROOT / ".harness"
@@ -64,6 +66,17 @@ def read_json(path, default=None):
         return default
 
 
+def limit(key, fallback):
+    """Read an integer limit from state.json's `limits` block, falling back if
+    the file/key is missing or malformed. Single source for the read-int-limit
+    pattern the CLIs share (claim lease, lock TTL, goal-mode bounds)."""
+    limits = (read_json(STATE) or {}).get("limits") or {}
+    try:
+        return int(limits.get(key, fallback))
+    except (TypeError, ValueError):
+        return fallback
+
+
 def atomic_write_json(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,11 +97,11 @@ class guarded:
     def __enter__(self):
         GUARD.parent.mkdir(parents=True, exist_ok=True)
         self._fh = open(GUARD, "a+")
-        fcntl.flock(self._fh, fcntl.LOCK_EX)
+        portalock.lock_ex(self._fh)
         return self
 
     def __exit__(self, *exc):
-        fcntl.flock(self._fh, fcntl.LOCK_UN)
+        portalock.unlock(self._fh)
         self._fh.close()
         return False
 
@@ -98,9 +111,9 @@ def append_jsonl(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record, ensure_ascii=False)
     with open(path, "a", encoding="utf-8") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        portalock.lock_ex(f)
         f.write(line + "\n")
-        fcntl.flock(f, fcntl.LOCK_UN)
+        portalock.unlock(f)
 
 
 def log_event(kind, **fields):
@@ -111,9 +124,15 @@ def log_event(kind, **fields):
 
 
 def lock_name_for(path):
-    """Map a workspace path to its lock file name (relative path, sep -> '__').
+    """Map a workspace path to its lock file name.
     Returns None for paths outside the workspace root (those are never locked
-    here; writes outside the root are forbidden by the Control layer anyway)."""
+    here; writes outside the root are forbidden by the Control layer anyway).
+
+    The separator is percent-encoded (not '/'->'__'), because '__' was not
+    injective: `a/b` and a file literally named `a__b` both mapped to
+    `a__b.lock`, so locking one blocked the other. Escaping '%' first keeps the
+    encoding reversible and collision-free; ordinary names stay readable
+    (`pkg/mod.py` -> `pkg%2Fmod.py.lock`)."""
     p = Path(path)
     if not p.is_absolute():
         p = ROOT / p
@@ -122,7 +141,8 @@ def lock_name_for(path):
         rel = p.relative_to(ROOT)
     except (OSError, ValueError):
         return None
-    return str(rel).replace(os.sep, "__") + ".lock"
+    encoded = str(rel).replace("%", "%25").replace(os.sep, "%2F")
+    return encoded + ".lock"
 
 
 def read_lock(path):

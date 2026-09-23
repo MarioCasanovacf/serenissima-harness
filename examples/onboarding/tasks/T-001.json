@@ -1,0 +1,19 @@
+{
+  "id": "T-001",
+  "title": "EXAMPLE (done): a finished task -- read its evidence with 'show T-001'",
+  "description": "Placeholder demonstrating a completed lifecycle. Run 'blackboard.py reset --yes' to clear all examples before real work.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-06T06:41:33Z",
+      "agent": "example-worker",
+      "note": "HANDOFF -> verifier: replay: cat greeting.txt -> ciao (this is what a real evidence note looks like)"
+    },
+    {
+      "ts": "2026-08-06T06:41:33Z",
+      "agent": "example-verifier",
+      "note": "verified: example complete"
+    }
+  ]
+}

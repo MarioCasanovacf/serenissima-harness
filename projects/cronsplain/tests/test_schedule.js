@@ -53,6 +53,24 @@ test('DOM/DOW OR-coupling: "0 0 13 * 5" fires on the 13th OR any Friday (union)'
   ]);
 });
 
+test("DOM/DOW coupling: a '*/n'-rooted DOM uses AND, not OR (Vixie DOM_STAR)", () => {
+  // "0 0 */2 * 5": dom '*/2' begins with '*' -> Vixie sets DOM_STAR, so the
+  // coupling is AND (odd day-of-month AND Friday), NOT the OR-union that a
+  // both-restricted expression like "0 0 13 * 5" gets. The expanded '*/2'
+  // set {1,3,5,...,31} still constrains via that AND. Odd-numbered Fridays
+  // from 2026-01-01: Jan 9, Jan 23, Feb 13, Feb 27, Mar 13 (Gregorian,
+  // hand-computed). Verified against cronie's find_jobs OR/AND condition.
+  const parsed = parse('0 0 */2 * 5');
+  const got = iso(nextOccurrences(parsed, new Date('2026-01-01T00:00:00Z'), 5));
+  assert.deepStrictEqual(got, [
+    '2026-01-09T00:00:00.000Z',
+    '2026-01-23T00:00:00.000Z',
+    '2026-02-13T00:00:00.000Z',
+    '2026-02-27T00:00:00.000Z',
+    '2026-03-13T00:00:00.000Z',
+  ]);
+});
+
 test('EXCLUSIVITY: fromDate landing exactly on a match returns the NEXT minute', () => {
   // "*/15 * * * *" -> minutes {0,15,30,45}. fromDate is EXACTLY 00:15:00, a
   // matching minute; the exclusive-boundary rule requires it be skipped, so

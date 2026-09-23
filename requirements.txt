@@ -1,0 +1,18 @@
+# Universal Agent Harness — dependencies
+#
+# The HARNESS CORE needs NOTHING here: the control plane in .harness/bin/
+# (blackboard.py, lock.py, goal_mode.py, safe_delete.py, ...) is Python 3.9+
+# standard library only. Cloning the repo and running the harness requires no
+# `pip install` at all. That is a deliberate design property, not an omission.
+#
+# The packages below are needed ONLY to rebuild the public landing page
+# (hf-space/build_page.py). Install them in a virtualenv when regenerating
+# hf-space/index.html; they are not needed to run or develop the harness itself.
+#
+#   python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+#
+# Floors reflect the APIs build_page.py uses (stable across these major lines);
+# pin exact versions here if you want reproducible landing builds.
+
+networkx>=3.0    # dependency-DAG layout for the blackboard figure
+plotly>=5.0      # interactive DAG rendering embedded into index.html

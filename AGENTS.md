@@ -82,6 +82,8 @@ Hooks are the mechanical layer — the reason rules are refusals instead of prom
 | `PostToolUse` | `*` | `log_event.py` | Every tool call logged — the flight recorder agents don't have to remember |
 | `Stop` | — | `log_event.py` | Session end recorded |
 | `PreToolUse` | `Edit\|Write\|MultiEdit\|NotebookEdit` | `check_lock.py` | TTL write-locks: an edit to a file locked by another agent is refused before it lands |
+| `PreToolUse` | `Bash` | `guard_paths.py` | Protected-path guard (P-029): denies a destructive Bash command (rm/mv/shred/truncate/redirect) hitting a `state.json protected_paths` glob and logs `protected_path_blocked`; strict no-op when that list is empty (the shipped default) |
+| `PreToolUse` | `Bash` | `prevent_data_loss.py` | Data-loss backstop: refuses destructive Bash shapes (`rm -rf`, `git clean -xfd`, `git reset --hard`, force-push); use `safe_delete.py` quarantine for reversible removal |
 
 Note: hooks are project-scoped — they fire only in sessions rooted in this repo (P-003).
 `events.jsonl` (written by the CLIs themselves) is the engine-agnostic floor when hooks

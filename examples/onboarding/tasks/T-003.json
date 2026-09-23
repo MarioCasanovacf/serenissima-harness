@@ -1,0 +1,8 @@
+{
+  "id": "T-003",
+  "title": "EXAMPLE (claimable): try me -> blackboard.py claim T-003 --agent you",
+  "description": "Placeholder. This is on the claimable frontier right now.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

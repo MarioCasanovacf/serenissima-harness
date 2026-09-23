@@ -26,25 +26,30 @@ const { FIELDS, MONTH_NAMES, DOW_NAMES, normalizeDow } = require('./fields');
  *                               // if both 0 and 7 are supplied they
  *                               // collapse to the single Set entry 0)
  *     },
- *     domRestricted: boolean,   // true iff the RAW dayOfMonth field text
- *                               // (the literal token, e.g. '*\/5' or
- *                               // '1,15') is anything other than exactly
- *                               // the string '*'. This is a TEXTUAL check,
- *                               // not a semantic "covers every value"
- *                               // check.
- *     dowRestricted: boolean,   // same textual check for the dayOfWeek field.
+ *     domRestricted: boolean,   // true iff the RAW dayOfMonth field does NOT
+ *                               // begin with '*' -- i.e. it is neither the
+ *                               // bare '*' nor a '*\/n' step. This mirrors
+ *                               // Vixie/cronie, which sets DOM_STAR from the
+ *                               // field's FIRST character (src/entry.c), so a
+ *                               // '*'-rooted field ('*' or '*\/n') is a "star"
+ *                               // field == NOT restricted for the coupling.
+ *     dowRestricted: boolean,   // same root check for the dayOfWeek field.
  *     source: string,           // the original, unmodified expression string
  *                               // exactly as passed to parse().
  *   }
  *
  * domRestricted/dowRestricted exist so downstream schedule code
- * (T-047/T-048) can implement the classic Vixie day-of-month OR
- * day-of-week coupling without re-parsing text: when BOTH flags are true,
- * a candidate day matches if it is present in EITHER the dayOfMonth OR
- * the dayOfWeek Set (union); when exactly one flag is true, only that
- * field's Set constrains matching; when both are false, every day
- * matches. Set-of-ints + two booleans was chosen (over a matcher
- * function) so downstream code needs no knowledge of parser internals.
+ * (T-047/T-048) can implement the classic Vixie day-of-month / day-of-week
+ * coupling without re-parsing text. Vixie's rule (src/cron.c find_jobs):
+ *   (DOM_STAR || DOW_STAR) ? (dom AND dow) : (dom OR dow)
+ * i.e. when BOTH fields are restricted (neither begins with '*'), a day
+ * matches if it is in EITHER the dayOfMonth OR the dayOfWeek Set (union);
+ * otherwise (at least one field is '*'-rooted) the coupling is an AND over
+ * the two Sets -- and a '*\/n' field's partial Set still constrains that
+ * AND (e.g. '*\/2' contributes {1,3,5,...}). A bare '*' field's Set is the
+ * full domain, so the AND degenerates to the other field alone. Set-of-ints
+ * + two booleans was chosen (over a matcher function) so downstream code
+ * needs no knowledge of parser internals.
  *
  * GRAMMAR accepted per field (minute, hour, dayOfMonth, month, dayOfWeek —
  * see lib/fields.js FIELDS for the exact bounds and display strings):
@@ -298,8 +303,14 @@ function parse(expression) {
 
   return {
     fields,
-    domRestricted: rawFields[domIndex] !== '*',
-    dowRestricted: rawFields[dowIndex] !== '*',
+    // Vixie/cronie set DOM_STAR/DOW_STAR from the field's FIRST character
+    // (src/entry.c: `if (ch == '*') e->flags |= DOM_STAR`). A field whose
+    // ROOT is '*' -- i.e. bare '*' OR a step like '*/2' -- is therefore a
+    // "star" field and does NOT count as restricted for the OR/AND coupling
+    // decision. domRestricted/dowRestricted are true iff the field does NOT
+    // begin with '*' (== !DOM_STAR / !DOW_STAR).
+    domRestricted: !rawFields[domIndex].startsWith('*'),
+    dowRestricted: !rawFields[dowIndex].startsWith('*'),
     source: expression,
   };
 }

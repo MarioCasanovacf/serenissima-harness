@@ -2,14 +2,16 @@
 """Write-lock manager for the Universal Agent Harness (.harness/locks/).
 
 Usage:
-  python3 .harness/bin/lock.py acquire <path> --holder <agent> [--task T-XXX] [--ttl 900]
+  python3 .harness/bin/lock.py acquire <path> --holder <agent> [--task T-XXX] [--ttl N]
   python3 .harness/bin/lock.py release <path> --holder <agent> [--force]
   python3 .harness/bin/lock.py status [--agent <name>]
   python3 .harness/bin/lock.py sweep [--agent <name>]
 
 Rules:
-  - One lock file per workspace file: <rel__path>.lock with a JSON payload
-    {path, holder, task_id, acquired_at, ttl_seconds}.
+  - One lock file per workspace file: the relative path percent-encoded
+    (hc.lock_name_for: `%` -> %25, `/` -> %2F) plus .lock, with a JSON payload
+    {path, holder, task_id, acquired_at, ttl_seconds}. --ttl defaults to
+    state.json limits.lock_ttl_seconds_default (900 when absent).
   - Locks auto-expire after ttl_seconds. `sweep` (or any later acquire)
     clears expired locks, so a crashed agent can never stall the swarm.
   - Re-acquiring your own live lock refreshes it (heartbeat pattern).
@@ -173,7 +175,7 @@ def main(argv):
     p_acq.add_argument("path")
     p_acq.add_argument("--holder", default=hc.agent_id())
     p_acq.add_argument("--task", default=None)
-    p_acq.add_argument("--ttl", type=int, default=900)
+    p_acq.add_argument("--ttl", type=int, default=hc.limit("lock_ttl_seconds_default", 900))
     p_acq.set_defaults(func=acquire)
 
     p_rel = sub.add_parser("release", help="release a write lock you hold")

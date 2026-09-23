@@ -1,0 +1,14 @@
+{
+  "id": "T-002",
+  "title": "EXAMPLE (review): waiting for a DIFFERENT agent to verdict (producer != approver)",
+  "description": "Placeholder. Shows the review state: a producer handed off, a different agent must verdict.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-08-06T06:41:33Z",
+      "agent": "example-worker",
+      "note": "HANDOFF -> verifier: handed off; a verifier (not me) must verdict this"
+    }
+  ]
+}

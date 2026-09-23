@@ -67,7 +67,6 @@ behavior available, not the most permissive.
 from __future__ import annotations
 
 import datetime as dt
-import fcntl
 import json
 import os
 import re
@@ -75,6 +74,8 @@ import shlex
 import sys
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence, Tuple
+
+import portalock
 
 
 BLOCK_MESSAGE = (
@@ -169,6 +170,14 @@ GIT_RULES = (
         a in ("--", "--ours", "--theirs")
         or (a.startswith("-") and not a.startswith("--") and "f" in a[1:])
         for a in argv)),
+    # PR #3: `git checkout .` (and `git checkout ./<path>`) discards ALL uncommitted edits
+    # under that path yet carries no `--`/`-f`/`--ours` token, so the rule above missed it.
+    # Scoped to a literal `.` or `./` argument after `checkout`, so `git checkout main` (a
+    # branch switch) is NOT matched. Read on parsed argv, so `.` quoted as data elsewhere in
+    # the command line cannot trip it (GUARD-MENTION-C).
+    ("git checkout . discards all local edits", lambda argv: "checkout" in argv and any(
+        a == "." or a.startswith("./")
+        for a in argv[argv.index("checkout") + 1:])),
     ("git restore discarding edits", lambda argv: "restore" in argv and not any(
         a in HARMLESS_ONLY_FLAGS for a in argv)),
     ("git switch discarding edits",
@@ -189,7 +198,15 @@ SOURCE_RULES = (
     ("Ruby filesystem deletion", re.compile(r"(?i)\b(?:File\.(?:delete|unlink)|FileUtils\.(?:rm|rm_f|rm_r|rm_rf|remove|remove_dir|remove_entry))\s*\(?")),
     ("PowerShell Remove-Item", re.compile(r"(?i)\bRemove-Item\b|(?:^|[;|]\s*)ri\b")),
     ("Windows delete command", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:del|erase)(?:\s|$)")),
-    ("Perl unlink", re.compile(r"(?i)\bunlink\b")),
+    # PR #3: Perl `unlink($f)` / `unlink "f"` / `unlink @files` / `unlink $x`, plus the
+    # list-producing forms `unlink glob(...)`, `unlink map {...}`, `unlink grep
+    # {...}`, `unlink <*.log>` (mass deletes). Scoped to Perl call syntax so the
+    # bare word in prose or a comment does NOT trip the guard, while an actual delete does.
+    # Command-position `unlink <path>` is covered by DELETING_EXECUTABLES.
+    ("Perl unlink", re.compile(
+        r"(?i)\bunlink\s*\("
+        r"|\bunlink\s+['\"$@<]"
+        r"|\bunlink\s+(?:glob|map|grep|readdir|sort|reverse|split|keys|values)\b")),
 )
 
 # Calls whose string argument is a COMMAND LINE rather than data.  A program that shells out
@@ -211,6 +228,7 @@ FALLBACK_RULES = (
     ("git reset --hard", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\breset\b[^\n;&|]*--hard\b")),
     ("git force push", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bpush\b[^\n;&|]*(?:--force(?:-with-lease|-if-includes)?\b|(?:^|\s)-[^\s]*f[^\s]*(?:\s|$))")),
     ("git checkout discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bcheckout\b[^\n;&|]*(?:\s--\s|--(?:ours|theirs)\b|(?:^|\s)-[^\s]*f[^\s]*(?:\s|$))")),
+    ("git checkout . discards all local edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bcheckout\s+\.(?:/|\s|$)")),
     ("git restore discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\brestore(?:\s|$)(?![^\n;&|]*(?:--help|-h)(?:\s|$))")),
     ("git switch discarding edits", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b[^\n;&|]*?\bswitch\b[^\n;&|]*--discard-changes\b")),
     ("git rm (use --cached for index-only removal)", re.compile(r"(?i)(?:^|[;&|()]\s*)(?:sudo\s+)?git\b(?=[^\n;&|]*\brm\b)(?![^\n;&|]*--cached\b)[^\n;&|]*\brm\b")),
@@ -712,9 +730,9 @@ def _log_block(payload: dict, rule: str, text: str) -> None:
         }
         record = {key: value for key, value in record.items() if value is not None}
         with path.open("a", encoding="utf-8") as handle:
-            fcntl.flock(handle, fcntl.LOCK_EX)
+            portalock.lock_ex(handle)
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            portalock.unlock(handle)
     except Exception:
         pass
 
