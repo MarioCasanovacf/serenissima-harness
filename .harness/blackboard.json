@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-10-08T04:51:14Z",
+  "updated_at": "2026-10-08T05:04:14Z",
   "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5766,7 +5766,7 @@
     "T-432": {
       "epic": "gen-9-identity",
       "title": "Design: verifiable agent identity, per-agent keys the other agents cannot read",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "claude",
       "depends_on": [],
@@ -5774,15 +5774,24 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-432.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/design-T-432-agent-identity.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "DECISION: surveyed 5 options (keychain, per-OS-user, hardware tokens, signer daemon, operator-minted dispatch tokens) against D-17's asking-process boundary; each option lists closes/stays-open/operator-by-hand/falsifier; one-sentence verdict: no option closes impersonation on one machine (option 2 relocates the boundary to the dispatch layer, which this harness's deployment mode doesn't enforce); added fedatario/W-002 certification table and identity-independent notarial pieces (attest.py retract, warrant.py audit --expect, reconcile); recommends option 5 batched to epic-grain, with 5 first-worker-tasks listed in the doc, none boarded. No trust/constitutional/keys touched. Replay: read .harness/design-T-432-agent-identity.md",
+        "ts": "2026-10-08T05:00:29Z"
+      },
       "created_at": "2026-09-23T22:47:42Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-08T05:03:50Z",
+      "completed_by": "harness-verifier"
     },
     "T-433": {
       "epic": "gen-9-identity",
       "title": "VERIFY T-432: attack the identity design before the operator reads it",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -5795,7 +5804,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-09-23T22:47:42Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-08T05:04:14Z",
+      "completed_by": "harness-verifier"
     },
     "T-434": {
       "epic": "gen-9-board-guards",

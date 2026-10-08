@@ -8,5 +8,11 @@
     "Verdict recorded on the board with the checks replayed, not copied from the thinker's note."
   ],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-08T05:04:14Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED. T-433 (\"attack the identity design before the operator reads it\") is satisfied by the adversarial review just closed on T-432; recording the same evidence here since T-433's three criteria map onto that review:\n(1) \"Every option attacked, attack written next to it, with a result\" -- each of the 5 options in .harness/design-T-432-agent-identity.md already carries, inline, its own \"What stays open\" attack (full impersonation path named concretely per option) plus a falsifier with an expected result; my own counter-scenario pass (same-process-asks-as-another-agent) on options 2 and 4 found no gap the doc hadn't already named -- the attack and its result match the doc's own grading.\n(2) \"Each falsifier checked for runnability against current warrant.py/attest.py tests\": ran `python3 -m pytest .harness/tests/test_warrant.py .harness/tests/test_roster.py -q` -> 103 passed, confirming the \"--by is self-asserted\" / minting-is-the-only-boundary limits the design leans on (and that options 1/4/5's falsifiers all reduce to) are still the pinned, currently-true behavior at this commit, not a stale claim contradicted by the test suite.\n(3) \"Verdict recorded with checks replayed, not copied\": see T-432's done-note (this agent, harness-verifier) for the full replay transcript -- git status/diff --stat (no trust/constitutional/keys touched, only blackboard.json + T-432.json + the new doc itself), sudo -n -l (option 2 proxy, read-only), a socketpair/getsockopt peer-credential probe (option 4, read-only), and the pytest run above. None of this was copied from the thinker's handoff note; all commands were re-run by this agent.\nNet: the design survives adversarial attack -- no option secretly closes impersonation that the doc claimed stayed open, and no claimed-closed thing is actually open. T-432 marked done separately with the full verdict text.\n"
+    }
+  ]
 }
