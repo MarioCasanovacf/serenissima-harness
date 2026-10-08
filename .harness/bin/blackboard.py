@@ -902,6 +902,83 @@ def cmd_reopen(args):
     return 0
 
 
+# T-434: fixed by this file's own location, same discipline as _REPUTATION_PY
+# above (never derived from hc.HARNESS, which a test fixture may redirect) --
+# the SCRIPT always lives next to this one; `--root` tells it which DATA root
+# to read.
+_PRECEDENT_PY = Path(__file__).resolve().parent / "precedent.py"
+
+# T-434: thin parse of `precedent.py cite --all`'s own plain-text line shape
+# ("{pid} cites {token}: {label}", cmd_cite -- SDR-23), just enough to pick
+# out which hits name a task. Never reimplements the citation-field WALK
+# itself (cites/tier_evidence/sources/relations) -- that stays precedent.py's
+# job; `cite --all` is the single call site, not duplicated logic.
+_CITE_ALL_LINE_RE = re.compile(r"^(\S+) cites (\S+): (.+)$")
+_T_TOKEN_RE = re.compile(r"^T-\d{3,}$")
+_DECISION_TOKEN_RE = re.compile(r"^decision:(T-\d{3,})#")
+
+
+def _precedent_task_citations():
+    """T-434: read-only pre-flight for `reset` -- shells out to the real
+    `precedent.py cite --all` (SDR-23's own verb; reused, never reimplemented)
+    and reports which hits name a T-NNN (plain or `decision:T-NNN#frag`) that
+    STILL HAS A FILE under hc.TASKS right now -- i.e. a task on the live
+    board, about to be archived by `reset`. A citation that is already
+    dangling before this reset ran (its task file is already gone for an
+    unrelated reason) is NOT a hit: it was never 'on the live board'.
+
+    Mirrors `_phase_b_dispatch_plan`'s contract: NEVER RAISES, NEVER WRITES.
+
+    Returns (hits, problem):
+      hits    -- list of (pid, token) pairs for every live-board citation
+                 found, in `cite --all`'s own scan order.
+      problem -- None when the scan completed cleanly (`cite --all` only
+                 ever exits 0 or 3 for a completed scan, SDR-15); otherwise a
+                 short string naming why the scan could not be trusted (a
+                 subprocess error, an unexpected exit code such as 4 --
+                 REGISTRY INTEGRITY ERROR, or output that failed to parse).
+                 Callers must treat a non-None `problem` exactly like a
+                 nonempty `hits` -- an unverifiable scan blocks the wipe the
+                 same way a real citation does, through the same override.
+    """
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(_PRECEDENT_PY), "cite", "--all",
+             "--root", str(hc.HARNESS / "precedents")],
+            capture_output=True, text=True, timeout=30)
+    except Exception as e:  # subprocess.SubprocessError, OSError, ... -- never raise
+        return [], "precedent.py cite --all could not run: {}".format(e)
+
+    if proc.returncode not in (0, 3):
+        tail = [ln for ln in (proc.stderr or proc.stdout or "").strip().splitlines() if ln]
+        detail = tail[-1] if tail else "no output"
+        return [], "precedent.py cite --all exited {} ({})".format(proc.returncode, detail)
+
+    hits = []
+    try:
+        for line in (proc.stdout or "").splitlines():
+            m = _CITE_ALL_LINE_RE.match(line)
+            if not m:
+                continue
+            pid, token, label = m.group(1), m.group(2), m.group(3)
+            if not label.startswith("OK"):
+                continue
+            task_id = None
+            if _T_TOKEN_RE.match(token):
+                task_id = token
+            else:
+                dm = _DECISION_TOKEN_RE.match(token)
+                if dm:
+                    task_id = dm.group(1)
+            if task_id is None:
+                continue
+            if (hc.TASKS / (task_id + ".json")).exists():
+                hits.append((pid, token))
+    except Exception as e:  # malformed/unexpected output -- never raise
+        return [], "precedent.py cite --all output could not be parsed: {}".format(e)
+    return hits, None
+
+
 def cmd_reset(args):
     """Clear the board back to empty -- the sanctioned 'start clean' verb (PR #3).
 
@@ -924,9 +1001,16 @@ def cmd_reset(args):
     the live board, and reputation.py's Phase B figures are computed from it
     (blackboard.json plus tasks/*.json). A reset archives every task
     file those citations resolve against, so `precedent.py cite --all` would
-    report them dangling until the archive is restored. The verb stays
-    available by that ruling; whether it should refuse while precedents cite
-    the board is an open question recorded in T-430's handoff.
+    report them dangling until the archive is restored.
+
+    T-434 (operator ratified 2026-09-23, decision 7) resolves the open
+    question T-430's handoff recorded: `reset` now REFUSES (non-zero exit,
+    named event `board_reset_refused_citations`) when `precedent.py cite
+    --all` finds any citation that still resolves to a task on the live
+    board -- see `_precedent_task_citations`. `--override-precedent-citations`
+    together with a mandatory `--note` (reason) lets it proceed anyway,
+    logged as `board_reset_citations_overridden`. The archive-copy behavior
+    below is unchanged either way.
     """
     # Imported here, not at module top, so the line numbers PR-063 cites
     # (.harness/bin/blackboard.py:522-575, cmd_next) stay exact after the merge.
@@ -939,6 +1023,40 @@ def cmd_reset(args):
             "reputation). Re-run with --yes to confirm. The current board, task "
             "files, and state are archived to .harness/trash/ first, so it is "
             "reversible.")
+
+    # T-434: refuse while a precedent still cites a task on the live board --
+    # a `reset` would archive that task's file, turning the citation dangling.
+    note = resolve_note(args)
+    hits, problem = _precedent_task_citations()
+    if hits or problem:
+        if problem:
+            finding = "the check itself could not be trusted: {}".format(problem)
+        else:
+            shown = ["{} cites {}".format(pid, tok) for pid, tok in hits[:5]]
+            more = "" if len(hits) <= 5 else " (+{} more)".format(len(hits) - 5)
+            finding = "{} live citation(s) found: {}{}".format(len(hits), "; ".join(shown), more)
+        refusal = (
+            "refused: `reset` would archive task file(s) a precedent still cites -- "
+            "{finding}. Archived, those citations would go DANGLING. Pass "
+            "--override-precedent-citations together with --note (or --note-file/"
+            "--note-stdin) explaining why the wipe is safe anyway to force it."
+        ).format(finding=finding)
+        citation_strs = ["{} cites {}".format(pid, tok) for pid, tok in hits]
+        if args.override_precedent_citations:
+            if not note:
+                sys.exit(
+                    "refused: --override-precedent-citations requires --note (or "
+                    "--note-file/--note-stdin) recording why the wipe is safe despite "
+                    "{} -- no reason means no override.".format(finding))
+            hc.log_event("board_reset_citations_overridden", agent=args.agent,
+                         citations=citation_strs, problem=problem, reason=note)
+            print("WARNING: reset proceeding over precedent citations by {}: {}".format(
+                args.agent, note))
+        else:
+            hc.log_event("board_reset_refused_citations", agent=args.agent,
+                         citations=citation_strs, problem=problem)
+            sys.exit(refusal)
+
     # timestamp + uuid (mirrors safe_delete's entry_id) with exist_ok=False, so
     # two resets in the same second can never collide and overwrite the first
     # run's archive -- the backup is what makes this command reversible.
@@ -1262,8 +1380,14 @@ def main(argv):
 
     p_reset = sub.add_parser("reset", parents=[common],
                              help="clear the board to empty for a clean start "
-                                  "(archives current board to .harness/trash/ first; --yes required)")
+                                  "(archives current board to .harness/trash/ first; --yes required; "
+                                  "refused while a precedent cites a live task unless "
+                                  "--override-precedent-citations --note is given)")
     p_reset.add_argument("--yes", action="store_true", help="confirm the wipe (required; reset refuses without it)")
+    p_reset.add_argument("--override-precedent-citations", action="store_true",
+                         help="T-434: force the wipe even though `precedent.py cite --all` finds a "
+                              "live citation to a task on the board; requires --note (the reason)")
+    add_note_args(p_reset)
     p_reset.set_defaults(func=cmd_reset)
 
     p_add = sub.add_parser("add-task", parents=[common], help="publish a new task on the board")

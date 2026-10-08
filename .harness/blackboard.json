@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-09-23T22:47:42Z",
-  "updated_by": "coordinator",
+  "updated_at": "2026-10-08T04:51:14Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5800,7 +5800,7 @@
     "T-434": {
       "epic": "gen-9-board-guards",
       "title": "blackboard.py reset refuses while any precedent cites a task on the live board",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "claude",
       "depends_on": [],
@@ -5808,15 +5808,25 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-434.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/blackboard.py",
+        ".harness/tests/test_lifecycle_invariants.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "substrate-worker",
+        "note": "worker done, replay:\n1) PR-063 byte-identity: sed -n '522,575p' .harness/bin/blackboard.py | shasum -a 256 -> expect 5a348edba9ec0374e776d4f3e83f74f9100d452094de2a6c87a9b35b84cb679c (unchanged pre/post this task's diff; confirmed via git diff --unified=0, every hunk starts at line 904+).\n2) python3 .harness/bin/blackboard.py reset --help -> shows --override-precedent-citations and --note/--note-file/--note-stdin alongside the existing --yes.\n3) Full suite: python3 -m pytest .harness/tests -q --no-header -p no:cacheprovider -> observed '962 passed, 4 skipped' (the 4 skips are pre-existing, unrelated TOML/py3.11 skips in test_codex_integration.py and test_context_scout_parity.py).\n4) New/changed tests only: python3 -m pytest .harness/tests/test_lifecycle_invariants.py -q --no-header -p no:cacheprovider -> observed '15 passed' (5 reset tests total: the 2 pre-existing plus 3 new acceptance-criteria tests -- refuses-with-citations, override-with-note (and override-without-note still refused), and two 'nobody cites' variants: no precedents dir at all, and a precedent whose citation is already dangling for an unrelated reason so it must NOT be mistaken for a live-board hit).\n5) Regression proof (mirrors this test file's own documented drill): git show HEAD~1:.harness/bin/blackboard.py > /tmp/bb_pre_t434.py && HARNESS_TEST_BB_SRC=/tmp/bb_pre_t434.py python3 -m pytest .harness/tests/test_lifecycle_invariants.py -q --no-header -p no:cacheprovider -k precedent -> observed '2 failed, 4 passed' against the pre-T-434 file (test_reset_refuses_when_a_precedent_cites_a_live_task fails because the old reset wipes unguarded; test_reset_override_with_reason_proceeds_and_logs_it fails on an argparse 'unrecognized arguments: --override-precedent-citations' usage error) -- proves the new tests genuinely catch the regression, not just pass vacuously.\nDesign notes for review: _precedent_task_citations() in blackboard.py shells out to the real 'precedent.py cite --all' (never reimplements the citation-field walk), then classifies T-NNN / decision:T-NNN#frag tokens whose label starts with OK AND whose task file still exists under hc.TASKS right now (that's the 'live board' test -- a citation already dangling before this reset ran is explicitly excluded, covered by test_reset_proceeds_when_nobody_cites_the_board). A non-(0,3) exit, a subprocess exception, or unparseable output from cite --all is treated as 'unverifiable' and folds into the SAME refuse/override path (fail closed, not fail open, since reset is destructive) -- not separately tested with a forced exit-4 registry-integrity case; a verifier may want to add that (e.g. a corrupt PR-*.json under precedents/) as an extra adversarial check. Override requires BOTH the flag AND a non-empty --note (checked after the flag, before any event is logged) -- events logged: board_reset_refused_citations (refusal) and board_reset_citations_overridden (override, carries reason). Archive-copy behavior (trash/, task files, state.json reputation reset) is untouched either path.",
+        "ts": "2026-10-08T04:43:32Z"
+      },
       "created_at": "2026-09-23T22:47:42Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-08T04:50:26Z",
+      "completed_by": "harness-verifier"
     },
     "T-435": {
       "epic": "gen-9-board-guards",
       "title": "VERIFY T-434: reset guard, mutation-tested",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "claude",
       "depends_on": [
@@ -5829,7 +5839,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-09-23T22:47:42Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-08T04:51:14Z",
+      "completed_by": "harness-verifier"
     }
   }
 }

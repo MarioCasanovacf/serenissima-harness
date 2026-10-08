@@ -115,9 +115,9 @@
     },
     "reputation": {
       "substrate-worker": {
-        "tasks_done": 1,
+        "tasks_done": 2,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-07-04T01:24:30Z"
+        "last_outcome_at": "2026-10-08T04:50:26Z"
       },
       "gemini-runner": {
         "tasks_done": 1,
@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 4,
+        "tasks_done": 5,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-09-20T18:58:27Z"
+        "last_outcome_at": "2026-10-08T04:51:14Z"
       },
       "probe-x": {
         "tasks_done": 5,

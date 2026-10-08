@@ -8,5 +8,11 @@
     "Full suite replayed with the count recorded."
   ],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-08T04:51:14Z",
+      "agent": "harness-verifier",
+      "note": "VERIFIED (harness-verifier). This task's three acceptance criteria, each independently replayed:\n1) Guard mutation-tested in a throwaway copy, not the live .harness: copied blackboard.py to a scratch file, patched `_precedent_task_citations()` to unconditionally `return [], None` (refusal branch neutered since `hits`/`problem` are always falsy), then ran the new tests via HARNESS_TEST_BB_SRC against that mutated copy through test_lifecycle_invariants.py's existing hermetic-tempdir fixture. Result: \"2 failed, 4 passed\" -- test_reset_refuses_when_a_precedent_cites_a_live_task and test_reset_override_with_reason_proceeds_and_logs_it both fail (reset wipes unguarded instead of refusing), proving the guard is load-bearing. Restored: the live .harness/bin/blackboard.py was never modified by this (checked with `git status --porcelain`/`git diff`, no changes beyond the pre-existing T-434 working-tree diff); sha256 of the live .harness/blackboard.json taken immediately before and after the mutated run was identical, and .harness/trash/ and .harness/precedents/ (still exactly PR-001..063 + README/.gitignore) were untouched -- the mutated reset runs only ever executed inside the test fixture's own tempdir.\n2) PR-063 byte-identity: `git show HEAD:.harness/bin/blackboard.py | sed -n '522,575p' | shasum -a 256` and `sed -n '522,575p' .harness/bin/blackboard.py | shasum -a 256` both -> 5a348edba9ec0374e776d4f3e83f74f9100d452094de2a6c87a9b35b84cb679c. `git diff --unified=0` confirms the only hunks touching blackboard.py start at line 905 (new helper) and 1265/1383 (argparse wiring) -- nothing inside 522-575.\n3) Full suite replayed: `python3 -m pytest .harness/tests -q --no-header -p no:cacheprovider` -> \"962 passed, 4 skipped\" (the 4 skips are the pre-existing TOML/py3.11 skips, unrelated to T-434).\nT-434 verdicted done this round (see its own note) with the same replay plus a static cross-check of precedent.py's cmd_cite contract and one corrected replay command (the handoff's `-k precedent` filter under-selects; `-k reset` reproduces the claimed \"2 failed, 4 passed\" regression-proof exactly -- non-blocking transcription slip, not a fabrication).\nHousekeeping: lock.py sweep -> \"swept 0 expired lock(s)\"; lock.py status -> \"no active lock files\".\n"
+    }
+  ]
 }

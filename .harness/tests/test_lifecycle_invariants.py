@@ -73,6 +73,9 @@ class LifecycleInvariants(unittest.TestCase):
         # the class shares one root; clear reset archives so each test's trash/ is its own
         if (h / "trash").exists():
             shutil.rmtree(h / "trash")
+        # T-434: same isolation for any precedent records a reset-citation test wrote
+        if (h / "precedents").exists():
+            shutil.rmtree(h / "precedents")
 
     # ---- helpers -----------------------------------------------------------
     def cli(self, *args):
@@ -188,6 +191,88 @@ class LifecycleInvariants(unittest.TestCase):
         self.cli("reset", "--agent", "op", "--yes")
         backups = list((self.root / ".harness" / "trash").glob("reset-*"))
         self.assertEqual(len(backups), 2, "each reset must preserve its own archive")
+
+    # ---- T-434: reset refuses while a precedent cites a task on the live board ----
+
+    def _write_precedent(self, pr_id, cites):
+        pdir = self.root / ".harness" / "precedents"
+        pdir.mkdir(parents=True, exist_ok=True)
+        (pdir / "{}.json".format(pr_id)).write_text(json.dumps({
+            "id": pr_id, "status": "active", "cites": cites,
+        }))
+
+    def _events(self):
+        path = self.root / ".harness" / "logs" / "events.jsonl"
+        if not path.exists():
+            return []
+        return [json.loads(ln) for ln in path.read_text().splitlines() if ln.strip()]
+
+    def test_reset_refuses_when_a_precedent_cites_a_live_task(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        self._write_precedent("PR-900", ["T-001"])
+
+        r = self.cli("reset", "--agent", "operator", "--yes")
+        self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("PR-900", r.stdout + r.stderr)
+        self.assertIn("T-001", self.task_ids())
+
+        events = [e for e in self._events() if e.get("event") == "board_reset_refused_citations"]
+        self.assertEqual(len(events), 1, "refusal must log exactly one named event")
+        self.assertIn("PR-900 cites T-001", events[0]["citations"])
+        # the board itself (and the precedent) must be completely untouched
+        self.assertTrue((self.root / ".harness" / "precedents" / "PR-900.json").exists())
+        self.assertEqual(list((self.root / ".harness" / "trash").glob("reset-*")), [])
+
+    def test_reset_override_with_reason_proceeds_and_logs_it(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        self._write_precedent("PR-900", ["T-001"])
+
+        # the override flag alone, with no --note, is still refused -- no
+        # reason means no override.
+        r0 = self.cli("reset", "--agent", "operator", "--yes", "--override-precedent-citations")
+        self.assertNotEqual(r0.returncode, 0, r0.stdout + r0.stderr)
+        self.assertIn("T-001", self.task_ids())
+
+        r = self.cli("reset", "--agent", "operator", "--yes",
+                      "--override-precedent-citations", "--note", "PR-900 is being retired too")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.task_ids(), [])
+
+        overrides = [e for e in self._events() if e.get("event") == "board_reset_citations_overridden"]
+        self.assertEqual(len(overrides), 1)
+        self.assertEqual(overrides[0]["reason"], "PR-900 is being retired too")
+        self.assertIn("PR-900 cites T-001", overrides[0]["citations"])
+        # the wipe itself still happened and archived the task, same as always
+        self.assertEqual(len([e for e in self._events() if e.get("event") == "board_reset"]), 1)
+        archived = list((self.root / ".harness" / "trash").glob("reset-*/tasks/T-001.json"))
+        self.assertTrue(archived, "override must still archive the task for reversibility")
+
+    def test_reset_proceeds_when_nobody_cites_the_board(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        # a precedent exists, but names no task currently on the board (its
+        # citation is already dangling for an unrelated reason) -- this must
+        # NOT be mistaken for a live-board citation.
+        self._write_precedent("PR-901", ["T-999"])
+
+        r = self.cli("reset", "--agent", "operator", "--yes")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.task_ids(), [])
+        self.assertEqual(
+            [e for e in self._events() if e.get("event") == "board_reset_refused_citations"], [])
+
+    def test_reset_proceeds_with_no_precedent_registry_at_all(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        r = self.cli("reset", "--agent", "operator", "--yes")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.task_ids(), [])
+
+    def task_ids(self):
+        board = json.loads((self.root / ".harness" / "blackboard.json").read_text())
+        return list(board["tasks"].keys())
 
     def test_lease_less_inprogress_gets_a_lease(self):
         # driving a task to in_progress via update (bypassing claim) must still
