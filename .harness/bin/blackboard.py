@@ -916,6 +916,11 @@ _PRECEDENT_PY = Path(__file__).resolve().parent / "precedent.py"
 _CITE_ALL_LINE_RE = re.compile(r"^(\S+) cites (\S+): (.+)$")
 _T_TOKEN_RE = re.compile(r"^T-\d{3,}$")
 _DECISION_TOKEN_RE = re.compile(r"^decision:(T-\d{3,})#")
+# T-438: `cmd_cite`'s own trailer ("{} of {} citation(s) dangling", printed
+# only when dangling > 0) is the ONE other line shape `cite --all` emits by
+# design -- recognized and skipped on purpose, not a drift signal. Anything
+# else unrecognized IS a drift signal (see the fail-closed check below).
+_CITE_ALL_SUMMARY_RE = re.compile(r"^\d+ of \d+ citation\(s\) dangling$")
 
 
 def _precedent_task_citations():
@@ -957,9 +962,21 @@ def _precedent_task_citations():
     hits = []
     try:
         for line in (proc.stdout or "").splitlines():
+            if not line.strip():
+                continue
             m = _CITE_ALL_LINE_RE.match(line)
             if not m:
-                continue
+                if _CITE_ALL_SUMMARY_RE.match(line):
+                    continue  # the expected "N of M dangling" trailer -- not drift
+                # T-438: fail CLOSED on format drift. Silently skipping an
+                # unrecognized line would drive `hits` to empty on a line
+                # format change and let `reset` proceed as if nothing were
+                # cited -- a nonempty line this scan cannot even parse the
+                # SHAPE of is reported as a `problem`, exactly like a
+                # subprocess error, which blocks the wipe through the same
+                # channel `hits` does.
+                return [], ("precedent.py cite --all printed a line this scan does not "
+                            "recognize (format drift): {!r}".format(line))
             pid, token, label = m.group(1), m.group(2), m.group(3)
             if not label.startswith("OK"):
                 continue

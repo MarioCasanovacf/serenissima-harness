@@ -270,6 +270,59 @@ class LifecycleInvariants(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertEqual(self.task_ids(), [])
 
+    # ---- T-438: the fail-CLOSED branch -- `cite --all` itself cannot be
+    # trusted (exits 4, REGISTRY INTEGRITY ERROR), not merely "found a hit" ----
+
+    def _write_unparseable_precedent(self, pr_id="PR-900"):
+        """Writes a PR-*.json that `precedent.py` cannot even parse as JSON,
+        forcing `cite --all` to exit 4 (scan_registry -> RegistryIntegrityError
+        -> integrity_error(), precedent.py:~777), distinct from the
+        'found a live citation' (exit 0/3) path the tests above cover."""
+        pdir = self.root / ".harness" / "precedents"
+        pdir.mkdir(parents=True, exist_ok=True)
+        (pdir / "{}.json".format(pr_id)).write_text("{ this is not valid json")
+
+    def test_reset_refuses_when_the_citation_scan_cannot_be_trusted(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        self._write_unparseable_precedent()
+
+        r = self.cli("reset", "--agent", "operator", "--yes")
+        self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("T-001", self.task_ids(), "board must be untouched on refusal")
+
+        events = [e for e in self._events() if e.get("event") == "board_reset_refused_citations"]
+        self.assertEqual(len(events), 1, "refusal must log exactly one named event")
+        self.assertEqual(events[0].get("citations"), [], "no hits -- the scan itself was the problem")
+        self.assertIsNotNone(events[0].get("problem"), "an untrustworthy scan must log a non-null problem")
+        self.assertIn("exited 4", events[0]["problem"])
+        # trash/ must stay empty -- the refusal must happen before any archive write
+        self.assertEqual(list((self.root / ".harness" / "trash").glob("reset-*")), [])
+
+    def test_reset_override_with_note_proceeds_over_an_untrustworthy_scan(self):
+        self.cli("add-task", "--agent", "p", "--id", "T-001", "--title", "a",
+                 "--role", "worker", "--engine", "any")
+        self._write_unparseable_precedent()
+
+        # override flag alone, no --note: still refused
+        r0 = self.cli("reset", "--agent", "operator", "--yes", "--override-precedent-citations")
+        self.assertNotEqual(r0.returncode, 0, r0.stdout + r0.stderr)
+        self.assertIn("T-001", self.task_ids())
+
+        r = self.cli("reset", "--agent", "operator", "--yes",
+                      "--override-precedent-citations", "--note",
+                      "registry integrity error predates this reset, safe to proceed")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.task_ids(), [])
+
+        overrides = [e for e in self._events() if e.get("event") == "board_reset_citations_overridden"]
+        self.assertEqual(len(overrides), 1)
+        self.assertIn("exited 4", overrides[0]["problem"])
+        self.assertEqual(overrides[0]["reason"],
+                         "registry integrity error predates this reset, safe to proceed")
+        archived = list((self.root / ".harness" / "trash").glob("reset-*/tasks/T-001.json"))
+        self.assertTrue(archived, "override must still archive the task for reversibility")
+
     def task_ids(self):
         board = json.loads((self.root / ".harness" / "blackboard.json").read_text())
         return list(board["tasks"].keys())
@@ -281,6 +334,87 @@ class LifecycleInvariants(unittest.TestCase):
         self.cli("update", "T-001", "--status", "in_progress", "--agent", "w", "--note", "p")
         self.assertIsNotNone(self.task("T-001").get("claim_expires_at"),
                              "in_progress task must carry a lease")
+
+
+# ==========================================================================
+# T-438: fail-closed on `cite --all` LINE-FORMAT drift.
+#
+# `_precedent_task_citations` shells out to the real `precedent.py cite
+# --all`; this exercises its internal parse loop directly, in-process,
+# against a STUB in place of the real `precedent.py`, rather than through
+# `reset`/subprocess like the tests above. The seam is the module's own
+# `_PRECEDENT_PY` constant (already a module-level global the function reads
+# at call time, not a constructor argument) -- patched for the duration of
+# one test and restored in `finally`, so the DEFAULT path (every other test
+# in this file, and the live board) is untouched. Loaded via
+# importlib.util.spec_from_file_location against the real repo's
+# blackboard.py, mirroring test_precedent_bridge.py's
+# `_import_precedent_module` pattern for the same reason: the function under
+# test is read-only (no writes, no board/state access) so importing the
+# live file in-process is safe, and avoids re-copying the whole bin/ tree
+# just to flip one constant.
+# ==========================================================================
+
+import importlib.util
+
+BB_PY = REPO_BIN / "blackboard.py"
+
+
+def _import_blackboard_module():
+    spec = importlib.util.spec_from_file_location("blackboard_under_test_t438", str(BB_PY))
+    mod = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(BB_PY.parent))  # so blackboard's own `import harness_common` resolves
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.path.remove(str(BB_PY.parent))
+    return mod
+
+
+class FormatDriftFailsClosedTests(unittest.TestCase):
+    def setUp(self):
+        self.bb = _import_blackboard_module()
+        self._orig_precedent_py = self.bb._PRECEDENT_PY
+
+    def tearDown(self):
+        self.bb._PRECEDENT_PY = self._orig_precedent_py
+
+    def _point_at_stub(self, stub_stdout):
+        """Writes a throwaway stub standing in for precedent.py: whatever
+        argv `_precedent_task_citations` passes it (cite --all --root ...),
+        it ignores and just prints `stub_stdout`, exit 0 -- enough to drive
+        the parse loop without a real precedent.py cite --all run."""
+        tmp = tempfile.mkdtemp(prefix="t438-stub-")
+        stub = Path(tmp) / "precedent.py"
+        stub.write_text(
+            "import sys\n"
+            "sys.stdout.write({!r})\n"
+            "sys.exit(0)\n".format(stub_stdout))
+        self.bb._PRECEDENT_PY = stub
+        return stub
+
+    def test_unrecognized_nonempty_line_is_a_problem_not_silently_skipped(self):
+        drifted_line = "this line has no colon-shaped citation structure at all"
+        self._point_at_stub(drifted_line + "\n")
+        hits, problem = self.bb._precedent_task_citations()
+        self.assertEqual(hits, [], "a drifted line must not be mistaken for zero citations")
+        self.assertIsNotNone(problem, "an unrecognized nonempty line must fail CLOSED, not open")
+        self.assertIn(drifted_line, problem, "the offending line must be named in the message")
+
+    def test_well_formed_lines_are_unaffected_by_the_drift_check(self):
+        # same stub seam, but printing output that DOES match the real
+        # format -- confirms the new check is additive, not a regression on
+        # the happy path the live board already exercises.
+        self._point_at_stub("PR-900 cites T-999: OK (dangling but parseable)\n")
+        hits, problem = self.bb._precedent_task_citations()
+        self.assertEqual(hits, [], "T-999 has no task file, so it is not a live-board hit")
+        self.assertIsNone(problem)
+
+    def test_blank_lines_in_otherwise_well_formed_output_are_not_a_problem(self):
+        self._point_at_stub("\nPR-900 cites T-999: OK (dangling but parseable)\n\n")
+        hits, problem = self.bb._precedent_task_citations()
+        self.assertEqual(hits, [])
+        self.assertIsNone(problem)
 
 
 if __name__ == "__main__":

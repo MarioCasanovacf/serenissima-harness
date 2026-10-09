@@ -1,0 +1,20 @@
+{
+  "id": "T-439",
+  "title": "VERIFY T-438: replay the fail-closed tests and the format-drift fix",
+  "description": "Different agent from T-438's producer. Replay the full suite, confirm blackboard.py lines 522-575 are byte-identical (sha256 before and after), and run a mutant that reverts the format-drift fix: at least 1 of the new tests must fail against it.",
+  "acceptance_criteria": [
+    "Verifier is a different agent from T-438's producer.",
+    "Full suite replayed: pass/skip/fail counts recorded.",
+    "sha256 of blackboard.py lines 522-575 matches the pre-T-438 value (5a348edb... per commit 6d2bd42).",
+    "A mutant that reverts the format-drift fix (unrecognized lines skipped again) makes at least 1 new test fail; a mutant that accepts exit 4 as clean makes at least 1 new test fail.",
+    "Verdict recorded with evidence; T-438 marked done or sent back to open."
+  ],
+  "context_files": [],
+  "notes": [
+    {
+      "ts": "2026-10-09T04:04:09Z",
+      "agent": "harness-verifier",
+      "note": "T-439 executed as the verifier task itself (role=verifier, P-022 verifier_execute_done path, agent harness-verifier != created_by main). Verdict on T-438: full suite 967 passed/4 skipped/0 failed; sha256 of lines 522-575 = 5a348edba9ec0374e776d4f3e83f74f9100d452094de2a6c87a9b35b84cb679c (unchanged); live precedents registry has 0 unrecognized lines across 351 lines; mutant (a) silent-skip revert failed 1 new test; mutant (b) exit-4-as-clean failed 2 new tests; no changes under .harness/trust, .harness/constitutional, .harness/keys. T-438 marked done. Full detail in T-438's note.\n"
+    }
+  ]
+}

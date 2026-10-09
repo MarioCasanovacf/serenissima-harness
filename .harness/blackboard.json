@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-10-09T03:44:29Z",
-  "updated_by": "main",
+  "updated_at": "2026-10-09T04:04:09Z",
+  "updated_by": "harness-verifier",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5899,6 +5899,52 @@
       "created_at": "2026-10-09T02:15:44Z",
       "created_by": "main",
       "completed_at": "2026-10-09T03:43:04Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-438": {
+      "epic": "gen-9-hardening",
+      "title": "Test and close the fail-closed branch of the T-434 reset guard",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-438.json",
+      "artifacts": [
+        ".harness/bin/blackboard.py",
+        ".harness/tests/test_lifecycle_invariants.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g9-guards",
+        "note": "T-438 acceptance criteria, point by point, with exact replay commands:\n\n1) exit-4 refusal test: test_reset_refuses_when_the_citation_scan_cannot_be_trusted\n   (.harness/tests/test_lifecycle_invariants.py). Writes an unparseable PR-900.json\n   (not valid json) into the temp root's precedents/, which forces\n   precedent.py cite --all to raise RegistryIntegrityError and exit 4. Asserts\n   reset exits non-zero, board_reset_refused_citations is logged exactly once\n   with a non-null \"problem\" field containing \"exited 4\", board still has\n   T-001 (untouched), and trash/ has zero reset-* dirs (no archive write\n   happened). Replay:\n     python3 -m pytest .harness/tests/test_lifecycle_invariants.py -q -k test_reset_refuses_when_the_citation_scan_cannot_be_trusted\n   Observed: 1 passed.\n\n2) override test: test_reset_override_with_note_proceeds_over_an_untrustworthy_scan\n   (same file). Same exit-4 setup. Confirms --override-precedent-citations alone\n   (no --note) is still refused, then --override-precedent-citations --note\n   \"<reason>\" proceeds (exit 0), logs board_reset_citations_overridden with\n   problem containing \"exited 4\" and reason == the note text, and the task is\n   archived under trash/reset-*/tasks/T-001.json. Replay:\n     python3 -m pytest .harness/tests/test_lifecycle_invariants.py -q -k test_reset_override_with_note_proceeds_over_an_untrustworthy_scan\n   Observed: 1 passed.\n\n3) format-drift fail-closed: new class FormatDriftFailsClosedTests in the same\n   file. Seam chosen: the module's own _PRECEDENT_PY constant (already a\n   module-level global _precedent_task_citations reads at call time) is\n   monkeypatched for the duration of one test to point at a throwaway stub\n   script that prints a drifted (non-matching) line, then restored in\n   tearDown -- no production code change was needed to add this seam, and the\n   default path (every other test, and the live board) is untouched. The\n   module is loaded in-process via importlib.util.spec_from_file_location\n   against the real .harness/bin/blackboard.py, mirroring\n   test_precedent_bridge.py's _import_precedent_module pattern -- safe because\n   _precedent_task_citations is read-only (no board/state writes).\n     test_unrecognized_nonempty_line_is_a_problem_not_silently_skipped: a\n       drifted line now returns hits=[] and a non-None problem naming the\n       offending line (fail closed, was previously silently skipped).\n     test_well_formed_lines_are_unaffected_by_the_drift_check: a normal\n       \"PR-900 cites T-999: OK ...\" line is unaffected (regression guard).\n     test_blank_lines_in_otherwise_well_formed_output_are_not_a_problem:\n       blank lines are not drift.\n   While writing this I found cmd_cite's own trailer line (\"N of M\n   citation(s) dangling\", printed only when dangling > 0) also doesn't match\n   _CITE_ALL_LINE_RE -- a legitimate line shape `cite --all` already emits by\n   design, previously silently skipped along with real drift. A naive\n   fail-closed check broke test_reset_proceeds_when_nobody_cites_the_board\n   (which has exactly one dangling citation, so the trailer line appears).\n   Fixed by adding _CITE_ALL_SUMMARY_RE (matches that one trailer shape only)\n   and excluding it from the drift check before fail-closed triggers on\n   anything else. Replay:\n     python3 -m pytest .harness/tests/test_lifecycle_invariants.py -q -k FormatDriftFailsClosedTests\n\n4) live-board check, before AND after the edit:\n     python3 .harness/bin/precedent.py cite --all --root .harness/precedents\n   Before edit: exit 0, 351 stdout lines, 0 lines unrecognized by\n   _CITE_ALL_LINE_RE.\n   After edit: exit 0, stdout byte-identical to the before capture (diff\n   clean), 0 lines unrecognized by _CITE_ALL_LINE_RE or the new\n   _CITE_ALL_SUMMARY_RE. Also called _precedent_task_citations() directly\n   in-process against the live registry: hits=207, problem=None (same shape\n   as before this change) -- reset behavior on the real repository is\n   unchanged.\n\n5) blackboard.py lines 522-575 (PR-063 citation), byte-identical before and\n   after:\n     sed -n 522,575p .harness/bin/blackboard.py | shasum -a 256\n   Before: 5a348edba9ec0374e776d4f3e83f74f9100d452094de2a6c87a9b35b84cb679c\n   After:  5a348edba9ec0374e776d4f3e83f74f9100d452094de2a6c87a9b35b84cb679c\n   (identical -- confirmed both before writing any code and again after).\n   All new code sits inside _precedent_task_citations, well below line 575\n   (module lines ~916-985 in the edited file).\n\n6) full suite:\n     python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" --task T-438 --timeout 580\n   Observed: GOAL REACHED on iteration 1/3 (82.33s).\n     python3 -m pytest .harness/tests -q\n   Observed: 967 passed, 4 skipped in 77.21s, 0 failed.\n\nFiles touched:\n  .harness/bin/blackboard.py (only below line 575 -- the hash check above\n    proves 522-575 unchanged)\n  .harness/tests/test_lifecycle_invariants.py (2 new tests on the existing\n    LifecycleInvariants class, plus a new FormatDriftFailsClosedTests class)\n\nNothing under .harness/trust, .harness/constitutional, .harness/keys was\nread or written. No git history-changing command was run. No board edits\nwere made by hand -- all blackboard.json changes came from\n`blackboard.py claim/update`. No files were deleted.\n",
+        "ts": "2026-10-09T03:59:43Z"
+      },
+      "created_at": "2026-10-09T03:50:05Z",
+      "created_by": "main",
+      "completed_at": "2026-10-09T04:03:50Z",
+      "completed_by": "harness-verifier"
+    },
+    "T-439": {
+      "epic": "gen-9-hardening",
+      "title": "VERIFY T-438: replay the fail-closed tests and the format-drift fix",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-438"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-439.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-09T03:50:05Z",
+      "created_by": "main",
+      "completed_at": "2026-10-09T04:04:09Z",
       "completed_by": "harness-verifier"
     }
   }
