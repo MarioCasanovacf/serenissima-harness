@@ -1,0 +1,12 @@
+{
+  "id": "T-437",
+  "title": "VERIFY T-436: attack the contracts design before the operator reads it",
+  "description": "Adversarial read of .harness/design-T-436-contracts.md. Try 4 attacks and write each result next to its section: (1) a damage that is in fact computed from a figure about an identity, so constitutional under PR-060 clause 5; (2) a path where repeated damages exclude an agent by computed standing (PR-026 clause 3); (3) a consequence with no record of its own (PR-060 clause 6); (4) a claim cheap enough to be used as a weapon. Check every cited clause against the record text in .harness/precedents/. Verdict done only if every attack has a written answer and the document says what stays open.",
+  "acceptance_criteria": [
+    "Each of the 4 attacks was run and its result is written on the board next to the section it targets.",
+    "Every clause the design cites was checked against .harness/precedents/ and any miscitation is named.",
+    "Verdict recorded on the board with the checks replayed, not copied from the thinker's note."
+  ],
+  "context_files": [],
+  "notes": []
+}

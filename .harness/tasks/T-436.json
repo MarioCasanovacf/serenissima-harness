@@ -1,0 +1,15 @@
+{
+  "id": "T-436",
+  "title": "Design: contracts, breach and damages paid in operational budget",
+  "description": "Operator ratified 2026-10-08 (decision 2): damages are measured in operational budget, never in reputation. Design, no code. Define 3 things: (a) CONTRACT, a commitment on an operational parameter the agent sets for itself (PR-060 clauses 1-2: task, order, budget, deadline, engine, iteration bound); (b) BREACH, a fact a verifier can replay, never a figure computed about an identity (PR-060 clause 5: doubt resolves toward constitutional); (c) DAMAGES, counted in tokens, tasks or deadline days. Answer each: whose budget pays; who receives it (the harmed party or nobody); a cap so repeated breach never turns into exclusion by computed standing (PR-026 clause 3); how each consequence gets its own published record naming the parameter, the consequence and the agent's own act of setting it (PR-060 clause 6); what keeps a false claim from being cheap; whether the non-staking rule (PR-061 clause 3, D-17) reaches budget or only reputation. Reputation is untouched: PR-022 clause 4, PR-026 and PR-061 stay intact. Who signed a contract inherits the D-17 limit; state it, do not solve it. The suits register and the judge are decision 3, still pending: name the interface, do not design the court. Input: the Swiss debt-enforcement research brief the coordinator attaches at dispatch. Output: .harness/design-T-436-contracts.md. Do not touch trust/, constitutional/ or keys/. The operator approves the design before any worker task is created.",
+  "acceptance_criteria": [
+    "A design document exists at .harness/design-T-436-contracts.md and defines contract, breach and damages in 1 paragraph each.",
+    "Damages are counted only in tokens, tasks or deadline days; the document names no path by which reputation moves.",
+    "Each of the 6 questions in the description has a written answer or is marked open with the reason.",
+    "Every cited clause (PR-060 c1, c2, c5, c6; PR-022 c4; PR-026 c3; PR-061 c3) is quoted from the record, not paraphrased from memory.",
+    "No file under .harness/trust, .harness/constitutional or .harness/keys is read or written.",
+    "Handed off to a verifier; not self-marked done."
+  ],
+  "context_files": [],
+  "notes": []
+}
