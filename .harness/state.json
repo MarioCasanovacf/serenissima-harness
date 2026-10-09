@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 6,
+        "tasks_done": 7,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-10-08T05:04:14Z"
+        "last_outcome_at": "2026-10-09T03:43:04Z"
       },
       "probe-x": {
         "tasks_done": 5,
@@ -723,6 +723,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-09-23T03:16:22Z"
+      },
+      "thinker-g9-contracts": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-09T03:42:53Z"
       }
     }
   },
