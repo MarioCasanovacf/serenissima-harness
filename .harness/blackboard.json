@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-10-09T04:04:09Z",
-  "updated_by": "harness-verifier",
+  "updated_at": "2026-10-20T04:19:24Z",
+  "updated_by": "coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -5946,6 +5946,86 @@
       "created_by": "main",
       "completed_at": "2026-10-09T04:04:09Z",
       "completed_by": "harness-verifier"
+    },
+    "T-440": {
+      "epic": "gen-9-rehearsal",
+      "title": "Rehearsal: run every built governance mechanism end to end in a throwaway copy",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-440.json",
+      "artifacts": [
+        "examples/rehearsal/run_rehearsal.py",
+        ".harness/tests/test_rehearsal.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g9-rehearsal",
+        "note": "Replay: python3 examples/rehearsal/run_rehearsal.py\n  -> prints 13 scorecard rows (fired/blocked/unbuilt), writes <tmpdir>/scorecard.json,\n     prints \"live .harness/ untouched: YES\", exit 0. Observed this run: fired=8\n     blocked=4 unbuilt=1.\nTest: python3 -m pytest .harness/tests/test_rehearsal.py -q  (also via\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" ->\n  GOAL REACHED on iteration 1/3, observed twice).\n  Asserts sha256(live .harness/, excl logs/ and tasks/T-440.json) and\n  `git status --porcelain .harness` (same exclusions) are identical before/after\n  the subprocess run, plus scorecard shape (fired rows carry evidence, others\n  carry a blocker, all three outcome kinds appear).\n\nScenario (\"Casona\", one connected story, same names/tasks/records throughout, driven\nonly via subprocess onto each tool's own CLI -- see docstring for the full chain):\nFIRED (8): producer-not-approver refusal; handoff + distinct verifier done; a case\n  (precedent.py case open) deliberated end to end (deliberate.py propose/sponsor x2/\n  prior/schedule/discuss x2/vote x5/conclude --method schulze, 5 distinct names,\n  Condorcet winner) and disposed by a published precedent; a confirmation by a\n  distinct author; a second case disposed by publish --follows (visible in the\n  first record's own cited_by and in disposition-ratio's by_legislation_registered;\n  the narrower by_citation/`distinguish` path was attempted and is one of the\n  blocked findings below); a phase_b_yield event from blackboard.py next (the\n  outranking identity's score traces to this run's own precedent authorship +\n  confirmation + citation); currency.py and event_stats.py reading the sandbox.\nBLOCKED (4), all four reducing to ONE root cause, each with the tool's own message:\n  attest.py's D3a intent gate (open_intents()) requires an intent SIGNED AND\n  VERIFIED against a name's WARRANT-RECORDED key before any privileged act (grant,\n  distinguish, contest, verdict); this rehearsal is barred from reading the live\n  private key under .harness/keys/ and barred from signing a warrant to mint one it\n  would hold, so no privileged act can originate from an already-warranted name.\n  (1) fedatario sign+verify: a non-privileged `commit` act DOES sign (fed-codificador\n      is warrant-enrolled in the sandbox's copy of the already-signed, public W-002),\n      but attest.py verify reports a signature failure -- sign_act never checks the\n      signing key against the warrant's recorded pubkey, only verify does.\n  (2) delegation ceiling: the grant itself is refused at the intent-match step.\n  (3) fork+contest: 2 genuinely concurrent `attest.py sign` CLI calls (threading)\n      produced ZERO forks (roster._guard now serializes read-decide-create-write,\n      confirmed live rather than only in the test suite); contest was attempted\n      regardless and refused at the same intent gate.\n  (4) westphalia_kpi.py: domain_registries() hardcodes exactly one candidate\n      registry ({'precedents':'PR-'}); reports NOT YET MEASURABLE, tool's own\n      message, verbatim via --json.\nUNBUILT (1): contracts/breach (decision 2) -- only .harness/design-T-436-\n  contracts.md exists; no code to run.\n\nSecurity self-check (acceptance criterion 1 + 6): script never imports blackboard/\nprecedent/deliberate/attest/reputation/currency/event_stats/westphalia_kpi (grep\nconfirms only stdlib imports); .harness/keys/ excluded from the copytree and never\nreferenced; no warrant.py draft/apply/sign call anywhere (trust/+constitutional/+\nwarrants/ are copied verbatim as already-operator-signed public material, same\ntreatment the task note sanctions for trust/constitutional); every agent key is a\nfresh `ssh-keygen` call into the sandbox's own keys/ dir. No absolute user path\nappears in either file (grep -n \"<user>\" examples/rehearsal/run_rehearsal.py\n.harness/tests/test_rehearsal.py -> no output).\n\nPlease independently re-run both replay commands above and check the printed/\nwritten scorecard against the prose claims, and sanity-check the D3a root-cause\nclaim against .harness/bin/attest.py's open_intents()/sign_act() if time allows.",
+        "ts": "2026-10-20T03:59:39Z"
+      },
+      "created_at": "2026-10-20T03:29:16Z",
+      "created_by": "main",
+      "completed_at": "2026-10-20T04:06:35Z",
+      "completed_by": "verifier-g9-rehearsal"
+    },
+    "T-441": {
+      "epic": "gen-9-rehearsal",
+      "title": "VERIFY T-440: replay the rehearsal from clean and try to falsify its scorecard",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-440"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-441.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-20T03:29:16Z",
+      "created_by": "main",
+      "completed_at": "2026-10-20T04:06:51Z",
+      "completed_by": "verifier-g9-rehearsal"
+    },
+    "T-442": {
+      "epic": "gen-9-rehearsal",
+      "title": "Rehearsal hygiene: remove the sandbox by default and correct the never-fired framing",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-442.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-20T04:19:24Z",
+      "created_by": "coordinator"
+    },
+    "T-443": {
+      "epic": "gen-9-rehearsal",
+      "title": "VERIFY T-442: default run leaves no sandbox, --keep keeps one, framing matches the live board",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-442"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-443.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-20T04:19:24Z",
+      "created_by": "coordinator"
     }
   }
 }

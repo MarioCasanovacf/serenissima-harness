@@ -1,0 +1,24 @@
+{
+  "id": "T-441",
+  "title": "VERIFY T-440: replay the rehearsal from clean and try to falsify its scorecard",
+  "description": "Different agent from T-440's producer. Run the rehearsal fresh, check every fired entry against the raw evidence independently, neuter 3 mechanisms in a temporary copy and confirm the scorecard stops reporting them fired, and confirm the live tree and secret material were untouched.",
+  "acceptance_criteria": [
+    "Verifier is a different agent from T-440's producer.",
+    "The rehearsal is run fresh from a clean checkout state; the scorecard is reproduced.",
+    "Every fired entry is checked against the raw evidence by reading the sandbox files directly, not the scorecard's own summary.",
+    "In a temporary copy, 3 mechanisms are neutered one at a time (for example: phase B yield never emitted; forks returns nothing; a case cannot be disposed by citation). For each, the rehearsal must stop reporting that mechanism fired. Record the result per mutant.",
+    "The live tree is untouched (git status and the .harness sha256 manifest), no warrant was signed, the operator key was not read, and no private key from the live .harness/keys was copied.",
+    "Verdict recorded with evidence; T-440 marked done or sent back to open."
+  ],
+  "context_files": [
+    "examples/rehearsal/run_rehearsal.py",
+    ".harness/tasks/T-440.json"
+  ],
+  "notes": [
+    {
+      "ts": "2026-10-20T04:06:51Z",
+      "agent": "verifier-g9-rehearsal",
+      "note": "T-441 IS the verification task for T-440, executed and closed by verifier-g9-rehearsal (distinct from T-440's producer worker-g9-rehearsal). Evidence recorded on T-440's own note: fresh replay reproduced the scorecard (fired=8/blocked=4/unbuilt=1, live untouched YES); every fired row checked against raw sandbox files (tasks/cases/deliberations/precedents/events.jsonl/acts) directly, not the scorecard summary; 3 mechanisms neutered one at a time in throwaway scratchpad copies (phase_b_yield log_event call, precedent.py cited_by append, blackboard.py producer!=approver guard) and each neutering flipped its row from FIRED to BLOCKED; live tree confirmed untouched via git status --porcelain + sha256 manifest diff (only gitignored logs/transcript.jsonl, from my own session hook, differed); no warrant.py call anywhere in the script, live .harness/keys/* and ~/.ssh/harness_root mtimes unchanged (predate this run), no absolute user path leaked. Full suite via goal_mode.py: GOAL REACHED iteration 1/3. T-440 marked done."
+    }
+  ]
+}

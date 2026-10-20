@@ -1,0 +1,8 @@
+{
+  "id": "T-442",
+  "title": "Rehearsal hygiene: remove the sandbox by default and correct the never-fired framing",
+  "description": "Found by the T-441 verifier and the gap-map critic. (1) run_rehearsal.py creates a tempfile.mkdtemp sandbox (about 7 MB) and never removes it, so every pytest run leaks one copy into the OS temp directory; 15 had accumulated by 2026-10-19. Remove the sandbox at the end by default; add --keep to retain it for inspection and print its location only then; the scorecard JSON must still be obtainable without --keep (stdout with --json, or --out FILE). The test must assert no sandbox directory remains after a default run. Use tempfile and shutil only on the directory the script itself created; never delete anything else. (2) The module docstring says the 2026-10-07 review counted mechanisms that had never fired on the real board and the scorecard row calls publish --follows a case disposed by citation. The live board already ran that path: C-002 disposed by PR-062 and C-003 disposed by PR-063 on 2026-09-20, chain PR-061 to PR-062 to PR-063, each confirmed by a distinct author. Live disposition-ratio counts 0 dispositions by citation because by_citation counts only the distinguish verb. Reword the docstring and the row label so a reader cannot conclude the publish-follows chain is new, and so the row says it fired in the sandbox. Do not change any tool under .harness/bin. Suite passes via goal_mode; hand off to verifier.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

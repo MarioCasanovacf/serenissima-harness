@@ -733,6 +733,16 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-10-09T04:03:50Z"
+      },
+      "worker-g9-rehearsal": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-20T04:06:35Z"
+      },
+      "verifier-g9-rehearsal": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-20T04:06:51Z"
       }
     }
   },

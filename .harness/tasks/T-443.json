@@ -1,0 +1,8 @@
+{
+  "id": "T-443",
+  "title": "VERIFY T-442: default run leaves no sandbox, --keep keeps one, framing matches the live board",
+  "description": "A different agent: count harness-rehearsal-* directories in the OS temp directory before and after a default run (must not grow) and after a --keep run (grows by exactly 1). Confirm the deletion touches only the directory the script created (read the code path; a mutant that deletes the parent temp directory must be impossible by construction). Check the reworded docstring and row label against .harness/cases/C-002.json, C-003.json and precedents/PR-061..063.json. Run the full suite via goal_mode. Verdict.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}
