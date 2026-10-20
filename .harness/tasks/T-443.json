@@ -4,5 +4,11 @@
   "description": "A different agent: count harness-rehearsal-* directories in the OS temp directory before and after a default run (must not grow) and after a --keep run (grows by exactly 1). Confirm the deletion touches only the directory the script created (read the code path; a mutant that deletes the parent temp directory must be impossible by construction). Check the reworded docstring and row label against .harness/cases/C-002.json, C-003.json and precedents/PR-061..063.json. Run the full suite via goal_mode. Verdict.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-20T04:34:04Z",
+      "agent": "harness-verifier",
+      "note": "VERDICT on T-442: ACCEPTED (see T-442's own done-note for full evidence, recorded by this same agent). Summary of this task's specific checks: (a) counted harness-rehearsal-* dirs under tempfile.gettempdir() before/after independently (default run: 16->16, no growth; --keep run: 16->17, grew by exactly 1, then removed by its exact printed path back to 16); (b) read the shutil.rmtree call site directly (examples/rehearsal/run_rehearsal.py:727) -- it is the only rmtree call in the file and operates on tmp_root, the unreassigned pathlib.Path from tempfile.mkdtemp's own return value (line 672), never a computed parent or glob, so a mutant deleting a different path is impossible without editing that exact line; (c) read .harness/cases/C-002.json, C-003.json and .harness/precedents/PR-061.json..PR-063.json directly: C-002 disposed by PR-062, C-003 disposed by PR-063 (both 2026-09-20), chain follows PR-063->PR-062->PR-061, each confirmed by a distinct verifier (verifier-g8-attach, verifier-g8-docket, verifier-gemini-2); precedent.py disposition-ratio --json confirms by_citation_raw=0, matching the docstring's own caveat -- the reworded docstring/row text matches the live board, no overclaim found; (d) ran python3 .harness/bin/goal_mode.py run --cmd 'python3 -m pytest .harness/tests -q' myself -> GOAL REACHED on iteration 1/3 (83.27s). No tool under .harness/bin was modified by the producer (git diff --stat -- .harness/bin/ empty). No absolute user path or username found in the two changed code files or in the new board notes."
+    }
+  ]
 }

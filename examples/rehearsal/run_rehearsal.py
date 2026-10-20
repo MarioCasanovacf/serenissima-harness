@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """run_rehearsal.py -- T-440: one connected story, told through the tools' own CLIs.
 
-WHY THIS EXISTS. A 2026-10-07 review counted six built, tested mechanisms that had
+WHY THIS EXISTS. A 2026-10-07 review counted five built, tested mechanisms that had
 never fired on the real board: contest, the phase B claim-order yield, an act signed
-by a fedatario seat holder, a delegated credential with a ceiling, a case resolved by
-citing a published rule, and the Westphalia reconciliation-cost KPI. This script
-drives ONE connected story -- "Casona" -- through every tool's own command line, in a
-throwaway copy of the harness, and prints a scorecard: each attempted mechanism comes
-back FIRED (with the evidence the tool itself wrote), BLOCKED (with the tool's own
+by a fedatario seat holder, a delegated credential with a ceiling, and the Westphalia
+reconciliation-cost KPI. A case disposed by a publish that follows (cites) an earlier
+precedent is NOT a sixth never-fired item: the live board already ran that path twice
+before that review, on 2026-09-20 -- C-002 disposed by PR-062, C-003 disposed by
+PR-063, chaining PR-061 -> PR-062 -> PR-063, each confirmed by a distinct verifier.
+What stays at zero live is narrower than "never fired": `precedent.py
+disposition-ratio`'s by_citation column counts only the `distinguish` verb, so it
+reads 0 even though two cases have already been disposed by a following publish.
+Step 6 below replays that same publish-follows shape inside the sandbox so this
+story is connected end to end -- it is a replay of a mechanism that already fired
+live, not a first firing, and the scorecard row says so. This script drives ONE
+connected story -- "Casona" -- through every tool's own command line, in a throwaway
+copy of the harness, and prints a scorecard: each attempted mechanism comes back
+FIRED (with the evidence the tool itself wrote), BLOCKED (with the tool's own
 refusal message), or UNBUILT (named, never coded).
 
 THE STORY, in order (same names, same tasks, same records throughout):
@@ -70,6 +79,7 @@ SECURITY, enforced by this script and not merely asserted:
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import pathlib
@@ -405,12 +415,16 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
     show_pr1_json = leading_json(show_pr1.stdout) if show_pr1.returncode == 0 else {}
     cited_back = pr2_id is not None and pr2_id in (show_pr1_json.get("cited_by") or [])
     sc.record(
-        "a SECOND case disposed by citing that precedent, visible in disposition-ratio",
+        "a case disposed by publish --follows (citing a published rule) -- fired "
+        "HERE IN THE SANDBOX; this is a replay, not a first firing: the live board "
+        "already ran this same shape twice before (C-002 disposed by PR-062, C-003 "
+        "disposed by PR-063, 2026-09-20), visible in disposition-ratio",
         "fired" if pub2.returncode == 0 and cited_back else "blocked",
         evidence="precedent.py publish --case {} --follows {} -> {} ; "
                   "precedent.py show {} -> cited_by={} ; precedent.py "
                   "disposition-ratio --json -> by_legislation_registered_raw={}, "
-                  "cases_opened_raw={} (this run's 2 cases are among them). The "
+                  "cases_opened_raw={} (this run's 2 sandbox cases are among them, "
+                  "on top of the 2 that already disposed by this shape live). The "
                   "narrower by_citation_raw={} column tracks `distinguish` only, "
                   "which this run attempted separately while the case was still "
                   "open and which was refused (rc={}): {!r}".format(
@@ -636,43 +650,81 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
 
 # --------------------------------------------------------------------------- main
 
+def parse_args(argv):
+    p = argparse.ArgumentParser(description=(
+        "Run the Casona rehearsal story in a throwaway sandbox copy of .harness/. "
+        "The sandbox is removed at the end by default."))
+    p.add_argument("--keep", action="store_true",
+                    help="do not remove the sandbox directory; print its location "
+                         "and write scorecard.json inside it")
+    p.add_argument("--json", action="store_true",
+                    help="print the scorecard as a single JSON line on stdout "
+                         "(works without --keep)")
+    p.add_argument("--out", metavar="FILE",
+                    help="write the scorecard JSON to FILE (works without --keep)")
+    return p.parse_args(argv)
+
+
 def main(argv=None) -> int:
+    args = parse_args(argv)
     before = integrity_snapshot()
 
     tmp_root = pathlib.Path(tempfile.mkdtemp(prefix="harness-rehearsal-"))
-    print("sandbox: {}".format(tmp_root))
-    harness_dir = build_sandbox(tmp_root)
-    bindir = harness_dir / "bin"
-    keys_dir = harness_dir / "keys"
-
-    sc = Scorecard()
     try:
-        run_story(bindir, harness_dir, keys_dir, sc)
+        harness_dir = build_sandbox(tmp_root)
+        bindir = harness_dir / "bin"
+        keys_dir = harness_dir / "keys"
+
+        sc = Scorecard()
+        try:
+            run_story(bindir, harness_dir, keys_dir, sc)
+        finally:
+            after = integrity_snapshot()
+            diffs = integrity_diff(before, after)
+
+        scorecard = {
+            "task": "T-440",
+            "sandbox": str(tmp_root),
+            "generated_at": now_iso(),
+            "rows": sc.rows,
+            "live_tree_untouched": not diffs,
+            "live_tree_diffs": diffs,
+        }
+
+        if args.out:
+            pathlib.Path(args.out).write_text(
+                json.dumps(scorecard, indent=2, ensure_ascii=False), encoding="utf-8")
+            print("scorecard written: {}".format(args.out))
+
+        if args.keep:
+            scorecard_path = tmp_root / "scorecard.json"
+            scorecard_path.write_text(
+                json.dumps(scorecard, indent=2, ensure_ascii=False), encoding="utf-8")
+            print("sandbox: {}".format(tmp_root))
+            print("scorecard written: {}".format(scorecard_path))
+
+        if args.json:
+            # One compact line, so a caller can find it by a fixed prefix without
+            # needing to track where the human-readable FIRED/BLOCKED lines end.
+            print("scorecard-json: {}".format(
+                json.dumps(scorecard, ensure_ascii=False)))
+
+        print()
+        print("live .harness/ untouched: {}".format(
+            "YES" if not diffs else "NO -- " + "; ".join(diffs)))
+
+        fired = sum(1 for r in sc.rows if r["outcome"] == "fired")
+        blocked = sum(1 for r in sc.rows if r["outcome"] == "blocked")
+        unbuilt = sum(1 for r in sc.rows if r["outcome"] == "unbuilt")
+        print("totals: fired={} blocked={} unbuilt={} (of {})".format(
+            fired, blocked, unbuilt, len(sc.rows)))
+
+        return 0 if not diffs else 1
     finally:
-        after = integrity_snapshot()
-        diffs = integrity_diff(before, after)
-
-    scorecard_path = tmp_root / "scorecard.json"
-    scorecard_path.write_text(json.dumps({
-        "task": "T-440",
-        "sandbox": str(tmp_root),
-        "generated_at": now_iso(),
-        "rows": sc.rows,
-        "live_tree_untouched": not diffs,
-        "live_tree_diffs": diffs,
-    }, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    print()
-    print("scorecard written: {}".format(scorecard_path))
-    print("live .harness/ untouched: {}".format("YES" if not diffs else "NO -- " + "; ".join(diffs)))
-
-    fired = sum(1 for r in sc.rows if r["outcome"] == "fired")
-    blocked = sum(1 for r in sc.rows if r["outcome"] == "blocked")
-    unbuilt = sum(1 for r in sc.rows if r["outcome"] == "unbuilt")
-    print("totals: fired={} blocked={} unbuilt={} (of {})".format(
-        fired, blocked, unbuilt, len(sc.rows)))
-
-    return 0 if not diffs else 1
+        if not args.keep:
+            # Remove exactly the directory tempfile.mkdtemp returned above, by
+            # that exact path -- never a computed parent, never a glob.
+            shutil.rmtree(tmp_root, ignore_errors=True)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-10-20T04:19:24Z",
+  "updated_at": "2026-10-20T04:34:49Z",
   "updated_by": "coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -5996,7 +5996,7 @@
     "T-442": {
       "epic": "gen-9-rehearsal",
       "title": "Rehearsal hygiene: remove the sandbox by default and correct the never-fired framing",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6004,15 +6004,25 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-442.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "examples/rehearsal/run_rehearsal.py",
+        ".harness/tests/test_rehearsal.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g9-hygiene",
+        "note": "T-442 done, both acceptance points addressed, only examples/rehearsal/run_rehearsal.py and .harness/tests/test_rehearsal.py touched.\n\n(1) sandbox hygiene: run_rehearsal.py now wraps the mkdtemp sandbox in try/finally. Default run: removes it on the EXACT pathlib.Path tempfile.mkdtemp returned (no parent computation, no glob) and prints no sandbox path at all. --keep: skips the removal, prints \"sandbox: <path>\" and \"scorecard written: <path>/scorecard.json\" (unchanged from before). --json: prints a single \"scorecard-json: {...}\" line to stdout, independent of --keep. --out FILE: writes the scorecard JSON to FILE, independent of --keep. Verified by hand:\n  - python3 examples/rehearsal/run_rehearsal.py             -> no \"sandbox:\" line; count of harness-rehearsal-* dirs under the OS temp dir unchanged before/after\n  - python3 examples/rehearsal/run_rehearsal.py --json      -> one \"scorecard-json: {...}\" line; dir still removed after\n  - python3 examples/rehearsal/run_rehearsal.py --out <file> -> \"scorecard written: <file>\"; sandbox dir still removed\n  - python3 examples/rehearsal/run_rehearsal.py --keep      -> \"sandbox: <dir>\" + \"scorecard written: <dir>/scorecard.json\"; dir persists (test cleans it up by the exact printed path)\n\ntest_rehearsal.py: added a sandbox_names() helper (glob is test-side introspection only, never used by the production script itself). test_live_tree_untouched_sandbox_removed_and_scorecard_shape now runs with --json and asserts the set of harness-rehearsal-* names is unchanged before/after (no leak), then parses the scorecard-json line for the existing scorecard-shape checks. New test_keep_flag_retains_the_sandbox_for_inspection asserts --keep's printed sandbox dir and scorecard.json actually exist, then removes that one sandbox itself by the exact printed path.\n\n(2) never-fired framing: read .harness/cases/C-002.json, C-003.json and .harness/precedents/PR-061.json through PR-063.json before touching anything, per the task's own instruction not to trust the prompt. Confirmed live facts: C-002 disposed 2026-09-20 by publish PR-062 (by registro-a); C-003 disposed 2026-09-20 by publish PR-063 (by registro-a); chain PR-061 follows PR-062 follows PR-063; three DISTINCT confirmers (PR-061: verifier-gemini-2, PR-062: verifier-g8-docket, PR-063: verifier-g8-attach). Reworded the module docstring's \"WHY THIS EXISTS\" paragraph: dropped \"a case resolved by citing a published rule\" from the never-fired-on-the-real-board list (now five items, not six) and added the C-002/PR-062, C-003/PR-063 facts plus the by_citation-counts-distinguish-only caveat, naming step 6 as a replay rather than a first firing. Reworded the step-6 scorecard row's mechanism label (and touched its evidence string) to say literally that it fires in the sandbox as a replay, naming the same two live dispositions, rather than implying novelty.\n\nReplay commands:\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"\n    observed: GOAL REACHED: 'python3 -m pytest .harness/tests -q' succeeded on iteration 1/3 (85.00s)\n  git status --porcelain\n    observed: only .harness/blackboard.json, .harness/tasks/T-442.json, .harness/tests/test_rehearsal.py, examples/rehearsal/run_rehearsal.py changed; no stray files.\n\nNo tool under .harness/bin was touched. No warrant or key material was read or signed. Both file locks released after this handoff.\n",
+        "ts": "2026-10-20T04:29:44Z"
+      },
       "created_at": "2026-10-20T04:19:24Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-20T04:33:53Z",
+      "completed_by": "harness-verifier"
     },
     "T-443": {
       "epic": "gen-9-rehearsal",
       "title": "VERIFY T-442: default run leaves no sandbox, --keep keeps one, framing matches the live board",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6025,7 +6035,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-20T04:19:24Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-20T04:34:04Z",
+      "completed_by": "harness-verifier"
     }
   }
 }

@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 8,
+        "tasks_done": 9,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-10-09T04:04:09Z"
+        "last_outcome_at": "2026-10-20T04:34:04Z"
       },
       "probe-x": {
         "tasks_done": 5,
@@ -743,6 +743,11 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-10-20T04:06:51Z"
+      },
+      "worker-g9-hygiene": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-20T04:33:53Z"
       }
     }
   },
