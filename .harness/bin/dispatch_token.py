@@ -45,15 +45,15 @@ shape as `test_warrant.py`'s `TheHarnessCannotSign`.
 
 NONCES ARE NOT SINGLE-USE HERE, AND THAT IS STATED RATHER THAN HIDDEN. `verify()` is a
 pure, stateless check over a signed file on disk: it has nowhere to record "this nonce
-was already consumed" without a second piece of mutable state, and T-446 explicitly
-builds NO wiring into `blackboard.py claim` or `lock.py acquire` (that is T-454). A valid,
-unexpired token therefore verifies successfully every time it is presented within its
-window, including a second time. Replay-within-the-window is consequently an open
-question this module states and does not close; `test_dispatch_token.py` pins the
-current behaviour (a token may be presented twice and verifies both times) so a future
-change away from it is a deliberate decision, not an accidental regression. Single-use
-consumption, if the operator wants it, belongs in T-454's wiring, which has a place to
-keep the "seen nonces" state (the claim/lock call site) that this module does not.
+was already consumed" without a second piece of mutable state. A valid, unexpired token
+therefore verifies successfully every time it is presented within its window, including a
+second time; `test_dispatch_token.py` pins that. T-454 (below) puts single-use
+consumption where it belongs instead: `blackboard.py claim`'s own mutation of
+blackboard.json, which is the one call site with a place to keep "seen nonces" state
+that this module does not. `lock.py acquire` deliberately does NOT consume nonces, even
+after T-454: re-acquiring/refreshing a lock you already hold is the ordinary heartbeat
+pattern, and making the token single-use there would break the first refresh under a
+still-valid, still-correct token.
 
 WHAT THIS DOES NOT DO (unchanged from the design doc and the ruling). A token proves the
 operator authorized this `(agent_name, task_id, role)` tuple before the act existed. It
@@ -62,8 +62,14 @@ identical to W-002's own stated limit on plazas ("signed plazas bound HOW MANY s
 exist. They do not bound WHO occupies them"). Impersonation inside a token's validity
 window stays open (D-17). PR-022 clause 4 holds: nothing here attaches a consequence.
 
-NO WIRING (by design, this task). Nothing in this module is imported by `blackboard.py`
-or `lock.py`, and nothing here changes their behaviour. That wiring is T-454.
+WIRING (T-454). `blackboard.py claim` and `lock.py acquire` now import this module and
+call `epic_requires_token()` / `verify()` as an OPTIONAL, ADDITIVE check: unchanged
+behaviour unless the epic in question carries a signed requirement. The requirement
+itself lives INSIDE the epic's own signed token-set payload (`"required": true`, part of
+the same signed bytes as the tokens -- see `draft()`'s `required` parameter and
+`epic_requires_token()` below), not as a second, separately-signed record: one signed
+artifact per epic stays the only thing the operator mints for this whole mechanism, and a
+second record would need its own reconciliation against whichever token set it modifies.
 """
 
 from __future__ import annotations
@@ -82,7 +88,8 @@ NAMESPACE = "harness-dispatch-token"   # distinct from warrant.NAMESPACE and att
 SCHEMA_VERSION = 1
 DEFAULT_TTL_SECONDS = 24 * 3600        # one dispatch window; overridable per draft or per token
 
-PUBLIC_API = ("resolve_root", "token_sets_dir", "draft", "verify_token_set", "verify")
+PUBLIC_API = ("resolve_root", "token_sets_dir", "draft", "verify_token_set",
+             "epic_requires_token", "verify")
 
 TrustError = w.TrustError              # same exception family as warrant.py; no new vocabulary
 
@@ -157,10 +164,16 @@ def _parse_dispatch(spec: str):
     return agent_name, task_id, role, ttl_override
 
 
-def draft(root, epic, dispatch_specs, ttl_seconds=DEFAULT_TTL_SECONDS) -> dict:
+def draft(root, epic, dispatch_specs, ttl_seconds=DEFAULT_TTL_SECONDS, required=False) -> dict:
     """Write an UNSIGNED dispatch-token-set payload for one epic and return the exact
     command the operator runs. No sibling function in this module can sign; see the
     module docstring. Mirrors warrant.py's draft() in shape on purpose.
+
+    `required` (T-454): True means the operator is drafting this set as the epic's own
+    requirement -- once SIGNED, `epic_requires_token()` reports this epic needs a token
+    for every claim/lock-acquire. False (default) drafts an ordinary, non-mandatory set:
+    tokens still verify normally if presented, but nothing is refused for lacking one.
+    The flag is part of the signed payload, so an agent cannot flip it after the fact.
     """
     if not dispatch_specs:
         raise ValueError("draft needs at least one agent_name:task_id:role dispatch spec")
@@ -190,6 +203,7 @@ def draft(root, epic, dispatch_specs, ttl_seconds=DEFAULT_TTL_SECONDS) -> dict:
         "token_set_id": dtid,
         "schema_version": SCHEMA_VERSION,
         "epic": epic,
+        "required": bool(required),
         "issued_at": issued_at,
         "tokens": tokens,
         "namespace": NAMESPACE,
@@ -288,6 +302,35 @@ def verify_token_set(root, dtid) -> dict:
             "payload": payload}
 
 
+def epic_requires_token(root, epic) -> bool:
+    """T-454: the single gate `blackboard.py claim` and `lock.py acquire` consult before
+    ever asking a caller for a token. True iff some SIGNED, VERIFIED token set for `epic`
+    carries `"required": true`. An unsigned draft, a set for a different epic, a set
+    signed by the wrong key, or (the common case today) an un-enrolled harness with no
+    `dispatch_tokens/` directory at all never makes an epic requirement true -- each of
+    those fails the verification below and is skipped rather than raised, so a caller
+    with no token sets on disk gets a fast `False` with no subprocess call at all (the
+    "no flag day" property T-454's acceptance criteria name).
+    """
+    td = token_sets_dir(root)
+    if not td.exists():
+        return False
+    for path in sorted(td.glob("DT-*.json")):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if raw.get("epic") != epic or not raw.get("required"):
+            continue
+        dtid = raw.get("token_set_id") or path.stem
+        try:
+            verify_token_set(root, dtid)
+        except TrustError:
+            continue
+        return True
+    return False
+
+
 def verify(root, presented, claim_agent=None, claim_task=None, claim_role=None) -> dict:
     """Verify one PRESENTED token against the enrolled root, its own expiry, and
     (optionally) that it was presented under the (agent_name, task_id, role) it actually
@@ -330,6 +373,23 @@ def verify(root, presented, claim_agent=None, claim_task=None, claim_role=None) 
                 "nonce. The signature covers the whole epic file; a presented token that "
                 "diverges from it was altered after minting.")
 
+    # Option 6a (ruling 2026-10-21): "From that moment every token for that name is
+    # refused, expired or not." Checked BEFORE the expiry check below so a revoked name
+    # is always refused as REVOKED, never incidentally masked by an expiry message --
+    # and checked regardless of whether the token has expired, which is the whole point.
+    # revoke.py is imported locally: it has no reason to be on this module's import
+    # path for callers who never revoke anything, and it keeps this file's shared
+    # import block untouched while T-454 wires this same module elsewhere.
+    import revoke as rv
+    revoked = rv.is_revoked(root, canonical["agent_name"])
+    if revoked is not None:
+        reason_suffix = f" reason={revoked['reason']!r}" if revoked.get("reason") else ""
+        raise TrustError(
+            f"REVOKED NAME: {canonical['agent_name']} was revoked by operator order "
+            f"({revoked['revocation_id']}, {revoked['issued_at']}); every token for "
+            "this name is refused from that moment, expired or not (ruling "
+            f"2026-10-21, option 6a).{reason_suffix}")
+
     expired = hc.now_iso() > canonical["expiry"]
     if expired:
         raise TrustError(f"token expired at {canonical['expiry']} "
@@ -368,6 +428,10 @@ def main(argv=None) -> int:
     d.add_argument("--ttl-seconds", type=int, default=DEFAULT_TTL_SECONDS,
                    help=f"default per-token TTL if not overridden in --dispatch "
                         f"(default {DEFAULT_TTL_SECONDS})")
+    d.add_argument("--required", action="store_true", default=False,
+                   help="T-454: once this set is SIGNED, claim/lock-acquire for this "
+                        "epic refuse without a verifying token. Omit for an ordinary, "
+                        "non-mandatory set.")
 
     v = sub.add_parser("verify", help="verify one presented token against the signed set")
     v.add_argument("--token-file", required=True,
@@ -382,7 +446,7 @@ def main(argv=None) -> int:
     root = resolve_root(args.root)
     try:
         if args.cmd == "draft":
-            out = draft(root, args.epic, args.dispatch, args.ttl_seconds)
+            out = draft(root, args.epic, args.dispatch, args.ttl_seconds, args.required)
             print(json.dumps(out, indent=2, ensure_ascii=False))
         elif args.cmd == "verify":
             presented = json.loads(

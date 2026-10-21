@@ -8,5 +8,11 @@
   "context_files": [
     ".harness/operator-rulings-2026-10-21.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T21:47:35Z",
+      "agent": "verifier-g10-wire",
+      "note": "T-455 IS the verification task for T-454 (P-022, role=verifier, created_by=coordinator != verifier-g10-wire). Evidence recorded on T-454's own note by verifier-g10-wire: full suite replayed green via goal_mode (111.24s, iter 1/3) plus both test files individually; own throwaway-tree replay of claim/lock.py acquire with and without a signed per-epic requirement; a token minted for worker-b presented as worker-mallory refused with IDENTITY MISMATCH on both claim and lock.py acquire; claim's nonce confirmed single-use, lock.py's confirmed non-single-use (refresh works); two mutants of the match check built independently (flipped comparison -> 6 tests fail; the dispatch-named 'trust a key named inside the file' mutant -> caught by the pre-existing T-447 regression test, baseline passes/mutant fails); one additional mutant (narrowed match tuple to agent-only) found a real test-coverage gap -- not a code defect, since the shipped comparison is the full (agent,task,role) tuple, confirmed by reading dispatch_token.py directly -- flagged as a follow-up test to add before any live epic sets required:true. T-454 marked done."
+    }
+  ]
 }

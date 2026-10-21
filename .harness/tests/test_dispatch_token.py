@@ -271,12 +271,14 @@ class EpicGrain(GateCase):
 
 
 # ---------------------------------------------------------------------------------
-# No wiring: this task touches no claim/lock behaviour, and the import graph proves it.
+# Wiring: T-454 wires this module into blackboard.py claim and lock.py acquire, as an
+# optional, additive check. This supersedes T-446's NoWiring pin, which correctly
+# described the state before T-454 existed -- the import graph now proves the opposite.
 # ---------------------------------------------------------------------------------
 
-class NoWiring(GateCase):
+class Wiring(GateCase):
 
-    def test_blackboard_and_lock_do_not_import_dispatch_token(self):
+    def test_blackboard_and_lock_import_dispatch_token(self):
         import ast
         for name in ("blackboard.py", "lock.py"):
             src = (BIN_DIR / name).read_text(encoding="utf-8")
@@ -286,8 +288,53 @@ class NoWiring(GateCase):
                     imported.update(a.name.split(".")[0] for a in node.names)
                 elif isinstance(node, ast.ImportFrom) and node.module:
                     imported.add(node.module.split(".")[0])
-            self.assertNotIn("dispatch_token", imported,
-                             f"{name} must not import dispatch_token; wiring is T-454")
+            self.assertIn("dispatch_token", imported,
+                         f"{name} must import dispatch_token (T-454 wiring)")
+
+
+# ---------------------------------------------------------------------------------
+# epic_requires_token / required: the field T-454 reads to decide whether an epic's
+# claim/lock-acquire calls may proceed without a token at all. Lives INSIDE the epic's
+# own signed token-set payload rather than a second, separately-signed record (T-454's
+# design choice, recorded in blackboard.py's and lock.py's own gate docstrings).
+# ---------------------------------------------------------------------------------
+
+class EpicRequirement(GateCase):
+
+    def test_no_token_sets_at_all_does_not_require_a_token(self):
+        self.enroll()
+        self.assertFalse(dt.epic_requires_token(self.root, "e-1"))
+
+    def test_an_unsigned_required_draft_does_not_require_a_token(self):
+        self.enroll()
+        dt.draft(self.root, "e-1", ["worker-a:T-432:worker"], required=True)
+        self.assertFalse(dt.epic_requires_token(self.root, "e-1"),
+                         "an unsigned draft must never make an epic require a token")
+
+    def test_required_defaults_to_false(self):
+        dtid, payload = self.full_set(epic="e-1")
+        self.assertFalse(payload.get("required"))
+        self.assertFalse(dt.epic_requires_token(self.root, "e-1"))
+
+    def test_a_signed_required_set_makes_its_own_epic_require_a_token(self):
+        self.enroll()
+        d = dt.draft(self.root, "e-1", ["worker-a:T-432:worker"], required=True)
+        root_sign(pathlib.Path(d["path"]), self.root_key)
+        self.assertTrue(dt.epic_requires_token(self.root, "e-1"))
+
+    def test_a_signed_required_set_does_not_affect_a_different_epic(self):
+        self.enroll()
+        d = dt.draft(self.root, "e-1", ["worker-a:T-432:worker"], required=True)
+        root_sign(pathlib.Path(d["path"]), self.root_key)
+        self.assertFalse(dt.epic_requires_token(self.root, "e-2"))
+
+    def test_a_required_set_signed_by_the_wrong_key_does_not_count(self):
+        self.enroll()
+        d = dt.draft(self.root, "e-1", ["worker-a:T-432:worker"], required=True)
+        evil = self.keys / "evil-required"
+        keygen(evil, "mallory")
+        root_sign(pathlib.Path(d["path"]), evil)
+        self.assertFalse(dt.epic_requires_token(self.root, "e-1"))
 
 
 class LiveStoreIsolation(GateCase):

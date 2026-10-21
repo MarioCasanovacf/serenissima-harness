@@ -27,10 +27,12 @@ carries --agent/--holder) never errors out on these two read-only/janitor
 subcommands. Bare `status`/`sweep` (no --agent) are byte-for-byte unchanged.
 """
 import argparse
+import json
 import sys
 from pathlib import Path
 
 import harness_common as hc
+import dispatch_token as dtok
 
 
 def _normalized_log_path(p):
@@ -43,7 +45,64 @@ def _normalized_log_path(p):
         return str(p)
 
 
+def _task_epic_and_role(task_id):
+    """Read-only lookup of a task's epic/role from the board, for the dispatch-token
+    gate below. lock.py never writes blackboard.json -- that is blackboard.py's sole
+    job -- so this is a plain read, exactly as uninvolved in the write path as any
+    other read-only probe in this file."""
+    if not task_id:
+        return None, None
+    bb = hc.read_json(hc.BLACKBOARD) or {}
+    t = bb.get("tasks", {}).get(task_id)
+    if not t:
+        return None, None
+    return t.get("epic"), t.get("role")
+
+
+def _dispatch_token_gate(epic, agent, task_id, role, token_file):
+    """T-454: optional, additive dispatch-token check for `acquire`, mirroring
+    blackboard.py claim's gate with ONE deliberate difference: this function NEVER
+    consumes a nonce. Re-acquiring/refreshing a lock you already hold is the ordinary
+    heartbeat pattern this module exists to support (see module docstring); making the
+    token single-use here would refuse the very first refresh under an otherwise
+    still-valid, still-correct token. Single-use consumption, where it happens at all,
+    lives in blackboard.py claim's own gate instead.
+
+    Behavior is UNCHANGED from before this task when the epic carries no
+    operator-signed requirement (dispatch_token.epic_requires_token) and no
+    --token-file was given -- including when --task is omitted or names a task this
+    board does not know, since then no epic can be resolved at all.
+
+    Returns None on success (proceed exactly as before); a refusal string otherwise.
+    """
+    root = dtok.resolve_root(None)
+    presented = None
+    if token_file:
+        try:
+            presented = json.loads(Path(token_file).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return "cannot read --token-file {!r}: {}".format(token_file, exc)
+    if presented is None:
+        if epic and dtok.epic_requires_token(root, epic):
+            return ("dispatch token required for epic {!r} (operator-signed "
+                    "requirement); supply --token-file".format(epic))
+        return None
+    try:
+        dtok.verify(root, presented, claim_agent=agent, claim_task=task_id, claim_role=role)
+    except dtok.TrustError as exc:
+        return "dispatch token refused: {}".format(exc)
+    return None
+
+
 def acquire(args):
+    epic, role = _task_epic_and_role(args.task)
+    refusal = _dispatch_token_gate(epic, args.holder, args.task, role,
+                                   getattr(args, "token_file", None))
+    if refusal:
+        hc.log_event("dispatch_token_gate_refused", path=_normalized_log_path(args.path),
+                     holder=args.holder, task=args.task, epic=epic, reason=refusal)
+        print("refused: {}".format(refusal))
+        return 1
     name = hc.lock_name_for(args.path)
     if name is None:
         print("refused: '{}' is outside the workspace root {}".format(args.path, hc.ROOT))
@@ -176,6 +235,12 @@ def main(argv):
     p_acq.add_argument("--holder", default=hc.agent_id())
     p_acq.add_argument("--task", default=None)
     p_acq.add_argument("--ttl", type=int, default=hc.limit("lock_ttl_seconds_default", 900))
+    p_acq.add_argument("--token-file", dest="token_file", default=None,
+                       help="T-454: path to a JSON file holding a presented dispatch "
+                            "token (dispatch_token.py). Checked whenever given; "
+                            "REQUIRED only if --task's epic carries an operator-signed "
+                            "requirement. Never consumes the token's nonce (refreshing "
+                            "a lock you already hold must keep working).")
     p_acq.set_defaults(func=acquire)
 
     p_rel = sub.add_parser("release", help="release a write lock you hold")

@@ -8,5 +8,11 @@
   "context_files": [
     ".harness/operator-rulings-2026-10-21.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T21:40:30Z",
+      "agent": "verifier-g10-revoke",
+      "note": "T-457 is the verify step itself (role=verifier, P-022 straight-to-done, created_by=coordinator != verifier-g10-revoke). Verdict: T-456 ACCEPTED and marked done. Evidence: (a) replayed python3 -m pytest .harness/tests/test_revoke.py .harness/tests/test_dispatch_token.py .harness/tests/test_roster.py .harness/tests/test_warrant.py -q -> 150 passed; (b) full suite via goal_mode -> GOAL REACHED iteration 2/3 after one transient test_rehearsal.py live-tree failure caused by concurrent T-454 lock activity on dispatch_token.py (expected per protocol, re-run cleared it); (c) independent manual CLI replay (not pytest) with a throwaway root in /tmp proving both halves of the falsifier: agent-signed revocation refused (exit 2, SIGNATURE DOES NOT VERIFY) while the live token kept verifying, then operator-signed revocation applied and the SAME previously-valid unexpired token was refused with REVOKED NAME ... expired or not; roster/revoke.py list showed the name revoked; (d) cognitive-diversity mutant beyond the ones named in the handoff: patched a throwaway copy of revoke.py so a key named inside the revocation payload itself (trusted_signer_pubkey) bypassed the fingerprint cross-check in _verify_file_signature -- test_a_revocation_that_names_its_own_signer_as_trusted_is_still_refused caught it (1 failed, 18 passed), confirming the suite detects exactly this exploit shape. Mutants only ever run in throwaway copies under /tmp, never the working tree; live .harness/revocations never created; git status --porcelain .harness/ clean of revocation artifacts. Housekeeping: lock.py status/sweep both clean (0 active, 0 expired swept) before and after."
+    }
+  ]
 }

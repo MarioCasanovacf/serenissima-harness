@@ -70,7 +70,7 @@ PLAZA_MAX = 64          # a bound on accident, not on an adversary; see docstrin
 SCHEMA_VERSION = 1
 
 PUBLIC_API = ("resolve_root", "load", "charter", "plazas", "issue",
-              "eligible_report", "norm")
+              "eligible_report", "revoked_report", "norm")
 
 
 # ------------------------------------------------------------------ root resolution
@@ -397,8 +397,27 @@ def eligible_report(record_id: str, root=None) -> dict:
 
 # ------------------------------------------------------------------------------- cli
 
-def _render_roster(data: dict, epic) -> None:
+def revoked_report(root) -> dict:
+    """Which issued names carry a verified revocation (option 6a, ruling 2026-10-21).
+
+    REPORT ONLY, same posture as `eligible_report`: nothing here is gated beyond
+    `dispatch_token.verify` refusing a revoked name's tokens (that refusal lives in
+    dispatch_token.py, not here). Lazy import, same reason `require_warrant` imports
+    warrant.py lazily: revoke.py imports warrant.py, and a module-level import here
+    would make this module depend on the revocation surface even when nothing has ever
+    been revoked. Never raises: an absent or empty `revocations/` directory simply
+    reports no revoked names, the same as an un-enrolled harness reports bookkeeping-only.
+    """
+    try:
+        import revoke
+        return revoke.revoked_names(root)
+    except Exception:
+        return {}
+
+
+def _render_roster(data: dict, epic, root=None) -> None:
     want = norm(epic) if epic else None
+    revoked = revoked_report(root) if root is not None else {}
     print("COLEGIADOS")
     if not data["colegiados"]:
         print("  (ninguno declarado)")
@@ -420,11 +439,16 @@ def _render_roster(data: dict, epic) -> None:
     if not rows:
         print("  (ninguno)")
     for n, v in rows:
-        print(f"  {n:22s} {v['colegiado']}/{v['role']:12s} {v['epic']}")
+        tag = ""
+        if n in revoked:
+            tag = f"  [REVOCADO {revoked[n]['revocation_id']}]"
+        print(f"  {n:22s} {v['colegiado']}/{v['role']:12s} {v['epic']}{tag}")
         if v["persona"]:
             print(f"    {v['persona']}")
     print("\nEste padron es contabilidad, no compuerta: la identidad sigue siendo")
     print("autoafirmada y PR-023 sigue vigente. Ver el docstring del modulo.")
+    print("REVOCADO es un reporte (opcion 6a, fallo del operador 2026-10-21): no cierra")
+    print("nada aqui, solo dispatch_token.verify rechaza los tokens de ese nombre.")
 
 
 def main(argv=None) -> int:
@@ -478,9 +502,16 @@ def main(argv=None) -> int:
         elif a.cmd == "roster":
             data = load(root)
             if a.json:
-                print(json.dumps(data, indent=2, ensure_ascii=False))
+                revoked = revoked_report(root)
+                out = dict(data)
+                out["names"] = {
+                    n: {**v, "revoked": (n in revoked),
+                        **({"revocation": revoked[n]} if n in revoked else {})}
+                    for n, v in data["names"].items()
+                }
+                print(json.dumps(out, indent=2, ensure_ascii=False))
             else:
-                _render_roster(data, a.epic)
+                _render_roster(data, a.epic, root)
         elif a.cmd == "eligible":
             out = eligible_report(a.record, root)
             if a.json:

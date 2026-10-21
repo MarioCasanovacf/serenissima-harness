@@ -71,6 +71,7 @@ import sys
 from pathlib import Path
 
 import harness_common as hc
+import dispatch_token as dtok
 
 VALID_STATUS = ["open", "claimed", "in_progress", "blocked", "review", "done", "failed"]
 VALID_ROLES = ["thinker", "worker", "verifier"]
@@ -587,6 +588,57 @@ def cmd_show(args):
     return 0
 
 
+def _dispatch_token_gate(bb, epic, agent, task_id, role, token_file):
+    """T-454: optional, additive dispatch-token check for `claim`. Behavior is
+    UNCHANGED from before this task when the epic carries no operator-signed
+    requirement (dispatch_token.epic_requires_token) and no --token-file was given --
+    that is the "no flag day" clause in T-454's acceptance criteria.
+
+    Design choice recorded here rather than re-litigated at the call site: the
+    requirement lives INSIDE the epic's own signed dispatch-token set
+    (`"required": true`, part of the same signed bytes as the tokens themselves --
+    see dispatch_token.draft()'s `required` parameter), not as a second,
+    separately-signed record. One signed artifact per epic stays the only thing the
+    operator mints for T-432's whole mechanism.
+
+    Nonce decision for THIS call site (claim): single-use. A claim is a one-shot
+    transition (open/review -> claimed) for one (agent, task, role); dispatch_token.py
+    itself keeps no consumption state by design (see its module docstring), so this
+    function records "token_set_id, nonce" pairs it has consumed into `bb`'s own
+    "used_dispatch_nonces" list -- the caller's existing `with hc.guarded(): ... save_bb`
+    cycle persists it atomically with the claim itself, with no second lock. lock.py
+    acquire deliberately makes the OPPOSITE choice (never consumes); see its own gate.
+
+    Returns None on success (proceed exactly as before); a refusal string otherwise.
+    """
+    root = dtok.resolve_root(None)
+    presented = None
+    if token_file:
+        try:
+            presented = json.loads(Path(token_file).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return "cannot read --token-file {!r}: {}".format(token_file, exc)
+    if presented is None:
+        if epic and dtok.epic_requires_token(root, epic):
+            return ("dispatch token required for epic {!r} (operator-signed "
+                    "requirement); supply --token-file".format(epic))
+        return None
+    try:
+        verified = dtok.verify(root, presented, claim_agent=agent, claim_task=task_id,
+                               claim_role=role)
+    except dtok.TrustError as exc:
+        return "dispatch token refused: {}".format(exc)
+    used = bb.setdefault("used_dispatch_nonces", [])
+    key = [verified["token_set_id"], presented.get("nonce")]
+    if key in used:
+        return ("dispatch token already used for a claim (single-use at this call "
+                "site; dispatch_token.py itself keeps no consumption state): "
+                "token_set={} nonce={}".format(verified["token_set_id"],
+                                               presented.get("nonce")))
+    used.append(key)
+    return None
+
+
 def cmd_claim(args):
     with hc.guarded():
         bb = load_bb()
@@ -604,6 +656,12 @@ def cmd_claim(args):
         if t.get("status") not in ("open", "review"):
             extra = " (claimed_by={})".format(t.get("claimed_by")) if t.get("claimed_by") else ""
             sys.exit("refused: {} is '{}'{} — not claimable.".format(args.task_id, t.get("status"), extra))
+        refusal = _dispatch_token_gate(bb, t.get("epic"), args.agent, args.task_id,
+                                       t.get("role"), getattr(args, "token_file", None))
+        if refusal:
+            hc.log_event("dispatch_token_gate_refused", task=args.task_id, agent=args.agent,
+                         epic=t.get("epic"), reason=refusal)
+            sys.exit("refused: {}".format(refusal))
         lease = args.lease if args.lease is not None else default_lease()
         previous_status = t.get("status")
         t["status"] = "claimed"
@@ -1363,6 +1421,12 @@ def main(argv):
     p_claim = sub.add_parser("claim", parents=[common], help="claim a task (refused if dependencies unmet)")
     p_claim.add_argument("task_id")
     p_claim.add_argument("--lease", type=int, default=None, help="seconds (default from state.json)")
+    p_claim.add_argument("--token-file", dest="token_file", default=None,
+                         help="T-454: path to a JSON file holding a presented dispatch "
+                              "token's own fields (dispatch_token.py). Checked whenever "
+                              "given; REQUIRED only if the task's epic carries an "
+                              "operator-signed requirement (dispatch_token.epic_requires_token). "
+                              "Consumed single-use on success.")
     p_claim.set_defaults(func=cmd_claim)
 
     p_upd = sub.add_parser("update", parents=[common], help="update status / add note / register artifact")
