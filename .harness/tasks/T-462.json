@@ -1,0 +1,16 @@
+{
+  "id": "T-462",
+  "title": "warrant.py prose that contradicts its own behavior: the audit exit comment and 'trust/ is untracked'",
+  "description": "Found by the T-451 verifier and the coordinator on 2026-10-21. Prose-only correction; behavior unchanged.",
+  "acceptance_criteria": [
+    "In warrant.py audit(), the comment saying the exit stays 0 when no --expect is given is false since T-450 (main returns EXIT_AUDIT_UNVERIFIED, 5). Correct it to state the real exit code.",
+    "warrant.py says in several places that trust/ is untracked by git (in reconcile's note, audit's docstring and audit's removed-root message). Since 2026-08-17 its public material is tracked (CLAUDE.md, T-428 correction; a comment near the end of audit already says so). Correct each to the true statement: tracked, yet writable by every agent, so the working-tree copy can still be overwritten before the next commit. Check the reconcile note's own 'Exit stays 0' claim against what reconcile actually returns un-enrolled and correct it only if false.",
+    "Search the rest of .harness/bin for the same 'untracked' claim about trust/ and correct each the same way, unless the file is locked by another task (then list it).",
+    "No behavior change: the full suite passes unchanged via goal_mode, and any test that pinned the old wording is updated to the new wording. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/bin/warrant.py",
+    "CLAUDE.md"
+  ],
+  "notes": []
+}

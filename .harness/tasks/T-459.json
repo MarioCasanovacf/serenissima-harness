@@ -8,5 +8,11 @@
   "context_files": [
     ".harness/operator-rulings-2026-10-21.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T21:26:28Z",
+      "agent": "verifier-g10-close-3",
+      "note": "T-459 is the verification step itself (role=verifier, created_by=coordinator, this agent\nverifier-g10-close-3 differs -> P-022 direct-to-done, no handoff needed). The work this task\ndescribes was performed and is recorded on T-458's note at this same timestamp: replayed AC1\n(act with no event reported anomalous, including the missing-events.jsonl-file edge case),\nreplayed AC2 (20 duplicate events + a second real act do not hide or invent anomalies), and AC3\n(mutated the comparison in a throwaway copy outside the tree and confirmed a test fails) --\nboth the producer's own mutant (coarse dedup key, ident=name-only at _signed_event_keys) and an\nindependent mutant of my own at a different code location (the match/anomalous comparison in\nimp6_check, matching on name alone instead of (name,seq)), both caught. Full suite green:\npytest .harness/tests/test_close_checks.py -q -> 18 passed; goal_mode full suite -> GOAL REACHED\niteration 1/3, exit 0. See T-458's done note for the complete replay transcript. Closing T-459 as\ndone; no code edited by this agent.\n"
+    }
+  ]
 }

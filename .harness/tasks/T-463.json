@@ -1,0 +1,13 @@
+{
+  "id": "T-463",
+  "title": "VERIFY T-462: warrant.py prose matches behavior",
+  "description": "A different agent verdicts T-462.",
+  "acceptance_criteria": [
+    "Grep .harness/bin for 'untracked' near trust/ and for 'Exit stays 0'; each remaining hit must be true, checked by running the matching command on a throwaway root. git diff shows prose-only changes in code files. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/bin/warrant.py",
+    "CLAUDE.md"
+  ],
+  "notes": []
+}
