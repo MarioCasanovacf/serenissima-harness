@@ -1,0 +1,12 @@
+{
+  "id": "T-459",
+  "title": "VERIFY T-458: an act written outside the verb is reported",
+  "description": "A different agent verdicts T-458.",
+  "acceptance_criteria": [
+    "In a temporary copy, write an act file directly with no event; the check must report it. Confirm duplicates in the event log do not hide or invent anomalies. Mutate the comparison and confirm a test fails. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md"
+  ],
+  "notes": []
+}

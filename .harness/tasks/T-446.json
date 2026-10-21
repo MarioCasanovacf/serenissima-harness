@@ -1,0 +1,19 @@
+{
+  "id": "T-446",
+  "title": "Dispatch tokens: format, draft and verify, signed by the operator's root (decision 1, option 5)",
+  "description": "First build task of the identity design the operator ratified on 2026-10-21. Tokens only; no wiring.",
+  "acceptance_criteria": [
+    "A new tool, .harness/bin/token.py (another name only if it collides; justify), with at least: draft, which any agent may run and which emits an UNSIGNED token set for one epic, one token per (agent_name, task_id, role, issued_at, expiry, nonce), and prints the exact ssh-keygen -Y sign command the operator runs, mirroring warrant.py draft; and verify, which checks a presented token against the enrolled root (.harness/trust/root.pub), its expiry, and that the presented (agent, task, role) match.",
+    "The signature is an SSH signature by the operator's root key with a namespace distinct from warrants'. Never an HMAC or any shared secret: under D-17 every agent could read it. A test asserts that no code path in the module can sign, the same shape as warrant.py's.",
+    "Grain: one signed file per epic carrying that epic's tokens (ruling 2026-10-21). A token is valid only if its epic file's signature verifies against the enrolled root.",
+    "Falsifier tests from the design, using a throwaway root in a temporary directory: a valid token is accepted; a tampered agent_name is refused; an expired token is refused; a token for (worker-a, T-999, worker) presented as worker-b is refused; a set signed by a key that is not the enrolled root is refused. State whether nonces are single-use and test whichever you choose.",
+    "No wiring into blackboard.py or lock.py (that is T-454) and no change to any existing behavior. Do not edit CLAUDE.md. The suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-432-agent-identity.md",
+    ".harness/bin/warrant.py",
+    ".harness/tests/test_warrant.py"
+  ],
+  "notes": []
+}

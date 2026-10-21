@@ -1,0 +1,18 @@
+{
+  "id": "T-450",
+  "title": "Notary part b: warrant.py audit fails without the operator's fingerprint (decision 4)",
+  "description": "Proposed by track 2 on 2026-08-16 and ratified on 2026-10-21. Today audit without --expect exits 0 and only marks itself UNVERIFIED in its JSON.",
+  "acceptance_criteria": [
+    "warrant.py audit without --expect still prints its report marked UNVERIFIED, and exits with a distinct, documented nonzero code. With a matching --expect it exits 0; with a mismatching one it fails as today.",
+    "Every caller in the repository that relied on exit 0 is found and adjusted: tests, scripts, skills and documentation examples. If a caller sits in a file another task holds a lock on, do not edit it; list it in the handoff.",
+    "A test pins each of the three cases.",
+    "The tool's help or the operator documentation states the operator's manual step: keep the root fingerprint outside the working tree by signing one git tag that carries it, with the exact command. The task never runs it and never signs anything.",
+    "Do not edit CLAUDE.md. The suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/bin/warrant.py",
+    ".harness/tests/test_warrant.py"
+  ],
+  "notes": []
+}

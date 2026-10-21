@@ -1,0 +1,18 @@
+{
+  "id": "T-448",
+  "title": "Notary part a: the retract verb as designed in T-406 (decision 4)",
+  "description": "Build exactly the handoff list of .harness/design-T-406-retraction.md. The live retraction of the 2026-08-17 false verdict is T-460, not this task.",
+  "acceptance_criteria": [
+    "RETRACT_KIND = 'retract' is unprivileged and needs no intent.",
+    "retract(root, name, key_path, target_seq, reason) signs an act whose body carries retracts (digest), retracts_seq and a non-empty reason; a blank reason is refused. The attest.py CLI exposes it.",
+    "retractions(root, name) maps digest to retracting act, computed on read; trace and verify_name consult it; chain renders it inline.",
+    "Tests: the refusals the design lists; backward resolution; the D-17 limit pinned by a stolen-key forgery of a retraction; PR-022 clause 4 pinned by an output-shape guard showing no counter, weight or gate reads the retraction fields; and the acceptance case replayed on a fixture chain in a temporary directory, never on the live registry.",
+    "Append-only: no act is removed or rewritten. Do not edit CLAUDE.md. The suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-406-retraction.md",
+    ".harness/bin/attest.py"
+  ],
+  "notes": []
+}

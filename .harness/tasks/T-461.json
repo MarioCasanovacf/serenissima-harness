@@ -1,0 +1,12 @@
+{
+  "id": "T-461",
+  "title": "VERIFY T-460: the live retraction",
+  "description": "A different agent verdicts T-460.",
+  "acceptance_criteria": [
+    "Confirm the earlier act files are byte-identical to the last commit, the retraction verifies, and every reporting tool shows it. Verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md"
+  ],
+  "notes": []
+}

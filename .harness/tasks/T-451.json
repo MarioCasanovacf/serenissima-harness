@@ -1,0 +1,15 @@
+{
+  "id": "T-451",
+  "title": "VERIFY T-450: an unverified audit can no longer pass",
+  "description": "A different agent verdicts T-450.",
+  "acceptance_criteria": [
+    "Run audit with no --expect, a matching one and a mismatching one; record exit codes.",
+    "Grep the whole repository for callers of warrant.py audit and confirm none still treats exit 0 as verified.",
+    "In a throwaway copy, make audit return 0 when UNVERIFIED: a test must fail. Run the full suite via goal_mode, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/bin/warrant.py"
+  ],
+  "notes": []
+}

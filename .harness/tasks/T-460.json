@@ -1,0 +1,15 @@
+{
+  "id": "T-460",
+  "title": "Retract the false verdict of 2026-08-17 on the live registry",
+  "description": "Decision 4a, after the verb is verified. revision-doctrina seq 1, kind verdict, ref T-376.",
+  "acceptance_criteria": [
+    "The retraction is signed under revision-doctrina with a reason that names the error.",
+    "trace, verify and chain on the live registry report seq 1 together with its retraction. No act file is removed or rewritten.",
+    "Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-406-retraction.md"
+  ],
+  "notes": []
+}

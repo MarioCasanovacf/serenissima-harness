@@ -1,0 +1,16 @@
+{
+  "id": "T-453",
+  "title": "VERIFY T-452: attack the courts design and its three proposed numbers",
+  "description": "A different agent verdicts T-452.",
+  "acceptance_criteria": [
+    "Check every precedent citation against its record file.",
+    "Run the four attacks against the design and try one more of your own.",
+    "Check that the three proposed numbers have reasons and units that make sense for ephemeral agents, and that nothing in the design is signed by anyone but the operator.",
+    "Verdict done or send back with the exact failures."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-436-contracts.md"
+  ],
+  "notes": []
+}

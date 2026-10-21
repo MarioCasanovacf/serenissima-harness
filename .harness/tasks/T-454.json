@@ -1,0 +1,17 @@
+{
+  "id": "T-454",
+  "title": "Wire dispatch tokens into claim and lock as an optional, additive check",
+  "description": "Design T-432, first worker task 2. No flag day: behavior is unchanged when no token is required.",
+  "acceptance_criteria": [
+    "blackboard.py claim and lock.py acquire accept a token and verify it with token.py; a mismatch between token and the acting agent, task or role is refused.",
+    "Tokens are required only when the operator has signed a requirement for that epic; otherwise nothing changes. A test pins both cases.",
+    "The suite passes via goal_mode. Do not edit CLAUDE.md. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-432-agent-identity.md",
+    ".harness/bin/blackboard.py",
+    ".harness/bin/lock.py"
+  ],
+  "notes": []
+}

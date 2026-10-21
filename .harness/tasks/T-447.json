@@ -1,0 +1,16 @@
+{
+  "id": "T-447",
+  "title": "VERIFY T-446: forge, tamper and expire tokens; no signing path",
+  "description": "A different agent verdicts T-446.",
+  "acceptance_criteria": [
+    "Replay every falsifier. Generate a key as an agent would and try to sign a token set with it: verify must refuse.",
+    "Read the module for any path that signs, holds a shared secret, or trusts a key named inside the token file instead of the enrolled root.",
+    "In throwaway copies: skip the expiry check; skip the agent match; verify against any key the file names. Each mutant must make at least one test fail.",
+    "Run the full suite via goal_mode, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-432-agent-identity.md"
+  ],
+  "notes": []
+}

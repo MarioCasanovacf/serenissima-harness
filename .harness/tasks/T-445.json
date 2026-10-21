@@ -1,0 +1,16 @@
+{
+  "id": "T-445",
+  "title": "VERIFY T-444: replay under the rehearsal root, raw evidence, 3 mutants, live tree untouched",
+  "description": "A different agent verdicts T-444.",
+  "acceptance_criteria": [
+    "Replay from clean and open the raw sandbox evidence (with --keep) for every newly fired row; the tool must have written it.",
+    "In throwaway copies, never the working tree: neuter attest.py forks to return nothing; remove the delegation ceiling check so a use beyond it succeeds; stop distinguish from recording a disposal. Each time the matching row must stop reporting fired.",
+    "Grep the script and test for any read of the operator's root key or of live private key material; confirm a rehearsal warrant fails verification in a scratch copy of the live tree; confirm git status and the .harness manifest are unchanged after a run.",
+    "Run the full suite via goal_mode, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    "examples/rehearsal/run_rehearsal.py"
+  ],
+  "notes": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "T-455",
+  "title": "VERIFY T-454: token-gated claim and lock",
+  "description": "A different agent verdicts T-454.",
+  "acceptance_criteria": [
+    "Replay with and without a signed requirement; try a token for another agent; mutate the match check in a throwaway copy and confirm a test fails. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md"
+  ],
+  "notes": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "T-457",
+  "title": "VERIFY T-456: revocation refuses live tokens and only the operator can revoke",
+  "description": "A different agent verdicts T-456.",
+  "acceptance_criteria": [
+    "Replay the falsifier; try to revoke with an agent-generated key; mutate the revocation check in a throwaway copy and confirm a test fails. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md"
+  ],
+  "notes": []
+}

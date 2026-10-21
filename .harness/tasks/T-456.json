@@ -1,0 +1,17 @@
+{
+  "id": "T-456",
+  "title": "Option 6a: revoke a name by operator order",
+  "description": "Ratified 2026-10-21. A revocation is an operator-signed record, never an agent act.",
+  "acceptance_criteria": [
+    "A draft verb any agent may run emits an UNSIGNED revocation for a name plus the operator's signing command; an apply verb accepts it only if it verifies against the enrolled root.",
+    "From the revocation's time, token.py verify refuses every token for that name, expired or not, and roster.py shows the name as revoked.",
+    "Falsifier: with a valid, unexpired token, revoke the name; the token is refused. A revocation signed by any other key is refused.",
+    "No consequence attaches beyond refusing the token (PR-022 clause 4). The suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/bin/roster.py",
+    ".harness/bin/warrant.py"
+  ],
+  "notes": []
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T-449",
+  "title": "VERIFY T-448: the retract verb, its refusals and its clause-4 guard",
+  "description": "A different agent verdicts T-448.",
+  "acceptance_criteria": [
+    "Replay the acceptance case on a fixture chain and confirm trace, verify and chain report the retraction with the act.",
+    "In throwaway copies: make trace ignore retractions; accept a blank reason; add a counter that reads a retraction field. Each mutant must make at least one test fail.",
+    "Confirm no act file under the live .harness/acts changed. Run the full suite via goal_mode, then verdict."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-406-retraction.md"
+  ],
+  "notes": []
+}

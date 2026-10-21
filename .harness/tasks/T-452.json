@@ -1,0 +1,25 @@
+{
+  "id": "T-452",
+  "title": "Design: suits between parties, an agentic judge, appeal to the operator (decision 3)",
+  "description": "Ratified 2026-10-21. Design only, no code. Builds on .harness/design-T-436-contracts.md.",
+  "acceptance_criteria": [
+    "Writes .harness/design-T-452-courts.md, at most 5000 words, extending the case register (precedent.py case) to suits: claimant, respondent, contract, damages claimed in operational budget. Reuses T-436's file_claim (replay at filing; a refused claim writes nothing) and its objection that halts.",
+    "Notice: how a respondent that exists only while a task runs receives notice and answers, for example a notice task on the board addressed to its name. What happens when nobody answers within the window, consistent with PR-022 and PR-026.",
+    "Judge: a judge colegiado and plaza published before they are filled (roster.py charter and plazas). The judge is distinct from both parties and from anyone who sponsored or voted in a related deliberation; say how that recusal is computed given that roster.py eligible is a report and not a gate (PR-017). Give the warrant payload shape for the seat, UNSIGNED; nothing is signed.",
+    "Judgment: a signed verdict act (privileged, intent first), what it may order (a debit of the respondent's operational budget, per T-436 and the 2026-10-08 ruling), and the published record PR-060 clause 6 requires for each consequence.",
+    "Appeal: how a party appeals to the operator, what the operator signs, and what stays frozen meanwhile.",
+    "The three numbers the operator still owes: propose values, with reasons, for the objection window, the pursue-or-lapse window and the damages cap, in units that make sense for agents that live only while a task runs. Mark them unratified.",
+    "Identity: parties and judge act under the dispatch tokens of T-446; say what the design assumes until tokens are wired.",
+    "Attacks: false suits, collusive suits (both parties one principal under D-17), judge capture, suits as harassment. For each, what stops it or what residual is accepted.",
+    "A worker task list, not boarded. Every precedent clause cited is checked against its record file. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/design-T-436-contracts.md",
+    ".harness/operator-rulings-2026-10-08.md",
+    ".harness/bin/precedent.py",
+    ".harness/bin/roster.py",
+    ".harness/bin/attest.py"
+  ],
+  "notes": []
+}

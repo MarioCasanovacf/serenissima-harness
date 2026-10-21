@@ -1,0 +1,24 @@
+{
+  "id": "T-444",
+  "title": "Rehearsal under its own throwaway root (decision 9): the 4 stopped mechanisms fire",
+  "description": "Decision 9 (ruling 2026-10-21) lets the rehearsal mint its own root inside its temporary directory, so the fedatario act, the delegation ceiling, fork plus contest and disposal by distinguish can fire without the operator's keys.",
+  "acceptance_criteria": [
+    "examples/rehearsal/run_rehearsal.py gains a mode (flag or default; justify the choice in the handoff) that generates a fresh root key with ssh-keygen inside the temporary directory the script itself created, enrols it as the SANDBOX trust root (the sandbox copy of trust/ only), and mints the same 9 W-002 names with fresh keys through warrant.py's own draft and apply verbs, signing the draft with the sandbox root the way the operator signs (ssh-keygen -Y sign). The sandbox constitutional reputation file is re-signed with the sandbox root so phase B still verifies in the sandbox.",
+    "Under that root the story attempts, through the tools' CLIs only: a fedatario act signed and verified; a delegation with a ceiling used within it and refused beyond it; a fork under one name detected by attest.py forks and contested by a different name, the contested act carrying no weight (PR-022 clause 4); a case disposed by the distinguish verb, visible in precedent.py disposition-ratio's by_citation column. The shipped sign verb appends at the tip by design, so the fork may be produced only by writing one sibling act file outside the verb; the scorecard labels that step a simulated forger, and detection must be the tool's.",
+    "Every row that depends on the sandbox root says so in its label or evidence: signed under the rehearsal root, not the operator's.",
+    "The live tree is never written: the existing integrity check still passes. A new test copies a rehearsal warrant into a scratch copy of the repository (never the working tree) and asserts warrant.py refuses it there, because its root is not the enrolled one.",
+    "Never read ~/.ssh/harness_root, and never read private material under the live .harness/keys, .harness/trust or .harness/constitutional. No private key leaves the temporary directory, which is still removed by default (T-442).",
+    "The 8 rows that fired before still fire. westphalia_kpi.py stays blocked with the tool's own message (a second registry needs a ratified record, PR-029 clause 6). Contracts stay unbuilt.",
+    "A test in .harness/tests asserts the evidence of each newly fired row. The suite passes via goal_mode. Do not edit CLAUDE.md. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    "examples/rehearsal/run_rehearsal.py",
+    ".harness/tests/test_rehearsal.py",
+    ".harness/tests/test_warrant.py",
+    ".harness/bin/warrant.py",
+    ".harness/bin/attest.py",
+    ".harness/bin/precedent.py"
+  ],
+  "notes": []
+}

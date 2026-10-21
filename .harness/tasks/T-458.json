@@ -1,0 +1,18 @@
+{
+  "id": "T-458",
+  "title": "Option 6b: IMP-6 and the epic-close checks",
+  "description": "Ratified 2026-10-21. IMP-6 (coordinator-decisions-ruling-round-2.md, D-22): an act with no matching act_signed event is anomalous. Not built yet.",
+  "acceptance_criteria": [
+    "An IMP-6 check that compares the acts on disk with act_signed events in logs/events.jsonl, deduplicated per TELEMETRY-PROVENANCE-A, and reports raw and distinct counts.",
+    "One command the coordinator runs at every epic close that runs attest.py forks, warrant.py reconcile and the IMP-6 check, and prints one report.",
+    "It computes and reports only; nothing gates or weighs (IMP-7, PR-022 clause 4), pinned by a test.",
+    "The suite passes via goal_mode. Do not edit CLAUDE.md. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/operator-rulings-2026-10-21.md",
+    ".harness/coordinator-decisions-ruling-round-2.md",
+    ".harness/bin/attest.py",
+    ".harness/bin/event_stats.py"
+  ],
+  "notes": []
+}
