@@ -218,6 +218,64 @@ class RequirementIsEnforced(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
 
 
+class IdentityMatchIsPinnedByTaskAndRoleNotOnlyAgent(unittest.TestCase):
+    """T-464: the T-455 verifier found that narrowing the (agent, task, role) match at
+    either call site down to agent-only still passes the whole suite -- every mismatch
+    test that existed before this one also varied the agent, so an agent-only check
+    caught them by accident. These hold agent_name fixed at its genuine, correct value
+    and vary ONLY task_id or ONLY role, at both blackboard.py claim and lock.py acquire,
+    so an agent-only narrowing has nothing left to catch it on and must (incorrectly)
+    let the mismatched act through."""
+
+    def test_claim_refuses_right_agent_right_role_wrong_task(self):
+        # T-1 and T-2 share the epic (so the same signed requirement covers both) and
+        # the same role, so only task_id differs between the token and the claim.
+        root = scratch_tree(self, {"T-1": task("e-req"), "T-2": task("e-req")})
+        root_key = enroll(root)
+        tok = mint_required_set(root, root_key, "e-req", "worker-b:T-1:worker")
+        tf = root / "tok.json"
+        tf.write_text(json.dumps(tok))
+        r = run(root, "blackboard.py", "claim", "T-2", "--agent", "worker-b",
+               "--token-file", str(tf))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("IDENTITY MISMATCH", r.stdout + r.stderr)
+
+    def test_claim_refuses_right_agent_right_task_wrong_role(self):
+        # T-1's own role on the board is "worker"; the token presented authorizes the
+        # same agent for the same task but under role "verifier", so only role differs.
+        root = scratch_tree(self, {"T-1": task("e-req", role="worker")})
+        root_key = enroll(root)
+        tok = mint_required_set(root, root_key, "e-req", "worker-b:T-1:verifier")
+        tf = root / "tok.json"
+        tf.write_text(json.dumps(tok))
+        r = run(root, "blackboard.py", "claim", "T-1", "--agent", "worker-b",
+               "--token-file", str(tf))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("IDENTITY MISMATCH", r.stdout + r.stderr)
+
+    def test_lock_acquire_refuses_right_agent_right_role_wrong_task(self):
+        root = scratch_tree(self, {"T-1": task("e-req"), "T-2": task("e-req")})
+        root_key = enroll(root)
+        tok = mint_required_set(root, root_key, "e-req", "worker-b:T-1:worker")
+        tf = root / "tok.json"
+        tf.write_text(json.dumps(tok))
+        r = run(root, "lock.py", "acquire", "some/file.py", "--holder", "worker-b",
+               "--task", "T-2", "--token-file", str(tf))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("IDENTITY MISMATCH", r.stdout + r.stderr)
+
+    def test_lock_acquire_refuses_right_agent_right_task_wrong_role(self):
+        root = scratch_tree(self, {"T-1": task("e-req", role="worker")})
+        root_key = enroll(root)
+        tok = mint_required_set(root, root_key, "e-req", "worker-b:T-1:verifier")
+        tf = root / "tok.json"
+        tf.write_text(json.dumps(tok))
+        r = run(root, "lock.py", "acquire", "some/file.py", "--holder", "worker-b",
+               "--task", "T-1", "--token-file", str(tf))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("IDENTITY MISMATCH", r.stdout + r.stderr)
+
+
 class LiveTreeIsolation(unittest.TestCase):
     def test_nothing_in_this_suite_touches_the_live_dispatch_tokens_dir_or_trust_store(self):
         live_dt = REPO_ROOT / ".harness" / "dispatch_tokens"

@@ -1,0 +1,24 @@
+{
+  "id": "T-469",
+  "title": "VERIFY T-468: only an issued judge's signed verdict disposes a suit",
+  "description": "A different agent verdicts T-468.",
+  "acceptance_criteria": [
+    "Replay the happy path in a throwaway root. In throwaway copies: drop the colegiado check; accept a verdict act signed by the claimant; allow a second disposal. Each mutant must fail at least one test.",
+    "Confirm the judge warrant draft is unsigned, the live roster is unchanged, and an ordinary case record is unchanged. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-452-courts.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-10-21T22:19:13Z",
+      "agent": "verifier-g10-suits",
+      "note": "VERIFIED (replayed independently, not trusting the producer's report):\n\n1) Diff scope: `git diff --stat HEAD -- .harness/bin/precedent.py` shows only precedent.py\n   changed (+286/-2); .harness/tests/test_precedent_t468_suits.py, .harness/judge-seat-draft-T468.md,\n   .harness/warrants/W-003.json are new/untracked. attest.py and CLAUDE.md untouched, confirmed by\n   reading the diff directly, not by trusting the note.\n\n2) `python3 -m pytest .harness/tests/test_precedent_t468_suits.py -v` -> 15 passed (TheSuitFields x4,\n   TheVerdict x7, TheNoticeVerb x3), matching the note's count.\n\n3) Full suite replay: `python3 -m pytest .harness/tests -q` -> \"1169 passed, 4 skipped in 128.49s\",\n   exit 0. Matches producer's claimed count exactly on this direct run (no flake observed).\n\n4) Mutant testing (cognitive diversity, 3 throwaway copies under <tmp>, never the live tree):\n   - M1 drop colegiado check (`colegiado_err = None` instead of calling _judge_issue_check) ->\n     test_refuses_a_judge_name_not_issued_in_the_judge_colegiado FAILS (0 != 1). Caught.\n   - M2 bypass signature verification (`verified, verify_why = True, None` instead of calling\n     attest._verify_sig) -- stands in for \"accept a verdict act signed by [a key other than the\n     judge's]\" -> test_refuses_an_act_that_does_not_verify_under_the_judges_key FAILS (0 != 1). Caught.\n   - M3 drop the already-disposed check (`case_err = None` instead of calling\n     validate_case_for_disposal before dispose) -> allows a second disposal ->\n     test_refuses_a_case_already_disposed FAILS (0 != 1). Caught.\n   All three mutants each fail exactly one targeted test and no others pass-through silently.\n\n5) Judge warrant draft: `.harness/warrants/W-003.json` has no `.sig` file (`ls .harness/warrants/`\n   shows W-001.json, W-002.json, W-002.json.sig, W-003.json -- no W-003.json.sig).\n   `python3 .harness/bin/warrant.py reconcile` -> clean:true, W-003 listed in warrants_unsigned\n   alongside W-001 (the documented normal state).\n\n6) Live roster unchanged: `git diff --stat HEAD -- .harness/roster.json` and\n   `git status --porcelain .harness/roster.json` both empty.\n\n7) Ordinary case record unchanged (different method than producer's source-scan/unit-test claim):\n   ran `precedent.py case open` directly against a fresh throwaway root with no --root in the\n   pytest harness -- a plain CLI invocation, not the test suite -- for a case with no suit flags:\n   resulting JSON keys were exactly {id, question, task, opened_by, ts, status, disposal}, no \"suit\"\n   key, matching the pre-T-468 schema byte-for-byte. A second invocation with --claimant/--respondent/\n   --contract/--damages-claimed produced the same five keys plus one \"suit\" dict with the four fields,\n   confirming the schema claim independently of the bundled unit test.\n\n8) judge-seat-draft-T468.md read directly: matches W-003.json's draft command, the recusal\n   checklist is explicitly advisory (PR-017, not a gate), and states nothing has been signed.\n\nAll acceptance criteria of T-468 and both criteria of T-469 are satisfied by direct replay.\nHousekeeping: `lock.py status` -> no active lock files; `lock.py sweep` -> swept 0 expired lock(s).\n"
+    },
+    {
+      "ts": "2026-10-21T22:21:05Z",
+      "agent": "coordinator",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Coordinator hygiene, 2026-10-21: notes in a public repo name a temp directory by placeholder, not by its system path. Wording only; no verdict or evidence changes."
+    }
+  ]
+}

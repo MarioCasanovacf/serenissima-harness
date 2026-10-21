@@ -376,6 +376,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -978,11 +979,27 @@ def resolve_harness_root(args, prec_root):
     return Path(prec_root).parent
 
 
-def open_case(hroot, question, task, agent=None):
+def open_case(hroot, question, task, agent=None, claimant=None, respondent=None,
+             contract=None, damages_claimed=None):
     """Open a new registered case (T-412/S-1).
 
     Registration precedes disposal: opening is intentionally cheap and biased
     toward over-registration, while closing is gated.
+
+    T-452/T-468 extends this with an OPTIONAL suit block (claimant, respondent,
+    contract, damages_claimed), stored as `rec["suit"]` so a suit-case and an
+    ordinary case stay one schema rather than inventing a second denominator
+    (T-412's own point). When none of the four is supplied, `rec` is
+    byte-for-byte the pre-T-468 schema -- pinned by a test, since a silent
+    extra key on every case would be exactly the kind of "the two populations
+    no longer match" failure T-412 itself exists to avoid.
+
+    `damages_claimed` is the claimant's own allegation (operational-budget
+    units: tokens, tasks, deadline days -- never reputation, ruling
+    2026-10-08) and is stored here ONLY: nothing downstream in this module
+    reads it to compute a consequence (T-436 round 1/2's own rejected
+    failure mode, named in `design-T-452-courts.md` section 1), which is why
+    it is written straight into the suit dict with no further handling.
     """
     if not (question or "").strip():
         return None, "question must be non-empty"
@@ -1007,6 +1024,13 @@ def open_case(hroot, question, task, agent=None):
         "status": "open",
         "disposal": None,
     }
+    if any(v is not None for v in (claimant, respondent, contract, damages_claimed)):
+        rec["suit"] = {
+            "claimant": claimant,
+            "respondent": respondent,
+            "contract": contract,
+            "damages_claimed": damages_claimed,
+        }
     cpath = cdir / "{}.json".format(case_id)
     hc.atomic_write_json(cpath, rec)
     return rec, None
@@ -1073,7 +1097,11 @@ def dispose_case(hroot, case_id, verb, ref, by, task, ts=None):
 def cmd_case_open(args):
     prec = resolve_root(args)
     hroot = resolve_harness_root(args, prec)
-    rec, err = open_case(hroot, args.question, args.task, args.agent)
+    rec, err = open_case(hroot, args.question, args.task, args.agent,
+                         claimant=getattr(args, "claimant", None),
+                         respondent=getattr(args, "respondent", None),
+                         contract=getattr(args, "contract", None),
+                         damages_claimed=getattr(args, "damages_claimed", None))
     if err:
         return refuse("case_open_refused", err, prec, task=args.task)
     emit_event(prec, "case_opened", id=rec["id"], question=rec["question"],
@@ -1131,6 +1159,12 @@ def cmd_case_show(args):
     print("  Task:      {}".format(data.get("task")))
     print("  Opened by: {} at {}".format(data.get("opened_by"), data.get("ts")))
     print("  Status:    {}".format(data.get("status")))
+    if data.get("suit"):
+        s = data["suit"]
+        print("  Suit:      claimant={} respondent={} contract={} "
+              "damages_claimed={} (informational only)".format(
+                  s.get("claimant"), s.get("respondent"), s.get("contract"),
+                  s.get("damages_claimed")))
     if data.get("disposal"):
         d = data["disposal"]
         print("  Disposal:  {} via {} by {} at {}".format(d.get("verb"), d.get("ref"), d.get("by"), d.get("ts")))
@@ -1195,6 +1229,218 @@ def cmd_case_publisher_report(args):
         print("  classification: {}".format(report["classification"]))
         if report["note"]:
             print("  note:           {}".format(report["note"]))
+    return 0
+
+
+# --------------------------------------------------------------------------
+# T-452/T-468: case verdict -- dispose a suit-case through a judge's signed
+# verdict act (design-T-452-courts.md section 9 item 1; section 4).
+#
+# What this does NOT build (operator rulings 2026-10-21, decision 3's three
+# unratified numbers): no deadline, no lapse window, no damages amount is
+# computed anywhere below. The damages consequence, if any, lives entirely
+# inside the judge's own signed act body (written by the judge, never by
+# this module) -- this CLI only validates the act and disposes the case.
+# --------------------------------------------------------------------------
+
+VERDICT_KIND = "verdict"
+JUDGE_COLEGIADO = "judge"
+
+
+def _judge_issue_check(hroot, name):
+    """Is `name` issued into the `judge` colegiado (T-452 section 3)?
+
+    A REFUSAL gate, unlike `classify_seat`/`eligible_report` above, which are
+    reports that never refuse (T-428 item 5, PR-017). Reads roster.json
+    directly, the same manual-read discipline `classify_seat` already uses in
+    this file, rather than importing roster.py (no cycle risk either way, but
+    this file already has the pattern). Returns None when issued into the
+    judge colegiado, else a refusal string.
+    """
+    roster_path = Path(hroot) / "roster.json"
+    if not roster_path.exists():
+        return ("{!r} is not issued in the {!r} colegiado: {} has no roster.json"
+                .format(name, JUDGE_COLEGIADO, roster_path))
+    try:
+        data = json.loads(roster_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return ("{!r} is not issued in the {!r} colegiado: roster.json unreadable: {}"
+                .format(name, JUDGE_COLEGIADO, exc))
+    names = data.get("names", {}) or {}
+    entry = names.get(name)
+    if entry is None:
+        return ("{!r} holds no name issued in this roster; a verdict must be signed by "
+                "a name issued in the {!r} colegiado (T-452 section 3)"
+                .format(name, JUDGE_COLEGIADO))
+    if entry.get("colegiado") != JUDGE_COLEGIADO:
+        return ("{!r} is issued in colegiado {!r}, not {!r}; a verdict must be signed by "
+                "a name issued in the {!r} colegiado (T-452 section 3)"
+                .format(name, entry.get("colegiado"), JUDGE_COLEGIADO, JUDGE_COLEGIADO))
+    return None
+
+
+def _verdict_ref(judge, seq):
+    """The `disposal.ref` a verdict act writes -- matches `distinguish`'s own
+    `"{by}_{seq}"` convention (cmd_distinguish, above) so both disposal verbs
+    name their act the same way."""
+    return "{}_{}".format(judge, seq)
+
+
+def _ref_already_disposes_a_case(hroot, ref, exclude_case):
+    """Is `ref` already recorded as the disposal of some OTHER registered case?
+
+    One verdict act may dispose exactly one case (T-452 section 4's own
+    reading of the T-412/S-1 refusal, extended to the act rather than only to
+    the case): without this check, a single signed verdict could be replayed
+    across every open case a judge can see.
+    """
+    cdir = cases_dir(hroot)
+    if not cdir.exists():
+        return None
+    for p in sorted(cdir.glob("C-*.json")):
+        if p.stem == exclude_case:
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        disp = data.get("disposal") or {}
+        if data.get("status") == "disposed" and disp.get("verb") == "verdict" and disp.get("ref") == ref:
+            return data.get("id")
+    return None
+
+
+def cmd_case_verdict(args):
+    """`case verdict --case --judge --seq --task`: dispose a case through the
+    existing `dispose_case()`, verb `verdict`, after validating the referenced
+    act exactly as design-T-452-courts.md section 4 and board T-468 require.
+    """
+    prec = resolve_root(args)
+    hroot, why = harness_root_for_acts(args, prec)
+    if hroot is None:
+        return refuse("case_verdict_refused", why, prec, case=args.case, judge=args.judge,
+                      seq=args.seq, task=args.task)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    acts = attest.chain(hroot, args.judge)
+    act = next((a for a in acts if "_unparseable" not in a and a.get("seq") == args.seq), None)
+    if act is None:
+        return refuse("case_verdict_refused",
+                      "no act #{} found on {!r}'s chain in {}".format(args.seq, args.judge, hroot),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+
+    if act.get("kind") != VERDICT_KIND:
+        return refuse("case_verdict_refused",
+                      "act {}#{} is kind {!r}, not {!r}: a case verdict must reference a "
+                      "signed verdict act (design-T-452-courts.md section 4)"
+                      .format(args.judge, args.seq, act.get("kind"), VERDICT_KIND),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+
+    keys = attest.signing_keys(hroot)
+    if args.judge not in keys:
+        return refuse("case_verdict_refused",
+                      "{!r} holds no enrolled or delegated signing key in {}; act {}#{} "
+                      "does not verify under any key".format(args.judge, hroot, args.judge, args.seq),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+    pub = keys[args.judge]["pubkey"]
+    verified, verify_why = attest._verify_sig(hroot, args.judge, act["_path"], pub)
+    if not verified:
+        return refuse("case_verdict_refused",
+                      "act {}#{} does not verify under {!r}'s own key: {}"
+                      .format(args.judge, args.seq, args.judge, verify_why),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+
+    colegiado_err = _judge_issue_check(hroot, args.judge)
+    if colegiado_err:
+        return refuse("case_verdict_refused", colegiado_err, prec, case=args.case,
+                      judge=args.judge, seq=args.seq, task=args.task)
+
+    if str(act.get("task") or "") != str(args.task):
+        return refuse("case_verdict_refused",
+                      "act {}#{} was signed for task {!r}, not {!r} (task mismatch)"
+                      .format(args.judge, args.seq, act.get("task"), args.task),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+
+    case_err = validate_case_for_disposal(hroot, args.case, "case verdict")
+    if case_err:
+        return refuse("case_verdict_refused", case_err, prec, case=args.case, judge=args.judge,
+                      seq=args.seq, task=args.task)
+
+    ref = _verdict_ref(args.judge, args.seq)
+    dup = _ref_already_disposes_a_case(hroot, ref, args.case)
+    if dup:
+        return refuse("case_verdict_refused",
+                      "verdict act {}#{} already disposes case {}: one verdict act may "
+                      "dispose exactly one case".format(args.judge, args.seq, dup),
+                      prec, case=args.case, judge=args.judge, seq=args.seq, task=args.task)
+
+    dispose_case(hroot, args.case, "verdict", ref, args.judge, args.task, act.get("ts"))
+    emit_event(prec, "case_verdict", case=args.case, judge=args.judge, seq=args.seq,
+              task=args.task, ref=ref)
+    print("case {} disposed by verdict: {} act #{} (task {})"
+         .format(args.case, args.judge, args.seq, args.task))
+    print("The debit this verdict orders, if any, is the judge's own act body (section 4's "
+         "published record); this CLI computes none of the unratified numbers itself.")
+    return 0
+
+
+# --------------------------------------------------------------------------
+# T-452/T-468: notice -- the respondent's board task (design-T-452-courts.md
+# section 9 item 3; section 2).
+#
+# The three numbers of operator ruling 2026-10-21 decision 3 (objection
+# window, pursue-or-lapse window, damages cap) are NOT ratified. Nothing
+# below computes a deadline: the title's deadline slot always reads the
+# literal string "window not ratified", mirroring currency.py's own
+# "NO THRESHOLD RATIFIED" convention for an unratified number.
+# --------------------------------------------------------------------------
+
+NOTICE_WINDOW_UNRATIFIED = "window not ratified"
+
+
+def cmd_case_notice(args):
+    """`case notice --case --respondent --task-id [--agent]`: publish the
+    respondent's board task through the REAL `blackboard.py add-task`
+    (design section 9 item 3), never a hand-written task file.
+    """
+    prec = resolve_root(args)
+    hroot = resolve_harness_root(args, prec)
+    case_rec = load_case(hroot, args.case)
+    if case_rec is None:
+        return refuse("case_notice_refused",
+                      "--case {} is not registered in {}".format(args.case, cases_dir(hroot)),
+                      prec, case=args.case, respondent=args.respondent, task_id=args.task_id)
+
+    title = "NOTICE to {}: answer suit {} by {}".format(
+        args.respondent, args.case, NOTICE_WINDOW_UNRATIFIED)
+    bb_script = Path(hroot) / "bin" / "blackboard.py"
+    if not bb_script.exists():
+        return refuse("case_notice_refused",
+                      "no blackboard.py at {}: notice must go through the real "
+                      "blackboard.py add-task (T-468), never a hand-written task file"
+                      .format(bb_script),
+                      prec, case=args.case, respondent=args.respondent, task_id=args.task_id)
+
+    description = ("answer suit {} (claimant/respondent/contract: see `precedent.py case "
+                   "show {}`). Objection/answer window: {}."
+                   .format(args.case, args.case, NOTICE_WINDOW_UNRATIFIED))
+    cmd = [sys.executable, str(bb_script), "add-task",
+          "--agent", args.agent, "--id", args.task_id, "--title", title,
+          "--description", description, "--role", "worker", "--engine", "any"]
+    r = subprocess.run(cmd, cwd=str(Path(hroot).parent), capture_output=True, text=True)
+    if r.returncode != 0:
+        return refuse("case_notice_refused",
+                      "blackboard.py add-task refused: {}".format((r.stderr or r.stdout).strip()),
+                      prec, case=args.case, respondent=args.respondent, task_id=args.task_id)
+
+    emit_event(prec, "case_notice", case=args.case, respondent=args.respondent,
+              task_id=args.task_id, deadline=NOTICE_WINDOW_UNRATIFIED)
+    print("notice filed: {!r} (board task {})".format(title, args.task_id))
+    out = (r.stdout or "").strip()
+    if out:
+        print(out)
     return 0
 
 
@@ -3430,6 +3676,17 @@ def main(argv):
     p_case_open.add_argument("--question", default=None, help="the question being presented")
     p_case_open.add_argument("--task", default=None, help="issuing task, T-NNN")
     p_case_open.add_argument("--agent", default=hc.agent_id())
+    # T-452/T-468: optional suit fields. Absent entirely -> rec is byte-for-byte
+    # the pre-T-468 schema (pinned by test). damages_claimed is informational
+    # only (design-T-452-courts.md section 1): nothing in this file reads it
+    # to compute anything.
+    p_case_open.add_argument("--claimant", default=None)
+    p_case_open.add_argument("--respondent", default=None)
+    p_case_open.add_argument("--contract", default=None,
+                             help="the T-436 section 1 commit act this suit alleges breach of")
+    p_case_open.add_argument("--damages-claimed", dest="damages_claimed", default=None,
+                             help="claimant's own allegation, informational only -- never "
+                                  "read to compute a consequence (section 1)")
     p_case_open.add_argument("--json", action="store_true", default=False)
     p_case_open.add_argument("--harness-root", dest="harness_root", default=None)
     add_root_arg(p_case_open)
@@ -3459,6 +3716,33 @@ def main(argv):
     p_case_pub.add_argument("--harness-root", dest="harness_root", default=None)
     add_root_arg(p_case_pub)
     p_case_pub.set_defaults(func=cmd_case_publisher_report)
+
+    # ---- case verdict (T-452/T-468, section 9 item 1 + section 4) ----
+    p_case_verdict = case_sub.add_parser(
+        "verdict", help="dispose a case through a judge's signed verdict act "
+                        "(design-T-452-courts.md section 4)")
+    p_case_verdict.add_argument("--case", required=True, metavar="C-NNN")
+    p_case_verdict.add_argument("--judge", required=True, help="the signing name")
+    p_case_verdict.add_argument("--seq", required=True, type=int,
+                                help="the verdict act's sequence number on --judge's chain")
+    p_case_verdict.add_argument("--task", required=True,
+                                help="board task id the referenced act was signed for")
+    p_case_verdict.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_verdict)
+    p_case_verdict.set_defaults(func=cmd_case_verdict)
+
+    # ---- case notice (T-452/T-468, section 9 item 3 + section 2) ----
+    p_case_notice = case_sub.add_parser(
+        "notice", help="publish the respondent's board task through blackboard.py "
+                       "add-task (design-T-452-courts.md section 2)")
+    p_case_notice.add_argument("--case", required=True, metavar="C-NNN")
+    p_case_notice.add_argument("--respondent", required=True)
+    p_case_notice.add_argument("--task-id", dest="task_id", required=True, metavar="T-NNN",
+                               help="the board task id to publish (must not already exist)")
+    p_case_notice.add_argument("--agent", default=hc.agent_id())
+    p_case_notice.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_notice)
+    p_case_notice.set_defaults(func=cmd_case_notice)
 
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
     # Applied to `publish`, `confirm`, `distinguish`, and `case open`.

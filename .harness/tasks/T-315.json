@@ -53,7 +53,7 @@
     {
       "ts": "2026-07-12T01:36:15Z",
       "agent": "codex-worker-invariants",
-      "note": "ADDITIONAL NON-MUTATING EVIDENCE: rsync copied the worktree to /private/tmp/serenissima-t315-cleanclone-0139 while excluding .git and GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md. The excluded path was confirmed absent in the copy; exact full discovery there ran 46 tests in 2.543s, OK. Source workspace was not modified."
+      "note": "ADDITIONAL NON-MUTATING EVIDENCE: rsync copied the worktree to <tmp>/serenissima-t315-cleanclone-0139 while excluding .git and GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md. The excluded path was confirmed absent in the copy; exact full discovery there ran 46 tests in 2.543s, OK. Source workspace was not modified."
     },
     {
       "ts": "2026-07-12T01:36:50Z",
@@ -64,6 +64,11 @@
       "ts": "2026-07-12T01:37:25Z",
       "agent": "codex-verifier-c2",
       "note": "VERIFIED AFTER REWORK: focused Codex integration 6/6, invariant suite 2/2, and full source-worktree suite 46/46 passed. Independent temporary workspace copy excluded .git and ignored GEMINI_DEEPMIND_INTEGRATION_RESEARCH.md; artifact absence was confirmed and full discovery still ran 46/46 OK. No tracked harness test references the ignored report; replacement coverage reads tracked GEMINI_ADAPTER.md. Central ROLE_CONTRACTS remains semantic, covers the three invariants across Claude/Codex/Gemini worker and verifier roles, and does not require byte identity. Source research SHA-256 and complete git status were identical before/after copy test; scoped diff check passed and Claude role files have no task diff."
+    },
+    {
+      "ts": "2026-10-21T22:21:05Z",
+      "agent": "coordinator",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Coordinator hygiene, 2026-10-21: notes in a public repo name a temp directory by placeholder, not by its system path. Wording only; no verdict or evidence changes."
     }
   ]
 }

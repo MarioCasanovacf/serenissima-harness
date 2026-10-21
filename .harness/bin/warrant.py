@@ -551,8 +551,11 @@ def reconcile(root) -> dict:
             f"no row on the roll is backed by a warrant. All {rows} row(s) are unbacked. "
             "Read `clean: null` as NOT ASSESSED, never as clean. Exit stays 0 because "
             "before enrolment this is the honest state and there is no flag day -- but "
-            "if this harness WAS enrolled, trust/ has been removed, it is untracked by "
-            "git, and that deletion leaves no trace in `git status`. "
+            "if this harness WAS enrolled, trust/ has been removed: its public material "
+            "(root.pub, root.fingerprint) is tracked by git, so the removal shows as a "
+            "diff, yet trust/ is writable by every agent, so the working-tree copy can "
+            "be overwritten before the next commit, and this detector only sees "
+            "whatever is on disk right now. "
             "`audit --expect <your fingerprint>` is the verb that refuses this state; "
             "reconcile alone cannot tell 'not yet built' from 'just torn down'.")
         return out
@@ -774,9 +777,12 @@ def audit(root, expect=None) -> dict:
     function cannot tell a genuine anchor from one an attacker rewrote: a panel replaced
     both files in `trust/` with its own key, minted three names and got a clean audit,
     because every check inside this module is consistent with whatever `trust/` says.
-    `trust/` is writable by every agent and is not tracked by git. THE ANCHOR IS
-    SELF-REFERENTIAL UNLESS A HUMAN SUPPLIES THE FINGERPRINT, so without `expect` this
-    report is explicitly marked unverified rather than clean.
+    `trust/`'s public material (root.pub, root.fingerprint) is tracked by git, so removal
+    or overwrite shows as a diff -- yet `trust/` is writable by every agent, so the
+    working-tree copy can be overwritten before the next commit, and that leaves this
+    function seeing only whatever is on disk right now. THE ANCHOR IS SELF-REFERENTIAL
+    UNLESS A HUMAN SUPPLIES THE FINGERPRINT, so without `expect` this report is
+    explicitly marked unverified rather than clean.
     """
     out = {"enrolled": is_enrolled(root), "anchor": None, "warrants": [],
            "unsigned": [], "invalid": [], "ok": 0,
@@ -801,13 +807,17 @@ def audit(root, expect=None) -> dict:
                 "not: trust/root.pub is absent, so there is nothing to compare against "
                 "and every row on the roll was written outside the gate. An un-enrolled "
                 "harness is not a clean audit, it is an unbuilt one. And if this harness "
-                "WAS enrolled before, the root has been REMOVED: trust/ is untracked by "
-                "git, so deleting it leaves no trace in `git status` and downgrades every "
-                "detector in this module to silence.")
+                "WAS enrolled before, the root has been REMOVED: trust/'s public material "
+                "is tracked by git, so that removal shows as a diff -- yet trust/ is "
+                "writable by every agent, so the working-tree copy can be overwritten "
+                "before the next commit, and that downgrades every detector in this "
+                "module to whatever is on disk right now.")
         else:
-            # No claim was made, so no claim is refuted. Exit stays 0 here on purpose:
-            # before enrolment this is the honest, expected state and there is no flag
-            # day. The report still refuses to call itself verified.
+            # No claim was made, so no claim is refuted. Since T-450 this returns
+            # EXIT_AUDIT_UNVERIFIED (5), never 0: before enrolment this is the honest,
+            # expected state and there is no flag day, but the report still refuses to
+            # call itself verified and the exit code now says so instead of reading as
+            # a pass.
             out["anchor_matches_operator"] = None
             out["UNVERIFIED"] = (
                 "No --expect fingerprint supplied AND no trust root present. This report "

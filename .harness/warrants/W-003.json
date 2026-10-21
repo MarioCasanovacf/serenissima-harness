@@ -1,0 +1,24 @@
+{
+  "warrant_id": "W-003",
+  "schema_version": 1,
+  "epic": "gen-10-courts",
+  "issued_at": "2026-10-21T22:05:06Z",
+  "valid_until": "2027-01-31T00:00:00Z",
+  "colegiados": {
+    "judge": "a reasoned verdict on a filed suit, paid to distrust both parties"
+  },
+  "plazas": {
+    "judge/verifier": 1
+  },
+  "names": [
+    {
+      "name": "judge-tbd",
+      "colegiado": "judge",
+      "role": "verifier",
+      "pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIdH1gGvQJ07sp8jHFO89t+VzLQoDJ4eLULF8G7qSnlq judge-seat-pending (T-452/T-468 draft example, not a real signing key)",
+      "persona": "agentic judge, suits epic gen-10-courts (PLACEHOLDER NAME AND KEY -- replace both before signing)"
+    }
+  ],
+  "namespace": "harness-warrant",
+  "NOT_A_CONSEQUENCE": "PR-022 clause 4 holds: this warrant confers a seat and a name, never a weight, a burden, a quorum or a permission"
+}

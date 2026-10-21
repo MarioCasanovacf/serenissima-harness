@@ -173,6 +173,31 @@ class Falsifiers(GateCase):
                      claim_task="T-999", claim_role="worker")
         self.assertIn("IDENTITY MISMATCH", str(cm.exception))
 
+    def test_right_agent_and_role_but_wrong_task_is_refused(self):
+        """T-464: the T-455 verifier found that narrowing verify()'s identity match to
+        agent_name ALONE still passes the whole suite -- every existing mismatch test
+        here also varies the agent, so an agent-only check would still catch them by
+        accident. This test holds agent_name and role fixed at their genuine, correct
+        values and varies ONLY task_id, so an agent-only narrowing has nothing left to
+        catch it on and must (incorrectly) accept it."""
+        dtid, payload = self.full_set(dispatches=["worker-a:T-432:worker"])
+        presented = self.present(payload, 0)  # genuine worker-a/T-432/worker token
+        with self.assertRaises(dt.TrustError) as cm:
+            dt.verify(self.root, presented, claim_agent="worker-a",
+                     claim_task="T-999", claim_role="worker")
+        self.assertIn("IDENTITY MISMATCH", str(cm.exception))
+
+    def test_right_agent_and_task_but_wrong_role_is_refused(self):
+        """T-464: the mirror of the task-only falsifier above -- agent_name and task_id
+        are held at their genuine, correct values and ONLY role varies. An agent-only
+        narrowing of the identity match has nothing to catch this on either."""
+        dtid, payload = self.full_set(dispatches=["worker-a:T-432:worker"])
+        presented = self.present(payload, 0)  # genuine worker-a/T-432/worker token
+        with self.assertRaises(dt.TrustError) as cm:
+            dt.verify(self.root, presented, claim_agent="worker-a",
+                     claim_task="T-432", claim_role="verifier")
+        self.assertIn("IDENTITY MISMATCH", str(cm.exception))
+
     def test_a_set_signed_by_a_key_that_is_not_the_enrolled_root_is_refused(self):
         self.enroll()
         d = dt.draft(self.root, "e-1", ["worker-a:T-432:worker"])

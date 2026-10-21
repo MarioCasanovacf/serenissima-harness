@@ -1,0 +1,18 @@
+{
+  "id": "T-465",
+  "title": "VERIFY T-464: the identity match fails closed on task and on role",
+  "description": "A different agent verdicts T-464.",
+  "acceptance_criteria": [
+    "Replay the agent-only mutant and two more of your own (agent and task only; agent and role only); each must fail at least one test. Confirm only test files changed. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/bin/dispatch_token.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-10-21T22:10:03Z",
+      "agent": "verifier-g10-tests",
+      "note": "DONE: this is the verifier-role tracking task for the T-464 verdict; verdict delivered on T-464 directly (status=done) with full replayed evidence (git diff, 45/45 targeted tests, 3 independent throwaway mutants (agent-only, agent-task-only, agent-role-only) each caught, full suite clean after transient third-party lock contention cleared). See T-464's done-note for the complete evidence trail."
+    }
+  ]
+}

@@ -9,5 +9,11 @@
     ".harness/bin/warrant.py",
     "CLAUDE.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T22:17:36Z",
+      "agent": "main",
+      "note": "VERIFIED T-462 (this task's subject): replayed independently as verifier-g10-prose. Full evidence recorded on T-462's done note (same agent, same session): git diff confirms 4 prose-only spots in warrant.py, behavior unchanged on a throwaway root (audit exit 5, reconcile exit 0), git ls-files .harness/trust confirms root.pub/root.fingerprint tracked, grep -rniE 'not tracked by git|untracked by git' .harness/bin finds only one past-tense comment at warrant.py:855 (correctly left as historical narration, not a live false claim), attest.py/precedent.py have no matching strings (locked by T-468, correctly untouched), full suite passes twice via goal_mode.py (iteration 1/3 both times, exit 0), standalone test_warrant.py -q 76 passed, and no test asserts the old wording via assertIn/assertEqual so criterion 4's test-update clause had nothing to do. T-462 marked done by this same agent as the prerequisite to closing this tracking task."
+    }
+  ]
 }

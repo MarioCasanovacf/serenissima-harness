@@ -1,0 +1,8 @@
+{
+  "id": "T-471",
+  "title": "VERIFY T-470: the guard test stands alone",
+  "description": "Run test_data_loss_guard.py alone and in the full suite. Confirm prevent_data_loss.py and safe_delete.py are byte-identical to HEAD. Verdict.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

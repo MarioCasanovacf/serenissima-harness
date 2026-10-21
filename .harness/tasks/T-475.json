@@ -1,0 +1,13 @@
+{
+  "id": "T-475",
+  "title": "VERIFY T-474: only the right party's own signed act links to a suit",
+  "description": "A different agent verdicts T-474.",
+  "acceptance_criteria": [
+    "Mutants in throwaway copies: accept an answer signed by the claimant; accept an appeal from a third name; accept a contest act that names a different respondent. Each must fail at least one test.",
+    "Replay the happy path and read case show's output. Confirm an ordinary case is unchanged. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-452-courts.md"
+  ],
+  "notes": []
+}

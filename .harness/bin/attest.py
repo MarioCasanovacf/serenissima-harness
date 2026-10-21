@@ -192,6 +192,66 @@ retraction is credited to the name whose key signed it, so it can damage that na
 and cannot enrich the forger. A test below exercises this rather than merely asserting it.
 """
 
+WINDOWS_NOT_RATIFIED = (
+    "NOT RATIFIED: the operator's ruling of 2026-10-21 (decision 3) leaves three numbers "
+    "for a later ruling -- the objection window, the pursue-or-lapse window, and the "
+    "damages cap (design .harness/design-T-452-courts.md section 6 proposes values; none "
+    "is ratified). This module computes none of the three. It attaches no deadline, no "
+    "lapse and no damages amount to anything it signs, the way currency.py prints "
+    "NO THRESHOLD RATIFIED instead of inventing one."
+)
+"""Printed wherever a window or an amount would otherwise appear, per the instruction this
+module was built under: do not compute a number decision 3 has not ratified -- say so."""
+
+OPERATIONAL_PARAMETERS = frozenset(
+    {"task", "order", "budget", "deadline", "engine", "iteration_bound"})
+"""PR-060 clause 1's own list of six, quoted in `.harness/design-T-436-contracts.md`:
+'task, order, budget, deadline, engine, iteration bound'. The sixth is spelled with an
+underscore here ONLY because a CLI value and a dict key cannot carry a space; that spelling
+is this module's own choice, not clause 1's wording, and does not bind the clause.
+
+A COMMIT ACT (below) MUST NAME ONE OF THESE SIX, OR IT IS REFUSED. PR-060 clause 5: doubt
+resolves toward constitutional, so a parameter this module does not recognize as one of
+clause 1's six operational parameters is never silently accepted as one."""
+
+COMMIT_KIND = "commit"
+"""T-436 section 1: a CONTRACT is the agent's own signed act, filed on its OWN chain before
+the work it binds begins, setting ONE of OPERATIONAL_PARAMETERS to a stated value for one
+task. Unprivileged, deliberately -- PRIVILEGED_KINDS' own criterion is 'the subject is a
+name OTHER than the signer', and a commit's subject is the signer's own future work, which
+is exactly why `PRIVILEGED_KINDS`'s docstring already names `commit` as an example of a
+kind that fails that test, alongside `filing`.
+
+THE NAME IS THIS MODULE'S CHOICE, NOT THE DESIGN'S. T-436 section 1 states only that the
+agent files a signed, self-service act 'the shape attest.py declare_intent already uses
+for an unprivileged record' and leaves the kind unnamed ('name not binding, shape is' --
+section 5, said of `file_claim`, applies here too). `commit` is chosen because it is
+already the example name PRIVILEGED_KINDS' own docstring uses for this exact case."""
+
+ANSWER_KIND = "answer"
+"""T-452 section 2: a respondent's signed act disputing a filed claim, on the RESPONDENT'S
+OWN CHAIN -- 'the same shape T-436 section 1 already uses for the self-filed commit act...
+because an answer, like an intent, costs the answerer nothing but its own signature and
+needs no prior intent of its own' (design, quoted). Unprivileged: its subject is the
+answerer's own dispute, not another name's act. NOT a PRIVILEGED_KINDS member.
+
+WHAT THIS MODULE DOES NOT DO WITH IT. Decision 3's objection window is not ratified
+(WINDOWS_NOT_RATIFIED): filing an answer here does not check, compute or enforce any
+window. Whether an answer filed late still halts a claim is for the register that holds
+the claim (precedent.py, T-468) to decide once a window exists, not for this module to
+guess at."""
+
+APPEAL_KIND = "appeal"
+"""T-452 section 5: a party's signed act naming a verdict's sequence and case, appealing to
+the operator -- 'unprivileged, the same shape as answer' (design, quoted). Unprivileged for
+the identical reason ANSWER_KIND is: the subject is the appellant's own request for review,
+not a disposal of another name's act. NOT a PRIVILEGED_KINDS member.
+
+Filing one does not freeze, execute or compute anything here either -- T-452 section 5's
+freeze is a property of what the VERDICT's consequence does while an appeal is open, which
+is precedent.py's/a judge's concern, not this module's. WINDOWS_NOT_RATIFIED applies: no
+appeal window is computed."""
+
 INTENT_MAX_AGE_S = 24 * 3600
 """How long a declared intent stays usable.
 
@@ -203,7 +263,7 @@ default this module chose. NO THRESHOLD RATIFIED by any record.
 
 PUBLIC_API = ("acts_dir", "chain", "sign_act", "verify_name", "verify_all",
               "forks", "contest", "declare_intent", "open_intents", "trace",
-              "retract", "retractions")
+              "retract", "retractions", "commit", "answer", "appeal", "file_claim")
 
 
 class AttestError(Exception):
@@ -1163,6 +1223,155 @@ def contest(root, accuser, key_path, target_name, target_seq, reason, task=None)
                           "AF_4": "standing requires a live binding, not an opinion"})
 
 
+# --------------------------------------------------------------------- contracts
+
+def commit(root, name, key_path, task, parameter, value) -> dict:
+    """File a CONTRACT (T-436 section 1): a signed, self-service act on `name`'s OWN chain
+    naming exactly one of OPERATIONAL_PARAMETERS and the value this name commits to, for
+    `task`, before the work it binds begins.
+
+    Unprivileged (COMMIT_KIND's own docstring says why): no prior declared intent is
+    required or consulted.
+
+    Refuses, each before anything is written:
+      - a blank task -- T-436 section 1: "a contract with no such prior act is an
+        unrecorded intention, not one a breach-finding can replay against";
+      - a parameter outside OPERATIONAL_PARAMETERS -- PR-060 clause 1's six, and clause 5's
+        own instruction that doubt resolves toward constitutional, i.e. toward refusing
+        rather than silently accepting a seventh parameter as if it were operational;
+      - a blank value -- a commit that commits to nothing sets nothing to replay against.
+
+    Does NOT compute a deadline, a breach or a damages amount. Those are what `file_claim`
+    (and, later, a judge's verdict -- outside this module) read THIS act to evaluate; this
+    function only ever writes the commitment.
+    """
+    if not str(task or "").strip():
+        raise AttestError(
+            "--task is required: a contract with no task is an unrecorded intention, not "
+            "one a breach-finding can replay against (T-436 section 1)")
+    if parameter not in OPERATIONAL_PARAMETERS:
+        raise AttestError(
+            f"{parameter!r} is not one of PR-060 clause 1's six operational parameters "
+            f"{sorted(OPERATIONAL_PARAMETERS)}. A parameter outside that list is refused: "
+            f"clause 5 resolves doubt toward constitutional, and this module treats "
+            f"silently accepting an unrecognized parameter as operational as exactly the "
+            f"wrongly-operational mistake clause 5 warns against.")
+    if not str(value or "").strip():
+        raise AttestError("--value is required: a commit with no value commits to nothing")
+    return sign_act(root, name, key_path, COMMIT_KIND, ref=parameter, task=task,
+                    body={"parameter": parameter, "value": str(value),
+                          "PR_060_CLAUSE_6": (
+                              "THIS RECORD AUTHORIZES NO CONSEQUENCE NOW. It authorizes "
+                              "the DISTINCTION and nothing else (PR-060 clause 6, quoted "
+                              "verbatim). A breach finding and any damages consequence are "
+                              "later, separate acts -- this one only records the "
+                              "commitment."),
+                          "NUMBERS_NOT_RATIFIED": WINDOWS_NOT_RATIFIED})
+
+
+def answer(root, name, key_path, task, ref, disputes) -> dict:
+    """File an answer (T-452 section 2): unprivileged, self-filed on `name`'s own chain,
+    disputing a claim -- the observed-source fact, the contract's scope, the contract's
+    existence, or a counter-claim; `disputes` says which and why.
+
+    Computes no objection window (WINDOWS_NOT_RATIFIED). Whether this answer landed "within
+    the window" is for the register that holds the claim to decide once a window exists
+    (precedent.py, T-468), not for this module to guess at.
+    """
+    if not str(disputes or "").strip():
+        raise AttestError(
+            "--disputes is required: an answer that disputes nothing is a checkbox, the "
+            "same refusal declare_intent applies to a blank --declares")
+    return sign_act(root, name, key_path, ANSWER_KIND, ref=ref, task=task,
+                    body={"disputes": disputes, "NUMBERS_NOT_RATIFIED": WINDOWS_NOT_RATIFIED})
+
+
+def appeal(root, name, key_path, task, ref, grounds) -> dict:
+    """File an appeal (T-452 section 5): unprivileged, self-filed on the appellant's own
+    chain, naming the verdict's sequence and case (`ref`) and the grounds for appeal.
+
+    Computes no appeal window and freezes nothing -- T-452 section 5's freeze is a property
+    of what a verdict's consequence does while an appeal is open, which lives outside this
+    module (a judge's/the operator's act), not here. WINDOWS_NOT_RATIFIED applies.
+    """
+    if not str(grounds or "").strip():
+        raise AttestError(
+            "--grounds is required: an appeal that states no grounds is a checkbox")
+    return sign_act(root, name, key_path, APPEAL_KIND, ref=ref, task=task,
+                    body={"grounds": grounds, "NUMBERS_NOT_RATIFIED": WINDOWS_NOT_RATIFIED})
+
+
+def file_claim(root, accuser, key_path, target_name, target_seq, observed_value, source,
+               task=None) -> dict:
+    """T-436 section 5 / T-452 section 1: the gap-check runs INSIDE the write, not before
+    it. Reads `target_name`'s own commit act at `target_seq` for the committed value, takes
+    `observed_value` from the ONE named independent `source` the caller read it from, and
+    ONLY when they disagree calls `contest` -- kind=contest, exactly as `contest` does
+    today. When they agree, this raises and returns, having written nothing anywhere: no
+    act on either chain, no event line, no file (Outcome A, T-436 section 5, "There is no
+    on-disk artifact for a future decision... to read, because none was written").
+
+    EVERYTHING BEFORE THE DECISION IS A READ. Nothing between opening `target_name`'s chain
+    and either raising (agreement) or calling `contest` (gap) touches disk, so Outcome A is
+    provably inert -- the test suite checks this by hashing acts/ and the event log before
+    and after a refused filing, not by trusting this docstring.
+
+    OUTCOME B INHERITS `sign_act`'s PRIVILEGED GUARDS, UNCHANGED, BECAUSE THIS CALLS
+    `contest` RATHER THAN RE-IMPLEMENTING IT. `contest` is in PRIVILEGED_KINDS, so the
+    resulting act still needs `--task` and a prior declared intent for kind=contest on this
+    task, under the SAME held-kinds ceiling (D3b) every other privileged act uses. This
+    function adds no shortcut around any of that and no extra friction either -- a
+    claimant who lacks `contest` (held_kinds) gets the exact same "DELEGATION CEILING:
+    ... cannot sign a 'contest' act" refusal `sign_act` already raises for any other
+    delegate reaching past its ceiling, named here so the refusal is not mistaken for a
+    gap in THIS function.
+
+    Refuses, before any gap-check, if `target_seq` does not name a `commit` act that
+    actually sits on `target_name`'s OWN chain and verifies under `target_name`'s own
+    enrolled or delegated key -- "a commit reference that is not on the respondent's own
+    chain is refused".
+    """
+    acts = [a for a in chain(root, target_name) if "_unparseable" not in a]
+    commit_act = next((a for a in acts if a.get("seq") == target_seq), None)
+    if commit_act is None:
+        raise AttestError(
+            f"{target_name!r} has no act at seq {target_seq}. A claim reads the "
+            f"RESPONDENT'S OWN commit act: a reference that is not on {target_name}'s own "
+            f"chain is refused, structurally -- the same shape `retract` already uses for "
+            f"'you cannot name another chain's act'.")
+    if commit_act.get("kind") != COMMIT_KIND:
+        raise AttestError(
+            f"{target_name}#{target_seq} is kind {commit_act.get('kind')!r}, not "
+            f"{COMMIT_KIND!r}. A claim compares against a CONTRACT (T-436 section 1); only "
+            f"a {COMMIT_KIND!r} act records a committed operational value to replay "
+            f"against.")
+    keys = signing_keys(root)
+    pub = keys.get(target_name, {}).get("pubkey")
+    ok, why = (False, "no enrolled or delegated key for this name")
+    if pub:
+        ok, why = _verify_sig(root, target_name, commit_act["_path"], pub)
+    if not ok:
+        raise AttestError(
+            f"{target_name}#{target_seq} does not verify under {target_name!r}'s own key "
+            f"({why}). A claim is not filed against a reference that cannot be "
+            f"authenticated to the chain it is read from.")
+    body = commit_act.get("body") or {}
+    parameter, committed_value = body.get("parameter"), body.get("value")
+    observed_value = str(observed_value)
+    if str(committed_value) == observed_value:
+        raise AttestError(
+            f"no gap: {target_name!r} committed {parameter!r}={committed_value!r} at "
+            f"{target_name}#{target_seq}, and {source!r} also reads {observed_value!r}. "
+            f"Outcome A (T-436 section 5): this claim is refused and writes nothing, "
+            f"anywhere -- no act, no event, no file.")
+    reason = (
+        f"breach claim against {target_name}#{target_seq} "
+        f"(commit digest {commit_act['_digest']}): committed {parameter!r}="
+        f"{committed_value!r}; observed {observed_value!r} via {source!r}. "
+        f"{WINDOWS_NOT_RATIFIED}")
+    return contest(root, accuser, key_path, target_name, target_seq, reason, task=task)
+
+
 # ----------------------------------------------------------------------------- retract
 
 def retractions(root, name) -> dict:
@@ -1346,6 +1555,49 @@ def main(argv=None) -> int:
                     help="the sequence number, on --name's own chain, being disowned")
     rt.add_argument("--reason", required=True, help="why; a blank reason is refused")
 
+    cm = sub.add_parser("commit", help="file a CONTRACT (T-436 S1): commit one operational "
+                                       "parameter's value for a task; unprivileged")
+    cm.add_argument("--name", required=True, help="the committing name")
+    cm.add_argument("--key", required=True)
+    cm.add_argument("--task", required=True)
+    cm.add_argument("--parameter", required=True,
+                    help="one of %s" % ", ".join(sorted(OPERATIONAL_PARAMETERS)))
+    cm.add_argument("--value", required=True)
+
+    an = sub.add_parser("answer", help="file an answer (T-452 S2): dispute a claim, on "
+                                       "your own chain; unprivileged, no window computed")
+    an.add_argument("--name", required=True, help="the respondent")
+    an.add_argument("--key", required=True)
+    an.add_argument("--task", required=True)
+    an.add_argument("--ref", default="", help="the suit/claim this answers")
+    an.add_argument("--disputes", required=True, help="what is disputed, and why")
+
+    ap_ = sub.add_parser("appeal", help="file an appeal (T-452 S5): naming the verdict's "
+                                        "seq and case; unprivileged, no window computed")
+    ap_.add_argument("--name", required=True, help="the appellant")
+    ap_.add_argument("--key", required=True)
+    ap_.add_argument("--task", required=True)
+    ap_.add_argument("--ref", required=True, help="the verdict seq and/or case appealed")
+    ap_.add_argument("--grounds", required=True)
+
+    fc = sub.add_parser("file-claim", help="T-436 S5/T-452 S1: replay a commit act against "
+                                           "an independent source; writes nothing on no "
+                                           "gap (Outcome A), signs one contest on a gap "
+                                           "(Outcome B)")
+    fc.add_argument("--by", required=True, dest="accuser", help="the claimant")
+    fc.add_argument("--key", required=True)
+    fc.add_argument("--name", required=True, dest="target_name",
+                    help="the respondent whose commit act is being replayed")
+    fc.add_argument("--seq", required=True, type=int, dest="target_seq",
+                    help="the respondent's commit act's sequence number")
+    fc.add_argument("--observed-value", required=True, dest="observed_value")
+    fc.add_argument("--source", required=True,
+                    help="the one independent source observed_value was read from, e.g. "
+                         "usage_report.py, the blackboard task record, goal_mode.py's exit "
+                         "code, or the transcript")
+    fc.add_argument("--task", help="required to reach Outcome B: contest is privileged "
+                                   "(D3a) and needs a prior declared intent for this task")
+
     args = ap.parse_args(argv)
     root = w.resolve_root(args.root)
     try:
@@ -1418,6 +1670,23 @@ def main(argv=None) -> int:
         elif args.cmd == "retract":
             print(json.dumps(retract(root, args.name, args.key, args.target_seq,
                                      args.reason),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "commit":
+            print(json.dumps(commit(root, args.name, args.key, args.task, args.parameter,
+                                    args.value),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "answer":
+            print(json.dumps(answer(root, args.name, args.key, args.task, args.ref,
+                                    args.disputes),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "appeal":
+            print(json.dumps(appeal(root, args.name, args.key, args.task, args.ref,
+                                    args.grounds),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "file-claim":
+            print(json.dumps(file_claim(root, args.accuser, args.key, args.target_name,
+                                        args.target_seq, args.observed_value, args.source,
+                                        task=args.task),
                              indent=2, ensure_ascii=False))
     except (AttestError, ValueError, json.JSONDecodeError) as exc:
         print(f"refused: {exc}", file=sys.stderr)

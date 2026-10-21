@@ -1,0 +1,23 @@
+{
+  "id": "T-472",
+  "title": "file_claim reads the observed value itself; the claimant no longer supplies it",
+  "description": "Coordinator finding on T-466 after its verdict: file_claim takes observed_value and source from the caller, so a claimant makes a false claim pass the gap check by typing any other value. T-436 section 5 specifies that file_claim reads the respondent's commit act AND reads the one named independent source for the observed value. As built, Outcome A protects nothing against a claimant who lies.",
+  "acceptance_criteria": [
+    "Remove observed_value from file_claim and --observed from the CLI. The source is fixed by the parameter, never chosen by the claimant: a table maps each PR-060 clause 1 parameter to the one harness record that observes it (T-436 section 2 lists the candidates: the blackboard record, goal_mode's exit, usage_report's per-run accounting, the run transcript).",
+    "Build a reader for every parameter whose observing record already exists in this harness and can be tied to the commit act's own task id; at least one must exist (deadline against the task's own recorded handoff or completion time is the expected first). Find what goal_mode, usage_report and the event log actually record per task before deciding; list what you found.",
+    "A parameter with no reader is refused before anything is written, with a message that the harness cannot replay that claim (T-436 section 2: where a breach cannot be stated as a single-task, single-comparison fact, there is no breach). Pinned by a test that hashes acts/ and the event log.",
+    "The gap test is per parameter: equality for task, order and engine; observed exceeds committed for budget, deadline and iteration bound. Move the comparison into one small comparator that returns only a boolean and the two values. Update T-466's AST output-shape guard so it still forbids any damages, window, lapse or reputation computation everywhere, and allows ordering comparisons only inside that comparator; keep its planted-violation negative controls.",
+    "Tests in a throwaway root: a true gap files exactly one contest act whose reason names the reader and both values; agreement writes nothing; a claimant cannot influence the observed value through any argument.",
+    "Edit attest.py and its tests only; precedent.py belongs to T-474. Do not edit claude.md. Suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/design-T-436-contracts.md",
+    ".harness/design-T-452-courts.md",
+    ".harness/bin/attest.py",
+    ".harness/tests/test_attest_contracts.py",
+    ".harness/bin/goal_mode.py",
+    ".harness/bin/usage_report.py",
+    ".harness/bin/blackboard.py"
+  ],
+  "notes": []
+}

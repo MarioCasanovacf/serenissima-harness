@@ -1,0 +1,8 @@
+{
+  "id": "T-470",
+  "title": "test_data_loss_guard passes only when another test file ran first",
+  "description": "Run alone, test_the_lapse_is_named_rather_than_left_to_be_discovered fails with ModuleNotFoundError: portalock, raised at prevent_data_loss.py line 78 when _guard_module() loads it by spec. In the full suite it passes because an earlier test file put .harness/bin on sys.path. Make the test load the module with its own directory importable, without changing prevent_data_loss.py behavior. Acceptance: the file passes run alone and in the full suite; no edit to prevent_data_loss.py or safe_delete.py; hand off to verifier.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

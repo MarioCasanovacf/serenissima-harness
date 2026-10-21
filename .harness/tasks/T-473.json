@@ -1,0 +1,13 @@
+{
+  "id": "T-473",
+  "title": "VERIFY T-472: a claimant cannot choose the observed value",
+  "description": "A different agent verdicts T-472.",
+  "acceptance_criteria": [
+    "Try to file a false claim through every argument file_claim and its CLI accept; none may move the observed value. Mutants in throwaway copies: let a caller argument override the reader; let a parameter with no reader fall through to a default; drop the per-parameter direction (exceeds versus differs). Each must fail at least one test.",
+    "Read each reader against the record it reads and confirm it is tied to the commit act's own task. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-436-contracts.md"
+  ],
+  "notes": []
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-10-21T20:19:00Z",
+  "updated_at": "2026-10-21T22:24:46Z",
   "updated_by": "coordinator",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
@@ -2615,7 +2615,7 @@
       "handoff": {
         "to_role": "verifier",
         "from": "main",
-        "note": "FIX for verifier-b's REJECTED bug: _target_matches() in guard_paths.py now also protects the bare directory a `<prefix>/**` glob was written for (deleting the whole tree, the worst case), not just files strictly inside it.\n\nCHANGE (guard_paths.py, _target_matches only):\n- Candidates are normalized by stripping a trailing slash (c.rstrip(\"/\") or c) before matching, so \"dir\" and \"dir/\" behave alike.\n- In addition to the existing fnmatch(cand, glob) check, added: if glob.endswith(\"/**\") and cand == glob[:-len(\"/**\")]: match. This covers the bare-prefix case that fnmatch alone cannot express (fnmatch(\"dir\", \"dir/**\") is False by design — the pattern requires >=1 segment after the slash).\n- Existing inside-the-tree matching (fnmatch against resolved+relative-to-root candidates) is untouched.\n\nEXPECTED vs ACTUAL: expected the verifier's exact failing command to now deny; observed exit 2 + protected_path_blocked event on first replay, confirmed below.\n\nREPLAY (all run as worker-c, this session, in order):\n1. Baseline snapshot before any test mutation:\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (matches verifier-b's recorded pre-test snapshot); protected_paths == [] confirmed via python3 -c \"import json;print(json.load(open('.harness/state.json')).get('protected_paths'))\".\n\n2. Set test glob (same locked guarded()+atomic_write_json pattern as original impl, lock.py held on state.json throughout):\n   protected_paths = [\".harness/tests_protected_wc/**\"]\n   mkdir -p .harness/tests_protected_wc && touch .harness/tests_protected_wc/dummy.txt\n   mkdir -p /private/tmp/guard_paths_test_wc && touch /private/tmp/guard_paths_test_wc/scratch.txt\n\n3. Mechanical proof suite (synthetic stdin JSON payloads written to scratchpad files via the Write tool, then fed to guard_paths.py via `python3 .harness/bin/guard_paths.py < payload.json`, to avoid the outer dcg guard tripping on literal \"rm -rf\" text in an inline echo/heredoc):\n\n   a. relative file: {\"command\":\"rm -f .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2, event target=\".harness/tests_protected_wc/dummy.txt\" glob=\".harness/tests_protected_wc/**\" (pre-existing behavior, still works)\n\n   b. VERIFIER'S EXACT BYPASS CASE (bare directory, no trailing segment): {\"command\":\"rm -rf .harness/tests_protected_wc\"}\n      -> exit 2 (was exit 0 before this fix). stderr: \"HARNESS PROTECTED PATH: command targets '.harness/tests_protected_wc', which matches protected glob '.harness/tests_protected_wc/**' ...\". events.jsonl gained {\"event\":\"protected_path_blocked\",\"target\":\".harness/tests_protected_wc\",\"glob\":\".harness/tests_protected_wc/**\"}.\n\n   c. trailing-slash form: {\"command\":\"rm -rf .harness/tests_protected_wc/\"}\n      -> exit 2, target normalized to \".harness/tests_protected_wc/\" in the log but matched via the rstrip(\"/\") candidate.\n\n   d. redirect form: {\"command\":\"echo hi >> .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   e. quoted absolute path with space (repo dir name has a space): {\"command\":\"rm -f \\\"/Users/.../Universal Harness/.harness/tests_protected_wc/dummy.txt\\\"\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   f. /private/tmp scratch, glob still active (selectivity / no false positive): {\"command\":\"rm -f /private/tmp/guard_paths_test_wc/scratch.txt\"}\n      -> exit 0.\n\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 after (a)-(e); one extra event beyond the 5 expected from (a,b,c,d,e) was logged at 16:39:10Z with a truncated command containing my own literal test-setup shell text — this is the SAME live-hook side effect the original worker noted (my own real Bash tool call got intercepted by the now-live guard because its literal command text matched the active test glob); it is additional corroboration the wiring is live, not a bug.\n\n4. Restore + re-prove no-op (same guarded()+atomic_write_json pattern, standalone, not chained with any rm so the outer dcg guard doesn't intervene):\n   protected_paths = []\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (byte-identical to step 1's baseline)\n   Re-ran ALL SIX payloads (a)-(f) above against the restored empty state:\n   -> ALL six: exit 0.\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 (unchanged from step 3 -- confirms zero new denies during the no-op re-proof).\n\n5. Cleanup: rm -f .harness/tests_protected_wc/dummy.txt && rmdir .harness/tests_protected_wc; rm -f /private/tmp/guard_paths_test_wc/scratch.txt && rmdir /private/tmp/guard_paths_test_wc. Both test dirs confirmed gone (ls -> No such file or directory).\n\n6. Diff scope check vs git HEAD (unchanged from original impl, still additive-only):\n   git diff HEAD -- .harness/state.json -> single new top-level key \"protected_paths\": [] added, nothing else touched.\n   git diff HEAD -- .claude/settings.json -> single new PreToolUse \"Bash\" matcher block appended after the existing Edit|Write|... block, no existing hooks touched.\n   guard_paths.py is untracked (new file), diff is the _target_matches fix described above (git diff not meaningful since untracked; full current file content is the artifact).\n\nCLAUDE.md: not touched (still out of scope per task text).\n\nLocks: acquired+released on .harness/bin/guard_paths.py and .harness/state.json for this session (lock.py acquire/release, holder worker-c). No lock files left behind.\n\nVerifier replay tip: to reproduce step 3(b) directly, set protected_paths=[\".harness/tests_protected_wc/**\"] (or any dir/** glob), mkdir the dir, then feed {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf <dir>\"}} to guard_paths.py via stdin -- expect exit 2 and a protected_path_blocked event with target==<dir> (bare, no trailing slash). Restore protected_paths=[] afterward; md5 of state.json should return to 3c6b1610c6d6e0f390e533fe69daf662.",
+        "note": "FIX for verifier-b's REJECTED bug: _target_matches() in guard_paths.py now also protects the bare directory a `<prefix>/**` glob was written for (deleting the whole tree, the worst case), not just files strictly inside it.\n\nCHANGE (guard_paths.py, _target_matches only):\n- Candidates are normalized by stripping a trailing slash (c.rstrip(\"/\") or c) before matching, so \"dir\" and \"dir/\" behave alike.\n- In addition to the existing fnmatch(cand, glob) check, added: if glob.endswith(\"/**\") and cand == glob[:-len(\"/**\")]: match. This covers the bare-prefix case that fnmatch alone cannot express (fnmatch(\"dir\", \"dir/**\") is False by design — the pattern requires >=1 segment after the slash).\n- Existing inside-the-tree matching (fnmatch against resolved+relative-to-root candidates) is untouched.\n\nEXPECTED vs ACTUAL: expected the verifier's exact failing command to now deny; observed exit 2 + protected_path_blocked event on first replay, confirmed below.\n\nREPLAY (all run as worker-c, this session, in order):\n1. Baseline snapshot before any test mutation:\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (matches verifier-b's recorded pre-test snapshot); protected_paths == [] confirmed via python3 -c \"import json;print(json.load(open('.harness/state.json')).get('protected_paths'))\".\n\n2. Set test glob (same locked guarded()+atomic_write_json pattern as original impl, lock.py held on state.json throughout):\n   protected_paths = [\".harness/tests_protected_wc/**\"]\n   mkdir -p .harness/tests_protected_wc && touch .harness/tests_protected_wc/dummy.txt\n   mkdir -p <tmp>/guard_paths_test_wc && touch <tmp>/guard_paths_test_wc/scratch.txt\n\n3. Mechanical proof suite (synthetic stdin JSON payloads written to scratchpad files via the Write tool, then fed to guard_paths.py via `python3 .harness/bin/guard_paths.py < payload.json`, to avoid the outer dcg guard tripping on literal \"rm -rf\" text in an inline echo/heredoc):\n\n   a. relative file: {\"command\":\"rm -f .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2, event target=\".harness/tests_protected_wc/dummy.txt\" glob=\".harness/tests_protected_wc/**\" (pre-existing behavior, still works)\n\n   b. VERIFIER'S EXACT BYPASS CASE (bare directory, no trailing segment): {\"command\":\"rm -rf .harness/tests_protected_wc\"}\n      -> exit 2 (was exit 0 before this fix). stderr: \"HARNESS PROTECTED PATH: command targets '.harness/tests_protected_wc', which matches protected glob '.harness/tests_protected_wc/**' ...\". events.jsonl gained {\"event\":\"protected_path_blocked\",\"target\":\".harness/tests_protected_wc\",\"glob\":\".harness/tests_protected_wc/**\"}.\n\n   c. trailing-slash form: {\"command\":\"rm -rf .harness/tests_protected_wc/\"}\n      -> exit 2, target normalized to \".harness/tests_protected_wc/\" in the log but matched via the rstrip(\"/\") candidate.\n\n   d. redirect form: {\"command\":\"echo hi >> .harness/tests_protected_wc/dummy.txt\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   e. quoted absolute path with space (repo dir name has a space): {\"command\":\"rm -f \\\"/Users/.../Universal Harness/.harness/tests_protected_wc/dummy.txt\\\"\"}\n      -> exit 2 (regression check, unaffected by the fix).\n\n   f. <tmp> scratch, glob still active (selectivity / no false positive): {\"command\":\"rm -f <tmp>/guard_paths_test_wc/scratch.txt\"}\n      -> exit 0.\n\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 after (a)-(e); one extra event beyond the 5 expected from (a,b,c,d,e) was logged at 16:39:10Z with a truncated command containing my own literal test-setup shell text — this is the SAME live-hook side effect the original worker noted (my own real Bash tool call got intercepted by the now-live guard because its literal command text matched the active test glob); it is additional corroboration the wiring is live, not a bug.\n\n4. Restore + re-prove no-op (same guarded()+atomic_write_json pattern, standalone, not chained with any rm so the outer dcg guard doesn't intervene):\n   protected_paths = []\n   md5 .harness/state.json -> 3c6b1610c6d6e0f390e533fe69daf662 (byte-identical to step 1's baseline)\n   Re-ran ALL SIX payloads (a)-(f) above against the restored empty state:\n   -> ALL six: exit 0.\n   grep -c protected_path_blocked .harness/logs/events.jsonl -> 22 (unchanged from step 3 -- confirms zero new denies during the no-op re-proof).\n\n5. Cleanup: rm -f .harness/tests_protected_wc/dummy.txt && rmdir .harness/tests_protected_wc; rm -f <tmp>/guard_paths_test_wc/scratch.txt && rmdir <tmp>/guard_paths_test_wc. Both test dirs confirmed gone (ls -> No such file or directory).\n\n6. Diff scope check vs git HEAD (unchanged from original impl, still additive-only):\n   git diff HEAD -- .harness/state.json -> single new top-level key \"protected_paths\": [] added, nothing else touched.\n   git diff HEAD -- .claude/settings.json -> single new PreToolUse \"Bash\" matcher block appended after the existing Edit|Write|... block, no existing hooks touched.\n   guard_paths.py is untracked (new file), diff is the _target_matches fix described above (git diff not meaningful since untracked; full current file content is the artifact).\n\nCLAUDE.md: not touched (still out of scope per task text).\n\nLocks: acquired+released on .harness/bin/guard_paths.py and .harness/state.json for this session (lock.py acquire/release, holder worker-c). No lock files left behind.\n\nVerifier replay tip: to reproduce step 3(b) directly, set protected_paths=[\".harness/tests_protected_wc/**\"] (or any dir/** glob), mkdir the dir, then feed {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf <dir>\"}} to guard_paths.py via stdin -- expect exit 2 and a protected_path_blocked event with target==<dir> (bare, no trailing slash). Restore protected_paths=[] afterward; md5 of state.json should return to 3c6b1610c6d6e0f390e533fe69daf662.",
         "ts": "2026-07-06T16:41:00Z"
       },
       "created_at": "2026-07-06T16:25:11Z",
@@ -6042,7 +6042,7 @@
     "T-444": {
       "epic": "gen-9-rehearsal",
       "title": "Rehearsal under its own throwaway root (decision 9): the 4 stopped mechanisms fire",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6050,15 +6050,25 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-444.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        "examples/rehearsal/run_rehearsal.py",
+        ".harness/tests/test_rehearsal.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-root",
+        "note": "replay for verifier: (1) python3 examples/rehearsal/run_rehearsal.py --json -> fired=12 blocked=1 (westphalia, own PR-029 clause 6 message) unbuilt=1 (contracts) of 14, live_tree_untouched=true; the \"a case disposed by `distinguish`\" row's evidence now ends with \"case show C-006 --json -> case_status=disposed disposal_verb=distinguish\". (2) python3 -m pytest .harness/tests/test_rehearsal.py -q -> 14 passed (ran twice to rule out flake). (3) python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> GOAL REACHED iteration 1/3 (125.90s).\n\nfix for the round-1 gap you found (T-445 mutant #2): run_rehearsal.py now reads the case record back directly via `precedent.py case show <id> --json` after the distinguish call and requires status==\"disposed\" and disposal.verb==\"distinguish\" before marking that row fired (previously it only checked distinguish3.returncode==0 and by_citation_raw>=1, both of which stay green even if dispose_case() never runs, since by_citation_raw counts signed acts off the attest chain, not the case record). test_the_by_citation_disposal_now_fires in test_rehearsal.py now asserts \"case_status=disposed\" and \"disposal_verb=distinguish\" in that row's evidence, not just the counter.\n\nverified the fix actually catches your exact mutant: in a throwaway copy under the session scratchpad (git-init'd, never the working tree), commented out the single `dispose_case(hroot, args.case, \"distinguish\", ...)` line inside precedent.py's cmd_distinguish (same line/mutant you specified). In that copy: the row flips to BLOCKED with evidence \"case_status=open disposal_verb=None\" and blocker \"case C-006 shows status=open disposal={} after `distinguish` claimed rc=0 -- the case record itself was never disposed\"; pytest there: 2 failed (test_the_by_citation_disposal_now_fires, test_total_outcome_counts), 12 passed -- same pattern as your two already-passing mutants (forks()->[], delegation-ceiling raise removed), which I left untouched and reconfirmed still pass against the unmutated tree.\n\nscope: only examples/rehearsal/run_rehearsal.py and .harness/tests/test_rehearsal.py touched, nothing in .harness/bin. No verb was missing; none added. CLAUDE.md untouched; no doc change identified.\n\none note for the record, not a blocker: a single standalone pytest run of test_rehearsal.py once failed test_live_tree_untouched_sandbox_removed_and_scorecard_shape on a sandbox dir name this script's own run never created -- looks like a concurrent agent's own run_rehearsal.py execution landing a same-glob tmp dir in the shared OS tempdir between that test's before/after snapshot (other agents are active per the dispatch note). Immediate re-run: 14/14 passed; has not recurred in several subsequent runs. Worth keeping an eye on if it recurs for you, but it is not the gap you flagged and did not persist for me.",
+        "ts": "2026-10-21T21:09:07Z"
+      },
       "created_at": "2026-10-21T20:18:59Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:19:28Z",
+      "completed_by": "harness-verifier"
     },
     "T-445": {
       "epic": "gen-9-rehearsal",
       "title": "VERIFY T-444: replay under the rehearsal root, raw evidence, 3 mutants, live tree untouched",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6071,12 +6081,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:18:59Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:19:39Z",
+      "completed_by": "harness-verifier"
     },
     "T-446": {
       "epic": "gen-10-identity",
       "title": "Dispatch tokens: format, draft and verify, signed by the operator's root (decision 1, option 5)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6084,15 +6096,25 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-446.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/dispatch_token.py",
+        ".harness/tests/test_dispatch_token.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-token",
+        "note": "Round 2 done: added Falsifiers::test_a_payload_that_names_its_own_signer_as_trusted_is_still_refused to test_dispatch_token.py, closing the one gap the verifier found (T-447 bullet-3's 'trusts a key the payload names' mutant). No source change to dispatch_token.py -- shipped code was already sound. Replay: python3 -m pytest .harness/tests/test_dispatch_token.py -q (20 passed); python3 -m pytest .harness/tests -q (1065 passed, 4 skipped); python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" (GOAL REACHED iter 2/3). Mutant-catch independently confirmed in a throwaway bin/ copy outside the tree. Full detail in this task's note history.",
+        "ts": "2026-10-21T20:47:03Z"
+      },
       "created_at": "2026-10-21T20:18:59Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:56:24Z",
+      "completed_by": "harness-verifier"
     },
     "T-447": {
       "epic": "gen-10-identity",
       "title": "VERIFY T-446: forge, tamper and expire tokens; no signing path",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6105,12 +6127,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:18:59Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:56:49Z",
+      "completed_by": "harness-verifier"
     },
     "T-448": {
       "epic": "gen-10-notary",
       "title": "Notary part a: the retract verb as designed in T-406 (decision 4)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6118,15 +6142,25 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-448.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/attest.py",
+        ".harness/tests/test_attest_retraction.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Built exactly the handoff list of .harness/design-T-406-retraction.md, part (a) only (T-460 owns the live retraction, not touched here).\n\nWHAT CHANGED in .harness/bin/attest.py:\n- RETRACT_KIND = \"retract\", NOT added to PRIVILEGED_KINDS (unprivileged, no intent), with a docstring stating the ACCEPTED D-17/DIS-2 limit verbatim.\n- retract(root, name, key_path, target_seq, reason) -> signs a RETRACT_KIND act whose body carries retracts (target digest), retracts_seq, reason; blank reason refused before any file is written. Refusals: no act at that seq on the retractor's OWN chain (structural: no parameter can name a foreign act); target must verify under the retractor's own key; one retraction per target (second is refused, not a silent dup); a retraction cannot be retracted.\n- retractions(root, name) -> {target_digest: retracting_act}, computed on read from name's own chain only, no side ledger (PR-010). First-in-chain-order wins if the sign-time refusal is ever bypassed by a direct file edit.\n- trace(): rows gain retracted (bool) / retracted_by (seq); complete is untouched by retraction (a row can read complete:true, retracted:true); counts gain retracted_raw/retracted_distinct (raw+distinct, TELEMETRY-PROVENANCE-A); new note RETRACTION_DOES_NOT_CHANGE_COMPLETE.\n- verify_name(): new \"retracted\" list (seq/digest/retracted_by_seq/reason); retracted acts are NOT counted as signature_failures.\n- CLI: new `attest.py retract --name --key --seq --reason` subcommand; `attest.py chain --name X` now prints \"RETRACTED by seq N\" inline on the target act's line; `_render_trace` prints a retractados count line.\n- PUBLIC_API extended with \"retract\", \"retractions\".\n\nTESTS, new file .harness/tests/test_attest_retraction.py (41 tests, all on a tempfile.TemporaryDirectory fixture via warrant.enrolled_keys -- never .harness/acts):\n  TheKindIsUnprivileged, TheBodyShape (body shape + blank-reason refusal incl. CLI exit 2), TheFourRefusals (no-act-at-seq; structural cross-name refusal proven by colliding seq numbers between two names; unsigned-target refusal; tampered-target refusal; second-retraction refusal; retraction-of-a-retraction refusal; all write nothing), BackwardResolution (map shape, absence, no-side-ledger via hand-edit, deterministic first-wins under a hand-bypassed second filing), TraceAndVerifyConsultIt (retracted/retracted_by fields, complete independent of retracted, retracting act itself not self-marked, raw/distinct counts, verify_name's retracted list + no signature-failure miscount, CLI chain inline render, CLI trace render), TheD17Limit (stolen-key forges a retraction of a true act; verifies clean; traces COMPLETE; credited to the victim name per DIS-2; RETRACT_KIND's own docstring asserted to contain ACCEPTED/D-17/DIS-2), OutputShapeGuard (AST guard over held_kinds/effective_expiry/sign_act/grant_privilege/delegated_keys/signing_keys/verify_all/forks/open_intents/declare_intent/_match_intent/intent_binds_ref/head/enrolled_keys/delegations -- none read retracts/retracts_seq/retracted/retracted_by/retracted_by_seq; includes a vacuity negative-control on the target-function list, a vacuity negative-control on the field list, a positive control that the fields DO live in retract/retractions/trace/verify_name, and a planted-violation negative control proving the AST walk actually catches an injection), BehaviouralClauseFourGuard (retracting changes neither held_kinds nor effective_expiry nor contested status; a name can still sign privileged acts afterward), AppendOnly (target act file and .sig byte-identical after retraction; a direct cat of the target file still shows only the original act, per the design's named limit).\n\nREPLAY:\n  python3 -m pytest .harness/tests/test_attest_retraction.py -v   -> 41 passed\n  python3 -m pytest .harness/tests/test_attest_intent.py .harness/tests/test_attest_delegation.py -q   -> 70 passed (no regression)\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"   -> GOAL REACHED, iteration 1/3\n  python3 -m pytest .harness/tests -q   -> 1053 passed, 4 skipped, exit 0\n\nNOT DONE (out of scope for T-448 per its own description): the live retraction of revision-doctrina seq 1 (ref T-376) is T-460. CLAUDE.md untouched; no docs change needed -- the CLI --help text for `attest.py retract` documents itself. No dated record touched. attest.py stayed importable at every save (checked via `python3 -c \"import attest\"` after each edit).",
+        "ts": "2026-10-21T20:34:28Z"
+      },
       "created_at": "2026-10-21T20:18:59Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:48:58Z",
+      "completed_by": "verifier-g10-retract"
     },
     "T-449": {
       "epic": "gen-10-notary",
       "title": "VERIFY T-448: the retract verb, its refusals and its clause-4 guard",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6139,12 +6173,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:49:21Z",
+      "completed_by": "verifier-g10-retract"
     },
     "T-450": {
       "epic": "gen-10-notary",
       "title": "Notary part b: warrant.py audit fails without the operator's fingerprint (decision 4)",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6152,15 +6188,26 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-450.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/warrant.py",
+        ".harness/tests/test_warrant.py",
+        ".harness/OPERATOR-ENROLMENT.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Replay: (1) python3 -m pytest .harness/tests/test_warrant.py -q -> 76 passed (was 73 before, +3 net: one case renamed/strengthened, two new classes T450AuditExitCodes [4 tests] and T450OperatorTagStep [4 tests]). (2) python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> GOAL REACHED iteration 1/3, full suite green. (3) python3 .harness/bin/warrant.py audit --help -> prints exit-code table (0/3/4/5) and the operator's git-tag command verbatim. (4) mkdir -p <scratch>/.harness && python3 .harness/bin/warrant.py --root <scratch>/.harness audit ; echo rc=$? -> rc=5, JSON carries UNVERIFIED, no ALARM (manually verified, not just via pytest). (5) grep -rn 'warrant.py audit\\|w\\.audit\\|w\\.main' . --include=*.py --include=*.md --include=*.sh (excluding .git) to confirm no other caller relies on exit 0; only test_warrant.py did, and it is updated. Acceptance criteria from T-450.json addressed point by point: (a) audit w/o --expect -> UNVERIFIED + distinct documented nonzero exit (EXIT_AUDIT_UNVERIFIED=5); matching --expect -> 0; mismatching --expect -> 3 (ALARM, unchanged); (b) caller search done, only test_warrant.py needed adjusting, no scripts/skills/docs relied on exit 0 (OPERATOR-ENROLMENT.md had no claim about that row at all -- added one for accuracy, not because it was wrong); (c) three cases pinned in T450AuditExitCodes plus a pairwise-distinctness test; (d) operator's manual step (one signed git tag carrying the fingerprint, kept outside the working tree) stated with the exact command in warrant.py's audit --help epilog AND in OPERATOR-ENROLMENT.md -- never run, never signed (AST test T450OperatorTagStep.test_no_call_in_the_module_invokes_git enforces warrant.py never shells out to git); (e) CLAUDE.md untouched, suite passes via goal_mode. Note for the record: attest.py's docstring/help text that mentions 'audit --expect' was left untouched because it is locked by T-448, listed per instructions, not edited. W-002-BRIEFING.md already states the new exit-code behavior correctly from the ruling it quotes, so no edit was needed there either. One documentation gap flagged but NOT fixed (CLAUDE.md is governed, not mine to edit): the Identity Gate bullet describes audit --expect but not the new distinct exit code for the no-expect path -- worth a line at the next harness evolution pass.",
+        "ts": "2026-10-21T20:29:56Z"
+      },
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:38:00Z",
+      "completed_by": "verifier-g10-audit"
     },
     "T-451": {
       "epic": "gen-10-notary",
       "title": "VERIFY T-450: an unverified audit can no longer pass",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6173,12 +6220,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T20:38:27Z",
+      "completed_by": "verifier-g10-audit"
     },
     "T-452": {
       "epic": "gen-10-courts",
       "title": "Design: suits between parties, an agentic judge, appeal to the operator (decision 3)",
-      "status": "open",
+      "status": "done",
       "role": "thinker",
       "engine": "any",
       "depends_on": [],
@@ -6186,15 +6235,24 @@
       "claim_expires_at": null,
       "priority": 1,
       "detail_file": ".harness/tasks/T-452.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/design-T-452-courts.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "thinker-g10-courts",
+        "note": "HANDOFF -> verifier: ROUND 3 FIXES + full verbatim-quote audit, as the rejection asked.\n\nFIXES THIS ROUND (3 total, see DECISION/DEVIATION notes above for each):\n1. Line ~29: \"registration must precede disposal\" re-attributed from \"T-412's own rule\" to T-436:106 (which itself credits T-412); T-412's actual verbatim words (\"The mechanism is a precondition, not an inference\"; \"A CLI verb, not a required field...\") kept as T-412 citations, confirmed at T-412:47 and :113-116.\n2. Line ~248 (section 5, appeal): T-406 quote corrected from the design's own wrong paraphrase (\"...and this is not fixable inside the harness\") to T-406's actual text (\"...and this design does not prevent that\", T-406:88-89); the restatement sentence that follows is now explicitly marked as the design's own analogy, not a second quote.\n3. Line ~159 (section 3, warrant payload): quote re-attributed from CLAUDE.md's paraphrase (which is what the old text actually matched) to warrant.py's own module docstring, quoted verbatim (warrant.py:11-13).\nAlso fixed a stale fact (not a quote): section 7 now says T-446 is `done` (was `in_progress` when first drafted), live-confirmed; T-454 -- the actual gate this section's assumption depends on -- is still `open`, so the assumption is unaffected.\n\nFULL CITATION LIST (every quote-marked passage in the design, file+location checked against verbatim text), grouped by source:\n\noperator-rulings-2026-10-21.md: decision 3's four bullets + \"What it needs\"/\"Still owed\" paragraphs (lines ~67-78) -- verbatim. Decision 1's \"one signing action per epic\" (line 46) and \"Routine checks at every epic close: attest.py forks, warrant.py reconcile\" (line 54) -- verbatim. Decision 4a's retract command + \"The act file stays; every tool that reports it reports the retraction with it\" (lines 89-91) -- verbatim.\n\noperator-rulings-2026-10-08.md: \"Adelante la idea del presupuesto operativo...\" (line 11) and \"Nothing was signed, and nothing needed to be: the ruling attaches no consequence, so no warrant carries it\" (lines 3-4) -- verbatim.\n\ndesign-T-436-contracts.md: file_claim mechanics quote (lines 193-197), \"There is no on-disk artifact...\" (205-206), round-1/round-2 rejection quotes (330, 335), objection-halt quote (228-229, 231), lapse quote (236), \"by default, nobody...priority-queue bump\" (139-141), \"a second, independent bound...left to the operator\" (148-151), \"the delay costs the delayer\" (92, 262), BYPASS residual quote (253, 292), the attest.py declare_intent shape quote (103-104) -- all verbatim.\n\ndesign-T-412-case-register.md: \"biased toward over-registration\" (136), \"That is not a defect in the register -- it is the measurement\" (79-80), \"The mechanism is a precondition, not an inference\" (47), \"A CLI verb, not a required field...\" (113-116) -- all verbatim.\n\nroster.py: \"REPORT, never a gate. See module docstring and PR-017\" (:366), IS_NOT_A_GATE string (:393-394), \"changing what F6 computes from is a constitutional act, and PR-017 requires the amending record before the text lands\" (:31-32) -- all verbatim.\n\nwarrant.py: module docstring UNSIGNED/no-code-path quote (:11-13, fixed this round) -- verbatim.\n\nattest.py: DIS-4 \"A CONTESTED ACT CARRIES NO WEIGHT UNTIL ADJUDICATED, INCLUDING THE FORGER'S\" (:45), D3a task-required guard message (:730-732), \"has N open intent(s) but none for...\" pattern (:685) -- all verbatim.\n\nprecedents/PR-017.json, PR-022.json, PR-023.json, PR-026.json, PR-060.json, PR-061.json: PR-017 ratio (amendment procedure quote), PR-022 clause 4, PR-023 clause 4, PR-026 clauses 3+4, PR-060 clause 1 (\"any weighting...any tier boundary\") and clause 6, PR-061 clause 3 -- all verbatim against the live JSON records.\n\ncoordinator-decisions-ruling-round-2.md: D-17 (:550-552), DIS-2 (:612-613), IMP-1 (:670-672), IMP-7 (:709), \"less profitable, more visible, or more expensive to sustain\" (:666) -- all verbatim.\n\ndesign-T-406-retraction.md: \"You cannot retract someone else's statement. A retraction is a speaker disowning their own act... the target must be on the retractor's own chain -- you cannot disown another name's act\" (:29-30ish) -- verbatim; and the false-retraction sentence (fixed this round, see above).\n\ndesign-T-432-agent-identity.md: \"signed plazas bound HOW MANY seats exist. They do not bound WHO occupies them\" (:242-243) -- verbatim.\n\nORCHESTRATION.md: \"Producer != approver, always\" (line 7) and the \"nothing stalls\" invariant (section 1 point 4 / PR-037 row) -- verbatim.\n\nT-446.json acceptance criteria: \"No wiring into blackboard.py or lock.py (that is T-454)\" -- verbatim; status reference fixed this round (see above).\n\n\"Swiss brief\" quotes are T-436's own citations of an external (non-harness-file) research brief, reused here the same way T-436 uses them (e.g. \"deterrence against false claims is weak\", T-436:77-78) -- traced to T-436's own text, not a separate local file, consistent with how T-436 itself cites it.\n\nNothing else in the document sits inside quote marks without being covered above. Replayed live again after these edits: python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> GOAL REACHED iter 1/3. wc -w: 4390 (under the 5000 cap). Grepped for absolute paths/usernames: none. No source edits made (design-only task, per the task's own instruction); only .harness/design-T-452-courts.md was touched, lock acquired and released cleanly.\n",
+        "ts": "2026-10-21T21:23:32Z"
+      },
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:31:26Z",
+      "completed_by": "verifier-g10-courts-3"
     },
     "T-453": {
       "epic": "gen-10-courts",
       "title": "VERIFY T-452: attack the courts design and its three proposed numbers",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6207,12 +6265,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:31:38Z",
+      "completed_by": "verifier-g10-courts-3"
     },
     "T-454": {
       "epic": "gen-10-identity",
       "title": "Wire dispatch tokens into claim and lock as an optional, additive check",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [
@@ -6222,15 +6282,28 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-454.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/dispatch_token.py",
+        ".harness/bin/blackboard.py",
+        ".harness/bin/lock.py",
+        ".harness/tests/test_dispatch_token.py",
+        ".harness/tests/test_dispatch_token_wiring.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-wire",
+        "note": "EXPECTED vs ACTUAL. Expected: an optional, additive dispatch-token check wired into\n`blackboard.py claim` and `lock.py acquire`, zero behavior change when an epic carries\nno operator-signed requirement. Actual: confirmed by goal_mode (full suite green, two\nruns, ~110-120s each) and by a dedicated subprocess-driven test file\n(.harness/tests/test_dispatch_token_wiring.py, 13/13 passing) plus a throwaway-tree\nsmoke script run by hand before touching the live files (built in scratch first, per\ninstructions).\n\nDESIGN CHOICE (acceptance criterion 2). Requirement lives INSIDE the epic's own signed\ndispatch-token set: dispatch_token.draft() gained a `required` bool, part of the signed\npayload bytes (not a second, separately-signed record). New function\ndispatch_token.epic_requires_token(root, epic) scans dispatch_tokens/DT-*.json for a\nSIGNED, VERIFIED set naming that epic with required=true; unsigned drafts, wrong-epic\nsets, and wrong-key signatures never count (pinned in test_dispatch_token.py's new\nEpicRequirement class). No dispatch_tokens/ directory at all (today's live tree) means\nepic_requires_token returns False with zero subprocess calls -- the \"no flag day\"\nproperty.\n\nNONCE DECISION (asked for explicitly). blackboard.py claim consumes nonces: single-use,\nrecorded into bb[\"used_dispatch_nonces\"] inside the same guarded()/save_bb cycle that\nperforms the claim, so no second lock is needed. lock.py acquire does NOT consume\nnonces: re-acquiring/refreshing a lock you already hold is the ordinary heartbeat\npattern and must keep working under the same still-valid token. Both choices are tested:\ntest_dispatch_token_wiring.py::RequirementIsEnforced::test_claim_nonce_is_single_use and\n::test_lock_acquire_succeeds_and_refreshes_with_the_same_token.\n\nWHAT CHANGED.\n- .harness/bin/dispatch_token.py: draft() gained `required` param + CLI --required\n  flag; new epic_requires_token(root, epic); PUBLIC_API updated; module docstring's\n  \"NO WIRING\" section replaced with \"WIRING (T-454)\" describing the above. (This file\n  also carries T-456's revocation check in verify(), landed in parallel -- I re-read\n  the file after acquiring its lock and layered my changes on top, did not touch\n  T-456's revoke import/logic.)\n- .harness/bin/blackboard.py: imports dispatch_token as dtok; new\n  _dispatch_token_gate(bb, epic, agent, task_id, role, token_file) helper; wired into\n  cmd_claim right after the existing \"not claimable\" check, before the lease/status\n  mutation; new --token-file flag on `claim`.\n- .harness/bin/lock.py: imports dispatch_token as dtok; new\n  _task_epic_and_role(task_id) (read-only board lookup) and\n  _dispatch_token_gate(epic, agent, task_id, role, token_file); wired into acquire()\n  before the existing lock_name_for/guarded block; new --token-file flag on `acquire`.\n- .harness/tests/test_dispatch_token.py: replaced the old `NoWiring` class (which\n  pinned \"blackboard.py/lock.py must NOT import dispatch_token\", correct before this\n  task) with `Wiring` (asserts they now DO); added `EpicRequirement` class (6 tests)\n  for the required-field semantics.\n- .harness/tests/test_dispatch_token_wiring.py (new): end-to-end subprocess-driven\n  suite over a throwaway tree (shutil.copytree of .harness/bin, same pattern as\n  test_sync_pr3_coverage.py), 13 tests covering: no-requirement unchanged (with/without\n  --task, with an unsigned required draft), requirement-enforced refusal, correct-token\n  success, agent/role mismatch refusal on both claim and lock.py, claim's single-use\n  nonce, lock.py's refresh-friendly non-consumption, cross-epic isolation, and live-tree\n  isolation (never touches .harness/trust or .harness/dispatch_tokens).\n\nREPLAY.\n  python3 -m pytest .harness/tests/test_dispatch_token.py -q\n  python3 -m pytest .harness/tests/test_dispatch_token_wiring.py -q\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"\nObserved: test_dispatch_token.py 26/26 passed; test_dispatch_token_wiring.py 13/13\npassed; full suite GOAL REACHED on iteration 1/3 twice in a row (~111s, ~120s). After\nevery save to blackboard.py/lock.py/dispatch_token.py I ran\n`python3 .harness/bin/blackboard.py status --agent worker-g10-wire` and\n`python3 .harness/bin/lock.py status --agent worker-g10-wire` to confirm both tools\nstill work on the live tree; both did, every time.\n\nNOT DONE / LEFT FOR THE OPERATOR OR A LATER TASK. No dispatch-token set has been\ndrafted or signed for any live epic -- this task only builds the mechanism and pins it;\nwhether any real epic's claims should actually require a token is an operator decision\n(mint via `dispatch_token.py draft --epic <E> --dispatch <agent:task:role> --required`,\nthen sign with the printed ssh-keygen command). CLAUDE.md was not touched and needs no\ndocumentation change for this task; the --token-file flags and the gate functions are\nself-documented in each file's own docstrings/help text.\n\nCAVEAT T-456 OVERLAP. dispatch_token.py and test_dispatch_token.py were held by\nworker-g10-revoke for T-456 when I started; I worked on blackboard.py/lock.py first,\nwaited for the lock, re-read both files after acquiring, and layered my diff on top of\nT-456's revocation check (verify()'s `import revoke as rv` / is_revoked call) without\ntouching it. Worth a second look: epic_requires_token() calls verify_token_set(), which\ndoes NOT go through verify()'s revocation check (it has no agent_name to check a\nrevocation against) -- this is intentional (the requirement flag is epic-wide, not\nagent-scoped) but a verifier should confirm that reading matches T-456's intent.\n",
+        "ts": "2026-10-21T21:38:06Z"
+      },
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:47:20Z",
+      "completed_by": "verifier-g10-wire"
     },
     "T-455": {
       "epic": "gen-10-identity",
       "title": "VERIFY T-454: token-gated claim and lock",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6243,12 +6316,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:47:35Z",
+      "completed_by": "verifier-g10-wire"
     },
     "T-456": {
       "epic": "gen-10-identity",
       "title": "Option 6a: revoke a name by operator order",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [
@@ -6258,15 +6333,27 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-456.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/revoke.py",
+        ".harness/tests/test_revoke.py",
+        ".harness/bin/dispatch_token.py",
+        ".harness/bin/roster.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-revoke",
+        "note": "Built .harness/bin/revoke.py, option 6a (operator-rulings-2026-10-21.md, Decision 1).\n\nDesign: mirrors warrant.py's draft/apply split exactly.\n- draft(root, name, reason=\"\") -- any agent may run, writes UNSIGNED REV-NNN.json\n  under <root>/revocations/ (not trust/), prints the ssh-keygen -Y sign command in its\n  own namespace NAMESPACE=\"harness-revocation\" (distinct from warrant/dispatch_token/\n  attest namespaces). No function in revoke.py calls ssh-keygen -Y sign; pinned by\n  test_revoke.py::TheModuleCannotSign (both a source-grep and an inspect.getsource scan\n  of every exported callable).\n- apply(root, rid) / verify_revocation -- accept a revocation only if it verifies\n  against the ENROLLED root (trust/root.pub checked against trust/root.fingerprint via\n  warrant.check_anchor), never against a key the file names about itself\n  (test_revoke.py::OnlyTheEnrolledRootAuthorizes, including the\n  \"payload names its own signer as trusted\" regression shape from\n  test_dispatch_token.py).\n- revoked_names(root)/is_revoked(root, name) -- computed on read (PR-010), re-verify\n  every revocation file's signature on every call; no cache, no second registry.\n\nWiring:\n- dispatch_token.py verify(): added a revocation check (local `import revoke as rv`\n  inside verify(), before the expiry check) that raises TrustError \"REVOKED NAME: ...\"\n  for any presented token naming a revoked agent_name, regardless of the token's own\n  expiry -- matches the ruling's \"refused, expired or not\". ~17-line, localized diff;\n  kept the import inside the function rather than the shared top-of-file import block\n  since T-454 also touches this file in parallel.\n- roster.py: added public revoked_report(root) (lazy `import revoke`, same pattern as\n  require_warrant's lazy warrant import; never raises, returns {} if nothing has ever\n  been revoked). `roster.py roster` (text) now tags a revoked name's row\n  \"[REVOCADO REV-NNN]\" and prints a one-line disclaimer that this is a report, not a\n  gate; `roster.py roster --json` adds \"revoked\": bool and, when true, a \"revocation\"\n  sub-object to that name's entry. Verified by hand against a throwaway root (see\n  below) and by test_revoke.py::NoConsequenceBeyondTheToken.\n\nAcceptance criteria, point by point:\n1. draft is any-agent, unsigned, prints the operator sign command; apply/verify_revocation\n   accept only against the enrolled root, never a self-named key -- covered by\n   TheModuleCannotSign + OnlyTheEnrolledRootAuthorizes.\n2. From the revocation's time, dispatch_token.verify refuses every token for that name,\n   expired or not, and roster.py shows it as revoked -- covered by TheFalsifier\n   (test_revoking_the_name_refuses_a_valid_unexpired_token,\n   test_revocation_refuses_an_expired_token_too) and\n   NoConsequenceBeyondTheToken.test_roster_reports_the_name_as_revoked.\n3. Falsifier exactly as stated: with a valid, unexpired token, revoke the name, the\n   token is refused (test_revoking_the_name_refuses_a_valid_unexpired_token); a\n   revocation signed by any other key is refused\n   (test_a_revocation_signed_by_any_other_key_is_refused, which also re-confirms the\n   original token still verifies because the forged revocation never took effect).\n4. No consequence beyond refusing the token: the payload itself carries a\n   NOT_A_CONSEQUENCE string (test_revocation_carries_no_consequence_marker); PUBLIC_API\n   scanned for threshold/gate/weight/burden/permission parameters\n   (test_no_exported_callable_takes_a_threshold_gate_weight_burden_or_permission),\n   mirroring test_roster.py's own guard. Revoking one name does not refuse another\n   (test_revoking_one_name_does_not_refuse_another).\n\nReplay commands (all green):\n  python3 -m pytest .harness/tests/test_revoke.py .harness/tests/test_dispatch_token.py .harness/tests/test_roster.py .harness/tests/test_warrant.py -q\n    -> 150 passed in 13.51s\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"\n    -> GOAL REACHED: succeeded on iteration 1/3 (112.31s)\n\nManually exercised the CLI end to end (throwaway root in tempfile.TemporaryDirectory,\nno live state touched -- confirmed `.harness/revocations` does not exist on the live\ntree and `git status --porcelain .harness/` shows no stray revocation files):\n  revoke.py draft --name worker-a --reason \"stolen key\"  -> unsigned REV-001.json + sign command\n  <operator signs>\n  revoke.py apply --revocation REV-001                   -> {\"applied\": true, ...}\n  roster.py --root <tmp> roster                           -> worker-a row tagged \"[REVOCADO REV-001]\"\n  roster.py --root <tmp> roster --json                     -> names.worker-a.revoked == true\n\nNo signing happened anywhere in the live tree or against the operator's real\n~/.ssh/harness_root; both the manual exercise and every test use a throwaway root key\ngenerated inside tempfile.TemporaryDirectory(), same shape as test_warrant.py and\ntest_dispatch_token.py.\n\nOpen items for the verifier / the operator:\n- dispatch_token.py's own module docstring still says \"NO WIRING ... nothing in this\n  module is imported by blackboard.py or lock.py\" -- that sentence is about claim/lock\n  wiring (T-454's scope) and is unaffected by this change, which only adds an internal\n  import of revoke.py inside dispatch_token.verify(). Flagging in case a future reader\n  conflates the two.\n- No documentation change is needed in CLAUDE.md; this task adds a tool under\n  .harness/bin/ consistent with the existing \"local environment tools only\" posture\n  and the existing draft/apply discipline CLAUDE.md section 3.A already names for\n  warrant.py.",
+        "ts": "2026-10-21T21:29:18Z"
+      },
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:40:10Z",
+      "completed_by": "verifier-g10-revoke"
     },
     "T-457": {
       "epic": "gen-10-identity",
       "title": "VERIFY T-456: revocation refuses live tokens and only the operator can revoke",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6279,12 +6366,14 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:40:30Z",
+      "completed_by": "verifier-g10-revoke"
     },
     "T-458": {
       "epic": "gen-10-identity",
       "title": "Option 6b: IMP-6 and the epic-close checks",
-      "status": "open",
+      "status": "done",
       "role": "worker",
       "engine": "any",
       "depends_on": [],
@@ -6292,15 +6381,25 @@
       "claim_expires_at": null,
       "priority": 2,
       "detail_file": ".harness/tasks/T-458.json",
-      "artifacts": [],
-      "handoff": null,
+      "artifacts": [
+        ".harness/bin/close_checks.py",
+        ".harness/tests/test_close_checks.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-close",
+        "note": "Round 3 replay for the verifier: python3 -m pytest .harness/tests/test_close_checks.py -q -> 18 passed (added 2, was 16). python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> GOAL REACHED iteration 1/3, exit 0. python3 -m pytest .harness/tests -q -> 1068 passed, 4 skipped, exit 0. python3 .harness/bin/close_checks.py epic-close / --json imp6 against the live .harness root -> both exit 0, clean (0 forks, reconcile clean=True, acts_total=3 matched=3 anomalous=0). To replay the AC3 fix for the coarse-key mutant: in close_checks.py's _signed_event_keys, replace 'ident = event_stats.identity(e)' with 'ident = e.get(\\'name\\')' (import line untouched, same disguise as rounds 1 and 2), apply ONLY in a throwaway copy outside the tree (mirror .harness/bin/{close_checks,event_stats,harness_common,portalock}.py + .harness/tests/test_close_checks.py under repo/.harness/... so ROOT/BIN_DIR resolve), then run pytest .harness/tests/test_close_checks.py -q -k 'not RealClis' -> expect exactly 2 failures: test_two_properly_signed_acts_by_the_same_name_with_different_seq_both_match and test_events_sharing_name_and_seq_but_differing_in_another_d9_field_stay_distinct, both asserting distinct==2 but getting distinct==1 (and the first additionally would show act#8 wrongly anomalous if you inspect acts_anomalous). I also tried the other 3 mutants named in the dispatch: ident=(ts,name) caught by 4 tests; ident=(name,seq) caught by 1 test (the task-varying one); ident=tuple(sorted(e.items())) caught by the 2 pre-existing ts-pin tests. Only .harness/tests/test_close_checks.py changed this round; close_checks.py itself was not touched (the call site already used event_stats.identity(e) correctly -- the gap flagged in the last rejection was a missing test, not a shipped bug). attest.py, warrant.py, CLAUDE.md and all dated records untouched. Locks released.",
+        "ts": "2026-10-21T21:21:06Z"
+      },
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:26:15Z",
+      "completed_by": "verifier-g10-close-3"
     },
     "T-459": {
       "epic": "gen-10-identity",
       "title": "VERIFY T-458: an act written outside the verb is reported",
-      "status": "open",
+      "status": "done",
       "role": "verifier",
       "engine": "any",
       "depends_on": [
@@ -6313,7 +6412,9 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
-      "created_by": "coordinator"
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T21:26:28Z",
+      "completed_by": "verifier-g10-close-3"
     },
     "T-460": {
       "epic": "gen-10-notary",
@@ -6349,6 +6450,293 @@
       "artifacts": [],
       "handoff": null,
       "created_at": "2026-10-21T20:19:00Z",
+      "created_by": "coordinator"
+    },
+    "T-462": {
+      "epic": "gen-10-notary",
+      "title": "warrant.py prose that contradicts its own behavior: the audit exit comment and 'trust/ is untracked'",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-462.json",
+      "artifacts": [
+        ".harness/bin/warrant.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-prose",
+        "note": "Round 2 producer handoff. Fixed the gap the round-1 verifier found: warrant.py:780 (audit()'s docstring) still said 'is not tracked by git', the third of the three named locations (reconcile's note, audit's docstring, audit's removed-root ALARM message) and the one spot my round-1 search (grep for the bare word 'untracked') missed. Replay: (1) git diff -- .harness/bin/warrant.py, confirm all four spots (reconcile note ~551-558, audit docstring ~777-783, audit ALARM ~807-812, audit exit-code comment ~826-829) now read 'tracked by git ... yet writable by every agent ... can be overwritten before the next commit', no old 'untracked'/'not tracked' wording left as a present-tense claim. (2) python3 .harness/bin/warrant.py --root <empty-tmp-dir> audit -> expect/observed exit 5 (EXIT_AUDIT_UNVERIFIED), unchanged from before the edit. (3) python3 .harness/bin/warrant.py --root <empty-tmp-dir> reconcile -> expect/observed exit 0, unchanged. (4) grep -rniE 'not tracked by git|untracked by git' .harness/bin -> only hit left is warrant.py:855, a past-tense comment narrating the OLD wording this fix replaced (not a present-tense claim); grep -rni untracked .harness/bin -> same single hit. (5) grep -ni untracked .harness/bin/attest.py .harness/bin/precedent.py -> no match (both still lock-held by other tasks T-464ish and T-468ish; not touched, nothing to touch anyway). (6) python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> ran twice: one GOAL REACHED on iteration 1/3 (140.49s) exit 0, one GOAL REACHED on iteration 3/3 (145.00s) exit 0 after the documented transient test_rehearsal.py concurrency flake on iterations 1-2 (other agents had concurrent pytest processes running, confirmed via ps aux at the time). (7) python3 -m pytest .harness/tests/test_warrant.py -q -> 76 passed, no flakes. Out-of-scope flag carried over from round 1, unchanged by this round: test_warrant.py docstrings at ~784/881/924 still narrate 'trust/ is untracked' as present-tense prose but no test asserts the literal string (checked via grep for assertIn/assertEqual on it), and T-462's acceptance criteria scoped the fix to .harness/bin, not .harness/tests -- a follow-up task could update those docstrings for consistency if the operator wants it, but it is not a behavior or test-pinning gap.",
+        "ts": "2026-10-21T22:10:46Z"
+      },
+      "created_at": "2026-10-21T21:22:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:17:21Z",
+      "completed_by": "main"
+    },
+    "T-463": {
+      "epic": "gen-10-notary",
+      "title": "VERIFY T-462: warrant.py prose matches behavior",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-462"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-463.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:22:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:17:36Z",
+      "completed_by": "main"
+    },
+    "T-464": {
+      "epic": "gen-10-identity",
+      "title": "Pin the token identity match by task and by role, not only by agent",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-464.json",
+      "artifacts": [
+        ".harness/tests/test_dispatch_token.py",
+        ".harness/tests/test_dispatch_token_wiring.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-tests",
+        "note": "Replay: python3 -m pytest .harness/tests/test_dispatch_token.py .harness/tests/test_dispatch_token_wiring.py -q -> 45 passed, 0 failed. 6 new tests added: 2 in test_dispatch_token.py (Falsifiers class, dt.verify level, agent fixed/correct, vary only task_id or only role), 4 in test_dispatch_token_wiring.py (new class IdentityMatchIsPinnedByTaskAndRoleNotOnlyAgent: claim x2, lock.py acquire x2, same shape at the CLI). Mutant proof done in a throwaway copy at scratchpad/t464-mutant2/.harness/{bin,tests} (outside the working tree, never committed): patched that copy's dispatch_token.py verify() to compare agent_name only; all 6 new tests then failed (wrongly passed the mismatched act), confirming each is a real falsifier of the agent-only narrowing the T-455 verifier found. Full-suite goal_mode run showed unrelated transient failures (test_rehearsal.py live-tree hash mismatch, test_attest_contracts.py) caused by other workers' live locks on .harness/bin/attest.py (worker-g10-contract/T-466) and .harness/bin/precedent.py (worker-g10-suits/T-468) mid-edit during the run -- confirmed via lock.py status at the time, unrelated to this task's test-only diff. Only test files edited: .harness/tests/test_dispatch_token.py, .harness/tests/test_dispatch_token_wiring.py.",
+        "ts": "2026-10-21T22:02:00Z"
+      },
+      "created_at": "2026-10-21T21:49:52Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:09:53Z",
+      "completed_by": "verifier-g10-tests"
+    },
+    "T-465": {
+      "epic": "gen-10-identity",
+      "title": "VERIFY T-464: the identity match fails closed on task and on role",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-464"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 2,
+      "detail_file": ".harness/tasks/T-465.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:49:52Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:10:03Z",
+      "completed_by": "verifier-g10-tests"
+    },
+    "T-466": {
+      "epic": "gen-10-courts",
+      "title": "Build contracts: the commit act and file_claim (design T-436), no windows or damages yet",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-466.json",
+      "artifacts": [
+        ".harness/bin/attest.py",
+        ".harness/tests/test_attest_contracts.py"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-contracts",
+        "note": "EXPECTED: attest.py gains unprivileged kinds commit/answer/appeal (T-436 S1, T-452 S2+S5) plus file_claim (T-436 S5/T-452 S1), none in PRIVILEGED_KINDS, Outcome A writes nothing, Outcome B inherits sign_act's privileged guards via contest(), raw contest verb stays open (BYPASS residual), no window/lapse/damages computed, PR-022 clause4 clean. ACTUAL: implemented in .harness/bin/attest.py (new: WINDOWS_NOT_RATIFIED, OPERATIONAL_PARAMETERS, COMMIT_KIND/ANSWER_KIND/APPEAL_KIND, commit()/answer()/appeal()/file_claim(), CLI verbs commit/answer/appeal/file-claim); 42 new tests in .harness/tests/test_attest_contracts.py, all pass.\n\nKind choice: section 1 leaves the kind name unbound (\"name not binding, shape is\"); I chose COMMIT_KIND=\"commit\" because PRIVILEGED_KINDS' own existing docstring already uses `commit` as its worked example of a non-privileged kind -- stated in commit's own docstring so it's not mistaken for a design quote.\n\nReplay commands:\n  python3 -m pytest .harness/tests/test_attest_contracts.py -q   -> 42 passed\n  python3 -m pytest .harness/tests -q --deselect .harness/tests/test_rehearsal.py  -> 1140 passed, 4 skipped\n  python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"  -> iteration 2/3 failed: test_rehearsal.py::RehearsalRootIsNotTheLiveRootTests::test_a_rehearsal_warrant_fails_verification_outside_its_own_sandbox, reporting \"live .harness/ untouched: NO -- hash changed/added/removed: bin/precedent.py\"\n\nKNOWN TRANSIENT, NOT MINE TO FIX: that failure and a repeat (test_live_tree_untouched_sandbox_removed_and_scorecard_shape, re-run twice) are caused by T-468 (worker-g10-suits) actively editing .harness/bin/precedent.py and .harness/tests/test_precedent_t468_suits.py in parallel while test_rehearsal.py hashes the whole live .harness/ tree before/after -- confirmed via `lock.py status` showing both files still held by worker-g10-suits/T-468 (in_progress, claim_expires_at 2026-10-21T22:59:49Z) at every re-run. I did not touch precedent.py (not my file; T-468 owns it). Per the dispatch instructions this is the documented transient shape (\"test_rehearsal.py's live-tree check can fail transiently while others write... if a suite failure sits in a file another task holds a lock on, do not fix it: wait a few minutes and re-run, and report it if it persists\") -- it persisted across 3 re-runs over several minutes while T-468 was still in_progress, so I am reporting rather than waiting further. Please re-run `python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"` once T-468 hands off/completes to confirm a clean pass; nothing in my diff (attest.py, test_attest_contracts.py) is implicated.\n\nAcceptance criteria walkthrough:\n1. commit/answer/appeal added, unprivileged; PRIVILEGED_KINDS pinned unchanged by test (frozenset({\"verdict\",\"contest\",\"distinguish\",\"grant\"})).\n2. commit() requires --task, requires parameter in OPERATIONAL_PARAMETERS={task,order,budget,deadline,engine,iteration_bound} (PR-060 clause1's six), refuses any other parameter and a blank value; records exactly one {parameter,value} pair in the act body.\n3. file_claim() CLI verb `file-claim`: reads respondent's commit act by seq (verifies it is kind=commit and signature-verifies under the respondent's own key), compares to --observed-value/--source; agreement raises AttestError and writes nothing -- proven in FileClaimOutcomeA by hashing acts/+events.jsonl before/after the call (byte-identical); disagreement calls contest() (kind=contest) naming the respondent, the commit digest, observed value/source and the gap in the contest act's `reason` field.\n4. Tests: seq not on respondent's own chain -> refused (\"no act at seq\"); non-commit-kind act referenced -> refused; true gap -> exactly one act filed (asserted via acts_on() count delta); raw `contest` CLI verb still writes unconditionally even with no real gap (TheRawContestVerbStillWrites) -- pinned open, not closed.\n5. Nothing in commit/answer/appeal/file_claim computes a deadline/window/lapse/debit/damages amount -- AST guard (OutputShapeGuard) asserts no BinOp and no ordering comparison (<,>,<=,>=) anywhere in those four function bodies, plus a forbidden-identifier scan (reputation, standing, debit, damages_amount, lapse_at, objection_deadline); both guards carry a planted-violation negative control proving they can actually catch a regression, mirroring test_attest_retraction.py's own discipline.\n6. Edited only .harness/bin/attest.py and added .harness/tests/test_attest_contracts.py; did not touch precedent.py (T-468's) or CLUADE.md.\n\nFile_claim's held-kinds inheritance is exercised directly: a delegate granted only `verdict` (never `contest`) gets sign_act's own \"DELEGATION CEILING: ... cannot sign a 'contest' act\" message unchanged, proving Outcome B adds no shortcut and no bespoke refusal text.",
+        "ts": "2026-10-21T22:05:15Z"
+      },
+      "created_at": "2026-10-21T21:49:52Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:14:40Z",
+      "completed_by": "verifier-g10-contracts"
+    },
+    "T-467": {
+      "epic": "gen-10-courts",
+      "title": "VERIFY T-466: a false claim leaves no trace, a true one files one act",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-466"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-467.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:49:53Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:14:54Z",
+      "completed_by": "verifier-g10-contracts"
+    },
+    "T-468": {
+      "epic": "gen-10-courts",
+      "title": "Build suits in the case register, case verdict, the notice task and the judge seat draft (design T-452)",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-468.json",
+      "artifacts": [
+        ".harness/bin/precedent.py",
+        ".harness/tests/test_precedent_t468_suits.py",
+        ".harness/judge-seat-draft-T468.md",
+        ".harness/warrants/W-003.json"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-g10-suits",
+        "note": "EXPECTED vs ACTUAL: expected precedent.py's case register to grow the three verbs per design-T-452-courts.md section 9 items 1/3/4 without building any of decision 3's three unratified numbers; actual: implemented, 15 new tests pass, full suite (1169 passed/4 skipped) clean on a direct run.\n\n1) SUIT FIELDS (case open). precedent.open_case()/cmd_case_open gained optional --claimant/--respondent/--contract/--damages-claimed, stored as rec[\"suit\"]={claimant,respondent,contract,damages_claimed} only when at least one is given. Replay:\n   python3 .harness/bin/precedent.py case open --question q --task T-1 --root <reg> --harness-root <hroot>              # old schema, no \"suit\" key\n   python3 .harness/bin/precedent.py case open --question q --task T-1 --claimant a --respondent b --contract T-100 --damages-claimed \"40 tokens\" --root <reg> --harness-root <hroot>\n   Pinned: TheSuitFields.test_a_case_opened_with_no_suit_fields_is_byte_for_byte_the_old_schema (exact key-set check), test_a_case_opened_with_suit_fields_stores_one_suit_block, test_a_partial_suit_block_still_writes_one_dict_with_the_rest_none. damages_claimed is informational only: test_damages_claimed_is_never_read_by_the_disposal_or_verdict_machinery asserts \"damages\" does not appear in inspect.getsource() of dispose_case/cmd_case_verdict/validate_case_for_disposal/_ref_already_disposes_a_case.\n\n2) CASE VERDICT. New `precedent.py case verdict --case --judge --seq --task [--harness-root] [--root]`, cmd_case_verdict. Looks up act #seq on judge's attest chain, then refuses, IN ORDER: (a) act not found; (b) act.kind != \"verdict\"; (c) attest._verify_sig fails under the judge's own enrolled/delegated pubkey (attest.signing_keys); (d) judge not issued into the \"judge\" colegiado in roster.json (new _judge_issue_check, a REFUSAL gate unlike classify_seat/eligible_report's report-only posture); (e) act[\"task\"] != --task; (f) case already disposed (validate_case_for_disposal, the T-412/S-1 refusal, reused unchanged); (g) the verdict act (ref=\"{judge}_{seq}\") already disposes a DIFFERENT case (new _ref_already_disposes_a_case). On success calls the existing dispose_case(verb=\"verdict\", ref=\"{judge}_{seq}\", ...) unchanged. Computes NO deadline/lapse/damages amount anywhere -- pinned by TheVerdict.test_damages_cap_and_windows_are_never_computed_here (source scan for \"deadline\"/\"lapse\"/the three proposed numbers). All 7 scenarios + happy path covered in TheVerdict (test_precedent_t468_suits.py), built against a throwaway root with a REAL warrant.py draft/sign/apply flow (never the operator's key). Replay the suite directly:\n   python3 -m pytest .harness/tests/test_precedent_t468_suits.py -q\n\n3) CASE NOTICE. New `precedent.py case notice --case --respondent --task-id [--agent] [--harness-root] [--root]`, cmd_case_notice. Refuses an unregistered --case; otherwise shells out to the REAL <harness-root>/bin/blackboard.py add-task (never writes a task file by hand) with title literally \"NOTICE to <respondent>: answer suit <case> by window not ratified\", --role worker --engine any, no --depends-on. The deadline slot is the module constant NOTICE_WINDOW_UNRATIFIED = \"window not ratified\" -- no date arithmetic exists anywhere in cmd_case_notice (TheNoticeVerb.test_the_deadline_is_the_literal_unratified_string_never_a_computed_date asserts no YYYY-MM-DD pattern appears). TheNoticeVerb copies the REAL .harness/bin/ into a throwaway <tmp>/.harness/bin/ (mirrors test_blackboard_redact.py's own pattern, since blackboard.py resolves hc.HARNESS from its own __file__ location, T-422) and asserts the LIVE .harness/blackboard.json's task set is unchanged after the call. Replay:\n   python3 -m pytest .harness/tests/test_precedent_t468_suits.py::TheNoticeVerb -q\n\n4) JUDGE SEAT -- DRAFT ONLY, nothing signed, live roster NOT mutated (confirmed: git diff --stat -- .harness/roster.json is empty). .harness/judge-seat-draft-T468.md documents: the roster.py charter/plazas recipe for the judge colegiado (WRITTEN, not executed against the live roster -- those only run for real inside warrant.py apply_warrant once the warrant below is signed); the recusal checklist (advisory, PR-017, not a gate); and points at .harness/warrants/W-003.json, which is the REAL, unsigned output of:\n   python3 .harness/bin/warrant.py draft --epic gen-10-courts --colegiado 'judge=a reasoned verdict on a filed suit, paid to distrust both parties' --plaza 'judge/verifier=1' --name 'judge-tbd:judge/verifier:<pubkey-path>:...' --valid-until 2027-01-31T00:00:00Z\n   run against the live .harness root (consistent with .harness/OPERATOR-ENROLMENT.md's own documented live-draft workflow, and with the existing precedent of W-001.json sitting unsigned in the live tree since gen-6). W-003.json.sig does NOT exist; `python3 .harness/bin/warrant.py reconcile` still reports clean:true (W-001 and W-003 both land in warrants_unsigned, the documented normal state). judge-tbd and its embedded pubkey are explicit placeholders (keypair generated in a scratch temp dir, private half never written under this repo) -- the draft file says so and names the three steps to replace them before the operator signs. The exact sign command is quoted verbatim from the real draft() output (not paraphrased): \"SSH_AUTH_SOCK= ssh-keygen -Y sign -f ~/.ssh/harness_root -n harness-warrant .harness/warrants/W-003.json\".\n\n5) SCOPE. Only .harness/bin/precedent.py, .harness/tests/test_precedent_t468_suits.py, .harness/judge-seat-draft-T468.md, and .harness/warrants/W-003.json were touched. attest.py was not edited (T-466 owns the answer/appeal kinds; item 2 of design-T-452-courts.md section 9 is explicitly NOT built here and is T-466's). CLAUDE.md was not edited. No new docs needed beyond what's already written.\n\n6) SUITE: direct run `python3 -m pytest .harness/tests -q` -> \"1169 passed, 4 skipped in 134.17s\", exit 0. A prior goal_mode.py run needed 3/3 iterations before passing (iterations 1-2 are not logged in the captured stdout beyond the final line); the immediate direct re-run above was clean on the first try, consistent with the task brief's own warning that test_rehearsal.py's live-tree check can flap transiently under other agents' concurrent writes -- flagging this rather than asserting it, since I could not isolate iteration 1/2's failure text.\n\nReplay everything: `python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"` (exit 3 = bound reached) or the direct pytest command above.",
+        "ts": "2026-10-21T22:13:28Z"
+      },
+      "created_at": "2026-10-21T21:49:53Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:19:06Z",
+      "completed_by": "verifier-g10-suits"
+    },
+    "T-469": {
+      "epic": "gen-10-courts",
+      "title": "VERIFY T-468: only an issued judge's signed verdict disposes a suit",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-468"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-469.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:49:53Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-10-21T22:19:13Z",
+      "completed_by": "verifier-g10-suits"
+    },
+    "T-470": {
+      "epic": "gen-10-identity",
+      "title": "test_data_loss_guard passes only when another test file ran first",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-470.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:53:53Z",
+      "created_by": "coordinator"
+    },
+    "T-471": {
+      "epic": "gen-10-identity",
+      "title": "VERIFY T-470: the guard test stands alone",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-470"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 3,
+      "detail_file": ".harness/tasks/T-471.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T21:53:53Z",
+      "created_by": "coordinator"
+    },
+    "T-472": {
+      "epic": "gen-10-courts",
+      "title": "file_claim reads the observed value itself; the claimant no longer supplies it",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-472.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T22:24:46Z",
+      "created_by": "coordinator"
+    },
+    "T-473": {
+      "epic": "gen-10-courts",
+      "title": "VERIFY T-472: a claimant cannot choose the observed value",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-472"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-473.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T22:24:46Z",
+      "created_by": "coordinator"
+    },
+    "T-474": {
+      "epic": "gen-10-courts",
+      "title": "Link the claim, the answer and the appeal into the suit record",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-474.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T22:24:46Z",
+      "created_by": "coordinator"
+    },
+    "T-475": {
+      "epic": "gen-10-courts",
+      "title": "VERIFY T-474: only the right party's own signed act links to a suit",
+      "status": "open",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-474"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-475.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-10-21T22:24:46Z",
       "created_by": "coordinator"
     }
   }

@@ -1,0 +1,25 @@
+{
+  "id": "T-467",
+  "title": "VERIFY T-466: a false claim leaves no trace, a true one files one act",
+  "description": "A different agent verdicts T-466.",
+  "acceptance_criteria": [
+    "Replay a refused claim and compare tree hashes before and after; replay a true gap and count acts.",
+    "In throwaway copies: let file_claim sign before comparing; let it accept a commit act from another name's chain; put commit into PRIVILEGED_KINDS. Each mutant must fail at least one test.",
+    "Check every T-436 quotation in the code's docstrings against the design file. Full suite, then verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-436-contracts.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-10-21T22:14:54Z",
+      "agent": "verifier-g10-contracts",
+      "note": "VERIFIED T-466 and recorded the verdict there (see T-466's note). Replayed test_attest_contracts.py (42/42) and the full suite via goal_mode (GOAL REACHED iter 1/3), confirming the reported T-468 transient has cleared (lock.py status: no active locks). Ran the three required mutants in a throwaway <tmp> copy of the repo (never the live tree, never signed anything): file_claim signing before the comparison, file_claim accepting an unverified/unsigned commit act, and commit joining PRIVILEGED_KINDS -- each failed at least one test (5, 1, and 19 failures respectively out of 42). Cross-checked every T-436/T-452 quotation in attest.py's new code against design-T-436-contracts.md and design-T-452-courts.md verbatim (line refs in T-466's note); all matched. Scope check via git diff: only attest.py and the new test file were touched."
+    },
+    {
+      "ts": "2026-10-21T22:21:05Z",
+      "agent": "coordinator",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Coordinator hygiene, 2026-10-21: notes in a public repo name a temp directory by placeholder, not by its system path. Wording only; no verdict or evidence changes."
+    }
+  ]
+}

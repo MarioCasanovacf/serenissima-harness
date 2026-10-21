@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 35,
+        "tasks_done": 37,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-10-08T05:03:50Z"
+        "last_outcome_at": "2026-10-21T20:48:58Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -170,9 +170,9 @@
         "last_outcome_at": "2026-07-05T05:49:33Z"
       },
       "harness-verifier": {
-        "tasks_done": 9,
+        "tasks_done": 11,
         "tasks_failed": 0,
-        "last_outcome_at": "2026-10-20T04:34:04Z"
+        "last_outcome_at": "2026-10-21T21:19:39Z"
       },
       "probe-x": {
         "tasks_done": 5,
@@ -748,6 +748,106 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-10-20T04:33:53Z"
+      },
+      "verifier-g10-audit": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T20:38:27Z"
+      },
+      "verifier-g10-retract": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T20:49:21Z"
+      },
+      "worker-g10-token": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T20:56:24Z"
+      },
+      "worker-g10-root": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:19:28Z"
+      },
+      "worker-g10-close": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:26:15Z"
+      },
+      "verifier-g10-close-3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:26:28Z"
+      },
+      "thinker-g10-courts": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:31:26Z"
+      },
+      "verifier-g10-courts-3": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:31:38Z"
+      },
+      "worker-g10-revoke": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:40:10Z"
+      },
+      "verifier-g10-revoke": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:40:30Z"
+      },
+      "worker-g10-wire": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:47:20Z"
+      },
+      "verifier-g10-wire": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T21:47:35Z"
+      },
+      "worker-g10-tests": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:09:53Z"
+      },
+      "verifier-g10-tests": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:10:03Z"
+      },
+      "worker-g10-contracts": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:14:40Z"
+      },
+      "verifier-g10-contracts": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:14:54Z"
+      },
+      "worker-g10-prose": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:17:21Z"
+      },
+      "verifier-g10-prose": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:17:36Z"
+      },
+      "worker-g10-suits": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:19:06Z"
+      },
+      "verifier-g10-suits": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:19:13Z"
       }
     }
   },

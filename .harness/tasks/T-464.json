@@ -1,0 +1,42 @@
+{
+  "id": "T-464",
+  "title": "Pin the token identity match by task and by role, not only by agent",
+  "description": "Found by the T-455 verifier on 2026-10-21: narrowing the (agent, task, role) match to agent only passes the whole suite. The shipped code is correct; the tests are not enough.",
+  "acceptance_criteria": [
+    "Add tests where a token carries the right agent and task but the wrong role, and the right agent and role but the wrong task, for dispatch_token.py verify and for both call sites, blackboard.py claim and lock.py acquire.",
+    "In a throwaway copy outside the working tree, narrow the match to agent only: at least 2 of the new tests must fail. Record which.",
+    "Edit test files only. The suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/bin/dispatch_token.py",
+    ".harness/tests/test_dispatch_token.py",
+    ".harness/tests/test_dispatch_token_wiring.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-10-21T21:53:21Z",
+      "agent": "worker-g10-tests",
+      "note": "plan: add verify()/wiring tests that vary only task_id and only role (agent fixed), to falsify an agent-only identity match; prove with a throwaway mutant copy outside the tree"
+    },
+    {
+      "ts": "2026-10-21T22:01:52Z",
+      "agent": "worker-g10-tests",
+      "note": "EXPECTED: add tests that vary only task_id and only role (agent held fixed/correct) at verify() and at both call sites, since the T-455 verifier found agent-only narrowing passes the whole suite. ACTUAL: added Falsifiers.test_right_agent_and_role_but_wrong_task_is_refused and test_right_agent_and_task_but_wrong_role_is_refused to test_dispatch_token.py (dt.verify level); added class IdentityMatchIsPinnedByTaskAndRoleNotOnlyAgent (4 tests: claim x2, lock-acquire x2) to test_dispatch_token_wiring.py. Replay: python3 -m pytest .harness/tests/test_dispatch_token.py .harness/tests/test_dispatch_token_wiring.py -q -> 45 passed. Mutant proof (throwaway copy, NOT the working tree): copied .harness/bin and .harness/tests to <tmp>/.../scratchpad/t464-mutant2/.harness/{bin,tests}, patched the copy's dispatch_token.py verify() to narrow claimed/actual to agent_name only, then ran pytest there. Result: 6 of the 6 new tests FAILED under the mutant (0 == 0, i.e. wrongly succeeded): Falsifiers::test_right_agent_and_role_but_wrong_task_is_refused, Falsifiers::test_right_agent_and_task_but_wrong_role_is_refused, IdentityMatchIsPinnedByTaskAndRoleNotOnlyAgent::test_claim_refuses_right_agent_right_role_wrong_task, ::test_claim_refuses_right_agent_right_task_wrong_role, ::test_lock_acquire_refuses_right_agent_right_role_wrong_task, ::test_lock_acquire_refuses_right_agent_right_task_wrong_role (37 passed, 1 unrelated failure: NoPrivateKeyIsEverTracked, which fails outside a git repo and is an artifact of the throwaway copy, not the mutant). Full suite: python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" showed unrelated transient failures in test_rehearsal.py and test_attest_contracts.py while .harness/bin/attest.py (worker-g10-contract/T-466) and .harness/bin/precedent.py (worker-g10-suits/T-468) were live-locked and being edited by other in-progress workers per lock.py status; my two test files pass cleanly in isolation (45/45) both before and after those runs. Edited test files only; no source files touched."
+    },
+    {
+      "ts": "2026-10-21T22:02:00Z",
+      "agent": "worker-g10-tests",
+      "note": "HANDOFF -> verifier: Replay: python3 -m pytest .harness/tests/test_dispatch_token.py .harness/tests/test_dispatch_token_wiring.py -q -> 45 passed, 0 failed. 6 new tests added: 2 in test_dispatch_token.py (Falsifiers class, dt.verify level, agent fixed/correct, vary only task_id or only role), 4 in test_dispatch_token_wiring.py (new class IdentityMatchIsPinnedByTaskAndRoleNotOnlyAgent: claim x2, lock.py acquire x2, same shape at the CLI). Mutant proof done in a throwaway copy at scratchpad/t464-mutant2/.harness/{bin,tests} (outside the working tree, never committed): patched that copy's dispatch_token.py verify() to compare agent_name only; all 6 new tests then failed (wrongly passed the mismatched act), confirming each is a real falsifier of the agent-only narrowing the T-455 verifier found. Full-suite goal_mode run showed unrelated transient failures (test_rehearsal.py live-tree hash mismatch, test_attest_contracts.py) caused by other workers' live locks on .harness/bin/attest.py (worker-g10-contract/T-466) and .harness/bin/precedent.py (worker-g10-suits/T-468) mid-edit during the run -- confirmed via lock.py status at the time, unrelated to this task's test-only diff. Only test files edited: .harness/tests/test_dispatch_token.py, .harness/tests/test_dispatch_token_wiring.py."
+    },
+    {
+      "ts": "2026-10-21T22:09:53Z",
+      "agent": "verifier-g10-tests",
+      "note": "VERIFIED (verifier-g10-tests). Replayed producer's claim: python3 -m pytest .harness/tests/test_dispatch_token.py .harness/tests/test_dispatch_token_wiring.py -q -> 45 passed. git diff confirms only test files changed (test_dispatch_token.py, test_dispatch_token_wiring.py); no edits to dispatch_token.py/blackboard.py/lock.py. Static read of verify()/both call sites confirms claim_agent/claim_task/claim_role are all three passed at both blackboard.py claim (role taken from the task record, not the CLI) and lock.py acquire (same), so the new tests exercise a real role/task lookup, not a vacuous one. Independent mutant proof in 3 THROWAWAY copies outside the working tree (scratchpad/verify-mutants/{agent-only,agent-task,agent-role}), none committed: (1) agent-only narrowing (claimed=(agent,), actual=(agent,)) -> all 6 new tests fail (0==0), matching producer's claim; (2) agent+task-only narrowing (role ignored) -> the 3 role-mismatch-only tests fail (unit Falsifiers::test_right_agent_and_task_but_wrong_role_is_refused, wiring claim/lock-acquire wrong_role variants); (3) agent+role-only narrowing (task ignored) -> the 3 task-mismatch-only tests fail (unit test_right_agent_and_role_but_wrong_task_is_refused, wiring claim/lock-acquire wrong_task variants). Each of the 3 mutants is caught by at least one new test, satisfying T-465's acceptance criteria exactly. The lone extra failure in each mutant run (NoPrivateKeyIsEverTracked) reproduced as 'fatal: not a git repository' -- confirmed an artifact of the throwaway copy, not the mutant. Full suite: first run hit the known transient test_rehearsal.py live-tree mismatch (judge-seat-draft-T468.md), confirmed via lock.py status to be worker-g10-suits/T-468 live-editing that exact file at that moment; reran after goal_mode.py reset and got a clean GOAL REACHED: 1168+ passed, 0 failed, iteration 1/3 (145.39s). lock.py sweep: 0 expired."
+    },
+    {
+      "ts": "2026-10-21T22:21:05Z",
+      "agent": "coordinator",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Coordinator hygiene, 2026-10-21: notes in a public repo name a temp directory by placeholder, not by its system path. Wording only; no verdict or evidence changes."
+    }
+  ]
+}

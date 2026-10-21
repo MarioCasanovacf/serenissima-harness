@@ -1,0 +1,20 @@
+{
+  "id": "T-474",
+  "title": "Link the claim, the answer and the appeal into the suit record",
+  "description": "T-452 section 1: on Outcome B 'the contest act is filed, named by the suit-case'. Section 2: only an answer act on the respondent's own chain counts as an answer. Section 5: a party's appeal act reaches the operator as a card on the next decision sheet, and the verdict's consequence stays frozen meanwhile. T-468 built case open --suit, case notice and case verdict; nothing yet links the claim, the answer or the appeal to the suit.",
+  "acceptance_criteria": [
+    "precedent.py case claim --case --claimant-seq: records the claimant's contest act in the suit block; refuses unless the act is kind contest on the suit's claimant's own chain, verifies under that name's key, and names the suit's respondent and contract.",
+    "case answer --case --seq: records the respondent's answer act; refuses unless it is kind answer on the suit's respondent's own chain, verifies, and references this case. case appeal --case --by --seq: records an appeal act by the claimant or the respondent only, after a verdict exists; refuses a second appeal by the same party.",
+    "case show reports the suit's state in words (opened, claimed, noticed, answered, judged, appealed to the operator) and, for every linked act, any retraction attest.py reports for it. An appealed suit says its consequence is frozen until the operator rules. No window, deadline, lapse or amount is computed; where one would appear, it says not ratified.",
+    "Tests in a throwaway root build the acts with attest.py's existing verbs (commit, contest, answer, appeal, verdict with intent first) and cover the happy path and every refusal. An ordinary non-suit case stays byte-for-byte unchanged, pinned.",
+    "Edit precedent.py and new tests only; attest.py belongs to T-472. Do not edit claude.md. Suite passes via goal_mode. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/design-T-452-courts.md",
+    ".harness/design-T-412-case-register.md",
+    ".harness/bin/precedent.py",
+    ".harness/tests/test_precedent_t468_suits.py",
+    ".harness/bin/attest.py"
+  ],
+  "notes": []
+}
