@@ -122,6 +122,56 @@ PUBLIC_API = ("resolve_root", "trust_dir", "anchored_fingerprint", "verify_signa
               "draft", "verify_warrant", "apply_warrant", "audit", "payload_digest",
               "authorizes", "reconcile", "enrolled_keys")
 
+# ---------------------------------------------------------------------------
+# Exit codes for `main()`. Documented here, in `--help`, and pinned by
+# `test_warrant.py`, so a future edit cannot quietly collapse two different
+# kinds of failure into the same number.
+#
+#   0  verified: either nothing was claimed and nothing failed (non-audit
+#      verbs), or `audit --expect` matched the anchor.
+#   2  refused: a TrustError or ValueError (malformed input, tampering, a
+#      signature that does not verify).
+#   3  ALARM: `audit` found a concrete mismatch -- a wrong anchor, orphaned
+#      roll rows, or an un-enrolled harness asked to match an `--expect` it
+#      cannot possibly satisfy. This is unchanged from before T-450.
+#   4  the detector itself failed (an exception `audit`/`reconcile` did not
+#      anticipate). Never silent: see the bare `except Exception` in main().
+#   5  UNVERIFIED (T-450 / operator ruling 2026-10-21 clause b): `audit` ran
+#      with no `--expect`, so it printed a self-consistency check rather than
+#      an audit and marked its own report UNVERIFIED. Previously this exited
+#      0, indistinguishable from a genuine pass. Distinct from 3: nothing was
+#      claimed and refuted here, the claim itself is simply missing.
+EXIT_OK = 0
+EXIT_REFUSED = 2
+EXIT_ALARM = 3
+EXIT_DETECTOR_FAILED = 4
+EXIT_AUDIT_UNVERIFIED = 5
+
+# ---------------------------------------------------------------------------
+# The operator's manual step for keeping the anchor's fingerprint OUTSIDE the
+# working tree (ruling-round-4 Track 2 item 3; `audit --expect` is the read
+# side that compares against it). `trust/root.pub` is git-tracked (D6) but a
+# tracked file still lives inside a tree every agent can write, so the
+# fingerprint itself has to live somewhere a write to this repo cannot touch:
+# an annotated, operator-signed git tag. This module prints the command; it
+# never runs it, and `test_warrant.py` asserts no code path here calls `git`.
+TAG_COMMAND = (
+    'git tag -s harness-trust-root -m "SHA256:<fingerprint from '
+    '`warrant.py anchor`>"'
+)
+TAG_RATIONALE = (
+    "Run this once, after `warrant.py anchor` prints the fingerprint, and push the "
+    "tag. `-s` asks git to sign the tag with the operator's own git-signing key "
+    "(configure `user.signingkey` / `gpg.format` first; this is independent of "
+    "`~/.ssh/harness_root`, the warrant-signing key). The fingerprint then lives "
+    "inside a signed, dated tag object, which is outside the working tree every "
+    "agent on this filesystem can write -- so a swap of trust/root.pub becomes "
+    "detectable against a reference no in-process check can move. `audit --expect` "
+    "still needs the fingerprint typed in by hand; the tag is the durable record an "
+    "operator (or a later verifier) can `git show` to recover it without trusting "
+    "the working tree at all."
+)
+
 
 class TrustError(Exception):
     """Raised when the trust root is absent, tampered with, or unverifiable."""
@@ -838,9 +888,25 @@ def main(argv=None) -> int:
     a = sub.add_parser("apply", help="verify then write the warrant into the roll")
     a.add_argument("--warrant", required=True)
 
-    au = sub.add_parser("audit", help="verify every warrant AND reconcile the roll")
+    au = sub.add_parser(
+        "audit", help="verify every warrant AND reconcile the roll",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "exit codes:\n"
+            "  0  --expect matched the anchor: this is a genuine audit and it passed.\n"
+            "  3  ALARM -- a wrong anchor, orphaned roll rows, or an --expect given to\n"
+            "     an un-enrolled harness.\n"
+            "  4  the detector itself raised; treat the report as unverified.\n"
+            "  5  UNVERIFIED -- audit ran with no --expect, so it is a self-consistency\n"
+            "     check, not an audit. Report still prints, still marked UNVERIFIED.\n"
+            "\n"
+            "the operator's one manual step, to keep the fingerprint `--expect` compares\n"
+            "against OUTSIDE this working tree (never run by this tool):\n\n"
+            "  " + TAG_COMMAND + "\n\n"
+            "  " + TAG_RATIONALE))
     au.add_argument("--expect", help="the fingerprint YOU hold, out of band; "
-                                     "without it this is only a self-consistency check")
+                                     "without it this is only a self-consistency check "
+                                     "and exits 5, never 0")
     sub.add_parser("reconcile", help="can every roll row be traced to a warrant?")
     sub.add_parser("anchor", help="print the fingerprint to verify out of band")
 
@@ -866,23 +932,28 @@ def main(argv=None) -> int:
         elif args.cmd == "audit":
             out = audit(root, args.expect)
             print(json.dumps(out, indent=2, ensure_ascii=False))
+            # ALARM is checked first: a harness that is BOTH unverified (no --expect)
+            # AND alarmed (e.g. orphaned roll rows found anyway) reports the stronger,
+            # more specific claim. See EXIT_* constants above for the full table.
             if out.get("ALARM"):
-                return 3
+                return EXIT_ALARM
+            if out.get("UNVERIFIED"):
+                return EXIT_AUDIT_UNVERIFIED
         elif args.cmd == "reconcile":
             out = reconcile(root)
             print(json.dumps(out, indent=2, ensure_ascii=False))
             if out.get("orphans"):
-                return 3
+                return EXIT_ALARM
         elif args.cmd == "anchor":
             print(check_anchor(root))
     except (TrustError, ValueError) as exc:
         print(f"refused: {exc}", file=sys.stderr)
-        return 2
+        return EXIT_REFUSED
     except Exception as exc:                      # a detector must never die silently
         print(f"DETECTOR FAILED, treat as unverified: {type(exc).__name__}: {exc}",
               file=sys.stderr)
-        return 4
-    return 0
+        return EXIT_DETECTOR_FAILED
+    return EXIT_OK
 
 
 if __name__ == "__main__":

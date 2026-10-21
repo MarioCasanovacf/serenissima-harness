@@ -11,5 +11,11 @@
     ".harness/operator-rulings-2026-10-21.md",
     ".harness/bin/warrant.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T20:38:27Z",
+      "agent": "verifier-g10-audit",
+      "note": "VERIFIED T-450 per all three acceptance criteria in T-451: (1) ran audit with no --expect / matching --expect / mismatching --expect, recorded exit codes 5 / 0 / 3 respectively (manual replay plus pytest -k T450, 8 passed). (2) grep -rln across the repo for warrant.py audit found only prose mentions (attest.py, roster.py, ruling/design docs) and zero skills files; no code caller relies on exit 0 besides the updated test_warrant.py assertion. (3) In a throwaway tempdir copy (outside the working tree) edited audit exit-code branch to return 0 on UNVERIFIED; reran test_warrant.py and two tests failed as expected (T450AuditExitCodes::test_no_expect_is_unverified_and_exits_distinctly_nonzero and ThirdPanelRegressions::test_unenrolled_without_expect_is_unverified_not_silent), proving the mutant is caught. Full suite via goal_mode.py GOAL REACHED iteration 1/3 (112.71s) on the real tree. T-450 marked done on this same pass by this verifier."
+    }
+  ]
 }

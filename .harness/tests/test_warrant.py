@@ -902,16 +902,20 @@ class ThirdPanelRegressions(GateCase):
                      "--expect", "SHA256:" + "Z" * 43])
         self.assertEqual(rc, 3)
 
-    def test_unenrolled_without_expect_stays_exit_zero_and_says_not_assessed(self):
-        """The asymmetry is the whole design: silence when nobody claimed anything,
-        alarm when someone claimed and the claim is false. Before enrolment there is no
-        flag day, so this path must NOT start failing."""
+    def test_unenrolled_without_expect_is_unverified_not_silent(self):
+        """T-450 (operator ruling 2026-10-21, clause b) narrows the asymmetry: silence
+        in the JSON is still correct when nobody claimed anything, but the EXIT CODE may
+        no longer read as a pass. `audit` without `--expect` is a self-consistency
+        check, not an audit, on an un-enrolled harness exactly as much as on an enrolled
+        one -- so this now exits EXIT_AUDIT_UNVERIFIED (5), never 0. This test used to
+        pin exit 0 as the correct behaviour; that was the defect T-450 closes."""
         out = w.audit(self.root)
         self.assertNotIn("ALARM", out)
         self.assertIn("UNVERIFIED", out)
         self.assertIsNone(out["anchor_matches_operator"])
         self.assertFalse(out["expect_supplied"])
-        self.assertEqual(w.main(["--root", str(self.root), "audit"]), 0)
+        self.assertEqual(w.main(["--root", str(self.root), "audit"]),
+                         w.EXIT_AUDIT_UNVERIFIED)
 
     def test_the_downgrade_attack_no_longer_reads_as_clean(self):
         """DEFECT RECONCILE-SILENT-UNENROLLED. Enroll, mint an unwarranted name, then
@@ -957,6 +961,84 @@ class ThirdPanelRegressions(GateCase):
                 imported.add(node.module.split(".")[0])
         self.assertNotIn("warrant", imported)
         self.assertNotIn("roster", imported)
+
+
+class T450AuditExitCodes(GateCase):
+    """T-450 / operator ruling 2026-10-21 clause b: `audit` without `--expect` must
+    exit non-zero and distinctly from the ALARM case, so an unverified audit can no
+    longer pass for a verified one. Pins the three named cases on an ENROLLED harness
+    with a clean roll, so each one is attributable to `--expect`'s presence and
+    correctness alone, not to enrolment or orphans."""
+
+    def setUp(self):
+        super().setUp()
+        self.enroll()
+
+    def test_no_expect_is_unverified_and_exits_distinctly_nonzero(self):
+        out = w.audit(self.root)
+        self.assertNotIn("ALARM", out)
+        self.assertIn("UNVERIFIED", out)
+        self.assertIsNone(out["anchor_matches_operator"])
+        rc = w.main(["--root", str(self.root), "audit"])
+        self.assertEqual(rc, w.EXIT_AUDIT_UNVERIFIED)
+        self.assertNotEqual(rc, 0)
+        self.assertNotEqual(rc, w.EXIT_ALARM, "UNVERIFIED must not be mistaken for ALARM")
+
+    def test_matching_expect_exits_zero(self):
+        fp = w.check_anchor(self.root)
+        out = w.audit(self.root, expect=fp)
+        self.assertIs(out["anchor_matches_operator"], True)
+        self.assertNotIn("ALARM", out)
+        self.assertNotIn("UNVERIFIED", out)
+        self.assertEqual(w.main(["--root", str(self.root), "audit", "--expect", fp]), 0)
+
+    def test_mismatching_expect_fails_as_today(self):
+        rc = w.main(["--root", str(self.root), "audit",
+                     "--expect", "SHA256:" + "Q" * 43])
+        self.assertEqual(rc, w.EXIT_ALARM)
+
+    def test_the_three_exit_codes_are_pairwise_distinct(self):
+        self.assertEqual(len({w.EXIT_OK, w.EXIT_ALARM, w.EXIT_AUDIT_UNVERIFIED}), 3)
+
+
+class T450OperatorTagStep(unittest.TestCase):
+    """The ratified remedy's manual step (track 2 item 3, coordinator-decisions-
+    ruling-round-4.md line ~598): the operator keeps the anchor's fingerprint outside
+    the working tree in one signed git tag. This module prints the exact command and
+    runs nothing -- the same discipline `test_warrant_sign_command.py` already proves
+    for the warrant-signing command, applied to the tag command instead."""
+
+    def test_the_command_is_printed_in_the_audit_help(self):
+        helptext = subprocess.run(
+            [sys.executable, str(w.__file__), "audit", "--help"],
+            capture_output=True, text=True, check=True).stdout
+        self.assertIn(w.TAG_COMMAND, helptext)
+
+    def test_the_command_signs_a_tag_it_never_runs(self):
+        self.assertTrue(w.TAG_COMMAND.startswith("git tag -s "))
+        self.assertIn("SHA256:", w.TAG_COMMAND)
+
+    def test_no_call_in_the_module_invokes_git(self):
+        import ast
+        tree = ast.parse(pathlib.Path(w.__file__).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            for a in node.args:
+                if isinstance(a, (ast.List, ast.Tuple)):
+                    argv = [x.value for x in a.elts
+                            if isinstance(x, ast.Constant) and isinstance(x.value, str)]
+                    if argv:
+                        self.assertNotEqual(argv[0], "git",
+                                            "warrant.py must never invoke git directly")
+
+    def test_at_least_one_operator_document_carries_the_tag_command(self):
+        found = False
+        for name in ("OPERATOR-ENROLMENT.md", "W-002-BRIEFING.md"):
+            p = LIVE_HARNESS / name
+            if p.is_file() and w.TAG_COMMAND in p.read_text(encoding="utf-8"):
+                found = True
+        self.assertTrue(found, "no operator-facing document carries the tag command")
 
 
 if __name__ == "__main__":

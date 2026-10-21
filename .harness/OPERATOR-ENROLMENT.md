@@ -191,7 +191,35 @@ an ALARM and exits 3. Verified in both directions:
 audit --expect <correct>   -> anchor_matches_operator: true,  no ALARM,  exit 0
 audit --expect <wrong>     -> anchor_matches_operator: false, ALARM: TRUST ROOT REPLACED, exit 3
 audit --expect <anything>, un-enrolled -> ALARM: NO TRUST ROOT, exit 3
+audit, no --expect at all  -> UNVERIFIED, no ALARM,            exit 5
 ```
+
+**T-450 (operator ruling 2026-10-21, clause b).** The fourth row used to exit 0 -- a
+self-consistency check that passed for a verified audit because nothing failed inside
+it. It now exits 5 (`EXIT_AUDIT_UNVERIFIED` in `warrant.py`, documented there and pinned
+by `test_warrant.py`), distinct from 3 (ALARM: a concrete claim was checked and refuted)
+and from 0 (a concrete claim was checked and held). A script or CI step that only
+checked `$? == 0` to decide "audit passed" was, before this fix, unable to tell a real
+pass from "nobody asked". Nothing in this repository's code called `audit` that way; if
+you have a local script or alias that does, treat any non-zero exit from `audit` as "not
+a pass" rather than special-casing 3.
+
+**The operator's one remaining manual step: anchor the fingerprint OUTSIDE this
+repository.** `trust/root.pub` is git-tracked (D6), but a tracked file still lives
+inside a tree every agent on this filesystem can write. A signed git tag is not: it is
+an object this harness's agents cannot silently rewrite without the operator noticing
+the ref move, and it can be read back at any point in history. Run once, after
+`warrant.py anchor` prints the fingerprint, then push the tag:
+
+```
+git tag -s harness-trust-root -m "SHA256:<fingerprint from `warrant.py anchor`>"
+git push origin harness-trust-root
+```
+
+`-s` signs the tag with the operator's own git-signing key (`user.signingkey` /
+`gpg.format`, set up once, independent of `~/.ssh/harness_root`, the warrant key).
+No tool in this repository runs this command; `warrant.py audit --help` prints it for
+reference and `test_warrant.py` asserts no code path here invokes `git`.
 
 ---
 

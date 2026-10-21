@@ -11,5 +11,16 @@
     ".harness/operator-rulings-2026-10-21.md",
     ".harness/design-T-406-retraction.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T20:49:10Z",
+      "agent": "verifier-g10-retract",
+      "note": "Verifying T-448's retract verb per T-449's own acceptance criteria."
+    },
+    {
+      "ts": "2026-10-21T20:49:21Z",
+      "agent": "verifier-g10-retract",
+      "note": "VERDICT on T-448: all three T-449 acceptance criteria met, replayed independently (not trusting the producer's report). (1) Acceptance case: python3 -m pytest .harness/tests/test_attest_retraction.py::TraceAndVerifyConsultIt -v -> trace/verify_name/chain all report the retraction with the act (test_trace_marks_the_row_retracted_and_names_the_retracting_seq, test_verify_name_reports_the_retraction_and_does_not_call_it_a_signature_failure, test_chain_renders_the_retraction_inline all pass on a fixture chain in a tempdir). (2) Mutation testing done in throwaway copies under <scratchpad>/t448mutants2 and mutA/mutB/mutC (full .harness/bin + test_attest_retraction.py copied out, never the live tree): mutant A (trace forced to ignore retractions by nulling retracting_act) -> 3 tests failed; mutant B (retract()'s blank-reason refusal deleted) -> 3 tests failed; mutant C (a counter injected into held_kinds that reads the 'retracted' field) -> OutputShapeGuard's clause-4 guard test failed. Every mutant caught by at least one test, verified by actually running pytest against the mutated copy, not by trusting the producer's static-only planted-violation test (cognitive diversity). (3) No act file under the live .harness/acts changed: git status --short .harness/acts and git diff --stat HEAD -- .harness/acts both empty, checked before and after all replay runs. Full suite via goal_mode run twice; both times the only failure was in .harness/tests/test_rehearsal.py (unrelated, concurrently being modified/exercised by worker-g10-root/T-444), confirmed transient/concurrency-caused: pytest .harness/tests -q --ignore=test_rehearsal.py passed clean both times (1050-1051 passed/4 skipped), and test_rehearsal.py alone passed standalone once the concurrent rehearsal run cleared; test_attest_retraction.py never appeared in any failure list. Reported per protocol rather than fixed (file held/touched by another task's agent). CLAUDE.md untouched, no dated record touched. T-448 moved to done."
+    }
+  ]
 }

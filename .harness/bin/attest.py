@@ -163,6 +163,35 @@ and the regress has to terminate at an act whose only backing is the signature a
 warrant behind it.
 """
 
+RETRACT_KIND = "retract"
+"""T-406: a speaker disowning their own act, on their own chain. Unprivileged, deliberately.
+
+WHY THIS IS NOT IN PRIVILEGED_KINDS, AND NOT AN OVERSIGHT. The criterion on PRIVILEGED_KINDS
+is "the subject is a name OTHER than the signer". A retraction's subject is the signer's own
+past act, so it fails that test the same way `commit` and `filing` do, and for the same
+reason INTENT_KIND is absent: requiring a declared intent to disown one's own error would be
+a regress with no anchor -- the correction would need to wait on a second signature of
+intent-to-correct before it could exist, which is backwards for a mechanism whose entire
+point (design T-406) is that disowning a known-false act is available IMMEDIATELY.
+
+WHAT IT IS NOT. It is not `contest`: `contest` is a DISTINCT name disputing another name's
+act, filed on the ACCUSER's own chain (DIS-5), and it already exists. You cannot retract
+someone else's statement -- that is a category error this module refuses structurally,
+because `retract()` only ever looks up a target by sequence number ON THE RETRACTOR'S OWN
+chain, so there is no parameter through which a foreign name's act could even be named.
+
+WHAT IT DOES NOT DO (PR-022 clause 4, pinned by test rather than by this sentence alone).
+Filing one changes nothing but what the reporting tools (`trace`, `verify_name`, `chain`)
+say about the target act. No counter, weight, gate or quorum anywhere in this module reads
+`retracts`, `retracts_seq` or `reason`.
+
+WHAT IT DOES NOT FIX (ACCEPTED, same key as the act it corrects). Same name, same key:
+under D-17 a holder of the key can file a false retraction of a true act exactly as it can
+file a false act in the first place. DIS-2 is the entire defence here too: a forged
+retraction is credited to the name whose key signed it, so it can damage that name's record
+and cannot enrich the forger. A test below exercises this rather than merely asserting it.
+"""
+
 INTENT_MAX_AGE_S = 24 * 3600
 """How long a declared intent stays usable.
 
@@ -173,7 +202,8 @@ default this module chose. NO THRESHOLD RATIFIED by any record.
 """
 
 PUBLIC_API = ("acts_dir", "chain", "sign_act", "verify_name", "verify_all",
-              "forks", "contest", "declare_intent", "open_intents", "trace")
+              "forks", "contest", "declare_intent", "open_intents", "trace",
+              "retract", "retractions")
 
 
 class AttestError(Exception):
@@ -831,6 +861,12 @@ def verify_name(root, name) -> dict:
             bad.append({"path": a["_path"], "seq": a.get("seq"), "reason": why})
         by_prev[a.get("prev")].append(a)
 
+    retr = retractions(root, name)
+    retracted = [{"seq": a.get("seq"), "digest": a["_digest"],
+                  "retracted_by_seq": retr[a["_digest"]].get("seq"),
+                  "reason": (retr[a["_digest"]].get("body") or {}).get("reason")}
+                 for a in acts if "_unparseable" not in a and a["_digest"] in retr]
+
     unverified = {b["path"] for b in bad}
     forks_found = []
     for prev, siblings in by_prev.items():
@@ -862,7 +898,14 @@ def verify_name(root, name) -> dict:
         })
     return {"name": name, "enrolled": True, "acts": len(acts),
             "signature_failures": bad, "forks": forks_found,
-            "contested": bool(forks_found)}
+            "contested": bool(forks_found),
+            "retracted": retracted,
+            "RETRACTION_IS_NOT_INVALIDITY": (
+                "a retracted act is listed here alongside the signature verdict and is NOT "
+                "counted as a signature failure. The signature is still valid -- that is a "
+                "fact about the key. What changed is what the signer stands behind "
+                "(design T-406)."),
+            }
 
 
 def verify_all(root) -> dict:
@@ -930,6 +973,7 @@ def trace(root, name=None) -> dict:
         acts = [a for a in chain(root, n) if "_unparseable" not in a]
         for a in acts:
             by_digest[a["_digest"]] = a
+        retr = retractions(root, n)
         for a in acts:
             kind = a.get("kind", "?")
             privileged = kind in PRIVILEGED_KINDS
@@ -945,6 +989,7 @@ def trace(root, name=None) -> dict:
             intent_names_a_target = bool(str(ibody.get("for_ref") or ""))
             ref_agrees = (not intent_names_a_target
                           or str(ibody.get("for_ref")) == str(a.get("ref") or ""))
+            retracting_act = retr.get(a["_digest"])
             row = {
                 "name": n, "seq": a.get("seq"), "kind": kind,
                 "privileged": privileged,
@@ -960,6 +1005,12 @@ def trace(root, name=None) -> dict:
                 "colegiado": issued["colegiado"] if issued else None,
                 "role": issued["role"] if issued else None,
                 "anchor": anchor,
+                # Design T-406: `complete` keeps its current meaning (the anchoring walk),
+                # so a retracted row can read `complete: true, retracted: true` -- properly
+                # signed, properly anchored, AND disowned. Collapsing the two would destroy
+                # information the whole point of retraction is to preserve.
+                "retracted": retracting_act is not None,
+                "retracted_by": retracting_act.get("seq") if retracting_act else None,
             }
             row["complete"] = bool(
                 sig_ok and issued and anchor
@@ -1010,6 +1061,7 @@ def trace(root, name=None) -> dict:
                              "missing": missing})
 
     priv = [r for r in rows if r["privileged"]]
+    retracted_rows = [r for r in rows if r["retracted"]]
     return {
         "acts_raw": len(rows),
         "acts_distinct": len({(r["name"], r["seq"]) for r in rows}),
@@ -1023,6 +1075,12 @@ def trace(root, name=None) -> dict:
         "ref_open_intent_distinct": len({(r["name"], r["seq"]) for r in ref_open}),
         "unprivileged_no_intent_raw": len(unpriv),
         "unprivileged_no_intent_distinct": len({(u["name"], u["seq"]) for u in unpriv}),
+        # TELEMETRY-PROVENANCE-A, same as every other count above: raw and distinct, never
+        # one alone. PR-022 clause 4: this is a COUNT of a report field, not a weight -- it
+        # feeds no gate, and the AST guard in test_attest_retraction.py pins that no
+        # consequence-bearing function anywhere in this module reads it or `retracted`.
+        "retracted_raw": len(retracted_rows),
+        "retracted_distinct": len({(r["name"], r["seq"]) for r in retracted_rows}),
         "anchor": anchor,
         "rows": rows,
         "gaps": gaps,
@@ -1049,6 +1107,12 @@ def trace(root, name=None) -> dict:
                                      "are files on disk, so raw and distinct agree unless "
                                      "a directory was renumbered; when they diverge the "
                                      "chain has been edited and that is the finding.",
+        "RETRACTION_DOES_NOT_CHANGE_COMPLETE": (
+            "design T-406: `retracted` and `complete` are independent fields. `complete` is "
+            "about the anchoring walk only, so a retracted row can read `complete: true, "
+            "retracted: true` -- properly signed, properly anchored, AND disowned by its own "
+            "signer. PR-022 clause 4: retracting attaches no consequence, so it changes "
+            "nothing else this report computes."),
         # The obvious way to write this note is to interpolate the on-disk fingerprint into
         # the --expect command so the operator can copy-paste it. THAT IS THE BUG, and the
         # first version of this string had it: pasting back a value read from the file under
@@ -1097,6 +1161,106 @@ def contest(root, accuser, key_path, target_name, target_seq, reason, task=None)
                           "AF_3": "this claim is permanently attributable to the "
                                   "filing name, whether or not it is upheld",
                           "AF_4": "standing requires a live binding, not an opinion"})
+
+
+# ----------------------------------------------------------------------------- retract
+
+def retractions(root, name) -> dict:
+    """Digest of a retracted act -> the retracting act, for `name`'s OWN chain, computed
+    on read (PR-010, the same doctrine `open_intents` and `delegated_keys` already apply).
+
+    There is no side ledger, and there must not be one: a mutable index of "what is
+    retracted" is exactly the roster.py cache defect a panel exploited by hand-appending one
+    entry. This re-derives the map from the chain every call.
+
+    Scoped to one name on purpose. `retract` structurally cannot target another name's act
+    (there is no parameter through which a foreign act could even be named), so a retracting
+    act can only ever carry a digest drawn from THIS SAME chain, and looking further afield
+    would be looking for something that cannot exist.
+
+    If more than one retracting act somehow names the same target -- which `retract()`
+    refuses at sign time, but a direct editor of the acts directory bypasses every refusal
+    this module ships, same as always -- the FIRST one in chain order wins here, so the
+    report is deterministic rather than last-write-wins.
+    """
+    acts = [a for a in chain(root, name) if "_unparseable" not in a]
+    out = {}
+    for a in acts:
+        if a.get("kind") != RETRACT_KIND:
+            continue
+        target_digest = (a.get("body") or {}).get("retracts")
+        if target_digest and target_digest not in out:
+            out[target_digest] = a
+    return out
+
+
+def retract(root, name, key_path, target_seq, reason) -> dict:
+    """Disown one of `name`'s own past acts, as a new signed act on the SAME chain (T-406).
+
+    Append-only, like everything else here: the target act's file is never touched. What
+    changes is that `trace`, `verify_name` and `chain` now report the retraction alongside
+    it (PR-022 clause 4: no consequence, only a changed report).
+
+    `retract` needs no declared intent -- see RETRACT_KIND's docstring for why requiring one
+    would be a regress with no anchor.
+
+    Refusals, each pinned by a test, each for a reason already learned in this module:
+
+      - the target must EXIST on `name`'s own chain at `target_seq`. There is no parameter
+        for a foreign name, so "you cannot disown another name's act" is a structural
+        property of this function's signature, not a check that could be forgotten;
+      - the target must VERIFY under `name`'s own enrolled or delegated key. Retracting a
+        digest that does not verify corrects nothing -- it would be noise wearing the shape
+        of a correction;
+      - ONE retraction per target. A second is refused rather than filed as a silent
+        duplicate, the same shape as `grant_privilege`'s second-grant refusal (T-401);
+      - a RETRACTION CANNOT BE RETRACTED. Un-disowning is not a speech act this chain can
+        represent honestly, and allowing it opens a flip-flop with no terminal state. A
+        signer who changes their mind signs a NEW act saying so; the retraction stays.
+    """
+    reason = str(reason or "").strip()
+    if not reason:
+        raise AttestError(
+            "--reason is required: a retraction that says nothing is a checkbox, the same "
+            "refusal declare_intent applies to --declares, and a checkbox anchors nothing")
+    acts = [a for a in chain(root, name) if "_unparseable" not in a]
+    target = next((a for a in acts if a.get("seq") == target_seq), None)
+    if target is None:
+        raise AttestError(
+            f"{name!r} has no act at seq {target_seq}. A retraction targets an act ON THE "
+            f"RETRACTOR'S OWN CHAIN: you cannot disown another name's act -- that is "
+            f"`contest`, a different, already-existing verb, filed on the ACCUSER's own "
+            f"chain instead.")
+    if target.get("kind") == RETRACT_KIND:
+        raise AttestError(
+            f"seq {target_seq} is itself a retraction. A retraction cannot be retracted: "
+            f"un-disowning is not a speech act this chain can represent honestly. Sign a "
+            f"NEW act saying you changed your mind; the retraction at seq {target_seq} "
+            f"stays exactly as it is.")
+    keys = signing_keys(root)
+    pub = keys.get(name, {}).get("pubkey")
+    ok, why = (False, "no enrolled or delegated key for this name")
+    if pub:
+        ok, why = _verify_sig(root, name, target["_path"], pub)
+    if not ok:
+        raise AttestError(
+            f"the target act at seq {target_seq} does not verify under {name!r}'s own key "
+            f"({why}). Retracting a digest that does not verify corrects nothing -- it is "
+            f"noise wearing the shape of a correction.")
+    existing = retractions(root, name)
+    if target["_digest"] in existing:
+        prior = existing[target["_digest"]]
+        raise AttestError(
+            f"{name!r} already retracted seq {target_seq} at seq {prior.get('seq')}. A "
+            f"second retraction of the same target is refused rather than filed as a silent "
+            f"duplicate -- the same shape as grant_privilege's second-grant refusal.")
+    return sign_act(root, name, key_path, RETRACT_KIND, ref=f"{name}#{target_seq}",
+                    body={"retracts": target["_digest"], "retracts_seq": target_seq,
+                          "reason": reason,
+                          "PR_022_CLAUSE_4": "no counter, weight, gate or quorum anywhere "
+                                            "in this module reads these fields. Filing this "
+                                            "changes only what trace/verify_name/chain say "
+                                            "about the target act."})
 
 
 # ----------------------------------------------------------------------------- cli
@@ -1173,6 +1337,15 @@ def main(argv=None) -> int:
     k.add_argument("--task", help="board task id; contest is privileged, so this is "
                                  "required and an intent must be on file first (D3a)")
 
+    rt = sub.add_parser("retract", help="disown one of your OWN past acts (design T-406); "
+                                        "unprivileged, no intent required")
+    rt.add_argument("--name", required=True, help="the retractor; must be the same name "
+                                                   "that signed the target act")
+    rt.add_argument("--key", required=True)
+    rt.add_argument("--seq", required=True, type=int, dest="target_seq",
+                    help="the sequence number, on --name's own chain, being disowned")
+    rt.add_argument("--reason", required=True, help="why; a blank reason is refused")
+
     args = ap.parse_args(argv)
     root = w.resolve_root(args.root)
     try:
@@ -1230,13 +1403,21 @@ def main(argv=None) -> int:
         elif args.cmd == "forks":
             print(json.dumps(forks(root), indent=2, ensure_ascii=False))
         elif args.cmd == "chain":
+            retr = retractions(root, args.name)
             for a in chain(root, args.name):
+                inline = ""
+                if a.get("_digest") in retr:
+                    inline = f"  RETRACTED by seq {retr[a['_digest']].get('seq')}"
                 print(f"  {a.get('seq'):>3} {a.get('kind','?'):12s} "
                       f"prev={str(a.get('prev'))[:20]:22s} "
-                      f"{'signed' if a.get('_signed') else 'UNSIGNED'}")
+                      f"{'signed' if a.get('_signed') else 'UNSIGNED'}{inline}")
         elif args.cmd == "contest":
             print(json.dumps(contest(root, args.by, args.key, args.name, args.seq,
                                      args.reason, task=args.task),
+                             indent=2, ensure_ascii=False))
+        elif args.cmd == "retract":
+            print(json.dumps(retract(root, args.name, args.key, args.target_seq,
+                                     args.reason),
                              indent=2, ensure_ascii=False))
     except (AttestError, ValueError, json.JSONDecodeError) as exc:
         print(f"refused: {exc}", file=sys.stderr)
@@ -1293,13 +1474,16 @@ def _render_trace(out) -> None:
           f"{out['names_distinct']} distintos")
     print(f"sin intencion exigida  {out['unprivileged_no_intent_raw']} crudos / "
           f"{out['unprivileged_no_intent_distinct']} distintos")
+    print(f"retractados            {out['retracted_raw']} crudos / "
+          f"{out['retracted_distinct']} distintos")
     print(f"ancla                  {out['anchor'] or 'NINGUNA'}")
     for r in out["rows"]:
         mark = "ok " if r["complete"] else "INC"
+        retr = f"  RETRACTADO por seq {r['retracted_by']}" if r["retracted"] else ""
         print(f"  {mark} {r['name']:20s} seq {str(r['seq']):>3} {r['kind']:12s} "
               f"{'PRIV' if r['privileged'] else '    '} "
               f"tarea={r['task'] or '-':8s} "
-              f"warrant={r['granted_by_warrant'] or 'NINGUNO'}")
+              f"warrant={r['granted_by_warrant'] or 'NINGUNO'}{retr}")
     for g in out["gaps"]:
         print(f"\nHUECO {g['name']} seq {g['seq']} ({g['kind']})")
         for m in g["missing"]:

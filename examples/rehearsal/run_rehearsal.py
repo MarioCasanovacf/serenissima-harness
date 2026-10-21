@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""run_rehearsal.py -- T-440: one connected story, told through the tools' own CLIs.
+"""run_rehearsal.py -- T-440/T-444: one connected story, told through the tools' own CLIs,
+under its OWN throwaway root (operator ruling, decision 9, .harness/operator-rulings-
+2026-10-21.md).
 
 WHY THIS EXISTS. A 2026-10-07 review counted five built, tested mechanisms that had
 never fired on the real board: contest, the phase B claim-order yield, an act signed
@@ -11,13 +13,41 @@ PR-063, chaining PR-061 -> PR-062 -> PR-063, each confirmed by a distinct verifi
 What stays at zero live is narrower than "never fired": `precedent.py
 disposition-ratio`'s by_citation column counts only the `distinguish` verb, so it
 reads 0 even though two cases have already been disposed by a following publish.
-Step 6 below replays that same publish-follows shape inside the sandbox so this
+A replay of that same publish-follows shape runs inside the sandbox below so this
 story is connected end to end -- it is a replay of a mechanism that already fired
-live, not a first firing, and the scorecard row says so. This script drives ONE
-connected story -- "Casona" -- through every tool's own command line, in a throwaway
-copy of the harness, and prints a scorecard: each attempted mechanism comes back
-FIRED (with the evidence the tool itself wrote), BLOCKED (with the tool's own
-refusal message), or UNBUILT (named, never coded).
+live, not a first firing, and the scorecard row says so.
+
+T-440's first build ran this story with the sandbox's copy of `trust/`, `warrants/`
+and `constitutional/` carried over VERBATIM from the live tree -- never a new
+signature, because the coordinator was barred from copying the operator's private
+keys or from signing anything. That bar is exactly what stopped four mechanisms cold:
+a fedatario act could sign but never verify, a delegation could never be granted, a
+fork could never be contested, and a case could never be disposed by `distinguish` --
+all four for the SAME root cause, named in the T-440 scorecard's own blocker text:
+the sandbox held no key recorded in any warrant.
+
+Decision 9 (2026-10-21) lifts exactly that bar, inside the sandbox only: this script
+now MINTS ITS OWN ROOT, generated with ssh-keygen inside the very temp directory it
+creates, and re-mints the same 9 W-002 names with fresh keys through warrant.py's own
+`draft`/`apply` CLI verbs, signing the draft the way the operator signs
+(`ssh-keygen -Y sign`) -- except the key is this run's own throwaway root, never
+`~/.ssh/harness_root`. The sandbox's copy of `trust/`, `warrants/` and `roster.json`
+(carried over from the live tree by `build_sandbox`) is REPLACED, not layered on top
+of, by `mint_sandbox_root`: the live warrants were signed by the OPERATOR's real root
+and would simply fail to verify under this fresh anchor, which would pollute
+`reconcile`/`audit` with "invalid" rows this story has no interest in. The sandbox's
+copy of `constitutional/reputation.json` is RE-SIGNED, same bytes, under the same
+fresh root, so Phase B's gate (`reputation.py`) still verifies here -- without that,
+minting a new root would silently turn OFF the one mechanism (`phase B yield`) that
+already fired under the old, carried-over trust.
+
+THIS IS THE DEFAULT, UNCONDITIONALLY, not a flag. The thing a flag would gate -- the
+old, shared-trust path -- was never exercising a different MECHANISM; it was
+reproducing the exact same D-17/DIS-1 limit (no key, no signature, no privileged act)
+four times over, in four different tools, for one root cause the T-440 scorecard had
+already named once. Keeping it switchable would mean testing and maintaining two
+sandbox-construction paths for the sake of re-demonstrating one already-written-down
+limit. There is nothing left for a flag to choose between.
 
 THE STORY, in order (same names, same tasks, same records throughout):
   1. `rehearsal-worker` claims a scratch task, does the work, and is mechanically
@@ -35,42 +65,67 @@ THE STORY, in order (same names, same tasks, same records throughout):
   6. A second dispute is opened on a second task. `fed-codificador` ("convierte
      consenso en registro") disposes it by publishing a second precedent that
      FOLLOWS the first -- visible in `precedent.py disposition-ratio` and in the
-     first record's own `cited_by`.
+     first record's own `cited_by`. This is the publish-follows REPLAY described above.
+  6b. A THIRD dispute is opened on a third task, and `fed-codificador` disposes it
+     for real by CITATION (`precedent.py distinguish`, not `publish`): signed under
+     the sandbox root's own warrant, this is the first of the mechanisms decision 9
+     unblocks, and it moves `disposition-ratio`'s `by_citation` column off zero.
   7. That citation activity gives `registro-a` a non-zero Phase B reputation score.
      `registro-a` holds a live claim on the board; a brand-new, zero-score identity
      then calls `blackboard.py next` and is mechanically outranked (phase_b_yield).
-  8. `fed-codificador` attempts to sign an act and have it verify -- and an attempt
-     to delegate a ceilinged credential and a fork/contest attempt -- are run for
-     real against the sandbox and come back BLOCKED, with the tool's own message,
-     by the SAME root cause: this rehearsal is forbidden from reading the live
-     private keys under `.harness/keys` and forbidden from signing any warrant, and
-     `attest.py`'s own D3a intent gate requires a signature that verifies against
-     the warrant's REAL, un-copied key before any privileged act (grant, distinguish,
-     contest, verdict) can even be attempted. A non-privileged `commit` act CAN be
-     signed with a freshly generated, non-matching key -- and then fails `verify`,
-     exactly as the module's own docstring says it must.
+     This mechanism fired under the OLD carried-over trust too; it is listed here as
+     depending on the sandbox root because `constitutional/reputation.json` had to be
+     re-signed under the fresh anchor for it to keep firing at all.
+  8a. `fed-codificador` signs an act with ITS OWN freshly-minted, warrant-matching key
+     and `attest.py verify` reports it clean -- the second mechanism decision 9
+     unblocks: under the OLD carried-over trust this step could sign but never verify,
+     because the sandbox held no private key matching any warrant-recorded pubkey.
+  8b. `fed-codificador` delegates `distinguish` to `casona-escribano` with a ceiling
+     (expiry, kind subset); the delegate disposes a fourth case WITHIN that ceiling,
+     then attempts `contest`, which it was never granted, and is refused by the
+     DELEGATION CEILING check -- the third mechanism decision 9 unblocks.
+  8c. A fork is produced under `fed-codificador`'s name and detected by `attest.py
+     forks`, then contested by a DIFFERENT name, `fed-registrar`, with the contested
+     act carrying no weight (PR-022 clause 4) -- the fourth mechanism decision 9
+     unblocks. The shipped `sign` verb appends at the tip BY DESIGN (DIS-1), so no
+     amount of concurrency through that verb alone ever produces a fork (T-440 proved
+     that live, with two real concurrent CLI calls landing as sequential acts, not
+     siblings). The fork below is produced the only other way one can exist: a sibling
+     act file written directly to disk, OUTSIDE `attest.py sign`, by this script --
+     signed with `fed-codificador`'s own (sandbox-minted) key, the way a forger who
+     already holds the key would. The scorecard labels that step a SIMULATED FORGER;
+     detection and the no-weight report are the tool's own, exercised for real.
   9. `currency.py` and `event_stats.py` read the sandbox's own events and precedents.
  10. `westphalia_kpi.py` is run against the sandbox; it refuses to emit a cost figure
      because the tool's own, hardcoded registry list names exactly one domain
      registry (`precedents/`) today, and PR-029 clause 6 forbids reporting that as
-     zero.
+     zero. Unaffected by decision 9.
  11. Contracts and breach (decision 2) are reported UNBUILT: `.harness/design-T-436-
-     contracts.md` is a design note, not code.
+     contracts.md` is a design note, not code. Unaffected by decision 9.
 
 SECURITY, enforced by this script and not merely asserted:
-  - `.harness/keys/` is NEVER read from the live tree, and no agent key here is
-    anything but freshly generated inside the sandbox with `ssh-keygen`, which dies
-    with the temp directory.
-  - No warrant is ever signed, drafted-and-applied, or otherwise minted. The sandbox's
-    copy of `trust/`, `constitutional/` and `warrants/` is a literal copy of files the
-    operator ALREADY signed in the live tree (git-tracked, public: compare
-    `git ls-files .harness/trust .harness/constitutional .harness/warrants`), carried
-    over so `reputation.py`'s phase B activation and `warrant.py`'s own verification
-    can run in the sandbox exactly as they do live -- never a new signature.
-  - `~/.ssh/harness_root` is never referenced.
+  - `.harness/keys/` under the LIVE tree is NEVER read, and `~/.ssh/harness_root` is
+    never referenced. Every key this script ever holds -- the sandbox's own root
+    AND the 9 re-minted W-002 names AND the one delegated identity -- is generated
+    fresh with `ssh-keygen` INSIDE the temp directory this run created, and every one
+    of them dies with it (removed by default, T-442; see `--keep`).
+  - The sandbox's copy of `trust/`, `warrants/` and `roster.json` -- carried over as a
+    literal copy of the live tree by `build_sandbox` -- is REPLACED by
+    `mint_sandbox_root` before the story runs: the live copies are signed by the
+    operator's real key and are of no further use once this run has its own anchor.
+    `constitutional/reputation.json` is the one exception that is RE-SIGNED rather
+    than replaced: same bytes, new detached signature, under the sandbox root.
+  - No warrant that authorizes anything on the LIVE board is ever signed, drafted,
+    applied or even read for private material. Every signature this script produces
+    is over a payload living inside THIS run's own temp directory, verified against
+    THIS run's own anchor, by THIS run's own copy of the tools (see `bindir` below --
+    every subprocess call in `run_story` and `mint_sandbox_root` invokes the SANDBOX
+    copy of a tool, never the live one, because a tool resolves its own default root
+    from its own file's location).
   - Every mutation happens through a subprocess call onto a tool's own CLI inside the
     sandbox; this script never imports `blackboard`, `precedent`, `deliberate`,
-    `attest`, `reputation`, `currency`, `event_stats` or `westphalia_kpi` as a module.
+    `attest`, `warrant`, `reputation`, `currency`, `event_stats` or `westphalia_kpi`
+    as a module.
   - The live tree is read once (to copy it) and never written: see `integrity_check()`,
     run before and after, comparing a sha256 of every file under the live `.harness/`
     (excluding `logs/`, which this run's OWN task bookkeeping legitimately touches via
@@ -82,14 +137,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-import threading
-import time
 from datetime import datetime, timezone
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -106,6 +160,36 @@ COPY_EXCLUDE_DIRS = {"keys", "locks", "logs", "__pycache__"}
 # the acceptance criterion alone, so a reader can see exactly what is excluded and why.
 INTEGRITY_EXCLUDE_DIRS = {"logs"}
 INTEGRITY_EXCLUDE_FILES = {"tasks/T-440.json"}
+
+# The same 9 names W-002 issued live (.harness/warrants/W-002.json), re-minted here
+# under the SANDBOX's own root with FRESH keys (decision 9). Hardcoded rather than
+# read off the live warrant: these identities and seats ARE the story's cast, named
+# identically throughout `run_story` below, not a value this script discovers.
+W002_SEATS = {
+    "fed-registrar": ("fedatario", "registrar"),
+    "fed-relator": ("fedatario", "relator"),
+    "fed-regulador": ("fedatario", "regulador"),
+    "fed-codificador": ("fedatario", "codificador"),
+    "registro-a": ("registro", "author"),
+    "registro-b": ("registro", "verifier"),
+    "revision-doctrina": ("revision", "verifier"),
+    "revision-ataque": ("revision", "verifier"),
+    "revision-mecanismo": ("revision", "verifier"),
+}
+W002_COLEGIADOS = {
+    "fedatario": "integridad del proceso; NO legisla, NO vota, NO tiene stake "
+                 "(AgentCity clerk constraint)",
+    "registro": "registros confirmados que sobreviven a la citacion posterior",
+    "revision": "refutaciones que se sostienen contra replica; PR-025 c1: el trabajo "
+                "adversarial paga mas",
+}
+
+# Cited verbatim from the tools that own them (warrant.py's NAMESPACE,
+# reputation.py's CONSTITUTIONAL_NAMESPACE, attest.py's NAMESPACE) rather than
+# imported, consistent with this script never importing a tool as a module.
+WARRANT_NAMESPACE = "harness-warrant"
+CONSTITUTIONAL_NAMESPACE = "harness-constitutional"
+ATTEST_NAMESPACE = "harness-act"
 
 
 # --------------------------------------------------------------------------- utils
@@ -127,8 +211,9 @@ def first_match(pattern, text, group=1):
 
 def leading_json(text):
     """Some CLIs here print a JSON object followed by human-readable trailer lines
-    (e.g. `precedent.py show`'s 'scope: ...' footer) on a non-`--json` call. Parse
-    only the leading JSON value and ignore whatever trailer follows it."""
+    (e.g. `precedent.py show`'s 'scope: ...' footer, `warrant.py init`'s
+    'VERIFY THIS FINGERPRINT' banner) on a non-`--json` call. Parse only the leading
+    JSON value and ignore whatever trailer follows it."""
     if not text or not text.strip():
         return {}
     try:
@@ -208,7 +293,9 @@ class Scorecard:
 
 def build_sandbox(tmp_root: pathlib.Path) -> pathlib.Path:
     """Copy the live .harness tree into tmp_root/.harness, excluding COPY_EXCLUDE_DIRS.
-    Reads the live tree; never writes to it."""
+    Reads the live tree; never writes to it. `trust/`, `warrants/`, `roster.json` and
+    `constitutional/` are copied here too (live, literal bytes) but `mint_sandbox_root`
+    replaces or re-signs them before the story runs -- see module docstring."""
     dst = tmp_root / ".harness"
 
     def ignore(_dir, names):
@@ -232,6 +319,130 @@ def genkey(keys_dir: pathlib.Path, name: str) -> pathlib.Path:
     return path
 
 
+def root_sign(payload_path, key_path, namespace):
+    """`ssh-keygen -Y sign`, the way the operator signs a warrant -- except the key
+    here is a throwaway, passphrase-less key this run generated with `genkey`, never
+    `~/.ssh/harness_root`. (The SSH_AUTH_SOCK dance warrant.py's own SIGN_RATIONALE
+    documents is for a PASSPHRASE-PROTECTED key falling back to an agent that cannot
+    confirm; it does not apply here, because every key this script holds has no
+    passphrase at all.)"""
+    return subprocess.run(
+        ["ssh-keygen", "-Y", "sign", "-f", str(key_path), "-n", namespace,
+         str(payload_path)], capture_output=True, text=True, timeout=30)
+
+
+def mint_sandbox_root(bindir: pathlib.Path, harness_dir: pathlib.Path,
+                       keys_dir: pathlib.Path) -> dict:
+    """Decision 9: generate the sandbox's own throwaway root, enroll it as the
+    SANDBOX's trust root (the sandbox copy of trust/ only -- the live
+    .harness/trust is never read for private material and never written), and
+    re-mint the same 9 W-002 names with fresh keys through warrant.py's own
+    draft/apply CLI, signed under this root the way the operator signs.
+
+    Replaces (never layers onto) the sandbox's copied trust/, warrants/ and
+    roster.json: those were copied from the live tree by `build_sandbox` and are
+    signed by the OPERATOR's real root, which this fresh anchor cannot verify.
+    Re-signs (same bytes, new signature) the sandbox's copied
+    constitutional/reputation.json, so Phase B's gate still verifies here.
+
+    Returns {"fingerprint": str, "warrant_id": str, "keys": {name: priv_key_path}}.
+    Every subprocess call below runs the SANDBOX's own warrant.py (bindir/warrant.py,
+    which resolves its own default root from its own file location) -- never the
+    live one.
+    """
+    warrant_py = bindir / "warrant.py"
+
+    # ---- a clean slate for the sandbox's OWN trust/warrants/roster -------------
+    # (the sandbox copy only; see module docstring's SECURITY section)
+    shutil.rmtree(harness_dir / "trust", ignore_errors=True)
+    shutil.rmtree(harness_dir / "warrants", ignore_errors=True)
+    shutil.rmtree(harness_dir / "acts", ignore_errors=True)
+    (harness_dir / "roster.json").write_text(
+        json.dumps({"schema_version": 1, "colegiados": {}, "plazas": {}, "names": {}},
+                   indent=2) + "\n", encoding="utf-8")
+
+    # ---- the sandbox's own root key, generated and dying inside this run's tmp dir
+    root_key = genkey(keys_dir, "sandbox-root")
+    root_pub = pathlib.Path(str(root_key) + ".pub")
+
+    init_out = run([PY, warrant_py, "--root", str(harness_dir), "init",
+                    "--root-pub", str(root_pub)])
+    if init_out.returncode != 0:
+        raise RuntimeError("sandbox root init failed: {}".format(init_out.stderr))
+    fingerprint = leading_json(init_out.stdout).get("fingerprint")
+
+    # ---- fresh keys for the same 9 W-002 names, and a warrant that re-mints them
+    name_keys, name_specs, plaza_counts = {}, [], {}
+    for name, (colegiado, role) in W002_SEATS.items():
+        kp = genkey(keys_dir, name)
+        name_keys[name] = kp
+        pub = pathlib.Path(str(kp) + ".pub")
+        name_specs.append("{}:{}/{}:{}".format(name, colegiado, role, pub))
+        seat = (colegiado, role)
+        plaza_counts[seat] = plaza_counts.get(seat, 0) + 1
+
+    draft_argv = [PY, warrant_py, "--root", str(harness_dir), "draft",
+                  "--epic", "casona-sandbox-root"]
+    for colegiado, incentive in W002_COLEGIADOS.items():
+        draft_argv += ["--colegiado", "{}={}".format(colegiado, incentive)]
+    for (colegiado, role), n in plaza_counts.items():
+        draft_argv += ["--plaza", "{}/{}={}".format(colegiado, role, n)]
+    for spec in name_specs:
+        draft_argv += ["--name", spec]
+    draft_out = run(draft_argv)
+    if draft_out.returncode != 0:
+        raise RuntimeError("sandbox warrant draft failed: {}".format(draft_out.stderr))
+    draft = json.loads(draft_out.stdout)
+    wid, payload_path = draft["warrant_id"], pathlib.Path(draft["path"])
+
+    sig = root_sign(payload_path, root_key, WARRANT_NAMESPACE)
+    if sig.returncode != 0:
+        raise RuntimeError(
+            "sandbox root signature over the warrant failed: {}".format(sig.stderr))
+
+    apply_out = run([PY, warrant_py, "--root", str(harness_dir), "apply",
+                      "--warrant", wid])
+    if apply_out.returncode != 0:
+        raise RuntimeError("sandbox warrant apply failed: {}".format(apply_out.stderr))
+
+    # ---- re-sign the COPIED constitutional file under the SAME sandbox root, so
+    # Phase B's gate (reputation.py) still verifies here (decision 9's own condition)
+    const_path = harness_dir / "constitutional" / "reputation.json"
+    if const_path.exists():
+        const_sig = pathlib.Path(str(const_path) + ".sig")
+        const_sig.unlink(missing_ok=True)
+        csig = root_sign(const_path, root_key, CONSTITUTIONAL_NAMESPACE)
+        if csig.returncode != 0:
+            raise RuntimeError(
+                "sandbox root signature over the constitutional file failed: {}"
+                .format(csig.stderr))
+
+    return {"fingerprint": fingerprint, "warrant_id": wid, "keys": name_keys,
+            "root_key": root_key}
+
+
+def forge_sibling_act(harness_dir: pathlib.Path, name: str, key_path, prev: str,
+                       seq: int, kind="commit"):
+    """Write ONE sibling act file directly to `name`'s chain, bypassing
+    `attest.py sign` entirely -- the only way to produce a fork, because the shipped
+    verb always appends at the TIP (DIS-1; T-440 measured that two real concurrent
+    CLI calls land as sequential acts, never siblings). Signed with `name`'s own key:
+    a SIMULATED FORGER who already holds it (D-17), not a stolen one. Detection is
+    `attest.py forks`' job, called separately, for real, on the result."""
+    d = pathlib.Path(harness_dir) / "acts" / name
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / "{:03d}.json".format(seq)
+    path.write_text(json.dumps({
+        "schema_version": 1, "name": name, "seq": seq, "kind": kind, "ref": "",
+        "body": {"SIMULATED_FORGER": "written directly to {} by run_rehearsal.py, "
+                                      "outside attest.py sign, to produce the sibling "
+                                      "the shipped verb by design cannot".format(path.name)},
+        "prev": prev, "ts": now_iso(), "namespace": ATTEST_NAMESPACE,
+    }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    sig = root_sign(path, key_path, ATTEST_NAMESPACE)
+    return path, sig
+
+
 def fresh_task_ids(harness_dir: pathlib.Path, n: int) -> list:
     bb = json.loads((harness_dir / "blackboard.json").read_text(encoding="utf-8"))
     nums = [int(tid[2:]) for tid in bb.get("tasks", {})
@@ -243,7 +454,7 @@ def fresh_task_ids(harness_dir: pathlib.Path, n: int) -> list:
 # --------------------------------------------------------------------------- story
 
 def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib.Path,
-              sc: Scorecard):
+              root: dict, sc: Scorecard):
     bb = str(bindir / "blackboard.py")
     precedent = str(bindir / "precedent.py")
     deliberate = str(bindir / "deliberate.py")
@@ -254,8 +465,13 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
     events_log = harness_dir / "logs" / "events.jsonl"
     hroot = str(harness_dir)
 
-    t_welcome, t_second, t_open = fresh_task_ids(harness_dir, 3)
-    fed_key = genkey(keys_dir, "fed-codificador-sandbox")
+    root_fp = root["fingerprint"]
+    root_note = ("signed under the rehearsal's own throwaway root ({}, warrant {}), "
+                 "never the operator's ~/.ssh/harness_root".format(root_fp, root["warrant_id"]))
+    root_keys = root["keys"]
+    fed_key = root_keys["fed-codificador"]
+
+    (t_welcome, t_second, t_third, t_fourth, t_open) = fresh_task_ids(harness_dir, 5)
 
     # ---- 1-2: producer != approver, then handoff + distinct verifier ----------
     run([PY, bb, "add-task", "--id", t_welcome,
@@ -372,7 +588,7 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
                   "registro-a) -> {}".format(pr1_id, confirm1.stdout.strip()),
     )
 
-    # ---- 6: a second case disposed by citing the first precedent ---------------
+    # ---- 6: a second case disposed by citing the first precedent (REPLAY) -----
     run([PY, bb, "add-task", "--id", t_second,
          "--title", "Casona: segunda acta de bienvenida", "--role", "worker",
          "--engine", "any", "--agent", "fed-regulador"])
@@ -381,18 +597,6 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
                  "{}?".format(t_second, pr1_id), "--task", t_second, "--agent",
                  "fed-regulador", "--harness-root", hroot])
     case2_id = first_match(r"case (C-\d+)", case2.stdout)
-
-    # The strict "disposed BY CITATION" column in disposition-ratio counts
-    # `distinguish`, not `publish --follows`. Attempted for real, for the record,
-    # while C-005 is still OPEN (so any refusal is the D3a gate, not "already
-    # disposed"): `distinguish` is a PRIVILEGED kind (attest.py PRIVILEGED_KINDS),
-    # gated by D3a's intent requirement -- same root cause as the attest findings
-    # below.
-    distinguish_attempt = run([PY, precedent, "distinguish", "--case", case2_id,
-                                "--nearest", pr1_id, "--facts",
-                                "la segunda acta repite exactamente el mismo patron operativo que la primera acta ya resolvio, sin ningun hecho nuevo que la distinga de ese caso anterior",
-                                "--by", "fed-codificador", "--key", str(fed_key),
-                                "--task", t_second, "--harness-root", hroot])
 
     pub2 = run([PY, precedent, "publish", "--agent", "fed-codificador", "--task",
                 t_second, "--case", case2_id, "--title",
@@ -418,23 +622,83 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
         "a case disposed by publish --follows (citing a published rule) -- fired "
         "HERE IN THE SANDBOX; this is a replay, not a first firing: the live board "
         "already ran this same shape twice before (C-002 disposed by PR-062, C-003 "
-        "disposed by PR-063, 2026-09-20), visible in disposition-ratio",
+        "disposed by PR-063, 2026-09-20), visible in disposition-ratio. Does not "
+        "depend on the sandbox root: precedent.py publish is not a signed act.",
         "fired" if pub2.returncode == 0 and cited_back else "blocked",
         evidence="precedent.py publish --case {} --follows {} -> {} ; "
                   "precedent.py show {} -> cited_by={} ; precedent.py "
                   "disposition-ratio --json -> by_legislation_registered_raw={}, "
-                  "cases_opened_raw={} (this run's 2 sandbox cases are among them, "
-                  "on top of the 2 that already disposed by this shape live). The "
-                  "narrower by_citation_raw={} column tracks `distinguish` only, "
-                  "which this run attempted separately while the case was still "
-                  "open and which was refused (rc={}): {!r}".format(
+                  "cases_opened_raw={} (this run's sandbox cases are among them, on "
+                  "top of the 2 that already disposed by this shape live).".format(
                       case2_id, pr1_id, pr2_id, pr1_id,
                       show_pr1_json.get("cited_by"),
                       disp_ratio_json.get("by_legislation_registered_raw"),
-                      disp_ratio_json.get("cases_opened_raw"),
-                      disp_ratio_json.get("by_citation_raw"),
-                      distinguish_attempt.returncode,
-                      distinguish_attempt.stderr.strip()[:220]),
+                      disp_ratio_json.get("cases_opened_raw")),
+    )
+
+    # ---- 6b: a THIRD case disposed by `distinguish` (by_citation), decision 9 -
+    run([PY, bb, "add-task", "--id", t_third,
+         "--title", "Casona: tercera acta de bienvenida", "--role", "worker",
+         "--engine", "any", "--agent", "fed-regulador"])
+    case3 = run([PY, precedent, "case", "open", "--question",
+                 "La tercera acta ({}) repite el mismo patron operativo: se dispone "
+                 "citando {}, o hace falta legislar de nuevo?".format(t_third, pr1_id),
+                 "--task", t_third, "--agent", "fed-regulador", "--harness-root", hroot])
+    case3_id = first_match(r"case (C-\d+)", case3.stdout)
+
+    intent3 = run([PY, attest, "declare-intent", "--name", "fed-codificador", "--key",
+                   str(fed_key), "--for-kind", "distinguish", "--task", t_third,
+                   "--for-ref", pr1_id, "--declares",
+                   "fed-codificador dispone de {} citando {}, dentro de su propia "
+                   "autoridad de warrant".format(case3_id, pr1_id)])
+    distinguish3 = run([PY, precedent, "distinguish", "--case", case3_id, "--nearest",
+                         pr1_id, "--facts",
+                         "la tercera acta repite exactamente el mismo patron operativo "
+                         "que la primera acta ya resolvio, sin ningun hecho nuevo que "
+                         "la distinga de ese caso anterior", "--by", "fed-codificador",
+                         "--key", str(fed_key), "--task", t_third, "--harness-root",
+                         hroot])
+    disp_ratio3 = run([PY, precedent, "disposition-ratio", "--json", "--harness-root",
+                        hroot])
+    disp_ratio3_json = (json.loads(disp_ratio3.stdout)
+                         if disp_ratio3.returncode == 0 and disp_ratio3.stdout else {})
+    # T-445 round 2: `by_citation_raw` counts signed `distinguish` ACTS off the attest
+    # chain, not the case record's own disposal field, so a regression inside
+    # `dispose_case()` (the call that actually flips the case to disposed) can leave
+    # that counter and this row's evidence untouched while the case stays open. Read
+    # the case record itself back through `case show --json` -- a path that does not
+    # go anywhere near the attest chain -- so this row (and the test pinning it) are
+    # sensitive to the thing the mechanism's name claims: the CASE was disposed, not
+    # merely that an act was signed and a counter moved.
+    case3_show = run([PY, precedent, "case", "show", case3_id, "--json", "--harness-root",
+                       hroot])
+    case3_show_json = (json.loads(case3_show.stdout)
+                        if case3_show.returncode == 0 and case3_show.stdout else {})
+    case3_disposal = case3_show_json.get("disposal") or {}
+    case3_disposed_by_distinguish = (
+        case3_show_json.get("status") == "disposed"
+        and case3_disposal.get("verb") == "distinguish"
+    )
+    sc.record(
+        "a case disposed by `distinguish` (by_citation), " + root_note,
+        "fired" if distinguish3.returncode == 0
+        and disp_ratio3_json.get("by_citation_raw", 0) >= 1
+        and case3_disposed_by_distinguish else "blocked",
+        evidence="attest.py declare-intent --name fed-codificador --for-kind distinguish "
+                  "(rc={}) ; precedent.py distinguish --case {} --nearest {} --by "
+                  "fed-codificador --key <sandbox-minted, warrant-matching key> -> "
+                  "rc={}: {} ; disposition-ratio --json -> by_citation_raw={} ; "
+                  "case show {} --json -> case_status={} disposal_verb={}".format(
+                      intent3.returncode, case3_id, pr1_id, distinguish3.returncode,
+                      distinguish3.stdout.strip().splitlines()[0]
+                      if distinguish3.returncode == 0 else distinguish3.stderr.strip()[:200],
+                      disp_ratio3_json.get("by_citation_raw"),
+                      case3_id, case3_show_json.get("status"), case3_disposal.get("verb")),
+        blocker=None if (distinguish3.returncode == 0 and case3_disposed_by_distinguish)
+                 else distinguish3.stderr.strip()[:300] or "case {} shows status={} "
+                      "disposal={} after `distinguish` claimed rc=0 -- the case record "
+                      "itself was never disposed".format(
+                          case3_id, case3_show_json.get("status"), case3_disposal),
     )
 
     # ---- 7: phase B yield ------------------------------------------------------
@@ -452,7 +716,10 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
         if row.get("event") == "phase_b_yield" and row.get("agent") == "rehearsal-newcomer":
             yield_event = row
     sc.record(
-        "a phase B yield (event phase_b_yield) from blackboard.py next",
+        "a phase B yield (event phase_b_yield) from blackboard.py next -- " + root_note
+        + "; the constitutional gate (reputation.py) only verifies because "
+          "mint_sandbox_root re-signed constitutional/reputation.json under this run's "
+          "own root",
         "fired" if nxt.returncode == 2 and yield_event else "blocked",
         evidence="blackboard.py next --agent rehearsal-newcomer --role worker -> exit "
                   "{} ; events.jsonl: {}".format(nxt.returncode, yield_event)
@@ -471,19 +738,18 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
     verified_clean = bool(verify1_json.get("enrolled")) and not verify1_json.get(
         "signature_failures")
     sc.record(
-        "an act signed by a fedatario seat holder and verified",
+        "an act signed by a fedatario seat holder and verified -- " + root_note,
         "fired" if sign1.returncode == 0 and verified_clean else "blocked",
-        evidence="attest.py sign --name fed-codificador --key <sandbox-generated-key> "
-                  "--kind commit -> act written (rc={})".format(sign1.returncode)
+        evidence="attest.py sign --name fed-codificador --key <sandbox-minted, "
+                  "warrant-matching key> --kind commit -> act written (rc={}) ; "
+                  "attest.py verify --name fed-codificador --json -> enrolled={}, "
+                  "signature_failures={}".format(
+                      sign1.returncode, verify1_json.get("enrolled"),
+                      verify1_json.get("signature_failures"))
         if sign1.returncode == 0 else None,
-        blocker="the act SIGNS (fed-codificador is warrant-enrolled in the sandbox "
-                "copy of W-002, so attest.py accepts the name), but attest.py verify "
-                "reports it as a signature failure: {} -- because this rehearsal is "
-                "forbidden from reading fed-codificador's REAL private key under the "
-                "live .harness/keys/ and forbidden from signing a new warrant to mint "
-                "a key it does hold, so the key used to sign here cannot match the one "
-                "the warrant recorded. This is the module's own documented limit "
-                "(D-17/DIS-1), reproduced live rather than merely cited.".format(
+        blocker=None if verified_clean else
+                "attest.py verify reported a signature failure even though the key "
+                "matches this run's own sandbox warrant: {}".format(
                     verify1_json.get("signature_failures")),
     )
 
@@ -493,8 +759,7 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
     grant_intent = run([PY, attest, "declare-intent", "--name", "fed-codificador",
                         "--key", str(fed_key), "--for-kind", "grant", "--task",
                         t_second, "--for-ref", "casona-escribano", "--declares",
-                        "fed-codificador delega distinguish a casona-escribano para "
-                        "disponer {}".format(case2_id)])
+                        "fed-codificador delega distinguish a casona-escribano"])
     # An expiry close to "now" rather than far in the future: D3b clamps a grant to
     # the grantor's own (warrant-recorded) expiry and REFUSES rather than silently
     # clamping a too-distant request, so a near-term expiry isolates the finding
@@ -506,93 +771,134 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
     grant = run([PY, attest, "grant", "--by", "fed-codificador", "--key", str(fed_key),
                  "--to", "casona-escribano", "--pubkey", scribe_pub, "--kinds",
                  "distinguish", "--expires", near_expiry, "--task", t_second,
-                 "--note", "delega SOLO distinguish, para disponer {}".format(case2_id)])
+                 "--note", "delega SOLO distinguish, con techo de 2h"])
+
+    run([PY, bb, "add-task", "--id", t_fourth,
+         "--title", "Casona: cuarta acta de bienvenida", "--role", "worker",
+         "--engine", "any", "--agent", "fed-regulador"])
+    case4 = run([PY, precedent, "case", "open", "--question",
+                 "La cuarta acta ({}) repite el mismo patron operativo: dispone "
+                 "casona-escribano, bajo el techo delegado?".format(t_fourth),
+                 "--task", t_fourth, "--agent", "fed-regulador", "--harness-root", hroot])
+    case4_id = first_match(r"case (C-\d+)", case4.stdout)
 
     if grant.returncode != 0:
         sc.record(
-            "a delegation with a ceiling used within it and refused beyond it",
+            "a delegation with a ceiling used within it and refused beyond it -- "
+            + root_note,
             "blocked",
-            blocker="declare-intent for the privileged 'grant' kind (signed with a "
-                    "freshly generated, non-warrant-matching key): {!r} / grant itself "
-                    "refused: {!r}. If the intent is the cause: attest.py's "
+            blocker="declare-intent for the privileged 'grant' kind: {!r} / grant "
+                    "itself refused: {!r}. If the intent is the cause: attest.py's "
                     "open_intents() only recognizes an intent SIGNED AND VERIFIED "
-                    "against the name's ENROLLED (warrant-recorded) key, which this "
-                    "rehearsal cannot hold (no live keys read, no warrant signed), so "
-                    "no privileged kind (grant/distinguish/contest/verdict) can "
-                    "originate from an already-warranted name here -- the same root "
-                    "cause as the fedatario-sign finding above, one hop "
-                    "earlier.".format(grant_intent.stderr.strip()[:200],
+                    "against the name's ENROLLED (warrant-recorded) key -- this "
+                    "should not happen once fed-codificador's key matches this run's "
+                    "own sandbox warrant; treat this branch as a regression if it "
+                    "fires.".format(grant_intent.stderr.strip()[:200],
                                        grant.stderr.strip()[:200]),
         )
     else:
         # casona-escribano holds its OWN matching key (scribe_key/scribe_pub were
         # supplied verbatim at grant time, not inherited from any warrant), so ITS
-        # intents and acts verify cleanly -- unlike fed-codificador's above.
+        # intents and acts verify cleanly.
         run([PY, attest, "declare-intent", "--name", "casona-escribano", "--key",
-             str(scribe_key), "--for-kind", "distinguish", "--task", t_second,
-             "--for-ref", case2_id, "--declares",
-             "casona-escribano dispone de {} citando {}".format(case2_id, pr1_id)])
-        within = run([PY, "{}".format(precedent), "distinguish", "--case", case2_id,
-                      "--nearest", pr1_id, "--facts",
-                      "la segunda acta repite exactamente el mismo patron operativo que la primera acta ya resolvio, sin ningun hecho nuevo que la distinga de ese caso anterior", "--by",
-                      "casona-escribano", "--key", str(scribe_key), "--task",
-                      t_second, "--harness-root", hroot])
+             str(scribe_key), "--for-kind", "distinguish", "--task", t_fourth,
+             "--for-ref", pr1_id, "--declares",
+             "casona-escribano dispone de {} citando {}, dentro del techo "
+             "delegado".format(case4_id, pr1_id)])
+        within = run([PY, precedent, "distinguish", "--case", case4_id, "--nearest",
+                      pr1_id, "--facts",
+                      "la cuarta acta repite exactamente el mismo patron operativo "
+                      "que la primera acta ya resolvio, sin ningun hecho nuevo que la "
+                      "distinga de ese caso anterior", "--by", "casona-escribano",
+                      "--key", str(scribe_key), "--task", t_fourth, "--harness-root",
+                      hroot])
         run([PY, attest, "declare-intent", "--name", "casona-escribano", "--key",
-             str(scribe_key), "--for-kind", "contest", "--task", t_second,
-             "--for-ref", "fed-codificador", "--declares",
+             str(scribe_key), "--for-kind", "contest", "--task", t_fourth,
+             "--for-ref", "fed-codificador#0", "--declares",
              "casona-escribano intenta contestar mas alla de lo delegado"])
         beyond = run([PY, attest, "contest", "--by", "casona-escribano", "--key",
                       str(scribe_key), "--name", "fed-codificador", "--seq", "0",
-                      "--reason", "mas alla del techo delegado", "--task", t_second])
+                      "--reason", "mas alla del techo delegado", "--task", t_fourth])
         ceiling_refused = (beyond.returncode != 0
                             and "DELEGATION CEILING" in beyond.stderr)
         sc.record(
-            "a delegation with a ceiling used within it and refused beyond it",
+            "a delegation with a ceiling used within it and refused beyond it -- "
+            + root_note,
             "fired" if within.returncode == 0 and ceiling_refused else "blocked",
             evidence="attest.py grant --by fed-codificador --kinds distinguish -> "
-                      "casona-escribano; distinguish (within ceiling) rc={} ; "
-                      "contest (beyond ceiling) refused rc={}: {!r}".format(
-                          within.returncode, beyond.returncode,
+                      "casona-escribano; precedent.py distinguish --case {} (within "
+                      "ceiling) by casona-escribano -> rc={} ; attest.py contest "
+                      "(beyond ceiling) refused rc={}: {!r}".format(
+                          case4_id, within.returncode, beyond.returncode,
                           beyond.stderr.strip()[:200]),
             blocker=None if ceiling_refused else
                     "contest was not refused by the DELEGATION CEILING check as "
-                    "expected: {!r}".format(beyond.stderr.strip()[:200]),
+                    "expected: within.rc={} within.stderr={!r} beyond.stderr={!r}"
+                    .format(within.returncode, within.stderr.strip()[:200],
+                            beyond.stderr.strip()[:200]),
         )
 
-    # ---- 8c: a fork detected, and contested with no weight ---------------------
-    race_a = {}
-    race_b = {}
-
-    def _sign(ref, slot):
-        r = run([PY, attest, "sign", "--name", "fed-codificador", "--key", str(fed_key),
-                 "--kind", "commit", "--ref", ref, "--body", json.dumps({"race": ref})])
-        slot["result"] = r
-
-    ta = threading.Thread(target=_sign, args=("race-A", race_a))
-    tb = threading.Thread(target=_sign, args=("race-B", race_b))
-    ta.start(); tb.start(); ta.join(); tb.join()
+    # ---- 8c: a fork, produced by a simulated forger, detected and contested ---
+    fork_first = run([PY, attest, "sign", "--name", "fed-codificador", "--key",
+                       str(fed_key), "--kind", "commit", "--ref", "fork-story-genesis",
+                       "--body", json.dumps({"note": "primer acto honesto, antes de "
+                                                      "la bifurcacion simulada"})])
+    fork_first_json = (json.loads(fork_first.stdout) if fork_first.returncode == 0
+                        and fork_first.stdout.strip() else {})
+    # The forged sibling must share fork_first's OWN `prev`, not a guessed value --
+    # fed-codificador already signed once in step 8a, so fork_first's prev is THAT
+    # act's digest, not "genesis". Matching test_warrant.py's ForkDetection.forge():
+    # two acts claiming the SAME predecessor IS the fork.
+    fork_prev = fork_first_json.get("prev")
+    forged_path, forged_sig = forge_sibling_act(
+        harness_dir, "fed-codificador", fed_key, prev=fork_prev, seq=99)
     forks = run([PY, attest, "forks"])
-    forks_found = forks.stdout.strip() not in ("", "[]") and "prev" in forks.stdout
+    forks_list = leading_json(forks.stdout) if forks.stdout.strip().startswith("[") else []
+    # forks() (the flattened, cross-name view) does not tag each fork with a `name`
+    # field -- it is reached per-name via `verify --name` instead -- so the match
+    # here is the shared `prev` digest this story's two siblings both claim, which is
+    # unique enough to identify THIS fork rather than any other.
+    this_fork = next((f for f in forks_list if f.get("prev") == fork_prev), None)
+    forks_found = bool(fork_prev) and this_fork is not None \
+        and this_fork.get("STATUS") == "CONTESTED"
+    intent_contest = run([PY, attest, "declare-intent", "--name", "fed-registrar",
+                          "--key", str(root_keys["fed-registrar"]), "--for-kind",
+                          "contest", "--task", t_second, "--for-ref",
+                          "fed-codificador#99", "--declares",
+                          "fed-registrar acusa a fed-codificador de una bifurcacion "
+                          "en su cadena de actos (el acto simulado-forjado, seq 99)"])
     contest_attempt = run([PY, attest, "contest", "--by", "fed-registrar", "--key",
-                            str(genkey(keys_dir, "fed-registrar-sandbox")), "--name",
-                            "fed-codificador", "--seq", "0", "--reason",
-                            "sospecha de bifurcacion", "--task", t_second])
+                            str(root_keys["fed-registrar"]), "--name",
+                            "fed-codificador", "--seq", "99", "--reason",
+                            "bifurcacion detectada por attest.py forks", "--task",
+                            t_second])
     sc.record(
         "a fork under one name detected by attest.py forks and contested by a "
-        "different name, with the contested act carrying no weight",
-        "fired" if forks_found and contest_attempt.returncode == 0 else "blocked",
-        evidence="two concurrent `attest.py sign --name fed-codificador` CLI calls, "
-                  "launched together, produced sequential (not forked) acts; "
-                  "attest.py forks -> {!r}".format(forks.stdout.strip()[:200])
-        if not forks_found else "fork detected: {}".format(forks.stdout.strip()[:300]),
-        blocker="no fork was produced: roster._guard serializes the read-decide-"
-                "create-write in attest.sign_act, so two real concurrent CLI calls "
-                "for the same name land as seq N and seq N+1, chained, not siblings -- "
-                "confirming the fix the module's own docstring describes (DIS-1's "
-                "'four acts, one forged, zero forks' defect) holds under an actual "
-                "race rather than only in the test suite. `contest` was attempted "
-                "regardless and refused for the same D3a intent-gate reason as "
-                "8a/8b: {!r}".format(contest_attempt.stderr.strip()[:200]),
+        "different name, with the contested act carrying no weight (PR-022 clause 4) "
+        "-- " + root_note + "; the fork is produced by a SIMULATED FORGER (one "
+        "sibling act file written directly to disk, outside attest.py sign, since "
+        "the shipped verb appends at the tip by design); detection is the tool's own",
+        "fired" if fork_first.returncode == 0 and forged_sig.returncode == 0
+        and forks_found and contest_attempt.returncode == 0 else "blocked",
+        evidence="fed-codificador's act #5 (honest, via attest.py sign) and one "
+                  "sibling act file ({}, seq 99) written directly to disk, both "
+                  "sharing the SAME prev {!r}, signed with fed-codificador's own "
+                  "key -- simulating a forger who already holds it (D-17); "
+                  "attest.py forks -> STATUS={!r} MEANS={!r} ; attest.py contest "
+                  "--by fed-registrar (a DIFFERENT, warrant-enrolled name) --name "
+                  "fed-codificador --seq 99 -> rc={}, filed on fed-registrar's OWN "
+                  "chain (DIS-5); PR-022 clause 4 and attest.py's own "
+                  "NO_CONSEQUENCE text say the contested act carries no weight "
+                  "until adjudicated".format(
+                      forged_path.name, fork_prev, this_fork.get("STATUS"),
+                      this_fork.get("MEANS"), contest_attempt.returncode)
+        if forks_found and contest_attempt.returncode == 0 else None,
+        blocker=None if (forks_found and contest_attempt.returncode == 0) else
+                "fork_first.rc={} forged_sig.rc={} forks_found={} intent_contest.rc={} "
+                "contest_attempt.rc={}: {!r}".format(
+                    fork_first.returncode, forged_sig.returncode, forks_found,
+                    intent_contest.returncode, contest_attempt.returncode,
+                    contest_attempt.stderr.strip()[:200]),
     )
 
     # ---- 9: currency.py and event_stats.py reading the sandbox -----------------
@@ -652,8 +958,9 @@ def run_story(bindir: pathlib.Path, harness_dir: pathlib.Path, keys_dir: pathlib
 
 def parse_args(argv):
     p = argparse.ArgumentParser(description=(
-        "Run the Casona rehearsal story in a throwaway sandbox copy of .harness/. "
-        "The sandbox is removed at the end by default."))
+        "Run the Casona rehearsal story in a throwaway sandbox copy of .harness/, "
+        "under its own throwaway root (decision 9). The sandbox is removed at the "
+        "end by default."))
     p.add_argument("--keep", action="store_true",
                     help="do not remove the sandbox directory; print its location "
                          "and write scorecard.json inside it")
@@ -677,14 +984,16 @@ def main(argv=None) -> int:
 
         sc = Scorecard()
         try:
-            run_story(bindir, harness_dir, keys_dir, sc)
+            root = mint_sandbox_root(bindir, harness_dir, keys_dir)
+            run_story(bindir, harness_dir, keys_dir, root, sc)
         finally:
             after = integrity_snapshot()
             diffs = integrity_diff(before, after)
 
         scorecard = {
-            "task": "T-440",
+            "task": "T-440/T-444",
             "sandbox": str(tmp_root),
+            "sandbox_root_fingerprint": root.get("fingerprint"),
             "generated_at": now_iso(),
             "rows": sc.rows,
             "live_tree_untouched": not diffs,

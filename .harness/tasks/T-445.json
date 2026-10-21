@@ -12,5 +12,11 @@
     ".harness/operator-rulings-2026-10-21.md",
     "examples/rehearsal/run_rehearsal.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T21:19:39Z",
+      "agent": "harness-verifier",
+      "note": "Verification task for T-444 round 2, performed and recorded on T-444 itself (see T-444's VERIFIED note). All 4 acceptance criteria met: (1) replayed clean from a fresh run, raw sandbox evidence opened for each newly-fired row; (2) all 3 mandated mutants (forks()->[], delegation-ceiling raise removed, dispose_case() call removed) reproduced in throwaway copies outside the working tree -- each flips its matching row to blocked and fails exactly the matching 2 tests; the round-1 gap (dispose_case mutant escaping) is now fixed; (3) grep confirms no read of ~/.ssh/harness_root or live .harness/keys,trust,constitutional; RehearsalRootIsNotTheLiveRootTests passed (scratch-copy warrant refusal); git status/.harness manifest confirmed unchanged by this verifier's own actions; (4) full suite run via goal_mode.py reached GOAL on iteration 2/3 after one transient, non-persisting concurrency flake from another live agent writing to the shared board mid-run (reported, not a blocker)."
+    }
+  ]
 }
