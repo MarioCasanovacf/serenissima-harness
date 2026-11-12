@@ -4,5 +4,11 @@
   "description": "Run test_data_loss_guard.py alone and in the full suite. Confirm prevent_data_loss.py and safe_delete.py are byte-identical to HEAD. Verdict.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T22:37:36Z",
+      "agent": "verifier-g10-isolate",
+      "note": "VERIFIED T-470 by replay: test_data_loss_guard.py alone -> 44 passed (3 runs). prevent_data_loss.py and safe_delete.py byte-identical to HEAD (git diff --stat confirms). Reproduced the quoted ModuleNotFoundError: portalock at prevent_data_loss.py line 78 in a throwaway mirror outside the working tree using the pre-fix helper, then confirmed the fixed helper resolves it there too (cognitive-diversity check, different method than the producer's). Full suite ran twice directly: test_data_loss_guard.py clean both times; 10 persistent errors confined to test_rehearsal.py::DecisionNineMechanismsFireTests live-tree check, each time naming a file actively locked by a different in-progress task (T-474 on bin/precedent.py, T-472 on attest.py/test_attest_contracts.py) -- a pre-existing concurrency flake unrelated to this diff, reported per dispatch guidance, not blocking. T-470 marked done."
+    }
+  ]
 }

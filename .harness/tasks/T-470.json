@@ -4,5 +4,26 @@
   "description": "Run alone, test_the_lapse_is_named_rather_than_left_to_be_discovered fails with ModuleNotFoundError: portalock, raised at prevent_data_loss.py line 78 when _guard_module() loads it by spec. In the full suite it passes because an earlier test file put .harness/bin on sys.path. Make the test load the module with its own directory importable, without changing prevent_data_loss.py behavior. Acceptance: the file passes run alone and in the full suite; no edit to prevent_data_loss.py or safe_delete.py; hand off to verifier.",
   "acceptance_criteria": [],
   "context_files": [],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T22:26:20Z",
+      "agent": "worker-g10-isolate",
+      "note": "plan: insert GUARD.parent into sys.path in _guard_module() test helper before importlib loads prevent_data_loss by spec, so its top-level 'import portalock' resolves standalone"
+    },
+    {
+      "ts": "2026-10-21T22:28:52Z",
+      "agent": "worker-g10-isolate",
+      "note": "EXPECTED: standalone run fails with ModuleNotFoundError: portalock at prevent_data_loss.py:78 (confirmed before fix). ACTUAL after fix: 'python3 -m pytest .harness/tests/test_data_loss_guard.py -q' -> 44 passed, run alone. Full suite 'python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\"' -> GOAL REACHED on iteration 1/3 (exit 0). Only test_data_loss_guard.py edited: _guard_module() now pushes GUARD.parent (.harness/bin) onto sys.path before exec'ing the spec-loaded module, removes it in a finally. git status --short confirms .harness/bin/prevent_data_loss.py and .harness/bin/safe_delete.py are untouched (no diff), only test_data_loss_guard.py shows modified. No doc changes needed."
+    },
+    {
+      "ts": "2026-10-21T22:28:59Z",
+      "agent": "worker-g10-isolate",
+      "note": "HANDOFF -> verifier: Replay: (1) python3 -m pytest .harness/tests/test_data_loss_guard.py -q  -> before fix: 1 failed (ModuleNotFoundError: portalock) 43 passed; after fix: 44 passed, run with no other test file loaded first. (2) python3 .harness/bin/goal_mode.py run --cmd \"python3 -m pytest .harness/tests -q\" -> GOAL REACHED on iteration 1/3, exit 0. Change is confined to .harness/tests/test_data_loss_guard.py: _guard_module() now inserts GUARD.parent onto sys.path before importlib spec-loads prevent_data_loss.py (so its top-level 'import portalock' resolves even when no earlier test file primed sys.path), and removes the entry in a finally block to avoid leaking state into other tests. git diff confirms .harness/bin/prevent_data_loss.py and .harness/bin/safe_delete.py are byte-identical (no changes, no diff lines) -- only the test file is modified."
+    },
+    {
+      "ts": "2026-10-21T22:37:21Z",
+      "agent": "verifier-g10-isolate",
+      "note": "VERIFIED (replayed independently, not trusting the producer's report).\n(1) Diff review: only .harness/tests/test_data_loss_guard.py changed in _guard_module() -- pushes GUARD.parent onto sys.path before spec-loading prevent_data_loss.py, removes it in a finally. git status --short and git diff --stat confirm .harness/bin/prevent_data_loss.py and .harness/bin/safe_delete.py have zero diff lines from HEAD.\n(2) Standalone replay: python3 -m pytest .harness/tests/test_data_loss_guard.py -q on the real repo -> 44 passed (ran three times, including after a fresh git diff check).\n(3) Cognitive-diversity check (different method than the producer's before/after claim): built a throwaway mirror outside the working tree (<tmp>/verify_t470/mirror) with the committed HEAD version of the test file plus copies of prevent_data_loss.py/safe_delete.py/portalock.py, mirroring the real repo's ROOT=parents[2] layout. Running the single failing test there against the pre-fix helper reproduced the exact quoted failure: \"ModuleNotFoundError: No module named 'portalock'\" raised at prevent_data_loss.py:78. Swapping in the fixed helper in the same mirror made that same test pass. This independently confirms the producer's root-cause claim and fix, not just its pass/fail report.\n(4) Full-suite replay: ran \"python3 -m pytest .harness/tests -q\" directly twice (not just trusting the producer's goal_mode transcript). Both runs show test_data_loss_guard.py's 44 tests passing with zero failures attributed to it. Both runs DO show 10 persistent errors, all under test_rehearsal.py::DecisionNineMechanismsFireTests (live-tree check), e.g. \"hash changed/added/removed: bin/precedent.py\" (1st run) then \"hash changed/added/removed: tests/test_attest_contracts.py\" (2nd run). lock.py status at the time showed worker-g10-links holding bin/precedent.py for T-474 (lock acquired 22:31:01Z) and worker-g10-reader holding attest.py/test_attest_contracts.py for T-472 (lock acquired 22:33:05Z) -- both tasks were live and actively writing exactly the files the live-tree check flagged, each time. The producer's own goal_mode run completed at 22:28:52-22:28:59Z, before either of those locks existed, which is consistent with a clean run then and a contaminated run now. Per the dispatch note's own guidance (do not fix a suite failure sitting in a file another task holds a lock on; report if it persists), this is reported as a pre-existing, unrelated, concurrency-driven flake in test_rehearsal.py's live-tree check -- not a regression from this task's diff, and not blocking T-470's acceptance criteria (test_data_loss_guard.py alone + in the full suite, no edit to prevent_data_loss.py/safe_delete.py).\nVerdict: T-470 accepted.\n"
+    }
+  ]
 }

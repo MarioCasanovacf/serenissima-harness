@@ -1,0 +1,17 @@
+{
+  "id": "T-478",
+  "title": "The rehearsal's live-tree check stops failing on other agents' legitimate edits, and stays strict where it matters",
+  "description": "examples/rehearsal/run_rehearsal.py integrity_snapshot hashes the whole live .harness tree and git status before and after; any concurrent agent's edit (blackboard, tasks, a source file under lock) fails test_rehearsal.py. In the gen-10 runs this caused repeated goal_mode iterations and agents sleeping to wait it out. The operator's ruling of 2026-10-21, decision 9, requires that a test pins the live tree unchanged by the rehearsal.",
+  "acceptance_criteria": [
+    "The check stays byte-strict, with no concurrency allowance, on the material the rehearsal must never touch: .harness/trust, .harness/keys, .harness/constitutional, .harness/warrants, the roster file, the acts directory, revocations and dispatch tokens (confirm the real paths in the code).",
+    "Outside that set, a change made by another process must not fail the check, while a write made by the rehearsal itself must still fail it. Design the mechanism (for example: a canary the rehearsal could only write through a live-root path, running the rehearsal's subprocesses with a live-root guard, or comparing against what the rehearsal's own process opened for writing) and justify it in the docstring. A rule that silently ignores every non-protected path is not acceptable.",
+    "Tests: a simulated concurrent edit to a non-protected live file during a rehearsal run no longer fails; a planted live write by the rehearsal (in a throwaway copy) still fails; a planted write to a protected path still fails.",
+    "Edit examples/rehearsal/run_rehearsal.py and .harness/tests/test_rehearsal.py only. Suite passes. Hand off to verifier."
+  ],
+  "context_files": [
+    "examples/rehearsal/run_rehearsal.py",
+    ".harness/tests/test_rehearsal.py",
+    ".harness/operator-rulings-2026-10-21.md"
+  ],
+  "notes": []
+}

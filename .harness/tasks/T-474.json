@@ -16,5 +16,11 @@
     ".harness/tests/test_precedent_t468_suits.py",
     ".harness/bin/attest.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-10-21T22:31:02Z",
+      "agent": "worker-g10-links",
+      "note": "plan: add case claim/answer/appeal to precedent.py linking attest.py contest/answer/appeal acts into the suit block, extend case show to report suit state in words + retractions, stamp case notice into suit block; new tests built with attest.py verbs directly (not file_claim, per T-472 parallel change)."
+    }
+  ]
 }

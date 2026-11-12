@@ -1,0 +1,18 @@
+{
+  "id": "T-476",
+  "title": "A stdlib parallel test runner: the full suite on every core, same verdict as serial pytest",
+  "description": "Measured by the coordinator on 2026-11-12: the full suite takes 166 s on one core of 10 (84% CPU). In the gen-10 wave 3 run, 32 of 95 agent-minutes went to full-suite runs, about 3 per agent. pytest-xdist is not installed and the harness adds no dependencies.",
+  "acceptance_criteria": [
+    ".harness/bin/fast_tests.py shards the test files under .harness/tests across N worker processes (default min(8, cpu count minus 2), flag -j), each running python3 -m pytest on its files with -q -p no:cacheprovider. Longest files first, using durations from the previous run when present, else file size. Standard library only.",
+    "Files that hash or compare the live tree run in a SERIAL phase after the parallel phase, alone. The serial list is declared at the top of the file with one reason per entry; test_rehearsal.py is on it unless T-478 makes it safe, and every other entry must be justified by a measured failure in parallel.",
+    "Output: one final line in pytest's own shape ('N passed, M skipped in S s') so goal_mode and agents read it unchanged; on failure, each failing test id and its shard's output tail. Exit 0 only when every shard passes. --serial runs plain pytest over the whole directory as a fallback.",
+    "Evidence in the handoff: on the same tree, fast_tests and serial pytest report the same passed and skipped counts; wall-clock for both; 3 consecutive fast runs with no failure; a planted failing test in a throwaway copy makes it exit nonzero and names the test.",
+    "Per-file processes expose order-dependent tests. List any test file that fails when run alone. Fix it only with a test-only change; otherwise put it on the serial list with the reason.",
+    "Where durations are stored, the file must be untracked by git (check .gitignore); no absolute paths in it. Do not edit claude.md or ORCHESTRATION.md: list the doc change in the handoff. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/bin/goal_mode.py",
+    ".harness/tests"
+  ],
+  "notes": []
+}

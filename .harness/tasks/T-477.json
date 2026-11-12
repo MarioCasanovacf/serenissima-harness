@@ -1,0 +1,13 @@
+{
+  "id": "T-477",
+  "title": "VERIFY T-476: the parallel runner never reports a pass that serial pytest would fail",
+  "description": "A different agent verdicts T-476.",
+  "acceptance_criteria": [
+    "Replay serial and parallel on the same tree: counts must match. In throwaway copies: plant a failing test in the last shard; plant an import error in one test file; make one shard hang past a timeout. Each must make fast_tests exit nonzero and name the cause.",
+    "Run fast_tests 3 times in a row while another process edits an unrelated file under .harness/tests in a throwaway copy, and report what happens. Confirm standard library only and that the durations file is untracked. Verdict."
+  ],
+  "context_files": [
+    ".harness/bin/fast_tests.py"
+  ],
+  "notes": []
+}

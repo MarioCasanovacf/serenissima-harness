@@ -1,0 +1,12 @@
+{
+  "id": "T-479",
+  "title": "VERIFY T-478: concurrency no longer fails the rehearsal, a rehearsal write still does",
+  "description": "A different agent verdicts T-478.",
+  "acceptance_criteria": [
+    "Mutants in throwaway copies: make the rehearsal write one byte to a live non-protected file; to a live protected file; drop the protected-set check. Each must fail a test. Replay a concurrent edit by another process during test_rehearsal.py and confirm it passes. Verdict."
+  ],
+  "context_files": [
+    "examples/rehearsal/run_rehearsal.py"
+  ],
+  "notes": []
+}

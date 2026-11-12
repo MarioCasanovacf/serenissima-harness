@@ -327,10 +327,25 @@ class TheDecisionIsMadeOnTheParsedCommand(unittest.TestCase):
 
 
 def _guard_module():
-    spec = importlib.util.spec_from_file_location("prevent_data_loss", GUARD)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    # prevent_data_loss.py does `import portalock`, a sibling module in the same
+    # directory (.harness/bin). Loading it by spec -- rather than a normal package
+    # import -- does not put that directory on sys.path, so the import only
+    # resolved when an earlier test file in the full-suite run happened to have
+    # added .harness/bin to sys.path already. Run this test file alone and that
+    # earlier side effect is absent, so make this helper self-sufficient: put the
+    # module's own directory on sys.path before exec'ing it.
+    guard_dir = str(GUARD.parent)
+    added = guard_dir not in sys.path
+    if added:
+        sys.path.insert(0, guard_dir)
+    try:
+        spec = importlib.util.spec_from_file_location("prevent_data_loss", GUARD)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        if added:
+            sys.path.remove(guard_dir)
 
 
 # The escape a verifier found in the first version of the parsed guard, swept in every form

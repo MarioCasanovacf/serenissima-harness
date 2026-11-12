@@ -848,6 +848,16 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-10-21T22:19:13Z"
+      },
+      "worker-g10-isolate": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:37:21Z"
+      },
+      "verifier-g10-isolate": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-10-21T22:37:36Z"
       }
     }
   },
