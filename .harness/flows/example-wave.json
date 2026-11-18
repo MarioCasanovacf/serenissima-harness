@@ -1,0 +1,25 @@
+{
+  "name": "example-wave",
+  "description": "One track: fast_tests.py --changed follows imports through shared modules.",
+  "tests": "changed",
+  "gate": true,
+  "defaults": {
+    "model": "sonnet",
+    "effort": "high",
+    "rounds": 2,
+    "timeout": 1800,
+    "permissions": ["--permission-mode", "acceptEdits",
+                    "--allowedTools", "Bash(python3 .harness/bin/*)"]
+  },
+  "tracks": [
+    {
+      "task": "T-493",
+      "verify_task": "T-494",
+      "producer": "worker-changed-imports",
+      "verifier": "verifier-changed-imports",
+      "verify_first": false,
+      "title": "fast_tests.py --changed follows indirect imports",
+      "brief": "fast_tests.py --changed selects the test files that import or name a changed module, but not the tests that reach it through another module, so a change to harness_common.py or portalock.py selects too little. Make --changed follow imports transitively inside .harness/bin, with a guard against import cycles. Add tests to .harness/tests/test_fast_tests.py that change a shared module in a throwaway tree and assert that its indirect dependents are selected. Edit only fast_tests.py and test_fast_tests.py."
+    }
+  ]
+}

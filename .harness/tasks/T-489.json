@@ -1,0 +1,26 @@
+{
+  "id": "T-489",
+  "title": "operator_desk.py: decisions, rulings, operator verdicts, wave gates, commit and push",
+  "description": "Design T-484 sections 3 and 5.",
+  "acceptance_criteria": [
+    "Build .harness/bin/operator_desk.py with decisions, rule, verdict, gate, commit and push as design section 5 specifies. Rulings are new append-only R files; dated records are never edited.",
+    "verdict acts as agent operator through blackboard.py, only on a task in review, and refuses when the operator produced it. commit and push follow safety rule 6: leak scan first, refuse on a hit, diff stat shown, current branch only, never main, never force.",
+    "gate writes the decision into the run's run.json under the shape of design section 3, through a function flow_runner.py can also call (agree the function name in your handoff).",
+    ".harness/tests/test_operator_desk.py per design section 8, in throwaway git repos; no test pushes anywhere real. Edit only operator_desk.py and its test, and create .harness/decisions/ and .harness/rulings/ with a README each. Run only your own test file. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/design-T-484-ui.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T04:52:37Z",
+      "agent": "worker-ui-desk",
+      "note": "HANDOFF -> verifier: operator_desk.py built: decisions, rule, verdict, gate, commit, push; README for decisions/ and rulings/. test_operator_desk.py: 69 passed (fast_tests.py, own file only). 9 mutants (main allowed, force flag, push/commit skip scan, self-verdict, gate any status, added-lines-only broken, ruling overwrite, any choice) all killed.\nInterfaces for other parts: record_gate_decision(root, run_id, decision, note=\"\", by=\"operator\", via=\"cli\") -> run dict, decision is \"approve\" or \"reject\", raises operator_desk.Refused; sets run.status and gate.status to approved/rejected plus gate.decided/by/note/via, keeps gate.suite; locks <run dir>/.run.lock (flow_runner should take the same lock for its own run.json writes). Console-facing: decisions(root, status) -> (cards, problems); rule(root, id, choice, note, via=\"console\"); verdict(root, T-id, \"done\"|\"open\", note); commit(root, message_file, dry_run, extra, stat_out); push(root, remote, dry_run, extra, stat_out). All raise Refused with a plain message (CLI exit 2). root is the repo root.\nEnv HARNESS_LEAK_TERMS (comma list) adds operator terms to the scan; sibling-project names are never in the repo.\n"
+    },
+    {
+      "ts": "2026-11-18T04:56:16Z",
+      "agent": "verifier-ui-desk",
+      "note": "VERIFIED by verifier-ui-desk. Replayed test_operator_desk.py: 69 passed. Read operator_desk.py against design sections 2, 3, 5: rule uses link(2) for new R files, verdict refuses non-review tasks and operator-produced tasks and a bare root, gate is one locked function, commit scans the exact bytes it commits, push sends only refs/heads/<current>:refs/heads/<current>, never main or master, no force or plus or tags. 14 mutants in a throwaway copy, all caught: rule overwrite (replace, fixed id, second ruling), push main allowed, push skips scan, commit skips scan, commit message not scanned, verdict any status, verdict self ok, plus refspec, force flag, --tags, push range widened, gate any status, added-lines filter broken. Shipped files scan clean. Residual (not blocking): sibling-project names need HARNESS_LEAK_TERMS; push does not fetch, so a stale tracking ref only widens the scan; git add -A commits the whole pending set; a case-insensitive remote could treat 'Main' as main (edge)."
+    }
+  ]
+}

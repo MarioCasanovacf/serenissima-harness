@@ -499,7 +499,20 @@ def main(argv=None):
           "phase %.0fs, %d retried alone)"
           % (", ".join(parts) or "no tests ran", wall, len(files), len(results), a.jobs,
              phase_walls[0], phase_walls[1], len(retried)))
-    return 0 if all(r["ok"] for r in results) else 1
+    ok = all(r["ok"] for r in results)
+    log_tests_run(files, total, wall, ok, a.changed)
+    return 0 if ok else 1
+
+
+def log_tests_run(files, total, wall, ok, changed):
+    """One `tests_run` event (files, counts, seconds) for the console's activity
+    tooltip. Observability only: any failure here is ignored."""
+    try:
+        import harness_common as hc
+        hc.log_event("tests_run", files=[f.name for f in files][:50], file_count=len(files),
+                     counts=total, seconds=round(wall, 1), ok=ok, changed=bool(changed))
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

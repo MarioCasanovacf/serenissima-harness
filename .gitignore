@@ -21,6 +21,9 @@
 # AST index cache.
 .harness/index/
 
+# Flow runs (flow_runner.py): run state and per-step results, per machine.
+.harness/runs/
+
 # Reversible-deletion quarantine, and the archives `blackboard.py reset` writes.
 .harness/trash/
 

@@ -1,0 +1,33 @@
+{
+  "id": "T-488",
+  "title": "VERIFY T-487: a run follows the recipe and never skips permissions",
+  "description": "A different agent verdicts T-487.",
+  "acceptance_criteria": [
+    "Mutants in a throwaway copy: pass --dangerously-skip-permissions; let a producer equal its verifier; trust the agent's text instead of the board for the verdict; skip the gate. Each must fail test_flow_runner.py. Confirm no test calls a real model. Verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-484-ui.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T05:45:42Z",
+      "agent": "verifier-ui-runner",
+      "note": "VERDICT on T-487: REJECTED (returned open, see its note). Checklist results:\n- Mutant: --dangerously-skip-permissions in claude_argv: caught (13 failed).\n- Mutant: producer may equal verifier: caught (1 failed).\n- Mutant: verdict from step result text (two variants): NOT caught, 28 passed each. The fake CLI's result text always matches the board, so the verdict test cannot tell the sources apart.\n- Mutant: gate skipped: caught (3 failed).\n- No test calls a real model: every step runs the fake named by HARNESS_CLAUDE_BIN (set in the shared fixture), and a sentinel claude on PATH logged zero hits across all runs.\nScratch copies are under <tmp>/tmp.EegpNLK7cV and the repository was not edited.\n"
+    },
+    {
+      "ts": "2026-11-18T05:46:11Z",
+      "agent": "main",
+      "note": "REOPEN (was done): Reopened by the coordinator: T-488 was marked done while its subject T-487 was sent back (REJECTED, the verdict-from-text mutant survived). It is verified again after T-487 is fixed."
+    },
+    {
+      "ts": "2026-11-18T05:48:59Z",
+      "agent": "verifier-ui-runner-2",
+      "note": "VERIFY T-487: done, verdict PASS. Checklist:\n- Mutants in a throwaway copy (repo not edited): --dangerously-skip-permissions added: caught (15 failed). Producer may equal verifier: caught (1 failed). Verdict from step text, both variants (text with board fallback, text only): caught (2 failed each). Gate skipped: caught (3 failed).\n- No test calls a real model: all test fixtures set HARNESS_CLAUDE_BIN to the fake CLI; all agent-running launches are foreground; a sentinel claude on PATH with HARNESS_CLAUDE_BIN unset recorded 0 hits.\n- Replay of test_flow_runner.py: 30 passed.\nDetails and remaining gaps (text-versus-board tests check one direction only) are in the T-487 note.\nScratch copy left in place: $D/repo\n"
+    },
+    {
+      "ts": "2026-11-18T05:50:37Z",
+      "agent": "main",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Verifier notes named the machine temp directory of their scratch copies; replaced with <tmp> before commit."
+    }
+  ]
+}

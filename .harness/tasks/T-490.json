@@ -1,0 +1,18 @@
+{
+  "id": "T-490",
+  "title": "VERIFY T-489: no ruling edits history, no push reaches main or skips the scan",
+  "description": "A different agent verdicts T-489.",
+  "acceptance_criteria": [
+    "Mutants in a throwaway copy: let rule overwrite an existing R file; let push target main; let commit skip the leak scan; let verdict pass on a task not in review. Each must fail test_operator_desk.py. Verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-484-ui.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T04:56:16Z",
+      "agent": "verifier-ui-desk",
+      "note": "Executed the four required mutants in a throwaway copy of the repo's bin and test file: rule overwrites an existing R file (3 variants), push targets main, commit skips the leak scan, verdict passes on a task not in review. Each fails test_operator_desk.py (2, 1, 1, 9, 1 failures respectively); unmutated baseline in the same copy is 69 passed. Details in the T-489 verdict note."
+    }
+  ]
+}

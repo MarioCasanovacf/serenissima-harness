@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 39,
+        "tasks_done": 42,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-11-18T04:10:46Z"
+        "last_outcome_at": "2026-11-18T05:48:52Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -908,6 +908,31 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-11-18T04:10:46Z"
+      },
+      "worker-ui-desk": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T04:56:16Z"
+      },
+      "verifier-ui-desk": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T04:56:16Z"
+      },
+      "verifier-ui-page": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T05:42:06Z"
+      },
+      "verifier-ui-server": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T05:43:47Z"
+      },
+      "verifier-ui-runner-2": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T05:48:59Z"
       }
     }
   },

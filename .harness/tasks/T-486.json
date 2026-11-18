@@ -1,0 +1,23 @@
+{
+  "id": "T-486",
+  "title": "VERIFY T-485: the console serves only localhost, only with the token, never a secret",
+  "description": "A different agent verdicts T-485.",
+  "acceptance_criteria": [
+    "Mutants in a throwaway copy: drop the Host check; accept a POST without the token; skip redaction on one route; serve a file under .harness/keys. Each must fail test_console.py. Confirm no GET route writes anything (hash the root before and after). Verdict."
+  ],
+  "context_files": [
+    ".harness/design-T-484-ui.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T05:43:47Z",
+      "agent": "verifier-ui-server",
+      "note": "T-485 verified by verifier-ui-server. Replay: test_console.py 24 passed. Mutants in a scratch copy, each run against test_console.py: (1) Host check removed -> caught (test_a_foreign_host_header_is_refused); (2) token check always true -> caught (test_writes_need_the_token); (3) /api/board answered without redact() -> caught (test_every_get_route_is_redacted); (4) static handler rooted at .harness with extension allow list dropped -> caught (test_static_files_stay_inside_the_ui_folder, which plants .harness/keys/agent.json and tries 6 traversal paths). GET path read: no write call in do_GET/get_route/_static/_stream/_index; the only file write in console.py (line 478, mkstemp-style fdopen) sits on the write path; bytecode off in-process and in child tools; test_no_get_writes_anything hashes the whole root across every GET route, /, /ui/app.js, events and a stream open. Gaps (minor): the test's digest covers files only, not empty directories created; the static test was caught by the combined mutant, a root-only mutant keeping the extension allow list would still be stopped by the allow list (defence in depth) but not separately tested; redaction is applied once in _json and _send, so a route bypassing _json is covered only for /api/board by the all-routes test. Scratch copy left at <tmp>/tmp.vg1lOMCsmt.\n"
+    },
+    {
+      "ts": "2026-11-18T05:50:37Z",
+      "agent": "main",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Verifier notes named the machine temp directory of their scratch copies; replaced with <tmp> before commit."
+    }
+  ]
+}

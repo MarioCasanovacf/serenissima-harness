@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="console-token" content="__CONSOLE_TOKEN__">
+<title>Harness Console</title>
+<link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-row">
+    <div class="brand">
+      <h1 data-i18n="app.title">Consola del arnés</h1>
+      <p class="sub"><span data-i18n="app.branch">Rama</span> <code id="branch">-</code>
+        <span class="live" id="live" data-state="off"><span class="dot"></span><span id="live-text" data-i18n="live.off">sin conexión</span></span></p>
+    </div>
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button type="button" class="lang-btn" data-lang="es">ES</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab" data-tab="live" data-i18n="tab.live">En vivo</button>
+    <button type="button" role="tab" class="tab" data-tab="operator" data-i18n="tab.operator">Operador</button>
+    <button type="button" role="tab" class="tab" data-tab="society" data-i18n="tab.society">Sociedad</button>
+    <button type="button" role="tab" class="tab" data-tab="flows" data-i18n="tab.flows">Flujos</button>
+  </nav>
+</header>
+
+<main>
+  <section class="panel" id="panel-live" data-panel="live">
+    <div class="strip" id="strip"></div>
+    <div class="grid-2">
+      <div>
+        <h2 data-i18n="live.agents">Agentes ahora</h2>
+        <p class="hint" data-i18n="live.agents.hint">Pasa el cursor sobre un agente o una tarea para ver qué está haciendo.</p>
+        <div id="lanes" class="lanes"></div>
+        <h2 data-i18n="live.runs">Olas en curso</h2>
+        <div id="live-runs"></div>
+      </div>
+      <div>
+        <h2 data-i18n="live.chart">Minutos por ola</h2>
+        <div id="chart" class="chart"></div>
+        <p class="hint" id="chart-source"></p>
+        <h2 data-i18n="live.feed">Lo último que pasó</h2>
+        <ol id="feed" class="feed"></ol>
+      </div>
+    </div>
+    <div class="board-head">
+      <h2 data-i18n="live.board">Tablero</h2>
+      <label class="inline"><span data-i18n="live.epic">Épica</span>
+        <select id="epic"></select></label>
+    </div>
+    <div id="board" class="board"></div>
+  </section>
+
+  <section class="panel" id="panel-operator" data-panel="operator" hidden>
+    <h2 data-i18n="op.decisions">Decisiones que esperan tu fallo</h2>
+    <div id="op-decisions" class="cards"></div>
+    <h2 data-i18n="op.review">Tareas en revisión</h2>
+    <p class="hint" data-i18n="op.review.hint">Tu veredicto como operador. El productor nunca aprueba su propio trabajo.</p>
+    <div id="op-review" class="cards"></div>
+    <h2 data-i18n="op.gates">Olas que esperan tu visto bueno</h2>
+    <div id="op-gates" class="cards"></div>
+    <h2 data-i18n="op.signatures">Borradores sin firma</h2>
+    <p class="hint" data-i18n="op.signatures.hint">La consola nunca firma. Si decides firmar, copia el comando y córrelo en tu terminal.</p>
+    <div id="op-signatures" class="cards"></div>
+    <h2 data-i18n="op.close">Revisión de cierre de épica</h2>
+    <div class="row"><button type="button" class="btn" id="close-run" data-i18n="op.close.run">Correr la revisión</button></div>
+    <div id="op-close"></div>
+    <h2 data-i18n="op.git">Commit y push</h2>
+    <div id="op-git" class="git"></div>
+  </section>
+
+  <section class="panel" id="panel-society" data-panel="society" hidden>
+    <div class="grid-2">
+      <div>
+        <h2 data-i18n="soc.names">Nombres y asientos</h2>
+        <div id="soc-names"></div>
+        <h2 data-i18n="soc.warrants">Órdenes del operador</h2>
+        <div id="soc-warrants"></div>
+        <h2 data-i18n="soc.acts">Actos firmados por nombre</h2>
+        <div id="soc-acts"></div>
+      </div>
+      <div>
+        <h2 data-i18n="soc.cases">Casos y demandas</h2>
+        <div id="soc-cases"></div>
+        <h2 data-i18n="soc.precedents">Precedentes</h2>
+        <input type="search" id="prec-filter" class="input" data-i18n-placeholder="soc.filter" placeholder="Filtrar">
+        <div id="soc-precedents"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-flows" data-panel="flows" hidden>
+    <div class="grid-flows">
+      <aside>
+        <h2 data-i18n="flows.list">Recetas</h2>
+        <div id="flow-list" class="flow-list"></div>
+        <button type="button" class="btn" id="flow-new" data-i18n="flows.new">Receta nueva</button>
+      </aside>
+      <div>
+        <h2 id="flow-title" data-i18n="flows.editor">Editor</h2>
+        <form id="flow-form" class="form" novalidate></form>
+        <div id="flow-msg" class="msg" role="status"></div>
+      </div>
+    </div>
+    <h2 data-i18n="flows.runs">Historial de corridas</h2>
+    <div id="run-list" class="run-list"></div>
+    <div id="run-detail"></div>
+  </section>
+</main>
+
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<script src="/ui/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "id": "T-485",
+  "title": "console.py: the local server, read API, live stream and redaction",
+  "description": "Design T-484 sections 1, 2, 6 and 8.",
+  "acceptance_criteria": [
+    "Build .harness/bin/console.py exactly as design sections 2 and 6 specify: 127.0.0.1 only, Host check, token on every POST and PUT, redaction on every string, every GET route with the shapes given, SSE stream, --port, --root, --open.",
+    "POST and PUT routes call flow_runner.py and operator_desk.py through subprocess with the CLI shapes of design sections 4 and 5; those tools are being built in parallel, so test the routes against stub executables in a throwaway root.",
+    "Static files from .harness/ui/ (built in parallel by T-491); serve a plain placeholder page when it is absent. Never serve the paths safety rule 4 names.",
+    ".harness/tests/test_console.py per design section 8. Edit only console.py and its test. Run only your own test file. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/design-T-484-ui.md"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T05:17:47Z",
+      "agent": "main",
+      "note": "Coordinator builds this directly from design-T-484-ui.md."
+    },
+    {
+      "ts": "2026-11-18T05:40:49Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: console.py built by the coordinator from design-T-484-ui.md (departures recorded in its section 9). 127.0.0.1 only with the Host check; X-Console-Token on every POST/PUT plus an Origin check; GET routes read-only (sys.dont_write_bytecode, child tools with PYTHONDONTWRITEBYTECODE); redact() on every JSON answer; static files only from .harness/ui with an extension allow list; SSE /api/stream with events and changed pings. Replay: python3 .harness/bin/fast_tests.py .harness/tests/test_console.py .harness/tests/test_console_ui.py -> 33 passed. Full suite once by the coordinator: 1403 passed, 4 skipped in 64.5 s. Manual check: server against the live root, every GET route answered 200 in under 0.4 s, a foreign Host and a token-less POST got 403, traversal under /ui got 404.\n"
+    },
+    {
+      "ts": "2026-11-18T05:43:47Z",
+      "agent": "verifier-ui-server",
+      "note": "T-485 verified by verifier-ui-server. Replay: test_console.py 24 passed. Mutants in a scratch copy, each run against test_console.py: (1) Host check removed -> caught (test_a_foreign_host_header_is_refused); (2) token check always true -> caught (test_writes_need_the_token); (3) /api/board answered without redact() -> caught (test_every_get_route_is_redacted); (4) static handler rooted at .harness with extension allow list dropped -> caught (test_static_files_stay_inside_the_ui_folder, which plants .harness/keys/agent.json and tries 6 traversal paths). GET path read: no write call in do_GET/get_route/_static/_stream/_index; the only file write in console.py (line 478, mkstemp-style fdopen) sits on the write path; bytecode off in-process and in child tools; test_no_get_writes_anything hashes the whole root across every GET route, /, /ui/app.js, events and a stream open. Gaps (minor): the test's digest covers files only, not empty directories created; the static test was caught by the combined mutant, a root-only mutant keeping the extension allow list would still be stopped by the allow list (defence in depth) but not separately tested; redaction is applied once in _json and _send, so a route bypassing _json is covered only for /api/board by the all-routes test. Scratch copy left at <tmp>/tmp.vg1lOMCsmt.\n"
+    },
+    {
+      "ts": "2026-11-18T05:50:37Z",
+      "agent": "main",
+      "note": "REDACTED: 1 occurrence(s) of a withheld literal in this task's records replaced with '<tmp>'. Why: Verifier notes named the machine temp directory of their scratch copies; replaced with <tmp> before commit."
+    }
+  ]
+}

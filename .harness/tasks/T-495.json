@@ -1,0 +1,8 @@
+{
+  "id": "T-495",
+  "title": "update --status done must respect the cascade",
+  "description": "Found on 2026-11-18 by verifier-ui-runner: its claim of T-488 was refused by the cascade gate because T-487 was not done, yet blackboard.py update T-488 --status done succeeded. A task whose depends_on are not all done must not reach done through update either. Fix in blackboard.py with a regression test; check the verifier_execute_done path, which skipped the claim.",
+  "acceptance_criteria": [],
+  "context_files": [],
+  "notes": []
+}

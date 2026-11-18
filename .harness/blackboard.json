@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1.0",
   "generation": 4,
-  "updated_at": "2026-11-18T04:10:46Z",
-  "updated_by": "main",
+  "updated_at": "2026-11-18T05:48:59Z",
+  "updated_by": "verifier-ui-runner-2",
   "protocol": {
     "single_source_of_truth": "This file is the shared index of all tasks and the FIRST thing every agent must read before acting (claude.md §2A, gemini.md §2B).",
     "write_rule": "NEVER hand-edit this file. All mutations go through `python3 .harness/bin/blackboard.py <command>`, which serializes writes through a guard flock and enforces the cascade gate (a task is claimable only when all depends_on are done).",
@@ -6945,6 +6945,199 @@
       "created_by": "coordinator",
       "completed_at": "2026-11-18T04:10:46Z",
       "completed_by": "main"
+    },
+    "T-485": {
+      "epic": "harness-console",
+      "title": "console.py: the local server, read API, live stream and redaction",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-485.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "console.py built by the coordinator from design-T-484-ui.md (departures recorded in its section 9). 127.0.0.1 only with the Host check; X-Console-Token on every POST/PUT plus an Origin check; GET routes read-only (sys.dont_write_bytecode, child tools with PYTHONDONTWRITEBYTECODE); redact() on every JSON answer; static files only from .harness/ui with an extension allow list; SSE /api/stream with events and changed pings. Replay: python3 .harness/bin/fast_tests.py .harness/tests/test_console.py .harness/tests/test_console_ui.py -> 33 passed. Full suite once by the coordinator: 1403 passed, 4 skipped in 64.5 s. Manual check: server against the live root, every GET route answered 200 in under 0.4 s, a foreign Host and a token-less POST got 403, traversal under /ui got 404.\n",
+        "ts": "2026-11-18T05:40:49Z"
+      },
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:43:47Z",
+      "completed_by": "verifier-ui-server"
+    },
+    "T-486": {
+      "epic": "harness-console",
+      "title": "VERIFY T-485: the console serves only localhost, only with the token, never a secret",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-485"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-486.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:43:47Z",
+      "completed_by": "verifier-ui-server"
+    },
+    "T-487": {
+      "epic": "harness-console",
+      "title": "flow_runner.py and the flow recipe format",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-487.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "Round 2, answering verifier-ui-runner's REJECTED note. The fake CLI now has lie_<act> actions: they leave the board untouched but print exactly the final text the honest act prints. Two new tests: a verifier that reports \"did approve\" without acting leaves the track failed with the board still in review; a producer that reports \"did produce\" without acting fails the track after one step. Coordinator check in a scratch copy: the text-verdict mutant (map \"did approve\" to done and \"did produce\" to review in run_step) now fails both tests (2 failed, 28 passed). No change to flow_runner.py itself. Also closed two gaps the T-485 verifier named, in test_console.py: tree_digest now counts directories, and a new test checks that streamed events are redacted. Replay: python3 .harness/bin/fast_tests.py .harness/tests/test_flow_runner.py .harness/tests/test_console.py -> 55 passed. T-488 was reopened (it had been marked done while T-487 was open); the board defect behind that is T-495.\n",
+        "ts": "2026-11-18T05:47:02Z"
+      },
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:48:52Z",
+      "completed_by": "verifier-ui-runner-2"
+    },
+    "T-488": {
+      "epic": "harness-console",
+      "title": "VERIFY T-487: a run follows the recipe and never skips permissions",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-487"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-488.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:48:59Z",
+      "completed_by": "verifier-ui-runner-2"
+    },
+    "T-489": {
+      "epic": "harness-console",
+      "title": "operator_desk.py: decisions, rulings, operator verdicts, wave gates, commit and push",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-489.json",
+      "artifacts": [
+        ".harness/bin/operator_desk.py",
+        ".harness/tests/test_operator_desk.py",
+        ".harness/decisions/README.md",
+        ".harness/rulings/README.md"
+      ],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "worker-ui-desk",
+        "note": "operator_desk.py built: decisions, rule, verdict, gate, commit, push; README for decisions/ and rulings/. test_operator_desk.py: 69 passed (fast_tests.py, own file only). 9 mutants (main allowed, force flag, push/commit skip scan, self-verdict, gate any status, added-lines-only broken, ruling overwrite, any choice) all killed.\nInterfaces for other parts: record_gate_decision(root, run_id, decision, note=\"\", by=\"operator\", via=\"cli\") -> run dict, decision is \"approve\" or \"reject\", raises operator_desk.Refused; sets run.status and gate.status to approved/rejected plus gate.decided/by/note/via, keeps gate.suite; locks <run dir>/.run.lock (flow_runner should take the same lock for its own run.json writes). Console-facing: decisions(root, status) -> (cards, problems); rule(root, id, choice, note, via=\"console\"); verdict(root, T-id, \"done\"|\"open\", note); commit(root, message_file, dry_run, extra, stat_out); push(root, remote, dry_run, extra, stat_out). All raise Refused with a plain message (CLI exit 2). root is the repo root.\nEnv HARNESS_LEAK_TERMS (comma list) adds operator terms to the scan; sibling-project names are never in the repo.\n",
+        "ts": "2026-11-18T04:52:37Z"
+      },
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T04:56:16Z",
+      "completed_by": "verifier-ui-desk"
+    },
+    "T-490": {
+      "epic": "harness-console",
+      "title": "VERIFY T-489: no ruling edits history, no push reaches main or skips the scan",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-489"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-490.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T04:56:16Z",
+      "completed_by": "verifier-ui-desk"
+    },
+    "T-491": {
+      "epic": "harness-console",
+      "title": "The console page: four tabs, tooltips, forms, Spanish and English",
+      "status": "done",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-491.json",
+      "artifacts": [],
+      "handoff": {
+        "to_role": "verifier",
+        "from": "main",
+        "note": "The page: .harness/ui/index.html, styles.css, app.js, i18n/es.json and en.json (241 keys each), waves-measured.json. Four tabs, Spanish and English toggle, SSE live updates, tooltips on agents, tasks, run tracks and steps, decision cards with an in-page confirm, verdicts, gates, unsigned drafts as copyable commands, epic-close report, commit and push behind a check step, recipe forms with validate, save, launch and run history. DOM built with textContent only; no inline script or style; no other origin. Replay: python3 .harness/bin/fast_tests.py .harness/tests/test_console_ui.py; headless Chrome screenshots of each tab against the live root (append ?tab=operator#still to the URL).\n",
+        "ts": "2026-11-18T05:40:49Z"
+      },
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:42:06Z",
+      "completed_by": "verifier-ui-page"
+    },
+    "T-492": {
+      "epic": "harness-console",
+      "title": "VERIFY T-491: the page loads nothing external and every label exists in both languages",
+      "status": "done",
+      "role": "verifier",
+      "engine": "any",
+      "depends_on": [
+        "T-491"
+      ],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 1,
+      "detail_file": ".harness/tasks/T-492.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-11-18T04:41:09Z",
+      "created_by": "coordinator",
+      "completed_at": "2026-11-18T05:42:06Z",
+      "completed_by": "verifier-ui-page"
+    },
+    "T-495": {
+      "epic": "board-integrity",
+      "title": "update --status done must respect the cascade",
+      "status": "open",
+      "role": "worker",
+      "engine": "any",
+      "depends_on": [],
+      "claimed_by": null,
+      "claim_expires_at": null,
+      "priority": 5,
+      "detail_file": ".harness/tasks/T-495.json",
+      "artifacts": [],
+      "handoff": null,
+      "created_at": "2026-11-18T05:47:02Z",
+      "created_by": "main"
     }
   }
 }

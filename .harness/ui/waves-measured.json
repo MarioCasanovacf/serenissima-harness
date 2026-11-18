@@ -1,0 +1,12 @@
+{
+  "source": "Measured on 2026-11-17 on one laptop: wall-clock minutes from the first agent start to the last handoff. See the Tests, Fast entry in claude.md.",
+  "waves": [
+    {"label": "gen-10 wave 3, before fast_tests", "label_es": "Ola 3 de gen-10, antes de fast_tests",
+     "minutes": 28.0, "kind": "measured"},
+    {"label": "measured wave 1, every agent ran the full suite", "label_es": "Ola medida 1, cada agente corrió la suite completa",
+     "minutes": 34.6, "kind": "measured"},
+    {"label": "measured wave 2, the wave test rule", "label_es": "Ola medida 2, con la regla de pruebas por ola",
+     "minutes": 8.0, "kind": "measured"}
+  ],
+  "target_minutes": 10
+}
