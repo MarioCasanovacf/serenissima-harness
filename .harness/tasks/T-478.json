@@ -13,5 +13,21 @@
     ".harness/tests/test_rehearsal.py",
     ".harness/operator-rulings-2026-10-21.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T02:21:34Z",
+      "agent": "worker-speed-rehearsal",
+      "note": "plan: byte-strict hashes on protected set; elsewhere a write guard (audit hook via sitecustomize in every python child + the rehearsal process) records live-root writes; fail closed if guard probe not armed"
+    },
+    {
+      "ts": "2026-11-18T02:32:47Z",
+      "agent": "worker-speed-rehearsal",
+      "note": "HANDOFF -> verifier: Protected set byte-strict (hash+git status); elsewhere a write guard (audit hook in rehearsal process and every Python child via sitecustomize, fail-closed probe) attributes live writes to the rehearsal. Tests: LiveTreeCheckTests (concurrent edit passes; child/own/protected/shell plants fail). Three mutants killed by test_rehearsal.py. Full suite green once. Stated limit: non-Python writes outside protected set unseen."
+    },
+    {
+      "ts": "2026-11-18T02:49:41Z",
+      "agent": "verifier-speed-rehearsal",
+      "note": "VERIFIED by replay in throwaway copies (<tmp>). Mutants, each run through test_rehearsal.py: rehearsal appends 1 byte to live plan.md (own process) KILLED by test_live_tree_untouched_sandbox_removed_and_scorecard_shape; same via Python child to tasks/ KILLED; 1 byte to live warrants/W-002.json (own process) KILLED on both arms; shell append to live roster.json KILLED by hash arm; integrity_diff returns [] (protected-set check dropped) KILLED by LiveTreeCheckTests protected-path tests (2); guard_diffs returns [] KILLED by 4 LiveTreeCheckTests; trust dropped from PROTECTED_LIVE_PATHS KILLED by 2 tests. Concurrent replay: real run_rehearsal.py in a copy while another process rewrote plan.md, tasks/ and blackboard.json every 0.5s for the whole run: exit 0, live_tree_untouched true, 14 rows. Protected paths confirmed against warrant.py, roster.py, attest.py, revoke.py, dispatch_token.py, reputation.py. Decision 9 quote ('A test pins that the live tree does not change') matches operator-rulings-2026-10-21.md line 32. No abs paths, usernames or emojis added. RESIDUAL (not blocking, out of scope): RehearsalTests sandbox-leak assertion compares harness-rehearsal-* dirs in the global temp dir and fails whenever another agent's rehearsal runs at the same moment; passes alone when none is running. Pre-existing, same line at HEAD."
+    }
+  ]
 }

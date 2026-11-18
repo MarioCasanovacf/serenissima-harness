@@ -1,0 +1,32 @@
+{
+  "id": "T-480",
+  "title": "fast_tests.py --changed, low priority and half the cores by default",
+  "description": "Timed wave of 2026-11-17: 4 agents each running the full suite at once saturated 10 cores; each run took 2 to 4 min instead of 55 s, and the Mac became unusable. Agents will now run only the tests their change touches.",
+  "acceptance_criteria": [
+    "--changed selects the test files affected by the working-tree diff against HEAD (git diff --name-only plus untracked files): every changed test file, and every test file that imports or names a changed module under .harness/bin or examples/ (a static scan of import lines and of the module's file name in the test source). Print the selection and why each file was picked. A change to a file no test references selects nothing and says so; it never falls back silently to the full suite.",
+    "--changed accepts --base REF to diff against another commit.",
+    "Children run at low priority (os.nice, default 10, flag --nice) and the machine-wide slot cap defaults to half the cores (env HARNESS_TEST_SLOTS overrides it; -j cannot exceed it). Document both in the module docstring.",
+    "Tests in .harness/tests/test_fast_tests.py, in throwaway git repos: a changed bin module selects the test that imports it and not an unrelated one; a changed test file selects itself; an unreferenced change selects nothing; the slot cap honours the env var.",
+    "Edit fast_tests.py and the new test file only. Run only the tests your change touches. Hand off to verifier."
+  ],
+  "context_files": [
+    ".harness/bin/fast_tests.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T03:01:54Z",
+      "agent": "worker-speed-changed",
+      "note": "plan: --changed (git diff + untracked, static import/name scan), --base, --nice via os.nice in the runner (children inherit), slot cap = half cores with HARNESS_TEST_SLOTS, -j clamped; tests in throwaway git repos"
+    },
+    {
+      "ts": "2026-11-18T03:02:48Z",
+      "agent": "worker-speed-changed",
+      "note": "HANDOFF -> verifier: fast_tests.py: --changed (git diff vs HEAD + untracked; static import-line and file-name scan over .harness/bin and examples; prints each pick with its reason; nothing selected says so and exits 5, never the full suite), --base REF, --nice (default 10, applied once in the runner so children inherit), slot cap = half the cores with HARNESS_TEST_SLOTS override, -j clamped to it; docstring updated. New .harness/tests/test_fast_tests.py: 27 passed in throwaway git repos; 7 mutants killed in a tempfile copy. Ran only test_fast_tests.py."
+    },
+    {
+      "ts": "2026-11-18T04:05:06Z",
+      "agent": "verifier-speed-changed",
+      "note": "VERDICT done. Replayed: test_fast_tests.py 27 passed; 9 own mutants in a tempfile copy all caught (name scan off, import scan off, test not self-picking, fallback to full suite, cap = all cores, nice default 0, env var ignored, base fixed to HEAD, bad base swallowed). Live: bad base exits 2, --changed with --serial refused. Docstring documents nice and the slot cap. Limitation, not a defect against the spec: the scan is static, so a change to harness_common.py or portalock.py (imported by most bin modules) does not select tests that reach them only through blackboard, attest, roster and the like. Follow-up suggestion: a one-level transitive import closure over bin modules."
+    }
+  ]
+}

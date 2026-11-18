@@ -1301,20 +1301,269 @@ def appeal(root, name, key_path, task, ref, grounds) -> dict:
                     body={"grounds": grounds, "NUMBERS_NOT_RATIFIED": WINDOWS_NOT_RATIFIED})
 
 
-def file_claim(root, accuser, key_path, target_name, target_seq, observed_value, source,
-               task=None) -> dict:
-    """T-436 section 5 / T-452 section 1: the gap-check runs INSIDE the write, not before
-    it. Reads `target_name`'s own commit act at `target_seq` for the committed value, takes
-    `observed_value` from the ONE named independent `source` the caller read it from, and
-    ONLY when they disagree calls `contest` -- kind=contest, exactly as `contest` does
-    today. When they agree, this raises and returns, having written nothing anywhere: no
-    act on either chain, no event line, no file (Outcome A, T-436 section 5, "There is no
-    on-disk artifact for a future decision... to read, because none was written").
+GAP_EQUALITY_PARAMETERS = frozenset({"task", "order", "engine"})
+GAP_ORDER_PARAMETERS = frozenset({"budget", "deadline", "iteration_bound"})
+"""T-472 acceptance criterion 4, PR-060 clause 1's six split into the two shapes a gap
+can take: `task`, `order` and `engine` disagree-or-agree (a plain mismatch IS the gap);
+`budget`, `deadline` and `iteration_bound` only breach in ONE direction -- T-436 section
+2 never names finishing early or under budget as a breach, only an OVERRUN: "tokens spent
+... exceeding the committed budget", "wall-clock time exceeding the committed deadline",
+"goal_mode.py exiting 3 after a declared lower bound than it actually ran"."""
+
+
+def _coerce_order(parameter, value):
+    """Turn a committed/observed string into something `>` can compare, for the three
+    GAP_ORDER_PARAMETERS only. `deadline` parses as an ISO instant (via `hc.parse_iso`,
+    the same parser every lease/expiry check in this harness already uses); `budget` and
+    `iteration_bound` parse as integers. Raises AttestError, not a bare exception, because
+    an unparseable committed or observed value is itself a reason this claim cannot be
+    replayed -- the same "fall closed" rule `_age_seconds` already states for a field
+    written by the party the check is meant to constrain.
+    """
+    if parameter == "deadline":
+        parsed = hc.parse_iso(str(value))
+        if parsed is None:
+            raise AttestError(
+                f"{value!r} does not parse as an ISO instant; a deadline this harness "
+                f"cannot read as a timestamp cannot be replayed against.")
+        return parsed
+    try:
+        return int(str(value).strip())
+    except ValueError:
+        raise AttestError(
+            f"{value!r} does not parse as an integer; {parameter!r} is compared as a "
+            f"count, and a value this harness cannot read as one cannot be replayed "
+            f"against.")
+
+
+def _gap(parameter, committed_value, observed_value):
+    """THE ONE COMPARATOR. Every parameter `file_claim` ever checks runs through here, and
+    nowhere else in this module decides whether a gap exists. Returns `(is_gap,
+    committed_value, observed_value)` -- a boolean and the two values, exactly what T-472's
+    acceptance criterion asks for and nothing else: no reason text, no write, no window, no
+    amount.
+
+    This is also the ONLY place in this module where an ordering comparison (`<`, `>`,
+    `<=`, `>=`) may legitimately appear outside a docstring --
+    `test_attest_contracts.py`'s `OutputShapeGuard` pins both halves of that sentence: the
+    four contract-facing functions stay clean, and this function is shown to actually use
+    one, so the guard is not vacuously trivial.
+    """
+    committed_value = str(committed_value)
+    observed_value = str(observed_value)
+    if parameter in GAP_EQUALITY_PARAMETERS:
+        return committed_value != observed_value, committed_value, observed_value
+    if parameter in GAP_ORDER_PARAMETERS:
+        committed_ord = _coerce_order(parameter, committed_value)
+        observed_ord = _coerce_order(parameter, observed_value)
+        return observed_ord > committed_ord, committed_value, observed_value
+    raise AttestError(
+        f"{parameter!r} is not one of OPERATIONAL_PARAMETERS; nothing in this module "
+        f"knows how to compare it.")
+
+
+def _events_for(root):
+    """Every parsed line of the ONE event log this `root` writes to, read fresh each call
+    (PR-010 doctrine: no cache, no side ledger). Live root -> the real
+    `.harness/logs/events.jsonl`; any other root (every test fixture) -> `<root>/events.jsonl`
+    -- the exact same `w.is_live(root)` split `_emit` already uses to decide where an act's
+    own event line goes, so a reader and a writer never disagree about which file is "the"
+    log for a given root.
+    """
+    path = hc.EVENTS if w.is_live(root) else pathlib.Path(root) / "events.jsonl"
+    if not path.exists():
+        return []
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def _read_deadline(root, task_id):
+    """OBSERVED SOURCE: `events.jsonl`, the task's own recorded handoff or completion.
+
+    T-436 section 2's own example: "wall-clock time exceeding the committed deadline". The
+    earliest of this task's `task_handoff` event or a `task_updated` event carrying
+    `status: "done"` is the one fact in this harness that answers "when was this task's
+    committed work actually delivered", written by a clock the committing agent does not
+    control (`blackboard.py`'s own call to `hc.now_iso()`), not a value the agent types
+    into its own commit act.
+    """
+    candidates = [e for e in _events_for(root)
+                  if str(e.get("task")) == str(task_id)
+                  and (e.get("event") == "task_handoff"
+                       or (e.get("event") == "task_updated"
+                           and e.get("status") == "done"))]
+    if not candidates:
+        raise AttestError(
+            f"no task_handoff or completed task_updated event for task {task_id!r} in "
+            f"events.jsonl. T-436 section 2: a would-be breach that cannot be stated as a "
+            f"single-task, single-comparison fact is no breach -- the harness cannot "
+            f"replay this claim.")
+    return candidates[0]["ts"], "events.jsonl"
+
+
+def _read_iteration_bound(root, task_id):
+    """OBSERVED SOURCE: `events.jsonl`'s `goal_reached`/`goal_abandoned` events, which
+    `goal_mode.py` itself writes with `iterations_used` (T-436 section 2's own example:
+    "goal_mode.py exiting 3 after a declared lower bound than it actually ran"). Only
+    present when `goal_mode.py run` was invoked with `--task <task_id>`; most historical
+    runs on this board used no `--task` at all (logged under `task: "none"`), which is
+    exactly why this reader refuses rather than guessing when nothing matches.
+    """
+    candidates = [e for e in _events_for(root)
+                  if str(e.get("task")) == str(task_id)
+                  and e.get("event") in ("goal_reached", "goal_abandoned")]
+    if not candidates:
+        raise AttestError(
+            f"no goal_mode.py run recorded against task {task_id!r} in events.jsonl "
+            f"(goal_mode.py was never invoked with --task {task_id!r}). T-436 section 2: "
+            f"the harness cannot replay this claim.")
+    return str(candidates[-1].get("iterations_used")), "goal_mode.py"
+
+
+def _usage_units_for_task(task_id):
+    """Every `usage_report.py` unit (one subagent transcript) whose own task-mention list
+    is EXACTLY `[task_id]` -- never a superset. `usage_report.py` ties tokens to task ids by
+    regex-matching `T-\\d{3}` in a unit's opening prompt, and a unit that mentions more than
+    one task has no further split between them; crediting the whole unit's tokens to any one
+    of several mentioned tasks would be exactly the cross-task aggregation T-436 section 2
+    refuses to call a replayable fact. Lazily imports `usage_report` so attest.py carries no
+    hard dependency on it at module load.
+    """
+    try:
+        import usage_report as ur
+    except ImportError as exc:
+        raise AttestError(
+            f"usage_report.py is not importable ({exc}); the harness cannot replay a "
+            f"budget or engine claim without it.")
+    units = ur.collect_units(ur.project_transcript_dir())
+    return [u for u in units if u.get("tasks") == [str(task_id)]]
+
+
+def _engine_family(model):
+    """`usage_report.py` records the raw model string (e.g. `claude-sonnet-5`); a commit
+    act's `engine` value is the coarser family this board's own ENGINE column uses (`claude`,
+    `gemini`, `any`). This maps the former to the latter by substring, falling back to the
+    raw model string unchanged when neither marker matches, so an unrecognized model is
+    reported as itself rather than silently coerced into a wrong family."""
+    low = str(model).lower()
+    if "claude" in low:
+        return "claude"
+    if "gemini" in low:
+        return "gemini"
+    return str(model)
+
+
+def _read_budget(root, task_id):
+    """OBSERVED SOURCE: `usage_report.py`'s per-run token accounting (T-436 section 2's own
+    example: "tokens spent ... exceeding the committed budget"). `raw` here is the same sum
+    `usage_report.py` itself reports as `raw` (input + cache_creation + cache_read + output)
+    for every unit that mentions this task ALONE."""
+    units = _usage_units_for_task(task_id)
+    if not units:
+        raise AttestError(
+            f"no usage_report.py unit mentions task {task_id!r} alone in its prompt; "
+            f"budget cannot be read as a single-task fact (T-436 section 2) -- the "
+            f"harness cannot replay this claim.")
+    raw = sum(u["in"] + u["out"] + u["cache_write"] + u["cache_read"] for u in units)
+    return str(raw), "usage_report.py"
+
+
+def _read_engine(root, task_id):
+    """OBSERVED SOURCE: `usage_report.py`'s per-unit model list (T-436 section 2's own
+    example: "the engine the run's transcript records differing from the one committed"),
+    mapped through `_engine_family`. Refuses when the units that mention this task alone
+    show more than one engine family -- that disagreement is itself not a single-task,
+    single-value fact."""
+    units = _usage_units_for_task(task_id)
+    if not units:
+        raise AttestError(
+            f"no usage_report.py unit mentions task {task_id!r} alone in its prompt; "
+            f"engine cannot be read as a single-task fact (T-436 section 2) -- the "
+            f"harness cannot replay this claim.")
+    families = {_engine_family(m) for u in units for m in u.get("models", [])}
+    if len(families) != 1:
+        raise AttestError(
+            f"usage_report.py units mentioning task {task_id!r} alone show "
+            f"{sorted(families)} as engine(s), not one -- the harness cannot replay this "
+            f"claim.")
+    return next(iter(families)), "usage_report.py"
+
+
+PARAMETER_READERS = {
+    "deadline": _read_deadline,
+    "iteration_bound": _read_iteration_bound,
+    "budget": _read_budget,
+    "engine": _read_engine,
+}
+"""T-472's table: PR-060 clause 1's six parameters, each mapped to the ONE harness record
+that observes it -- fixed by the PARAMETER, never chosen by the claimant, closing the
+defect the coordinator found in T-466 (`file_claim` used to take `observed_value` and
+`source` as caller-supplied arguments, so a claimant could type any value and defeat the
+gap check entirely).
+
+WHAT WAS FOUND, investigating goal_mode.py / usage_report.py / events.jsonl / the
+blackboard before building this table (T-472's own instruction):
+  - events.jsonl carries task_claimed, task_updated, task_handoff (blackboard.py's own
+    writes) and goal_mode_start/goal_reached/goal_abandoned (goal_mode.py's own writes),
+    every one of them already carrying a `task` field and a clock-stamped `ts` -- a
+    general event stream, not "the board" itself (attest.py already refuses to import
+    blackboard.py; see declare_intent's own docstring). Reading this log directly, the way
+    `_emit` already writes to it, couples this module to no board schema.
+  - goal_mode.py's `goal_reached`/`goal_abandoned` events carry `iterations_used` keyed by
+    the `--task` the caller passed it -- but most historical runs on this board never
+    passed `--task` at all (logged under `task: "none"`), so this reader is frequently
+    unable to resolve a value, not merely occasionally.
+  - usage_report.py ties tokens to task ids by regex-matching `T-\\d{3}` in a unit's
+    opening prompt, producing a SET of tasks per unit (one subagent transcript) and one
+    raw token total for the WHOLE unit -- there is no per-task split within a unit that
+    mentions more than one task. Budget and engine are therefore only ever single-task
+    facts for the subset of units whose task-mention list is a singleton; the rest are not
+    replayable, by construction, not by omission.
+  - `task` and `order` (PR-060 clause 1's remaining two) have NO reader here. T-436
+    section 2 names an independent source for budget, deadline, engine and
+    iteration_bound explicitly; it names none for task or order, and nothing found in
+    this investigation observes "which task was claimed" or "in what order" as a fact
+    about ONE task's own recorded events, independent of the self-filed commit act itself
+    -- the only existing record of a claim is the claim act that would be doing the
+    comparing. `order`, especially, is inherently a relation BETWEEN tasks (this one
+    before that one), which is exactly the cross-task aggregation T-436 section 2 refuses
+    to call a breach ("none aggregates across tasks into anything resembling a score").
+    A parameter is deliberately absent from this table rather than given a reader that
+    would guess.
+"""
+
+
+def file_claim(root, accuser, key_path, target_name, target_seq, task=None) -> dict:
+    """T-436 section 5 / T-452 section 1 / T-472: the gap-check runs INSIDE the write, not
+    before it, and the OBSERVED VALUE IS NEVER A CALLER ARGUMENT. Reads `target_name`'s own
+    commit act at `target_seq` for the committed parameter and value, looks up that
+    parameter's ONE reader in `PARAMETER_READERS` (fixed by the parameter, never chosen by
+    the accuser), and has THAT reader read the one named independent source for the commit
+    act's OWN task id. Only when the committed and observed values disagree (via `_gap`,
+    the one comparator) does this call `contest` -- kind=contest, exactly as `contest` does
+    today. When they agree, or when the parameter has no reader, this raises and returns,
+    having written nothing anywhere: no act on either chain, no event line, no file
+    (Outcome A, T-436 section 5, "There is no on-disk artifact for a future decision... to
+    read, because none was written").
+
+    T-472's OWN DEFECT, CLOSED. T-466's `file_claim` took `observed_value` and `source`
+    from the caller, so a claimant made a false claim pass the gap check by typing any
+    other value than the truth. There is no `observed_value` parameter here, and none in
+    the CLI (`--observed-value` no longer exists): a claimant cannot influence the observed
+    value through any argument, because there is no argument left that reaches it.
 
     EVERYTHING BEFORE THE DECISION IS A READ. Nothing between opening `target_name`'s chain
-    and either raising (agreement) or calling `contest` (gap) touches disk, so Outcome A is
-    provably inert -- the test suite checks this by hashing acts/ and the event log before
-    and after a refused filing, not by trusting this docstring.
+    and either raising (agreement, or no reader) or calling `contest` (gap) touches disk, so
+    Outcome A is provably inert -- the test suite checks this by hashing acts/ and the event
+    log before and after a refused filing, not by trusting this docstring.
 
     OUTCOME B INHERITS `sign_act`'s PRIVILEGED GUARDS, UNCHANGED, BECAUSE THIS CALLS
     `contest` RATHER THAN RE-IMPLEMENTING IT. `contest` is in PRIVILEGED_KINDS, so the
@@ -1357,18 +1606,30 @@ def file_claim(root, accuser, key_path, target_name, target_seq, observed_value,
             f"authenticated to the chain it is read from.")
     body = commit_act.get("body") or {}
     parameter, committed_value = body.get("parameter"), body.get("value")
-    observed_value = str(observed_value)
-    if str(committed_value) == observed_value:
+    commit_task = commit_act.get("task")
+
+    reader = PARAMETER_READERS.get(parameter)
+    if reader is None:
+        raise AttestError(
+            f"{parameter!r} has no reader in this harness. T-436 section 2: \"where it "
+            f"cannot, there is no breach, not a disputed one\" (a would-be breach that "
+            f"cannot be stated as a single-task, single-comparison fact) -- the harness "
+            f"cannot replay this claim for {parameter!r}.")
+    observed_value, source = reader(root, commit_task)
+
+    is_gap, committed_value, observed_value = _gap(parameter, committed_value,
+                                                    observed_value)
+    if not is_gap:
         raise AttestError(
             f"no gap: {target_name!r} committed {parameter!r}={committed_value!r} at "
-            f"{target_name}#{target_seq}, and {source!r} also reads {observed_value!r}. "
-            f"Outcome A (T-436 section 5): this claim is refused and writes nothing, "
-            f"anywhere -- no act, no event, no file.")
+            f"{target_name}#{target_seq}, and {source!r} also reads {observed_value!r} "
+            f"for task {commit_task!r}. Outcome A (T-436 section 5): this claim is "
+            f"refused and writes nothing, anywhere -- no act, no event, no file.")
     reason = (
         f"breach claim against {target_name}#{target_seq} "
         f"(commit digest {commit_act['_digest']}): committed {parameter!r}="
-        f"{committed_value!r}; observed {observed_value!r} via {source!r}. "
-        f"{WINDOWS_NOT_RATIFIED}")
+        f"{committed_value!r}; observed {observed_value!r} via {source!r} for task "
+        f"{commit_task!r}. {WINDOWS_NOT_RATIFIED}")
     return contest(root, accuser, key_path, target_name, target_seq, reason, task=task)
 
 
@@ -1580,21 +1841,19 @@ def main(argv=None) -> int:
     ap_.add_argument("--ref", required=True, help="the verdict seq and/or case appealed")
     ap_.add_argument("--grounds", required=True)
 
-    fc = sub.add_parser("file-claim", help="T-436 S5/T-452 S1: replay a commit act against "
-                                           "an independent source; writes nothing on no "
-                                           "gap (Outcome A), signs one contest on a gap "
-                                           "(Outcome B)")
+    fc = sub.add_parser("file-claim", help="T-436 S5/T-452 S1/T-472: replay a commit act "
+                                           "against the ONE independent source its own "
+                                           "parameter fixes (PARAMETER_READERS); writes "
+                                           "nothing on no gap or no reader (Outcome A), "
+                                           "signs one contest on a gap (Outcome B). No "
+                                           "--observed-value/--source: T-472 closed that "
+                                           "defect by removing them entirely.")
     fc.add_argument("--by", required=True, dest="accuser", help="the claimant")
     fc.add_argument("--key", required=True)
     fc.add_argument("--name", required=True, dest="target_name",
                     help="the respondent whose commit act is being replayed")
     fc.add_argument("--seq", required=True, type=int, dest="target_seq",
                     help="the respondent's commit act's sequence number")
-    fc.add_argument("--observed-value", required=True, dest="observed_value")
-    fc.add_argument("--source", required=True,
-                    help="the one independent source observed_value was read from, e.g. "
-                         "usage_report.py, the blackboard task record, goal_mode.py's exit "
-                         "code, or the transcript")
     fc.add_argument("--task", help="required to reach Outcome B: contest is privileged "
                                    "(D3a) and needs a prior declared intent for this task")
 
@@ -1685,8 +1944,7 @@ def main(argv=None) -> int:
                              indent=2, ensure_ascii=False))
         elif args.cmd == "file-claim":
             print(json.dumps(file_claim(root, args.accuser, args.key, args.target_name,
-                                        args.target_seq, args.observed_value, args.source,
-                                        task=args.task),
+                                        args.target_seq, task=args.task),
                              indent=2, ensure_ascii=False))
     except (AttestError, ValueError, json.JSONDecodeError) as exc:
         print(f"refused: {exc}", file=sys.stderr)

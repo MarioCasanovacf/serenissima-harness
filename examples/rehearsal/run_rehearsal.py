@@ -126,11 +126,47 @@ SECURITY, enforced by this script and not merely asserted:
     sandbox; this script never imports `blackboard`, `precedent`, `deliberate`,
     `attest`, `warrant`, `reputation`, `currency`, `event_stats` or `westphalia_kpi`
     as a module.
-  - The live tree is read once (to copy it) and never written: see `integrity_check()`,
-    run before and after, comparing a sha256 of every file under the live `.harness/`
-    (excluding `logs/`, which this run's OWN task bookkeeping legitimately touches via
-    separate `blackboard.py`/`lock.py` calls outside this script, and the T-440 task
-    file itself, same reason) plus `git status --porcelain`.
+  - The live tree is read once (to copy it) and never written. That claim is checked
+    by `integrity_snapshot()`/`integrity_diff()` (strict) and by the write guard
+    (see LIVE-TREE CHECK below), not merely asserted.
+
+LIVE-TREE CHECK (T-478). The first version hashed the WHOLE live `.harness/` tree and
+`git status` before and after, which made the check a race against every other
+process on the machine: any legitimate edit by a concurrent agent (the blackboard, a
+task file, a source file under lock) failed the rehearsal, and in the gen-10 runs that
+cost repeated goal_mode iterations and agents sleeping to wait it out. The check now
+has two arms, each strict where it is the right instrument:
+
+  1. PROTECTED MATERIAL, byte-strict, no concurrency allowance. `PROTECTED_LIVE_PATHS`
+     names what the rehearsal must never touch and no other process has a routine
+     reason to touch while it runs: `trust/`, `keys/`, `constitutional/`, `warrants/`,
+     `roster.json`, `acts/`, `revocations/` and `dispatch_tokens/` (the paths are the
+     ones warrant.py, roster.py, attest.py, revoke.py and dispatch_token.py use). Every
+     file and directory entry under them is hashed before and after, and `git status`
+     is compared for just those paths: any difference fails the run, whoever caused it.
+     The digests are compared in memory and never printed or stored; nothing private is
+     used as material.
+  2. EVERYTHING ELSE, attributed instead of compared. A before/after hash cannot say WHO
+     wrote a file, and that is exactly what a concurrent edit and a rehearsal leak have
+     in common. So this arm asks the question directly: it runs the rehearsal under a
+     WRITE GUARD. A Python audit hook (PEP 578) is installed in this process and, through
+     a `sitecustomize.py` on PYTHONPATH, in every Python subprocess the rehearsal starts
+     (every tool CLI is one). The hook records each open-for-write, rename, remove,
+     mkdir, copy or sqlite connect whose target resolves inside the live `.harness/`.
+     Another process's edit never appears in that record, because that process does not
+     run under this guard; a write by the rehearsal, from any of its own Python
+     processes, always does. A recorded live write fails the run. This is not a rule
+     that ignores non-protected paths: a rehearsal write to `tasks/`, `blackboard.json`
+     or `bin/` fails it exactly as a write to `trust/` does.
+     FAIL CLOSED: before the story starts, a probe (an open-for-write to a path whose
+     parent does not exist, so nothing is written) is fired from this process and from a
+     child, and the run fails unless both are recorded. A guard that is not armed (a
+     child that skipped `sitecustomize`) is reported, never assumed.
+     LIMITS, stated: a write by a NON-Python grandchild (a shell, git, ssh-keygen
+     started by a tool) is not seen by the hook; outside the protected set the check
+     cannot catch it. Inside the protected set the hash arm still does. A tool that
+     execs a Python child with `-S` or `-I` skips `sitecustomize` for that child the
+     same way.
 """
 from __future__ import annotations
 
@@ -156,10 +192,13 @@ PY = sys.executable
 # THIS story writes.
 COPY_EXCLUDE_DIRS = {"keys", "locks", "logs", "__pycache__"}
 
-# What the live-tree integrity check ignores, named explicitly here rather than in
-# the acceptance criterion alone, so a reader can see exactly what is excluded and why.
-INTEGRITY_EXCLUDE_DIRS = {"logs"}
-INTEGRITY_EXCLUDE_FILES = {"tasks/T-440.json"}
+# What the live-tree check holds byte-strict (arm 1 of LIVE-TREE CHECK in the module
+# docstring), relative to the live `.harness/`. These are the real paths: warrant.py
+# uses trust/ and warrants/, reputation.py constitutional/, roster.py roster.json,
+# attest.py acts/, revoke.py revocations/, dispatch_token.py dispatch_tokens/, and
+# keys/ holds private material. Everything else is covered by the write guard instead.
+PROTECTED_LIVE_PATHS = ("trust", "keys", "constitutional", "warrants", "roster.json",
+                        "acts", "revocations", "dispatch_tokens")
 
 # The same 9 names W-002 issued live (.harness/warrants/W-002.json), re-minted here
 # under the SANDBOX's own root with FRESH keys (decision 9). Hardcoded rather than
@@ -223,34 +262,43 @@ def leading_json(text):
         return {}
 
 
-def sha256_tree(root: pathlib.Path, exclude_dirs=frozenset(), exclude_files=frozenset()):
+def sha256_protected(root: pathlib.Path, names=PROTECTED_LIVE_PATHS):
+    """sha256 of every file, plus a marker for every directory, under the named entries
+    of `root`. An entry that does not exist contributes nothing, so creating one during
+    the run shows up as an added path. Digests are compared in memory only."""
     out = {}
-    if not root.exists():
-        return out
-    for p in sorted(root.rglob("*")):
-        if not p.is_file():
+    for name in names:
+        top = root / name
+        if not (top.exists() or top.is_symlink()):
             continue
-        rel = p.relative_to(root)
-        if rel.parts and rel.parts[0] in exclude_dirs:
-            continue
-        if str(rel) in exclude_files:
-            continue
-        out[str(rel)] = hashlib.sha256(p.read_bytes()).hexdigest()
+        entries = [top] + (sorted(top.rglob("*")) if top.is_dir() else [])
+        for p in entries:
+            rel = str(p.relative_to(root))
+            if p.is_dir():
+                out[rel + "/"] = "dir"
+            elif p.is_file():
+                out[rel] = hashlib.sha256(p.read_bytes()).hexdigest()
+            else:
+                out[rel] = "special"
     return out
 
 
-def git_status_porcelain():
+def git_status_porcelain(names=PROTECTED_LIVE_PATHS):
+    """`git status --porcelain` restricted to the protected paths: a concurrent edit
+    anywhere else in the repository must not change what this reports."""
+    specs = [str(LIVE_HARNESS.relative_to(REPO_ROOT) / n) for n in names]
     try:
-        p = subprocess.run(["git", "-C", str(REPO_ROOT), "status", "--porcelain"],
-                            capture_output=True, text=True, timeout=30)
+        p = subprocess.run(["git", "-C", str(REPO_ROOT), "status", "--porcelain", "--"]
+                            + specs, capture_output=True, text=True, timeout=30)
         return p.stdout
     except Exception as e:  # pragma: no cover - environmental
         return "<could not run git: {}>".format(e)
 
 
 def integrity_snapshot():
+    """Arm 1: the byte-strict view of the protected material."""
     return {
-        "hashes": sha256_tree(LIVE_HARNESS, INTEGRITY_EXCLUDE_DIRS, INTEGRITY_EXCLUDE_FILES),
+        "hashes": sha256_protected(LIVE_HARNESS),
         "git_status_porcelain": git_status_porcelain(),
     }
 
@@ -258,12 +306,149 @@ def integrity_snapshot():
 def integrity_diff(before, after):
     diffs = []
     if before["git_status_porcelain"] != after["git_status_porcelain"]:
-        diffs.append("git status --porcelain changed")
+        diffs.append("git status --porcelain changed on protected paths")
     b, a = before["hashes"], after["hashes"]
     for path in sorted(set(b) | set(a)):
         if b.get(path) != a.get(path):
-            diffs.append("hash changed/added/removed: {}".format(path))
+            diffs.append("protected path changed/added/removed: {}".format(path))
     return diffs
+
+
+# ------------------------------------------------------------------------ write guard
+
+# Source of the audit hook. It is exec'd in this process and written verbatim as
+# `sitecustomize.py` for every Python subprocess (arm 2 of LIVE-TREE CHECK). Plain
+# stdlib, no imports of this module: a child cannot import it.
+GUARD_SOURCE = r'''
+import os, sys
+
+_STATE = {"live": None, "log": None, "busy": False, "hooked": False}
+_WRITE_FLAGS = (os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC)
+# audit event -> positions in its args that name a path the call may create or change
+_PATH_ARGS = {
+    "os.rename": (0, 1), "os.remove": (0,), "os.rmdir": (0,), "os.mkdir": (0,),
+    "os.symlink": (1,), "os.link": (1,), "os.chmod": (0,), "os.utime": (0,),
+    "shutil.copyfile": (1,), "shutil.copymode": (1,), "shutil.copystat": (1,),
+    "shutil.copytree": (1,), "shutil.rmtree": (0,), "shutil.move": (0, 1),
+    "sqlite3.connect": (0,),
+}
+
+
+def _inside_live(path):
+    if isinstance(path, int) or path is None:
+        return None
+    try:
+        rp = os.path.realpath(os.fsdecode(path))
+    except Exception:
+        return None
+    live = _STATE["live"]
+    if rp == live or rp.startswith(live + os.sep):
+        return rp
+    return None
+
+
+def _record(event, rp):
+    fd = os.open(_STATE["log"], os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    try:
+        os.write(fd, (event + "\t" + os.path.relpath(rp, _STATE["live"]) + "\n").encode())
+    finally:
+        os.close(fd)
+
+
+def _hook(event, args):
+    if _STATE["busy"] or _STATE["live"] is None:
+        return
+    if event == "open":
+        if not (args[2] & _WRITE_FLAGS):
+            return
+        idxs = (0,)
+    else:
+        idxs = _PATH_ARGS.get(event)
+        if not idxs:
+            return
+    _STATE["busy"] = True
+    try:
+        for i in idxs:
+            if i < len(args):
+                rp = _inside_live(args[i])
+                if rp is not None:
+                    _record(event, rp)
+    except Exception:
+        pass
+    finally:
+        _STATE["busy"] = False
+
+
+def install(live, log):
+    _STATE["live"] = os.path.realpath(live)
+    _STATE["log"] = log
+    if not _STATE["hooked"]:
+        _STATE["hooked"] = True
+        sys.addaudithook(_hook)
+'''
+
+_GUARD_NS = {}
+
+
+def install_write_guard(guard_dir: pathlib.Path):
+    """Arm the guard in this process and in every Python child started from here on.
+    Returns the path of the log the hook appends to."""
+    guard_dir.mkdir(parents=True, exist_ok=True)
+    log = guard_dir / "live-writes.log"
+    log.write_text("")
+    (guard_dir / "sitecustomize.py").write_text(
+        GUARD_SOURCE + "\n_live = os.environ.get('REHEARSAL_GUARD_LIVE')\n"
+        "_log = os.environ.get('REHEARSAL_GUARD_LOG')\n"
+        "if _live and _log:\n    install(_live, _log)\n")
+    if "install" not in _GUARD_NS:
+        exec(compile(GUARD_SOURCE, "<rehearsal-write-guard>", "exec"), _GUARD_NS)
+    _GUARD_NS["install"](str(LIVE_HARNESS), str(log))
+    os.environ["REHEARSAL_GUARD_LIVE"] = str(LIVE_HARNESS)
+    os.environ["REHEARSAL_GUARD_LOG"] = str(log)
+    os.environ["PYTHONPATH"] = os.pathsep.join(
+        [str(guard_dir)] + ([os.environ["PYTHONPATH"]] if os.environ.get("PYTHONPATH") else []))
+    return log
+
+
+def read_guard_log(log: pathlib.Path):
+    """[(event, path relative to the live .harness/)] in the order recorded."""
+    try:
+        lines = log.read_text().splitlines()
+    except OSError:
+        return []
+    return [tuple(l.split("\t", 1)) for l in lines if "\t" in l]
+
+
+def guard_probe_failures(log: pathlib.Path):
+    """Fire one open-for-write at a path whose parent directory does not exist (so
+    nothing is ever written), from this process and from a child Python, and report
+    each place the hook did not record it. Records of the probe are not violations."""
+    token = ".guard-probe-" + os.urandom(6).hex()
+    target = LIVE_HARNESS / token / "p"
+    failures = []
+    try:
+        os.close(os.open(str(target), os.O_WRONLY | os.O_CREAT))
+    except OSError:
+        pass
+    child = run([PY, "-c",
+                 "import os,sys\ntry: os.close(os.open(sys.argv[1], os.O_WRONLY|os.O_CREAT))\n"
+                 "except OSError: pass\n", str(target)])
+    hits = [r for r in read_guard_log(log) if r[1] == token + "/p"]
+    if len(hits) < 1:
+        failures.append("write guard is not armed in this process")
+    if len(hits) < 2:
+        failures.append("write guard is not armed in child Python processes"
+                        + (" (exit {})".format(child.returncode) if child.returncode else ""))
+    return failures, token
+
+
+def guard_diffs(log: pathlib.Path, probe_token: str):
+    out = []
+    for event, rel in read_guard_log(log):
+        if rel.startswith(probe_token + "/") or rel == probe_token:
+            continue
+        out.append("live write by the rehearsal ({}): {}".format(event, rel))
+    return out
 
 
 # ------------------------------------------------------------------------ scorecard
@@ -972,23 +1157,43 @@ def parse_args(argv):
     return p.parse_args(argv)
 
 
+def sandbox_prefix() -> str:
+    """Prefix of this run's sandbox directory name.
+
+    T-482: a caller that wants to find ONLY the sandboxes its own run created sets
+    REHEARSAL_RUN_TAG to a unique value; the sandbox is then named
+    `harness-rehearsal-<tag>-XXXX`, so a glob on that tag never matches a sandbox a
+    concurrent foreign run has open in the same temp directory. With no tag the name
+    is the historical `harness-rehearsal-XXXX`. The tag is reduced to [A-Za-z0-9_]
+    so it can never carry a path separator or glob character."""
+    tag = re.sub(r"[^A-Za-z0-9_]", "", os.environ.get("REHEARSAL_RUN_TAG", ""))
+    return "harness-rehearsal-" + (tag + "-" if tag else "")
+
+
 def main(argv=None) -> int:
     args = parse_args(argv)
     before = integrity_snapshot()
 
-    tmp_root = pathlib.Path(tempfile.mkdtemp(prefix="harness-rehearsal-"))
+    tmp_root = pathlib.Path(tempfile.mkdtemp(prefix=sandbox_prefix()))
+    saved_env = {k: os.environ.get(k) for k in
+                 ("PYTHONPATH", "REHEARSAL_GUARD_LIVE", "REHEARSAL_GUARD_LOG")}
     try:
+        guard_log = install_write_guard(tmp_root / "write-guard")
+        probe_failures, probe_token = guard_probe_failures(guard_log)
         harness_dir = build_sandbox(tmp_root)
         bindir = harness_dir / "bin"
         keys_dir = harness_dir / "keys"
 
         sc = Scorecard()
+        root = {}
         try:
-            root = mint_sandbox_root(bindir, harness_dir, keys_dir)
-            run_story(bindir, harness_dir, keys_dir, root, sc)
+            if not probe_failures:
+                root = mint_sandbox_root(bindir, harness_dir, keys_dir)
+                run_story(bindir, harness_dir, keys_dir, root, sc)
         finally:
             after = integrity_snapshot()
-            diffs = integrity_diff(before, after)
+            diffs = (probe_failures + integrity_diff(before, after)
+                     + guard_diffs(guard_log, probe_token))
 
         scorecard = {
             "task": "T-440/T-444",
@@ -997,6 +1202,7 @@ def main(argv=None) -> int:
             "generated_at": now_iso(),
             "rows": sc.rows,
             "live_tree_untouched": not diffs,
+            "live_tree_protected_paths": list(PROTECTED_LIVE_PATHS),
             "live_tree_diffs": diffs,
         }
 
@@ -1030,6 +1236,11 @@ def main(argv=None) -> int:
 
         return 0 if not diffs else 1
     finally:
+        for k, v in saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         if not args.keep:
             # Remove exactly the directory tempfile.mkdtemp returned above, by
             # that exact path -- never a computed parent, never a glob.

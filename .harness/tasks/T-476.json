@@ -14,5 +14,26 @@
     ".harness/bin/goal_mode.py",
     ".harness/tests"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T02:20:31Z",
+      "agent": "main",
+      "note": "Built .harness/bin/fast_tests.py (commit 482cab6)."
+    },
+    {
+      "ts": "2026-11-18T02:20:31Z",
+      "agent": "main",
+      "note": "HANDOFF -> verifier: fast_tests.py, commit 482cab6. Replay: python3 -m pytest .harness/tests -q -p no:cacheprovider (serial) versus python3 .harness/bin/fast_tests.py; both reported 1225 passed, 4 skipped on 2026-11-12 (serial 166 s; parallel 52 to 65 s on a loaded machine). Design: balanced pytest batches from the previous run's per-test times; test_rehearsal.py runs last with one alone-retry; machine-wide slot cap through portalock; PYTHONDONTWRITEBYTECODE in children. Known: the planted-failure, import-error and timeout cases in T-477 were not run by the producer."
+    },
+    {
+      "ts": "2026-11-18T02:55:16Z",
+      "agent": "verifier-speed-runner",
+      "note": "Verifying: replay in throwaway copies (<tmp>)."
+    },
+    {
+      "ts": "2026-11-18T02:55:16Z",
+      "agent": "verifier-speed-runner",
+      "note": "VERDICT done (verifier-speed-runner), replayed in throwaway copies, not taken from the handoff.\n1. Equivalence: on a copy of the tree, serial pytest and fast_tests report the same totals (1236 tests in the working-tree copy, 1173 in a HEAD-archive copy) and the same failing set, except test_rehearsal.py::test_live_tree_untouched..., which fails in long serial runs when other processes leave sandboxes under the OS temp dir and passes alone (twice); fast_tests' alone-retry reports it. The copies carry environment failures (no private trust material), identical under both runners. Slow-file splitting by class/test (durations present) was exercised: totals still match. Live tree: the goal_mode full run passed on iteration 1 (108 s); one later direct run failed only in test_rehearsal.py while another agent was editing test_rehearsal.py and run_rehearsal.py in the live tree, reported as FAILED again alone, exit nonzero.\n2. Planted failing test in the last shard: exit 1, test id named. Import error in one test file: exit 1, ModuleNotFoundError shown, counted as 1 error. Hang with the batch timeout lowered in the copy: exit 1, TIMEOUT line names the batch; no stray pytest process left.\n3. Three consecutive full runs while a process rewrote a test file non-atomically every 50 ms (3332 edits): all three exit 1, and the only new failures were 13 test_rehearsal.py ids, which hash the live tree and so must fail while it changes; no false pass, no crash, same total of 1173 each time.\n4. Mutants of fast_tests.py in the copy: ok=True always (caught by planted failure), verdict from counts ignoring exit code (caught by import error), timeout treated as exit 0 (caught by hang). All three exited 0 where the clean runner exits 1.\n5. Stdlib only (ast walk of imports; portalock is the harness wrapper); .harness/logs/test_durations.json is ignored at .gitignore line 64, untracked, and holds no absolute paths. Files run alone: the same failing set as the full serial run in the copy, so no order-dependent file beyond the declared serial entry.\nGAPS for the coordinator, none blocking: (a) the handoff lacks the doc-change list T-476 asked for: claude.md and ORCHESTRATION.md do not mention fast_tests.py; add it under Core Local Tools and the verifier test protocol. (b) the handoff lacks the 3-run and planted-failure evidence; supplied above. (c) there is no test file for fast_tests.py itself. (d) on a timeout the partial output is dropped (bytes under Python 3.9), so earlier failing ids in that batch are not listed and the passed total understates; verdict is still nonzero. (e) the final line reads 'N passed, M skipped in S.SSs (files, batches...)', pytest's shape plus a suffix.\n"
+    }
+  ]
 }

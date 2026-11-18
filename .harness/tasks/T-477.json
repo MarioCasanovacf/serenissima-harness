@@ -9,5 +9,16 @@
   "context_files": [
     ".harness/bin/fast_tests.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T02:55:21Z",
+      "agent": "verifier-speed-runner",
+      "note": "Evidence replayed; see the T-476 verdict note."
+    },
+    {
+      "ts": "2026-11-18T02:55:21Z",
+      "agent": "verifier-speed-runner",
+      "note": "Verdict on T-476: done. Planted failure, import error and timeout each exit nonzero and name the cause; 3 runs under concurrent edits never false-pass (rehearsal files fail loudly while the tree changes); stdlib only; durations file untracked. Details and gaps in the T-476 note."
+    }
+  ]
 }

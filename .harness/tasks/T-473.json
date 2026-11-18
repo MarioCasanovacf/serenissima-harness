@@ -9,5 +9,11 @@
   "context_files": [
     ".harness/design-T-436-contracts.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T02:48:33Z",
+      "agent": "verifier-g10-reader",
+      "note": "T-473 executed by verifier-g10-reader: verdict recorded on T-472 (done). Criterion 1: no argument of file_claim or its CLI moves the observed value; mutants M1a, M1b, M2, M3a, M3b, M3c each fail at least one test. Criterion 2: _read_deadline, _read_iteration_bound, _read_budget and _read_engine read only the commit act's own task; M4a, M4b, M4d, M4e, M5 each fail at least one test. Full suite: 1245 passed, 4 skipped, 1 neighbour-collision failure in test_rehearsal that passes alone (23 passed)."
+    }
+  ]
 }

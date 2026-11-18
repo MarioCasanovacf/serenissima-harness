@@ -1,0 +1,31 @@
+{
+  "id": "T-482",
+  "title": "The rehearsal's leaked-sandbox check counts only its own sandboxes",
+  "description": "Timed wave of 2026-11-17: test_rehearsal.py's leaked-sandbox check failed whenever another agent's rehearsal had a sandbox open in the OS temp directory at the same moment, and agents slept to wait it out.",
+  "acceptance_criteria": [
+    "The check counts only sandboxes this run created (for example, a per-run unique prefix or a recorded list), never every rehearsal-looking directory in the temp directory.",
+    "A test: a sandbox created by a concurrent foreign run during the test does not fail it; a sandbox this run leaks still fails it.",
+    "Edit examples/rehearsal/run_rehearsal.py and .harness/tests/test_rehearsal.py only. Run test_rehearsal.py only. Hand off to verifier."
+  ],
+  "context_files": [
+    "examples/rehearsal/run_rehearsal.py",
+    ".harness/tests/test_rehearsal.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T02:58:34Z",
+      "agent": "worker-speed-sandbox",
+      "note": "run_rehearsal.py: REHEARSAL_RUN_TAG names the sandbox harness-rehearsal-<tag>-XXXX (tag sanitized). test_rehearsal.py: default and keep tests tag their subprocess and glob only that tag; new tests for foreign-vs-own sandbox and tag sanitizing. test_rehearsal.py: 25 passed."
+    },
+    {
+      "ts": "2026-11-18T03:02:22Z",
+      "agent": "verifier-speed-sandbox",
+      "note": "Verifier replay: test_rehearsal.py 25 passed. Mutant checks (skip own sandbox removal; foreign untagged sandbox during run) not done: the data-loss guard blocked the throwaway-copy setup commands, so no verdict. Needs a human-approved mutant run or a coordinator ruling."
+    },
+    {
+      "ts": "2026-11-18T04:10:46Z",
+      "agent": "main",
+      "note": "VERIFIED by the coordinator (distinct from the producer). Mutant in a kept throwaway copy (rehearsal never removes its own sandbox, TMPDIR inside the copy): test_rehearsal.py fails, 1 failed 24 passed, and the alone retry fails too. Live replay: fast_tests.py test_rehearsal.py gives 25 passed. Foreign untagged and other-tag sandboxes are covered by the new test, which passes. The earlier verifier was stopped by the data-loss guard; this copy deletes nothing."
+    }
+  ]
+}

@@ -8,5 +8,11 @@
   "context_files": [
     "examples/rehearsal/run_rehearsal.py"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T02:49:45Z",
+      "agent": "verifier-speed-rehearsal",
+      "note": "Verdict recorded on T-478 (done). Evidence in the T-478 verdict note: seven mutants killed, concurrent-edit replay passes."
+    }
+  ]
 }

@@ -1,0 +1,18 @@
+{
+  "id": "T-483",
+  "title": "VERIFY T-482: a foreign sandbox passes, an own leak fails",
+  "description": "A different agent verdicts T-482.",
+  "acceptance_criteria": [
+    "Mutant in a throwaway copy: make the rehearsal skip removing its own sandbox; it must fail. Create a foreign sandbox-looking directory during a run; it must pass. Run test_rehearsal.py only. Verdict."
+  ],
+  "context_files": [
+    "examples/rehearsal/run_rehearsal.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T04:10:46Z",
+      "agent": "main",
+      "note": "Closed after T-482's verdict; evidence in T-482's note."
+    }
+  ]
+}

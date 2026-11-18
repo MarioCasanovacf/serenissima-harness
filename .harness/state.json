@@ -160,9 +160,9 @@
         "last_outcome_at": "2026-07-05T05:16:11Z"
       },
       "main": {
-        "tasks_done": 37,
+        "tasks_done": 39,
         "tasks_failed": 1,
-        "last_outcome_at": "2026-10-21T20:48:58Z"
+        "last_outcome_at": "2026-11-18T04:10:46Z"
       },
       "tournament-judge": {
         "tasks_done": 2,
@@ -858,6 +858,56 @@
         "tasks_done": 1,
         "tasks_failed": 0,
         "last_outcome_at": "2026-10-21T22:37:36Z"
+      },
+      "worker-g10-reader": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T02:48:26Z"
+      },
+      "verifier-g10-reader": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T02:48:33Z"
+      },
+      "worker-speed-rehearsal": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T02:49:41Z"
+      },
+      "verifier-speed-rehearsal": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T02:49:45Z"
+      },
+      "verifier-speed-runner": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T02:55:21Z"
+      },
+      "worker-g10-links": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T03:03:02Z"
+      },
+      "verifier-g10-links-b": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T03:03:11Z"
+      },
+      "worker-speed-changed": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T04:05:06Z"
+      },
+      "verifier-speed-changed": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T04:05:06Z"
+      },
+      "worker-speed-sandbox": {
+        "tasks_done": 1,
+        "tasks_failed": 0,
+        "last_outcome_at": "2026-11-18T04:10:46Z"
       }
     }
   },

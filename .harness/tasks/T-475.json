@@ -9,5 +9,11 @@
   "context_files": [
     ".harness/design-T-452-courts.md"
   ],
-  "notes": []
+  "notes": [
+    {
+      "ts": "2026-11-18T03:03:11Z",
+      "agent": "verifier-g10-links-b",
+      "note": "Verified with T-474 verdict: the three named mutants (answer signed by the claimant, appeal from a third name, contest naming a different respondent) each fail a test; happy path and case show replayed; ordinary case show identical to HEAD. Full suite left to the coordinator per wave rule."
+    }
+  ]
 }

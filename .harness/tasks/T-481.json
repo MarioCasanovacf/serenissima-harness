@@ -1,0 +1,18 @@
+{
+  "id": "T-481",
+  "title": "VERIFY T-480: --changed never misses a test that covers the change",
+  "description": "A different agent verdicts T-480.",
+  "acceptance_criteria": [
+    "Pick 3 real modules under .harness/bin; for each, compare --changed's selection against a grep of the tests that mention the module; any test the grep finds and --changed misses is a defect. Run test_fast_tests.py only. Verdict."
+  ],
+  "context_files": [
+    ".harness/bin/fast_tests.py"
+  ],
+  "notes": [
+    {
+      "ts": "2026-11-18T04:05:06Z",
+      "agent": "verifier-speed-changed",
+      "note": "VERDICT done. Compared --changed against grep over 12 real bin modules (lock, portalock, harness_common, roster, dispatch_token, log_event, notify, condorcet, attest, blackboard, precedent, warrant). Grep by file name: zero misses (the only difference was a false positive, portalock.py matching lock.py as a substring). Word-stem greps add only prose and comment mentions plus transitive imports (harness_common, portalock reached through other modules), which the static scan documents as out of reach. Ran test_fast_tests.py only."
+    }
+  ]
+}

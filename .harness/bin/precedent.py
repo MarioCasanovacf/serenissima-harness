@@ -1165,6 +1165,20 @@ def cmd_case_show(args):
               "damages_claimed={} (informational only)".format(
                   s.get("claimant"), s.get("respondent"), s.get("contract"),
                   s.get("damages_claimed")))
+        state = _suit_state(data)
+        print("  Suit state: {}".format(state))
+        if state == "appealed to the operator":
+            print("  Consequence: FROZEN until the operator rules "
+                 "(design-T-452-courts.md section 5). Appeal window: {}."
+                 .format(_SUIT_WINDOW_UNRATIFIED))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import attest
+        for label, name, seq in _linked_acts(data):
+            line = "  Linked {} act: {}#{}".format(label, name, seq)
+            note = _act_retraction_note(attest, hroot, name, seq)
+            if note:
+                line += " [{}]".format(note)
+            print(line)
     if data.get("disposal"):
         d = data["disposal"]
         print("  Disposal:  {} via {} by {} at {}".format(d.get("verb"), d.get("ref"), d.get("by"), d.get("ts")))
@@ -1435,6 +1449,16 @@ def cmd_case_notice(args):
                       "blackboard.py add-task refused: {}".format((r.stderr or r.stdout).strip()),
                       prec, case=args.case, respondent=args.respondent, task_id=args.task_id)
 
+    # T-474: stamp the notice into the suit block, ONLY when one exists, so
+    # `case show`/`_suit_state` below has a fact to read for the "noticed"
+    # word -- `case notice` itself still never requires a suit block (T-468's
+    # own behavior, unchanged) and never touches a non-suit case's schema.
+    if case_rec.get("suit"):
+        case_rec["suit"]["notice"] = {
+            "respondent": args.respondent, "task_id": args.task_id, "ts": hc.now_iso(),
+        }
+        _save_case(hroot, args.case, case_rec)
+
     emit_event(prec, "case_notice", case=args.case, respondent=args.respondent,
               task_id=args.task_id, deadline=NOTICE_WINDOW_UNRATIFIED)
     print("notice filed: {!r} (board task {})".format(title, args.task_id))
@@ -1442,6 +1466,354 @@ def cmd_case_notice(args):
     if out:
         print(out)
     return 0
+
+
+# --------------------------------------------------------------------------
+# T-452/T-474: link the claimant's contest act, the respondent's answer act
+# and a party's appeal act into the suit record; `case show` renders the
+# suit's state in words (design-T-452-courts.md sections 1, 2, 5; board
+# T-474's acceptance criteria; the state vocabulary in `_suit_state` is the
+# one AC3 names).
+#
+# Built directly against attest.py's EXISTING contest/answer/appeal/verdict
+# verbs (T-474's own scope note: T-472 is changing `file_claim`'s signature
+# in parallel, so nothing here goes through `file_claim`).
+#
+# What this does NOT build (operator ruling 2026-10-21, decision 3's three
+# UNRATIFIED numbers, same discipline `cmd_case_verdict`/`cmd_case_notice`
+# already keep above): no objection window, no pursue-or-lapse window, no
+# damages amount is computed anywhere below. `_SUIT_WINDOW_UNRATIFIED` is
+# printed wherever a window would otherwise appear, mirroring currency.py's
+# own "NO THRESHOLD RATIFIED" convention.
+# --------------------------------------------------------------------------
+
+_SUIT_WINDOW_UNRATIFIED = "not ratified"
+
+
+def _load_suit_case(hroot, case_id, verb_name):
+    """Load a registered, suit-bearing case, or a refusal string. Shared by
+    `case claim`/`case answer`/`case appeal`, none of which take the
+    claimant/respondent as flags -- they are read off the suit block itself,
+    exactly as `case verdict` already reads the judge requirement off the
+    roster rather than trusting a caller-supplied claim."""
+    if not case_id:
+        return None, None, "--case is required on every {} (T-412/S-1)".format(verb_name)
+    if not CASE_ID_RE.match(case_id):
+        return None, None, ("--case '{}' is not a valid case id format (must match "
+                            "^C-\\d+$)".format(case_id))
+    case_rec = load_case(hroot, case_id)
+    if case_rec is None:
+        return None, None, ("--case {} is not registered in {}. Call 'precedent.py case "
+                            "open' first.".format(case_id, cases_dir(hroot)))
+    suit = case_rec.get("suit")
+    if not suit:
+        return case_rec, None, (
+            "case {} has no suit block; {} applies only to a suit-case opened with "
+            "--claimant/--respondent/--contract (design-T-452-courts.md section 1)"
+            .format(case_id, verb_name))
+    return case_rec, suit, None
+
+
+def _save_case(hroot, case_id, case_rec):
+    cpath = cases_dir(hroot) / "{}.json".format(case_id)
+    hc.atomic_write_json(cpath, case_rec)
+
+
+def _find_act(acts, seq):
+    return next((a for a in acts if "_unparseable" not in a and a.get("seq") == seq), None)
+
+
+def _verify_act_sig(attest_mod, hroot, name, act):
+    keys = attest_mod.signing_keys(hroot)
+    if name not in keys:
+        return False, "{!r} holds no enrolled or delegated signing key in {}".format(name, hroot)
+    pub = keys[name]["pubkey"]
+    return attest_mod._verify_sig(hroot, name, act["_path"], pub)
+
+
+def cmd_case_claim(args):
+    """`case claim --case --claimant-seq`: record the suit's claimant's own
+    `contest` act in the suit block (section 1: "the contest act is filed,
+    named by the suit-case"). Refuses unless the act is kind `contest` on
+    the suit's CLAIMANT'S OWN chain (structural: read off that chain alone,
+    so a seq that is not there simply is not found), verifies under the
+    claimant's own key, and names the suit's respondent and contract.
+
+    "Names the suit's respondent" reads `contest`'s own fixed
+    `ref=f"{target_name}#{target_seq}"` shape (attest.py, unedited by this
+    task) -- the ref's name half must equal the suit's respondent.  "Names
+    the suit's contract" is a substring check against the act's free-text
+    `body.reason`: `contest`'s signature carries no dedicated contract
+    field and this task may not add one to attest.py, so the suit's
+    `contract` string must appear, verbatim, inside the reason the claimant
+    already wrote when filing -- disclosed here as this module's own
+    reading of "names", not a quote from any design file.
+    """
+    prec = resolve_root(args)
+    hroot, why = harness_root_for_acts(args, prec)
+    if hroot is None:
+        return refuse("case_claim_refused", why, prec, case=args.case,
+                      claimant_seq=args.claimant_seq)
+
+    case_rec, suit, err = _load_suit_case(hroot, args.case, "case claim")
+    if err:
+        return refuse("case_claim_refused", err, prec, case=args.case,
+                      claimant_seq=args.claimant_seq)
+
+    claimant = suit.get("claimant")
+    respondent = suit.get("respondent")
+    contract = suit.get("contract")
+    if not claimant:
+        return refuse("case_claim_refused",
+                      "case {}'s suit has no claimant on file".format(args.case),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    acts = attest.chain(hroot, claimant)
+    act = _find_act(acts, args.claimant_seq)
+    if act is None:
+        return refuse("case_claim_refused",
+                      "no act #{} on {!r}'s own chain in {}: a claim act must be read off "
+                      "the SUIT'S CLAIMANT's own chain".format(args.claimant_seq, claimant, hroot),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+    if act.get("kind") != "contest":
+        return refuse("case_claim_refused",
+                      "{}#{} is kind {!r}, not 'contest': a case claim must reference the "
+                      "claimant's own contest act"
+                      .format(claimant, args.claimant_seq, act.get("kind")),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+    verified, verify_why = _verify_act_sig(attest, hroot, claimant, act)
+    if not verified:
+        return refuse("case_claim_refused",
+                      "{}#{} does not verify under {!r}'s own key: {}"
+                      .format(claimant, args.claimant_seq, claimant, verify_why),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+
+    ref = act.get("ref") or ""
+    ref_target = ref.rsplit("#", 1)[0] if "#" in ref else None
+    if ref_target != respondent:
+        return refuse("case_claim_refused",
+                      "{}#{}'s ref {!r} does not name the suit's respondent {!r}"
+                      .format(claimant, args.claimant_seq, ref, respondent),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+    reason = (act.get("body") or {}).get("reason") or ""
+    if not contract or contract not in reason:
+        return refuse("case_claim_refused",
+                      "{}#{}'s reason does not name the suit's contract {!r}"
+                      .format(claimant, args.claimant_seq, contract),
+                      prec, case=args.case, claimant_seq=args.claimant_seq)
+
+    case_rec.setdefault("suit", {})["claim"] = {
+        "by": claimant, "seq": args.claimant_seq, "ref": ref, "ts": act.get("ts"),
+    }
+    _save_case(hroot, args.case, case_rec)
+    emit_event(prec, "case_claimed", case=args.case, claimant=claimant, seq=args.claimant_seq)
+    print("case {} claimed: {}#{} linked".format(args.case, claimant, args.claimant_seq))
+    return 0
+
+
+def cmd_case_answer(args):
+    """`case answer --case --seq`: record the suit's respondent's own
+    `answer` act in the suit block (section 2: "only an answer act on the
+    respondent's own chain counts as an answer"). Refuses unless the act is
+    kind `answer` on the suit's RESPONDENT'S OWN chain, verifies under the
+    respondent's own key, and references this case (its `ref` must equal
+    `--case`, exactly)."""
+    prec = resolve_root(args)
+    hroot, why = harness_root_for_acts(args, prec)
+    if hroot is None:
+        return refuse("case_answer_refused", why, prec, case=args.case, seq=args.seq)
+
+    case_rec, suit, err = _load_suit_case(hroot, args.case, "case answer")
+    if err:
+        return refuse("case_answer_refused", err, prec, case=args.case, seq=args.seq)
+
+    respondent = suit.get("respondent")
+    if not respondent:
+        return refuse("case_answer_refused",
+                      "case {}'s suit has no respondent on file".format(args.case),
+                      prec, case=args.case, seq=args.seq)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    acts = attest.chain(hroot, respondent)
+    act = _find_act(acts, args.seq)
+    if act is None:
+        return refuse("case_answer_refused",
+                      "no act #{} on {!r}'s own chain in {}: an answer act must be read off "
+                      "the SUIT'S RESPONDENT's own chain".format(args.seq, respondent, hroot),
+                      prec, case=args.case, seq=args.seq)
+    if act.get("kind") != "answer":
+        return refuse("case_answer_refused",
+                      "{}#{} is kind {!r}, not 'answer': a case answer must reference the "
+                      "respondent's own answer act".format(respondent, args.seq, act.get("kind")),
+                      prec, case=args.case, seq=args.seq)
+    verified, verify_why = _verify_act_sig(attest, hroot, respondent, act)
+    if not verified:
+        return refuse("case_answer_refused",
+                      "{}#{} does not verify under {!r}'s own key: {}"
+                      .format(respondent, args.seq, respondent, verify_why),
+                      prec, case=args.case, seq=args.seq)
+    if (act.get("ref") or "") != args.case:
+        return refuse("case_answer_refused",
+                      "{}#{}'s ref {!r} does not reference case {!r}: an answer act must "
+                      "name the case it answers (design-T-452-courts.md section 2)"
+                      .format(respondent, args.seq, act.get("ref"), args.case),
+                      prec, case=args.case, seq=args.seq)
+
+    case_rec.setdefault("suit", {})["answer"] = {
+        "by": respondent, "seq": args.seq, "ts": act.get("ts"),
+    }
+    _save_case(hroot, args.case, case_rec)
+    emit_event(prec, "case_answered", case=args.case, respondent=respondent, seq=args.seq)
+    print("case {} answered: {}#{} linked".format(args.case, respondent, args.seq))
+    return 0
+
+
+def cmd_case_appeal(args):
+    """`case appeal --case --by --seq`: record an appeal act, by the suit's
+    claimant or respondent only, in the suit block (section 5), after a
+    verdict exists. Refuses unless `--by` is one of the suit's two parties,
+    the case is already disposed by a `verdict`, the act is kind `appeal`
+    on `--by`'s own chain and verifies, and `--by` has not already appealed
+    this case once (a second appeal by the same party is refused)."""
+    prec = resolve_root(args)
+    hroot, why = harness_root_for_acts(args, prec)
+    if hroot is None:
+        return refuse("case_appeal_refused", why, prec, case=args.case, by=args.by,
+                      seq=args.seq)
+
+    case_rec, suit, err = _load_suit_case(hroot, args.case, "case appeal")
+    if err:
+        return refuse("case_appeal_refused", err, prec, case=args.case, by=args.by,
+                      seq=args.seq)
+
+    claimant, respondent = suit.get("claimant"), suit.get("respondent")
+    if args.by not in (claimant, respondent):
+        return refuse("case_appeal_refused",
+                      "{!r} is neither the suit's claimant ({!r}) nor its respondent "
+                      "({!r}); only a party to the suit may appeal "
+                      "(design-T-452-courts.md section 5)"
+                      .format(args.by, claimant, respondent),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+
+    disp = case_rec.get("disposal") or {}
+    if case_rec.get("status") != "disposed" or disp.get("verb") != "verdict":
+        return refuse("case_appeal_refused",
+                      "case {} has no verdict on file yet; an appeal may be filed only "
+                      "after `case verdict` disposes the case (design-T-452-courts.md "
+                      "section 5)".format(args.case),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import attest
+
+    acts = attest.chain(hroot, args.by)
+    act = _find_act(acts, args.seq)
+    if act is None:
+        return refuse("case_appeal_refused",
+                      "no act #{} on {!r}'s own chain in {}: an appeal act must be read off "
+                      "the APPELLANT's own chain".format(args.seq, args.by, hroot),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+    if act.get("kind") != "appeal":
+        return refuse("case_appeal_refused",
+                      "{}#{} is kind {!r}, not 'appeal'".format(args.by, args.seq, act.get("kind")),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+    verified, verify_why = _verify_act_sig(attest, hroot, args.by, act)
+    if not verified:
+        return refuse("case_appeal_refused",
+                      "{}#{} does not verify under {!r}'s own key: {}"
+                      .format(args.by, args.seq, args.by, verify_why),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+
+    existing = suit.get("appeals") or []
+    prior = next((a for a in existing if a.get("by") == args.by), None)
+    if prior:
+        return refuse("case_appeal_refused",
+                      "{!r} already appealed this case (seq {}); a second appeal by the "
+                      "same party is refused (design-T-452-courts.md section 5)"
+                      .format(args.by, prior.get("seq")),
+                      prec, case=args.case, by=args.by, seq=args.seq)
+
+    suit_block = case_rec.setdefault("suit", {})
+    suit_block.setdefault("appeals", []).append({
+        "by": args.by, "seq": args.seq, "ts": act.get("ts"),
+    })
+    _save_case(hroot, args.case, case_rec)
+    emit_event(prec, "case_appealed", case=args.case, by=args.by, seq=args.seq)
+    print("case {} appealed by {}#{}: the verdict's consequence is FROZEN until the "
+         "operator rules (design-T-452-courts.md section 5). Appeal window: {}."
+         .format(args.case, args.by, args.seq, _SUIT_WINDOW_UNRATIFIED))
+    return 0
+
+
+def _suit_state(case_rec):
+    """The suit's state in words -- board T-474 AC-3's own vocabulary, quoted
+    exactly: "opened, claimed, noticed, answered, judged, appealed to the
+    operator". Computed ON READ, like `computed_force()` elsewhere in this
+    file: nothing here is stored, so there is no second index of suit state
+    that could go stale against the acts it is read from. Reports the most
+    advanced stage with a fact on the record behind it (most advanced first,
+    so an appealed-and-judged suit reports "appealed to the operator" rather
+    than "judged")."""
+    suit = case_rec.get("suit") or {}
+    if suit.get("appeals"):
+        return "appealed to the operator"
+    disp = case_rec.get("disposal") or {}
+    if case_rec.get("status") == "disposed" and disp.get("verb") == "verdict":
+        return "judged"
+    if suit.get("answer"):
+        return "answered"
+    if suit.get("notice"):
+        return "noticed"
+    if suit.get("claim"):
+        return "claimed"
+    return "opened"
+
+
+def _linked_acts(case_rec):
+    """Every SIGNED act linked into this suit's record, as (label, name, seq)
+    triples. `notice` is deliberately absent: `case notice` publishes a
+    board task (`cmd_case_notice`), not a signed act, so there is no chain
+    to check a retraction against."""
+    suit = case_rec.get("suit") or {}
+    out = []
+    claim = suit.get("claim")
+    if claim:
+        out.append(("claim", claim.get("by"), claim.get("seq")))
+    answer = suit.get("answer")
+    if answer:
+        out.append(("answer", answer.get("by"), answer.get("seq")))
+    disp = case_rec.get("disposal") or {}
+    if disp.get("verb") == "verdict":
+        judge = disp.get("by")
+        ref = disp.get("ref") or ""
+        prefix = "{}_".format(judge) if judge else None
+        if prefix and ref.startswith(prefix):
+            try:
+                out.append(("verdict", judge, int(ref[len(prefix):])))
+            except ValueError:
+                pass
+    for appeal in suit.get("appeals") or []:
+        out.append(("appeal", appeal.get("by"), appeal.get("seq")))
+    return out
+
+
+def _act_retraction_note(attest_mod, hroot, name, seq):
+    """Any retraction attest.py reports for `name`#`seq` -- reuses
+    `attest.verify_name`'s own "retracted" list rather than re-deriving a
+    retraction index here, so this module never carries a second, divergent
+    reading of what is retracted."""
+    if not name or seq is None:
+        return None
+    report = attest_mod.verify_name(hroot, name)
+    for r in report.get("retracted", []):
+        if r.get("seq") == seq:
+            return "RETRACTED by {}#{}: {}".format(name, r.get("retracted_by_seq"), r.get("reason"))
+    return None
 
 
 def cmd_distinguish(args):
@@ -3743,6 +4115,44 @@ def main(argv):
     p_case_notice.add_argument("--harness-root", dest="harness_root", default=None)
     add_root_arg(p_case_notice)
     p_case_notice.set_defaults(func=cmd_case_notice)
+
+    # ---- case claim (T-452/T-474, section 1) ----
+    p_case_claim = case_sub.add_parser(
+        "claim", help="link the suit's claimant's own contest act into the suit record "
+                     "(design-T-452-courts.md section 1)")
+    p_case_claim.add_argument("--case", required=True, metavar="C-NNN")
+    p_case_claim.add_argument("--claimant-seq", dest="claimant_seq", required=True, type=int,
+                              help="the contest act's sequence number on the suit's "
+                                   "claimant's own chain")
+    p_case_claim.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_claim)
+    p_case_claim.set_defaults(func=cmd_case_claim)
+
+    # ---- case answer (T-452/T-474, section 2) ----
+    p_case_answer = case_sub.add_parser(
+        "answer", help="link the suit's respondent's own answer act into the suit record "
+                       "(design-T-452-courts.md section 2)")
+    p_case_answer.add_argument("--case", required=True, metavar="C-NNN")
+    p_case_answer.add_argument("--seq", required=True, type=int,
+                               help="the answer act's sequence number on the suit's "
+                                    "respondent's own chain")
+    p_case_answer.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_answer)
+    p_case_answer.set_defaults(func=cmd_case_answer)
+
+    # ---- case appeal (T-452/T-474, section 5) ----
+    p_case_appeal = case_sub.add_parser(
+        "appeal", help="link a party's appeal act into the suit record, after a verdict "
+                       "exists (design-T-452-courts.md section 5)")
+    p_case_appeal.add_argument("--case", required=True, metavar="C-NNN")
+    p_case_appeal.add_argument("--by", required=True,
+                               help="the appealing name: must be the suit's claimant or "
+                                    "respondent")
+    p_case_appeal.add_argument("--seq", required=True, type=int,
+                               help="the appeal act's sequence number on --by's own chain")
+    p_case_appeal.add_argument("--harness-root", dest="harness_root", default=None)
+    add_root_arg(p_case_appeal)
+    p_case_appeal.set_defaults(func=cmd_case_appeal)
 
     # T-376: refuse a repeated single-value flag rather than silently keeping the last.
     # Applied to `publish`, `confirm`, `distinguish`, and `case open`.
